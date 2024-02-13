@@ -38,7 +38,7 @@ final class Forum: Model, Searchable {
 	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
 
 	/// Is the forum pinned within the category.
-	@OptionalField(key: "pinned") var pinned: Bool?
+	@Field(key: "pinned") var pinned: Bool
 
 	// MARK: Relations
 
@@ -80,6 +80,7 @@ final class Forum: Model, Searchable {
 		self.lastPostTime = Date()
 		self.lastPostID = 0
 		self.moderationStatus = .normal
+		self.pinned = false
 	}
 }
 
@@ -126,7 +127,7 @@ struct UpdateForumLastPostIDMigration: AsyncMigration {
 struct UpdateForumPinnedMigration: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		try await database.schema("forum")
-			.field("pinned", .bool)
+			.field("pinned", .bool, .required, .sql(.default(false)))
 			.update()
 	}
 

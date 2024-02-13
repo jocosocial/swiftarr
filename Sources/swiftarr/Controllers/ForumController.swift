@@ -196,8 +196,10 @@ struct ForumController: APIRouteCollection {
 			)
 			// User muting of a forum should take sort precedence over pinning.
 			// They explicitly don't want to see it, so don't shove it in their face.
+			// Not relevany anymore, but for anyone reading this in the future:
+			// Nullibility influences sort order.
 			.sort(ForumReaders.self, \.$isMuted, .descending)
-			.sort(Forum.self, \.$pinned, .ascending)
+			.sort(Forum.self, \.$pinned, .descending)
 		if category.isEventCategory {
 			_ = query.join(child: \.$scheduleEvent, method: .left)
 			// https://github.com/jocosocial/swiftarr/issues/199
