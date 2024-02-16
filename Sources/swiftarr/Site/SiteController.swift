@@ -551,7 +551,7 @@ struct SiteController: SiteControllerUtils {
 		struct MapContext: Encodable {
 			var trunk: TrunkContext
 			var deckNumber: String?
-			var decks = [Int](1...11)
+			var decks = [Int](1...12)
 			init(_ req: Request, deckNumber: String?) throws {
 				trunk = .init(req, title: "Ship Map", tab: .map)
 				self.deckNumber = deckNumber
