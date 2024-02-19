@@ -587,6 +587,8 @@ extension SiteControllerUtils {
 	var muteWordParam: PathComponent { PathComponent(":mute_word") }
 	var boardgameIDParam: PathComponent { PathComponent(":boardgame_id") }
 	var songIDParam: PathComponent { PathComponent(":karaoke_song_id") }
+	var mkSongIDParam: PathComponent { PathComponent(":micro_karaoke_song_id") }
+	var mkSnippetIDParam: PathComponent { PathComponent(":micro_karaoke_snippet_id") }
 	var usernameParam: PathComponent { PathComponent(":user_name") }
 	var scheduleLogIDParam: PathComponent { PathComponent(":schedule_log_id") }
 

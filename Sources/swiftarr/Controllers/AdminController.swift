@@ -33,14 +33,7 @@ struct AdminController: APIRouteCollection {
 		// endpoints available for THO and Admin only
 		let thoAuthGroup = addTokenCacheAuthGroup(to: adminRoutes).grouped([RequireTHOMiddleware()])
 		thoAuthGroup.on(.POST, "dailytheme", "create", body: .collect(maxSize: "30mb"), use: addDailyThemeHandler)
-		thoAuthGroup.on(
-			.POST,
-			"dailytheme",
-			dailyThemeIDParam,
-			"edit",
-			body: .collect(maxSize: "30mb"),
-			use: editDailyThemeHandler
-		)
+		thoAuthGroup.on(.POST, "dailytheme", dailyThemeIDParam, "edit", body: .collect(maxSize: "30mb"), use: editDailyThemeHandler)
 		thoAuthGroup.post("dailytheme", dailyThemeIDParam, "delete", use: deleteDailyThemeHandler)
 		thoAuthGroup.delete("dailytheme", dailyThemeIDParam, use: deleteDailyThemeHandler)
 

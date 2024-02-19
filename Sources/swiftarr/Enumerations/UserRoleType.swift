@@ -20,6 +20,9 @@ public enum UserRoleType: String, CaseIterable, Codable, Sendable {
 	case shutternautmanager
 	/// Shutternauts can view, post, and create threads in the Shutternauts forum category.
 	case shutternaut
+	/// Micro Karaoke Ambassadors can upload multiple song clips for the same song, without the 4-hour delay. Ideally, they will use this to get others to participate using their phone;
+	/// having a single user hit the 'participate' button 30 times in quick succession and make a song where all the clips are them is not the goal.
+	case karaokeambassador
 
 	/// `.label` returns consumer-friendly case names.
 	var label: String {
@@ -27,6 +30,7 @@ public enum UserRoleType: String, CaseIterable, Codable, Sendable {
 		case .karaokemanager: return "Karaoke Manager"
 		case .shutternautmanager: return "Shutternaut Manager"
 		case .shutternaut: return "Shutternaut"
+		case .karaokeambassador: return "Micro Karaoke Ambassador"
 		}
 	}
 

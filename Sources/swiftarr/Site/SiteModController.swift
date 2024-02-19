@@ -51,62 +51,29 @@ struct SiteModController: SiteControllerUtils {
 		modRoutes.get("moderate", "forum", forumIDParam, use: moderateForumContentPageHandler)
 		modRoutes.get("moderate", "fez", fezIDParam, use: moderateFezContentPageHandler)
 		modRoutes.get("moderate", "fezpost", postIDParam, use: moderateFezPostContentPageHandler)
+		modRoutes.get("moderate", "microkaraoke", use: getMicroKaraokeSongsPageHandler)
+		modRoutes.get("moderate", "microkaraoke", "song", mkSongIDParam, use: moderateMicroKaraokeSongPageHandler)
 		modRoutes.get("moderate", "userprofile", userIDParam, use: moderateUserProfileContentPageHandler)
 		modRoutes.get("moderate", "user", userIDParam, use: moderateUserContentPageHandler)
+		
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let modPrivateRoutes = getPrivateRoutes(app).grouped(SiteRequireModeratorMiddleware())
 		modPrivateRoutes.get("archivedimage", imageIDParam, use: archivedImageHandler)
 
-		modPrivateRoutes.post(
-			"twarrt",
-			twarrtIDParam,
-			"setstate",
-			modStateParam,
-			use: setTwarrtModerationStatePostHandler
-		)
-		modPrivateRoutes.post(
-			"forumpost",
-			postIDParam,
-			"setstate",
-			modStateParam,
-			use: setForumPostModerationStatePostHandler
-		)
+		modPrivateRoutes.post("twarrt", twarrtIDParam, "setstate", modStateParam, use: setTwarrtModerationStatePostHandler)
+		modPrivateRoutes.post("forumpost", postIDParam, "setstate", modStateParam, use: setForumPostModerationStatePostHandler)
 		modPrivateRoutes.post("forum", forumIDParam, "setstate", modStateParam, use: setForumModerationStatePostHandler)
-		modPrivateRoutes.post(
-			"fezpost",
-			postIDParam,
-			"setstate",
-			modStateParam,
-			use: setFezPostModerationStatePostHandler
-		)
+		modPrivateRoutes.post("fezpost", postIDParam, "setstate", modStateParam, use: setFezPostModerationStatePostHandler)
 		modPrivateRoutes.post("fez", fezIDParam, "setstate", modStateParam, use: setFezModerationStatePostHandler)
-		modPrivateRoutes.post(
-			"userprofile",
-			userIDParam,
-			"setstate",
-			modStateParam,
-			use: setUserProfileModerationStatePostHandler
-		)
 
 		modPrivateRoutes.post("forum", forumIDParam, "setcategory", categoryIDParam, use: setForumCategoryPostHandler)
-		modPrivateRoutes.post(
-			"moderate",
-			"user",
-			userIDParam,
-			"setaccesslevel",
-			accessLevelParam,
-			use: setUserAccessLevelPostHandler
-		)
+		modPrivateRoutes.post("moderate", "user", userIDParam, "setaccesslevel", accessLevelParam, use: setUserAccessLevelPostHandler)
 		modPrivateRoutes.post("moderate", "user", userIDParam, "tempquarantine", use: applyTempBanPostHandler)
-		modPrivateRoutes.post(
-			"moderate",
-			"user",
-			userIDParam,
-			"tempquarantine",
-			"delete",
-			use: removeTempBanPostHandler
-		)
+		modPrivateRoutes.post("moderate", "user", userIDParam, "tempquarantine", "delete", use: removeTempBanPostHandler)
+		modPrivateRoutes.post("microkaraoke", "song", mkSongIDParam, "approve", use: setMKSongApprovalState)
+		modPrivateRoutes.post("microkaraoke", "snippet", mkSnippetIDParam, "delete", use: deleteMKSnippet)
+		modPrivateRoutes.delete("microkaraoke", "snippet", mkSnippetIDParam, use: deleteMKSnippet)
 
 		modPrivateRoutes.post("reports", reportIDParam, "handle", use: beginProcessingReportsPostHandler)
 		modPrivateRoutes.post("reports", reportIDParam, "close", use: closeReportsPostHandler)
@@ -583,6 +550,77 @@ struct SiteModController: SiteControllerUtils {
 		return response.status
 	}
 
+	/// `GET /moderate/microkaraoke`
+	///
+	/// This shows a view that shows the MicroKaraoke songs that are:
+	/// - Completed/Approved: Approved by mods, ready for viewing by all users.
+	/// - Completed/Not Approved: Not yet approved, but all necessary video clips have been uploaded
+	/// - Not Completed: Songs that do not yet have all their video clips uploaded
+	func getMicroKaraokeSongsPageHandler(_ req: Request) async throws -> View {
+		let response = try await apiQuery(req, endpoint: "/microkaraoke/mod/songlist")
+		let modData = try response.content.decode([MicroKaraokeCompletedSong].self)
+		struct ReportContext: Encodable {
+			var trunk: TrunkContext
+			var modData: [MicroKaraokeCompletedSong]
+
+			init(_ req: Request, modData: [MicroKaraokeCompletedSong]) throws {
+				trunk = .init(req, title: "Micro Karaoke Moderation", tab: .moderator)
+				self.modData = modData
+			}
+		}
+		let ctx = try ReportContext(req, modData: modData)
+		return try await req.view.render("moderation/mkSongsView", ctx)
+	}
+	
+	/// `GET /moderate/microkaraoke/song/:song_id`
+	///
+	/// For a specific Micro Karaoke song, shows a list of each video clip that makes up the song, along with the user that recorded that clip and a 'Reject' button
+	/// for moderation purposes.
+	func moderateMicroKaraokeSongPageHandler(_ req: Request) async throws -> View {
+		guard let songID = req.parameters.get(mkSongIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing songID parameter.")
+		}
+		let response = try await apiQuery(req, endpoint: "/microkaraoke/mod/song/\(songID)")
+		let songInfo = try response.content.decode(MicroKaraokeCompletedSong.self)
+		let response2 = try await apiQuery(req, endpoint: "/microkaraoke/mod/snippets/\(songID)")
+		let modData = try response2.content.decode([MicroKaraokeSnippetModeration].self)
+		struct ReportContext: Encodable {
+			var trunk: TrunkContext
+			var songInfo: MicroKaraokeCompletedSong
+			var modData: [MicroKaraokeSnippetModeration]
+
+			init(_ req: Request, modData: [MicroKaraokeSnippetModeration], songInfo: MicroKaraokeCompletedSong) throws {
+				trunk = .init(req, title: "Micro Karaoke Moderation", tab: .moderator)
+				self.songInfo = songInfo
+				self.modData = modData
+			}
+		}
+		let ctx = try ReportContext(req, modData: modData, songInfo: songInfo)
+		return try await req.view.render("moderation/mkSnippetView", ctx)
+	}
+
+	///	`POST /moderate/microkaraoke/:song_ID/approve`
+	///
+	/// Approves the given song for publish. Notifies all contributors that their song is ready for viewing.
+	func setMKSongApprovalState(_ req: Request) async throws -> HTTPStatus {
+		guard let songID = req.parameters.get(mkSongIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing songID parameter.")
+		}
+		let response = try await apiQuery(req, endpoint: "/microkaraoke/mod/approve/\(songID)", method: .POST)
+		return response.status
+	}
+	
+	///	`POST /microkaraoke/snippet/:snippet_ID/delete`
+	///
+	/// Approves the given song for publish. Notifies all contributors that their song is ready for viewing.
+	func deleteMKSnippet(_ req: Request) async throws -> HTTPStatus {
+		guard let snippetID = req.parameters.get(mkSnippetIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing snippetID parameter.")
+		}
+		let response = try await apiQuery(req, endpoint: "/microkaraoke/mod/snippet/\(snippetID)/delete", method: .POST)
+		return response.status
+	}
+
 	/// `GET /moderate/userprofile/ID`
 	///
 	/// Info from user's profile. Previous profile versions, reports against the user's profile fields or avatar image.
@@ -754,6 +792,8 @@ func generateContentGroups(from reports: [ReportModerationData]) -> [ReportConte
 		case .fez: contentURL = "/moderate/fez/\(report.reportedID)"
 		case .fezPost: contentURL = "/moderate/fezpost/\(report.reportedID)"
 		case .userProfile: contentURL = "/moderate/userprofile/\(report.reportedID)"
+		case .mkSong: contentURL = "/moderate/microkaraoke/song/\(report.reportedID)"
+		case .mkSongSnippet: contentURL = "/moderate/microkaraoke/song/\(report.reportedID)"	// Individual snippets aren't actually reportable yet.
 		}
 		var newGroup = ReportContentGroup(
 			reportType: report.type,
