@@ -27,5 +27,18 @@
 					#endfor
 				#endfor
 			#endfor
+		</div>
+		#if(enableCreate):
+		<div class="container-fluid">
+			<div class="row my-3">
+				<h4>Sign Here</h4>
+			</div>
+			<div class="row mb-2">
+				<div class="col">
+					<a class="btn btn-outline-primary active" href="/createAccount">I Agree</a>
+				</div>
+			</div>
+		</div>
+		#endif
 	#endexport
 #endextend

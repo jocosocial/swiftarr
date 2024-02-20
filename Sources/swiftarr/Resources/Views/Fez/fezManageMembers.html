@@ -8,8 +8,8 @@
 						<li class="breadcrumb-item"><a href="/seamail">Seamail</a></li>
 						<li class="breadcrumb-item"><a href="/seamail/#(fez.fezID)">#(fez.title)</a></li>
 					#else:
-						<li class="breadcrumb-item"><a href="/fez">LFG</a></li>
-						<li class="breadcrumb-item"><a href="/fez/#(fez.fezID)">#(fez.title)</a></li>
+						<li class="breadcrumb-item"><a href="/lfg">LFG</a></li>
+						<li class="breadcrumb-item"><a href="/lfg/#(fez.fezID)">#(fez.title)</a></li>
 					#endif
 					<li class="breadcrumb-item" aria-current="page">Manage Members</li>
 				  </ol>
@@ -34,7 +34,7 @@
 						#if(user.userID != trunk.userID):
 							<div>
 								<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
-										data-actionpath="/fez/#(fez.fezID)/members/remove/#(user.userID)"
+										data-actionpath="/lfg/#(fez.fezID)/members/remove/#(user.userID)"
 										data-errordiv="#(user.userID)_participanterror"
 										id="#(user.userID)_remove">
 								<label class="btn btn-sm btn-primary" for="#(user.userID)_remove">
@@ -74,7 +74,7 @@
 								#if(user.userID != trunk.userID):
 									<div class="">
 										<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
-											data-actionpath="/fez/#(fez.fezID)/members/remove/#(user.userID)"
+											data-actionpath="/lfg/#(fez.fezID)/members/remove/#(user.userID)"
 											data-errordiv="#(user.userID)_waitlisterror"
 											id="#(user.userID)_remove">
 										<label class="btn btn-sm btn-primary" for="#(user.userID)_remove">
@@ -146,7 +146,7 @@
 					<div class="col col-auto username-here"></div>
 					<label class="col col-auto btn btn-sm btn-primary px-3 me-2">
 						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload"
-								data-actionpath="/fez/#(fez.fezID)/members/add/">
+								data-actionpath="/lfg/#(fez.fezID)/members/add/">
 						<span class="button-title-here">Add</span>
 						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 						<span class="visually-hidden">Loading...</span>

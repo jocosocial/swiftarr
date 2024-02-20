@@ -258,8 +258,8 @@ struct MessagePostContext: Encodable {
 			photoFilenames = []
 		// For posting in an existing Fez thread
 		case .fezPost(let forFez):
-			formAction = "/fez/\(forFez.fezID)/post"
-			postSuccessURL = "/fez/\(forFez.fezID)"
+			formAction = "/lfg/\(forFez.fezID)/post"
+			postSuccessURL = "/lfg/\(forFez.fezID)"
 			messageTextPlaceholder = "Send a message"
 			photoFilenames = [""]
 		// For creating an announcement
@@ -377,16 +377,16 @@ struct ReportPageContext: Encodable {
 	init(_ req: Request, fezID: String) throws {
 		trunk = .init(req, title: "Report LFG Content", tab: .lfg)
 		reportTitle = "Report LFG Content"
-		reportFormAction = "/fez/report/\(fezID)"
-		reportSuccessURL = req.headers.first(name: "Referer") ?? "/fez"
+		reportFormAction = "/lfg/report/\(fezID)"
+		reportSuccessURL = req.headers.first(name: "Referer") ?? "/lfg"
 	}
 
 	// For reporting a fez post
 	init(_ req: Request, fezPostID: String) throws {
 		trunk = .init(req, title: "Report LFG Post", tab: .lfg)
 		reportTitle = "Report LFG Post"
-		reportFormAction = "/fez/post/report/\(fezPostID)"
-		reportSuccessURL = req.headers.first(name: "Referer") ?? "/fez"
+		reportFormAction = "/lfg/post/report/\(fezPostID)"
+		reportSuccessURL = req.headers.first(name: "Referer") ?? "/lfg"
 	}
 
 	// For reporting a user profile
@@ -551,7 +551,7 @@ struct SiteController: SiteControllerUtils {
 		struct MapContext: Encodable {
 			var trunk: TrunkContext
 			var deckNumber: String?
-			var decks = [Int](1...11)
+			var decks = [Int](1...12)
 			init(_ req: Request, deckNumber: String?) throws {
 				trunk = .init(req, title: "Ship Map", tab: .map)
 				self.deckNumber = deckNumber

@@ -49,7 +49,7 @@ struct SiteModController: SiteControllerUtils {
 		modRoutes.get("moderate", "twarrt", twarrtIDParam, use: moderateTwarrtContentPageHandler)
 		modRoutes.get("moderate", "forumpost", postIDParam, use: moderateForumPostContentPageHandler)
 		modRoutes.get("moderate", "forum", forumIDParam, use: moderateForumContentPageHandler)
-		modRoutes.get("moderate", "fez", fezIDParam, use: moderateFezContentPageHandler)
+		modRoutes.get("moderate", "lfg", fezIDParam, use: moderateFezContentPageHandler)
 		modRoutes.get("moderate", "fezpost", postIDParam, use: moderateFezPostContentPageHandler)
 		modRoutes.get("moderate", "microkaraoke", use: getMicroKaraokeSongsPageHandler)
 		modRoutes.get("moderate", "microkaraoke", "song", mkSongIDParam, use: moderateMicroKaraokeSongPageHandler)
@@ -65,7 +65,8 @@ struct SiteModController: SiteControllerUtils {
 		modPrivateRoutes.post("forumpost", postIDParam, "setstate", modStateParam, use: setForumPostModerationStatePostHandler)
 		modPrivateRoutes.post("forum", forumIDParam, "setstate", modStateParam, use: setForumModerationStatePostHandler)
 		modPrivateRoutes.post("fezpost", postIDParam, "setstate", modStateParam, use: setFezPostModerationStatePostHandler)
-		modPrivateRoutes.post("fez", fezIDParam, "setstate", modStateParam, use: setFezModerationStatePostHandler)
+		modPrivateRoutes.post("lfg", fezIDParam, "setstate", modStateParam, use: setFezModerationStatePostHandler)
+		modPrivateRoutes.post("userprofile", userIDParam, "setstate", modStateParam, use: setUserProfileModerationStatePostHandler)
 
 		modPrivateRoutes.post("forum", forumIDParam, "setcategory", categoryIDParam, use: setForumCategoryPostHandler)
 		modPrivateRoutes.post("moderate", "user", userIDParam, "setaccesslevel", accessLevelParam, use: setUserAccessLevelPostHandler)
@@ -443,7 +444,7 @@ struct SiteModController: SiteControllerUtils {
 		return response.status
 	}
 
-	/// `GET /moderate/fez/:fez_ID`
+	/// `GET /moderate/lfg/:fez_ID`
 	///
 	/// This shows a view that focuses on the *content* that was reported, showing:
 	/// * The Fez that was reported
@@ -464,7 +465,7 @@ struct SiteModController: SiteControllerUtils {
 			var finalEditAuthor: UserHeader?
 
 			init(_ req: Request, modData: FezModerationData) throws {
-				trunk = .init(req, title: "Fez Moderation", tab: .moderator)
+				trunk = .init(req, title: "LFG Moderation", tab: .moderator)
 				self.modData = modData
 				firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 				finalEditAuthor = modData.edits.last?.author
@@ -485,7 +486,7 @@ struct SiteModController: SiteControllerUtils {
 		return try await req.view.render("moderation/fezView", ctx)
 	}
 
-	///	`POST /moderate/fez/ID/setstate/STRING`
+	///	`POST /moderate/lfg/ID/setstate/STRING`
 	///
 	/// Sets the moderation state of the given fez. Moderation states include "locked" and "quarantined", as well as a few others.
 	func setFezModerationStatePostHandler(_ req: Request) async throws -> HTTPStatus {
@@ -528,7 +529,7 @@ struct SiteModController: SiteControllerUtils {
 					case .open, .closed:
 						self.postModUrl = "/seamail/\(modData.fezID)"
 					default:
-						self.postModUrl = "/fez/\(modData.fezID)"
+						self.postModUrl = "/lfg/\(modData.fezID)"
 				}
 			}
 		}
@@ -789,7 +790,7 @@ func generateContentGroups(from reports: [ReportModerationData]) -> [ReportConte
 		case .twarrt: contentURL = "/moderate/twarrt/\(report.reportedID)"
 		case .forumPost: contentURL = "/moderate/forumpost/\(report.reportedID)"
 		case .forum: contentURL = "/moderate/forum/\(report.reportedID)"
-		case .fez: contentURL = "/moderate/fez/\(report.reportedID)"
+		case .fez: contentURL = "/moderate/lfg/\(report.reportedID)"
 		case .fezPost: contentURL = "/moderate/fezpost/\(report.reportedID)"
 		case .userProfile: contentURL = "/moderate/userprofile/\(report.reportedID)"
 		case .mkSong: contentURL = "/moderate/microkaraoke/song/\(report.reportedID)"

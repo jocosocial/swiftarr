@@ -16,7 +16,7 @@
 				<div class="col col-auto btn-group btn-group-sm" role="group" aria-label="member actions">
 					#if(fez.fezType == "open"):
 						#if(fez.owner.userID == trunk.userID):
-							<a class="btn btn-outline-primary" href="/fez/#(fez.fezID)/members">Manage Members</a>
+							<a class="btn btn-outline-primary" href="/lfg/#(fez.fezID)/members">Manage Members</a>
 						#else:
 							<button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="\#leaveFezModal">Leave</button>
 						#endif
@@ -131,7 +131,7 @@
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
 						<input type="checkbox" class="btn-check" autocomplete="off" data-action="redirect" 
 								data-successpath="/seamail"
-								data-actionpath="/fez/#(fez.fezID)/leave"
+								data-actionpath="/lfg/#(fez.fezID)/leave"
 								data-errordiv="fezDialog_errorDisplay"
 								id="#(fez.fezID)_leave">
 						<label class="btn btn-primary px-4" for="#(fez.fezID)_leave">

@@ -32,8 +32,9 @@ struct ForumPageContext: Encodable {
 	var post: MessagePostContext
 	var category: CategoryData
 	var paginator: PaginatorContext
+	var pinnedPosts: [PostData]
 
-	init(_ req: Request, forum: ForumData, cat: [CategoryData]) throws {
+	init(_ req: Request, forum: ForumData, cat: [CategoryData], pinnedPosts: [PostData] = []) throws {
 		trunk = .init(req, title: "\(forum.title) | Forum Thread", tab: .forums, search: "Search")
 		self.forum = forum
 		self.post = .init(forType: .forumPost(forum.forumID.uuidString))
@@ -54,6 +55,7 @@ struct ForumPageContext: Encodable {
 		paginator = PaginatorContext(forum.paginator) { pageIndex in
 			"/forum/\(forum.forumID)?start=\(pageIndex * forum.paginator.limit)&limit=\(forum.paginator.limit)"
 		}
+		self.pinnedPosts = pinnedPosts
 	}
 }
 
@@ -284,6 +286,8 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.get("forum", "owned", use: forumsByUserPageHandler)
 		privateRoutes.get("forum", "recent", use: forumRecentsPageHandler)
 		privateRoutes.get("forum", "unread", use: forumUnreadPageHandler)
+		privateRoutes.post("forum", "pin", forumIDParam, use: forumAddPinPostHandler)
+		privateRoutes.delete("forum", "pin", forumIDParam, use: forumRemovePinPostHandler)
 
 		privateRoutes.get("forumpost", "edit", postIDParam, use: forumPostEditPageHandler)
 		privateRoutes.post("forumpost", "edit", postIDParam, use: forumPostEditPostHandler)
@@ -297,6 +301,8 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.post("forumpost", "favorite", postIDParam, use: forumPostAddBookmarkPostHandler)
 		privateRoutes.delete("forumpost", "favorite", postIDParam, use: forumPostRemoveBookmarkPostHandler)
 		privateRoutes.get("forumpost", "search", use: forumPostSearchPageHandler)
+		privateRoutes.post("forumpost", "pin", postIDParam, use: forumPostAddPinHandler)
+		privateRoutes.delete("forumpost", "pin", postIDParam, use: forumPostRemovePinHandler)
 	}
 
 	// Note: These groupings are roughly based on what type of URL parameters each method takes to identify its target:
@@ -334,6 +340,7 @@ struct SiteForumController: SiteControllerUtils {
 
 		let response = try await apiQuery(req, endpoint: "/forum/categories/\(catID)")
 		let forums = try response.content.decode(CategoryData.self)
+
 		struct ForumsPageContext: Encodable {
 			var trunk: TrunkContext
 			var forums: CategoryData
@@ -459,7 +466,11 @@ struct SiteForumController: SiteControllerUtils {
 			passThroughQuery: false
 		)
 		let cats = try catResponse.content.decode([CategoryData].self)
-		let ctx = try ForumPageContext(req, forum: forum, cat: cats)
+
+		let pinnedPostsResponse = try await apiQuery(req, endpoint: "/forum/\(forum.forumID)/pinnedposts")
+		let pinnedPosts = try pinnedPostsResponse.content.decode([PostData].self)
+
+		let ctx = try ForumPageContext(req, forum: forum, cat: cats, pinnedPosts: pinnedPosts)
 		return try await req.view.render("Forums/forum", ctx)
 	}
 
@@ -478,7 +489,11 @@ struct SiteForumController: SiteControllerUtils {
 			passThroughQuery: false
 		)
 		let cats = try catResponse.content.decode([CategoryData].self)
-		let ctx = try ForumPageContext(req, forum: forum, cat: cats)
+
+		let pinnedPostsResponse = try await apiQuery(req, endpoint: "/forum/\(forum.forumID)/pinnedposts")
+		let pinnedPosts = try pinnedPostsResponse.content.decode([PostData].self)
+
+		let ctx = try ForumPageContext(req, forum: forum, cat: cats, pinnedPosts: pinnedPosts)
 		return try await req.view.render("Forums/forum", ctx)
 	}
 
@@ -615,6 +630,28 @@ struct SiteForumController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Missing forum_id parameter.")
 		}
 		try await apiQuery(req, endpoint: "/forum/\(forumID)/mute/remove", method: .POST)
+		return .noContent
+	}
+
+	// POST /forum/pin/:forum_ID
+	//
+	// Pin the forum to the category.
+	func forumAddPinPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let forumID = req.parameters.get(forumIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing forum_id parameter.")
+		}
+		try await apiQuery(req, endpoint: "/forum/\(forumID)/pin", method: .POST)
+		return .created
+	}
+
+	// DELETE /forum/pin/:forum_ID
+	//
+	// Unpin the forum from the category.
+	func forumRemovePinPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let forumID = req.parameters.get(forumIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing forum_id parameter.")
+		}
+		try await apiQuery(req, endpoint: "/forum/\(forumID)/pin/remove", method: .POST)
 		return .noContent
 	}
 
@@ -787,6 +824,28 @@ struct SiteForumController: SiteControllerUtils {
 		}
 		try await apiQuery(req, endpoint: "/forum/post/\(postID)/bookmark/remove", method: .POST)
 		return .ok
+	}
+
+	// POST /forumpost/pin/:forum_ID
+	//
+	// Pin the forum to the category.
+	func forumPostAddPinHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing post_id parameter.")
+		}
+		try await apiQuery(req, endpoint: "/forum/post/\(postID)/pin", method: .POST)
+		return .created
+	}
+
+	// DELETE /forumpost/pin/:forum_ID
+	//
+	// Unpin the forum from the category.
+	func forumPostRemovePinHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing post_id parameter.")
+		}
+		try await apiQuery(req, endpoint: "/forum/post/\(postID)/pin/remove", method: .POST)
+		return .noContent
 	}
 
 	// MARK: - Search

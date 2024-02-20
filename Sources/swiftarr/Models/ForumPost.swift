@@ -1,5 +1,6 @@
 import Fluent
 import Vapor
+import FluentSQL
 
 /// 	An individual post within a `Forum`. A ForumPost must contain text content and may also contain image content.
 ///
@@ -37,6 +38,9 @@ final class ForumPost: Model, Searchable {
 
 	/// Timestamp of the model's soft-deletion, set automatically.
 	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
+
+	/// Is the post pinned within the forum.
+	@Field(key: "pinned") var pinned: Bool
 
 	// MARK: Relations
 
@@ -77,6 +81,7 @@ final class ForumPost: Model, Searchable {
 		self.text = text.replacingOccurrences(of: "\r\n", with: "\r")
 		self.images = images
 		self.moderationStatus = .normal
+		self.pinned = false
 	}
 }
 
@@ -98,5 +103,42 @@ struct CreateForumPostSchema: AsyncMigration {
 
 	func revert(on database: Database) async throws {
 		try await database.schema("forumpost").delete()
+	}
+}
+
+struct UpdateForumPostPinnedMigration: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("forumpost")
+			// .field("pinned", .bool, .required, .sql(.default(false)))
+			.field("pinned", .bool)
+			.update()
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema("forumpost")
+			.deleteField("pinned")
+			.update()
+	}
+}
+
+// This is because I forgot to do this above before merging.
+// Doing changes to existing fields requires raw SQL rather than through the ORM
+// unless you're modifying the data type (which we are not).
+// Mostly lifted from the Vapor docs.
+struct FixForumPostPinnedMigration: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		if let sql = database as? SQLDatabase {
+			let _ = try await sql.raw("UPDATE \"forumpost\" SET \"pinned\" = false WHERE \"pinned\" IS NULL").all();
+			try await database.schema("forumpost")
+				.updateField(.custom("\"pinned\" SET DEFAULT false"))
+				.updateField(.custom("\"pinned\" SET NOT NULL"))
+				.update()
+		}
+	}
+	func revert(on database: Database) async throws {
+		try await database.schema("forumpost")
+			.updateField(.custom("\"pinned\" SET DEFAULT NULL"))
+			.updateField(.custom("\"pinned\" DROP NOT NULL"))
+			.update()
 	}
 }
