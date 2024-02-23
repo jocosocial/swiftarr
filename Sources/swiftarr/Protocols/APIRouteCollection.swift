@@ -366,7 +366,7 @@ extension APIRouteCollection {
 			try await req.redis.markSeamailRead(type: type, in: .lfgMessages, userID: user.userID)
 		case .nextFollowedEventTime:
 			return  // Can't be cleared
-		case .microKaraokeSongReady(let songID):
+		case .microKaraokeSongReady:
 			try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)			
 		}
 		try await req.redis.addUsersWithStateChange([user.userID])
