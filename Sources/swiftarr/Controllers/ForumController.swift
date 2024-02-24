@@ -960,6 +960,7 @@ struct ForumController: APIRouteCollection {
 		}
 		forum.pinned = true;
 		try await forum.save(on: req.db)
+		try await forum.logIfModeratorAction(.pin, moderatorID: cacheUser.userID, on: req)
 		return .created
 	}
 
@@ -982,6 +983,7 @@ struct ForumController: APIRouteCollection {
 		}
 		forum.pinned = false;
 		try await forum.save(on: req.db)
+		try await forum.logIfModeratorAction(.unpin, moderatorID: cacheUser.userID, on: req)
 		return .noContent
 	}
 
@@ -1412,6 +1414,7 @@ struct ForumController: APIRouteCollection {
 		}
 		post.pinned = true;
 		try await post.save(on: req.db)
+		try await post.logIfModeratorAction(.pin, moderatorID: cacheUser.userID, on: req)
 		return .created
 	}
 
@@ -1436,6 +1439,7 @@ struct ForumController: APIRouteCollection {
 		}
 		post.pinned = false;
 		try await post.save(on: req.db)
+		try await post.logIfModeratorAction(.unpin, moderatorID: cacheUser.userID, on: req)
 		return .noContent
 	}
 }
