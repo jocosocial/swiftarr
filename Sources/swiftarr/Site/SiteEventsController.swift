@@ -41,12 +41,8 @@ struct EventPageContext: Encodable {
 		}
 
 		if let _ = trunk.alertCounts.nextFollowedEventTime {
-			let secondsPerWeek = 60 * 60 * 24 * 7
-			let partialWeek = Int(Date().timeIntervalSince(Settings.shared.cruiseStartDate())) % secondsPerWeek
-			let dateInCruiseWeek = Settings.shared.cruiseStartDate() + TimeInterval(partialWeek)
 			upcomingEvent = events.first {
-				return $0.isFavorite
-					&& ((-5 * 60)...(15 * 60)).contains(dateInCruiseWeek.timeIntervalSince($0.startTime))
+				return $0.isFavorite && (Settings.shared.upcomingEventPastSeconds...Settings.shared.upcomingEventFutureSeconds).contains($0.startTime.timeIntervalSince(Settings.shared.getDateInCruiseWeek()))
 			}
 		}
 		self.filterString = filterString

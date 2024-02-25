@@ -122,6 +122,16 @@ final class Settings: Encodable {
 	/// Struct representing a set of TimeZoneChange's for this cruise. This setting can then be referenced elsewhere in the application.
 	@SettingsValue var timeZoneChanges: TimeZoneChangeSet = TimeZoneChangeSet()
 
+	/// Number of seconds before an event starts to consider it happening "soon".
+	/// The default value means 15 minutes before an event starts notifications/banners will start.
+	@SettingsValue var upcomingEventFutureSeconds: Double = 15 * 60.0
+
+	/// Number of seconds after an upcoming event starts to no longer consider it happening.
+	/// The desired default value means 5 minutes after an event starts notifications/banners will stop.
+	/// However at this time, the AlertController does honor this and cycles the UserNotificationData.nextFollowedEventTime
+	/// immediately afterward. Until that changes, this should be 0.
+	@SettingsValue var upcomingEventPastSeconds: Double = 0 * 60.0
+
 	// MARK: Images
 	/// The  set of image file types that we can parse with the GD library. I believe GD hard-codes these values on install based on what ./configure finds.
 	/// If our server app is moved to a new machine after it's built, the valid input types will likely differ.
@@ -199,6 +209,17 @@ extension Settings {
 		var cal = Calendar(identifier: .gregorian)
 		cal.timeZone = portTimeZone
 		return cal
+	}
+
+	// Generate a `Date` that lets us pretend we are at that point in time during the sailing.
+	// It can be difficult to test schedule functionality because the events are all coded for
+	// their actual times. So at various points in the app we display the data of "what would be".
+	// This takes it a step further and pretends based on the time rather than just a weekday.
+	func getDateInCruiseWeek() -> Date {
+		// @TODO Ensure this honors or passes sanity check for portTimeZone or something like that.
+		let secondsPerWeek = 60 * 60 * 24 * 7
+		let partialWeek = Int(Date().timeIntervalSince(Settings.shared.cruiseStartDate())) % secondsPerWeek
+		return Settings.shared.cruiseStartDate() + TimeInterval(partialWeek)
 	}
 }
 
