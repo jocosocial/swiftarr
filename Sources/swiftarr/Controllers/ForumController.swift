@@ -1406,6 +1406,10 @@ struct ForumController: APIRouteCollection {
 		}
 		// Only forum creator and moderators can pin posts within a forum.
 		try cacheUser.guardCanModifyContent(post, customErrorString: "User cannot pin posts in this forum.")
+		// But it becomes moderators only if the forum is locked.
+		if (post.forum.moderationStatus == .locked && !cacheUser.accessLevel.hasAccess(.moderator)) {
+			throw Abort(.forbidden, reason: "Only moderators can perform pin actions on a locked forum.")
+		}
 
 		if post.pinned == true {
 			return .ok
@@ -1430,6 +1434,10 @@ struct ForumController: APIRouteCollection {
 		}
 		// Only forum creator and moderators can pin posts within a forum.
 		try cacheUser.guardCanModifyContent(post, customErrorString: "User cannot pin posts in this forum.")
+		// But it becomes moderators only if the forum is locked.
+		if (post.forum.moderationStatus == .locked && !cacheUser.accessLevel.hasAccess(.moderator)) {
+			throw Abort(.forbidden, reason: "Only moderators can perform pin actions on a locked forum.")
+		}
 
 		if post.pinned != true {
 			return .ok
