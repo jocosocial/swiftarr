@@ -22,6 +22,10 @@ public enum ModeratorActionType: String, Codable {
 	case lock
 	/// The moderator has unlocked a piece of content.
 	case unlock
+	/// The moderator has pinned a forum post or thread.
+	case pin
+	/// The moderator has unpinned a forum post or thread.
+	case unpin
 
 	/// The mod set the `userAccessLevel` of a user to `.unverified`
 	case accessLevelUnverified
