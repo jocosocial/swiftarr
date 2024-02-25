@@ -23,8 +23,11 @@ struct SiteLoginController: SiteControllerUtils {
 		privateRoutes.get("logout", use: loginPageViewHandler)
 		privateRoutes.post("logout", use: loginPageLogoutHandler)
 
-		privateRoutes.get("createAltAccount", use: createAltAccountViewHandler)
-		privateRoutes.post("createAltAccount", use: createAltAccountPostHandler)
+		// Routes that the user should be logged in for, but get redirected through /login.
+		let globalRoutes = getGlobalRoutes(app)
+		// https://github.com/jocosocial/swiftarr/issues/256
+		globalRoutes.get("createAltAccount", use: createAltAccountViewHandler)
+		globalRoutes.post("createAltAccount", use: createAltAccountPostHandler)
 	}
 
 	// MARK: - Login

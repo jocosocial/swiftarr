@@ -960,6 +960,7 @@ struct ForumController: APIRouteCollection {
 		}
 		forum.pinned = true;
 		try await forum.save(on: req.db)
+		try await forum.logIfModeratorAction(.pin, moderatorID: cacheUser.userID, on: req)
 		return .created
 	}
 
@@ -982,6 +983,7 @@ struct ForumController: APIRouteCollection {
 		}
 		forum.pinned = false;
 		try await forum.save(on: req.db)
+		try await forum.logIfModeratorAction(.unpin, moderatorID: cacheUser.userID, on: req)
 		return .noContent
 	}
 
@@ -1406,12 +1408,17 @@ struct ForumController: APIRouteCollection {
 		}
 		// Only forum creator and moderators can pin posts within a forum.
 		try cacheUser.guardCanModifyContent(post, customErrorString: "User cannot pin posts in this forum.")
+		// But it becomes moderators only if the forum is locked.
+		if (post.forum.moderationStatus == .locked && !cacheUser.accessLevel.hasAccess(.moderator)) {
+			throw Abort(.forbidden, reason: "Only moderators can perform pin actions on a locked forum.")
+		}
 
 		if post.pinned == true {
 			return .ok
 		}
 		post.pinned = true;
 		try await post.save(on: req.db)
+		try await post.logIfModeratorAction(.pin, moderatorID: cacheUser.userID, on: req)
 		return .created
 	}
 
@@ -1430,12 +1437,17 @@ struct ForumController: APIRouteCollection {
 		}
 		// Only forum creator and moderators can pin posts within a forum.
 		try cacheUser.guardCanModifyContent(post, customErrorString: "User cannot pin posts in this forum.")
+		// But it becomes moderators only if the forum is locked.
+		if (post.forum.moderationStatus == .locked && !cacheUser.accessLevel.hasAccess(.moderator)) {
+			throw Abort(.forbidden, reason: "Only moderators can perform pin actions on a locked forum.")
+		}
 
 		if post.pinned != true {
 			return .ok
 		}
 		post.pinned = false;
 		try await post.save(on: req.db)
+		try await post.logIfModeratorAction(.unpin, moderatorID: cacheUser.userID, on: req)
 		return .noContent
 	}
 }
