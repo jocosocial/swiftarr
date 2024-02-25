@@ -89,8 +89,7 @@ struct SocketNotificationData: Content {
 		case twarrtMention
 		/// A user has posted a Forum Post that @mentions this user.
 		case forumMention
-		/// An event the user is following is about to start. NOT CURRENTLY IMPLEMENTED. Plan is to add support for this as a bulk process that runs every 30 mins
-		/// at :25 and :55, giving all users following an event about to start a notification 5 mins before the event start time.
+		/// An event the user is following is about to start.
 		case followedEventStarting
 		/// Someone is trying to call this user via KrakenTalk.
 		case incomingPhoneCall
@@ -128,6 +127,7 @@ extension SocketNotificationData {
 		case .nextFollowedEventTime: self.type = .followedEventStarting
 		case .moderatorForumMention: self.type = .moderatorForumMention
 		case .twitarrTeamForumMention: self.type = .twitarrTeamForumMention
+		case .followedEventStarting: self.type = .followedEventStarting
 		}
 		self.info = info
 		self.contentID = id

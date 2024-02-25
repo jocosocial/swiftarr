@@ -56,6 +56,8 @@ enum NotificationType {
 	case twitarrTeamForumMention(Int)
 	/// An upcoming event that the user has followed.
 	case nextFollowedEventTime(Date?, UUID?)
+	/// An event the user is following is about to start.
+	case followedEventStarting(UUID)
 
 	/// Returns the hash field name used to store info about this notification type in Redis.
 	func redisFieldName() -> String {
@@ -70,6 +72,7 @@ enum NotificationType {
 		case .moderatorForumMention: return "moderatorForumMention"
 		case .twitarrTeamForumMention: return "twitarrTeamForumMention"
 		case .nextFollowedEventTime: return "nextFollowedEventTime"
+		case .followedEventStarting: return "followedEventStarting"
 		}
 	}
 
@@ -91,6 +94,7 @@ enum NotificationType {
 		case .moderatorForumMention: return "NotificationHash-\(userID)"
 		case .twitarrTeamForumMention: return "NotificationHash-\(userID)"
 		case .nextFollowedEventTime: return "NotificationHash-\(userID)"
+		case .followedEventStarting:  return "NotificationHash-\(userID)"
 		}
 	}
 
@@ -118,6 +122,7 @@ enum NotificationType {
 		case .moderatorForumMention(let id): return String(id)
 		case .twitarrTeamForumMention(let id): return String(id)
 		case .nextFollowedEventTime(_, let uuid): return uuid != nil ? String(uuid!) : ""
+		case .followedEventStarting(let id): return String(id)
 		}
 	}
 }

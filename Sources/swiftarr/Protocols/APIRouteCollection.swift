@@ -181,6 +181,8 @@ extension APIRouteCollection {
 				for userID in users {
 					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
+			case .followedEventStarting(_):
+				break
 			}
 
 			if forwardToSockets {
@@ -328,7 +330,7 @@ extension APIRouteCollection {
 						try await req.redis.deletedUnreadMessage(msgID: msgID, userID: userID, inbox: .lfgMessages)
 					}
 				}
-			case .nextFollowedEventTime(_, _):
+			case .nextFollowedEventTime(_, _), .followedEventStarting(_):
 				break
 			}
 			group.addTask { try await req.redis.addUsersWithStateChange(users) }
@@ -374,7 +376,7 @@ extension APIRouteCollection {
 			}
 		case .fezUnreadMsg:
 			try await req.redis.markSeamailRead(type: type, in: .lfgMessages, userID: user.userID)
-		case .nextFollowedEventTime:
+		case .nextFollowedEventTime, .followedEventStarting:
 			return  // Can't be cleared
 		}
 		try await req.redis.addUsersWithStateChange([user.userID])

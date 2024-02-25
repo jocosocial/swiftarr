@@ -104,11 +104,9 @@ public struct UserEventNotificationJob: AsyncScheduledJob {
             .filter(\.$startTime == filterStartTime)
             .all()
         for event in upcomingEvents {
-            print("Event:", event.title)
-            for favorite in event.favorites {
-                print("User:", favorite.username)
-            }
-            // try await addNotifications()
+            let eventID = try event.requireID()
+            let favoriteUserIDs = try event.favorites.map { try $0.requireID() }
+            context.application.websocketStorage.forwardToSockets(users: favoriteUserIDs, type: .followedEventStarting(eventID), info: "Event Starting")
         }
 	}
 }
