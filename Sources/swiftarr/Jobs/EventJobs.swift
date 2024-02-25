@@ -106,7 +106,8 @@ public struct UserEventNotificationJob: AsyncScheduledJob {
         for event in upcomingEvents {
             let eventID = try event.requireID()
             let favoriteUserIDs = try event.favorites.map { try $0.requireID() }
-            context.application.websocketStorage.forwardToSockets(users: favoriteUserIDs, type: .followedEventStarting(eventID), info: "Event starting soon: \(event.title)")
+			let infoStr = "\(event.title) is starting Soon™ in \(event.location)."
+            context.application.websocketStorage.forwardToSockets(users: favoriteUserIDs, type: .followedEventStarting(eventID), info: infoStr)
         }
 	}
 }

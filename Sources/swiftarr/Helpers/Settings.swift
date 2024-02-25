@@ -124,6 +124,7 @@ final class Settings: Encodable {
 
 	/// Number of seconds before an event starts to consider it happening "soon".
 	/// The default value means 15 minutes before an event starts notifications/banners will start.
+	/// @TODO Make this a StoredSetting so it can be dynamically adjusted
 	@SettingsValue var upcomingEventFutureSeconds: Double = 15 * 60.0
 
 	/// Number of seconds after an upcoming event starts to no longer consider it happening.
