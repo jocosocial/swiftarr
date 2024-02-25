@@ -187,18 +187,7 @@ extension APIRouteCollection {
 
 			if forwardToSockets {
 				// Send a message to all involved users with open websockets.
-				let socketeers = req.webSocketStore.getSockets(users)
-				if socketeers.count > 0 {
-					req.logger.log(level: .info, "Socket: Sending \(type) msg to \(socketeers.count) client.")
-					let msgStruct = SocketNotificationData(type, info: info, id: type.objectID())
-					if let jsonData = try? JSONEncoder().encode(msgStruct),
-						let jsonDataStr = String(data: jsonData, encoding: .utf8)
-					{
-						socketeers.forEach { userSocket in
-							userSocket.socket.send(jsonDataStr)
-						}
-					}
-				}
+				app.websocketStorage.forwardToSockets(users: users, type: type, info: info)
 			}
 
 			let notifyUsersCopy = notifyUsers

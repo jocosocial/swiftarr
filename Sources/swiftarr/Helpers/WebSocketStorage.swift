@@ -53,9 +53,10 @@ extension Application {
 			return cacheResult
 		}
 
-		// @TODO dedup this with APIRouteCollection.swift
+		// Send a message to all involved users with open websockets.
+		// This logic used to be in APIRouteCollection.swift. But with the introduction of the
+		// UserEventNotificationJob we needed this function in a non-Request context.
 		func forwardToSockets(users: [UUID], type: NotificationType, info: String) -> Void {
-			// Send a message to all involved users with open websockets.
 			let socketeers = app.websocketStorage.getSockets(users)
 			if socketeers.count > 0 {
 				app.logger.log(level: .info, "Socket: Sending \(type) msg to \(socketeers.count) client.")
