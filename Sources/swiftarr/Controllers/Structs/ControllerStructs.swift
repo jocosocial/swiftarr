@@ -1552,6 +1552,13 @@ public struct UserNotificationData: Content {
 	/// If the user has favorited multiple events that start at the same time, this will be random among them.
 	var nextFollowedEventID: UUID?
 
+	/// The start time of the earliest LFG that the user has joined with a start time > now. nil if not logged in or no matching LFG.
+	var nextJoinedLFGTime: Date?
+
+	/// The LFG ID of the the next future LFG the user has joined. This LFGs's start time should always be == nextJoinedLFGTime.
+	/// If the user has joined multiple LFGs that start at the same time, this will be random among them.
+	var nextJoinedLFG: UUID?
+
 	/// For each alertword the user has, this returns data on hit counts for that word.
 	var alertWords: [UserNotificationAlertwordData]
 
@@ -1588,7 +1595,9 @@ extension UserNotificationData {
 		activeAnnouncementIDs: [Int],
 		newAnnouncementCount: Int,
 		nextEventTime: Date?,
-		nextEvent: UUID?
+		nextEvent: UUID?,
+		nextLFGTime: Date?,
+		nextLFG: UUID?
 	) {
 		serverTime = ISO8601DateFormatter().string(from: Date())
 		serverTimeOffset = Settings.shared.timeZoneChanges.tzAtTime().secondsFromGMT(for: Date())
@@ -1606,6 +1615,8 @@ extension UserNotificationData {
 		self.nextFollowedEventTime = nextEventTime
 		self.nextFollowedEventID = nextEvent
 		self.alertWords = []
+		self.nextJoinedLFG = nextLFG
+		self.nextJoinedLFGTime = nextLFGTime
 	}
 
 	// Initializes an dummy struct, for when there's no user logged in.
@@ -1625,6 +1636,7 @@ extension UserNotificationData {
 		self.newFezMessageCount = 0
 		self.nextFollowedEventTime = nil
 		self.alertWords = []
+		self.nextJoinedLFGTime = nil
 	}
 }
 

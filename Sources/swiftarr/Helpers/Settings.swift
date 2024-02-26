@@ -221,6 +221,7 @@ extension Settings {
 	// This takes it a step further and pretends based on the time rather than just a weekday.
 	func getDateInCruiseWeek() -> Date {
 		// @TODO Ensure this honors or passes sanity check for portTimeZone or something like that.
+		// It's probably OK, but we should be sure.
 		let secondsPerWeek = 60 * 60 * 24 * 7
 		let partialWeek = Int(Date().timeIntervalSince(Settings.shared.cruiseStartDate())) % secondsPerWeek
 		return Settings.shared.cruiseStartDate() + TimeInterval(partialWeek)

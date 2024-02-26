@@ -101,6 +101,8 @@ struct SocketNotificationData: Content {
 		case moderatorForumMention
 		/// A new or edited forum post that now @mentions @twitarrteam.
 		case twitarrTeamForumMention
+		/// An LFG the user has joined is about to start.
+		case joinedLFGStarting
 	}
 	/// The type of event that happened. See `SocketNotificationData.NotificationTypeData` for values.
 	var type: NotificationTypeData
@@ -124,10 +126,13 @@ extension SocketNotificationData {
 		case .alertwordPost: self.type = .alertwordPost
 		case .twarrtMention: self.type = .twarrtMention
 		case .forumMention: self.type = .forumMention
-		case .nextFollowedEventTime: self.type = .followedEventStarting
 		case .moderatorForumMention: self.type = .moderatorForumMention
 		case .twitarrTeamForumMention: self.type = .twitarrTeamForumMention
+		// nextFollowedEventTime and nextJoinedLFGTime are not a socket event, so is this OK?
+		case .nextFollowedEventTime: self.type = .followedEventStarting
 		case .followedEventStarting: self.type = .followedEventStarting
+		case .nextJoinedLFGTime: self.type = .joinedLFGStarting
+		case .joinedLFGStarting: self.type = .joinedLFGStarting
 		}
 		self.info = info
 		self.contentID = id

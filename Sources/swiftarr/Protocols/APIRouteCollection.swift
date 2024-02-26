@@ -138,10 +138,16 @@ extension APIRouteCollection {
 				// Force cache of active announcementIDs to get rebuilt
 				group.addTask { try await req.redis.resetActiveAnnouncementIDs() }
 			case .nextFollowedEventTime(let date, let id):
-				//
 				for userID in users {
 					group.addTask {
 						try await req.redis.setNextEventInUserHash(date: date, eventID: id, userID: userID)
+					}
+				}
+				forwardToSockets = false
+			case .nextJoinedLFGTime(let date, let id):
+				for userID in users {
+					group.addTask {
+						try await req.redis.setNextLFGInUserHash(date: date, lfgID: id, userID: userID)
 					}
 				}
 				forwardToSockets = false
@@ -181,7 +187,7 @@ extension APIRouteCollection {
 				for userID in users {
 					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
-			case .followedEventStarting(_):
+			case .followedEventStarting(_), .joinedLFGStarting(_):
 				break
 			}
 
@@ -319,7 +325,7 @@ extension APIRouteCollection {
 						try await req.redis.deletedUnreadMessage(msgID: msgID, userID: userID, inbox: .lfgMessages)
 					}
 				}
-			case .nextFollowedEventTime(_, _), .followedEventStarting(_):
+			case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting:
 				break
 			}
 			group.addTask { try await req.redis.addUsersWithStateChange(users) }
@@ -330,9 +336,11 @@ extension APIRouteCollection {
 	}
 
 	// When a user leaves a fez or the fez is deleted, delete the unread count for that fez for all participants; it no longer applies.
+	// Also recalculate the next joined LFG for each former participant.
 	func deleteFezNotifications(userIDs: [UUID], fez: FriendlyFez, on req: Request) async throws {
 		for userID in userIDs {
 			try await req.redis.markLFGDeleted(msgID: fez.requireID(), userID: userID)
+			_ = try await storeNextJoinedLFG(userID: userID, on: req)
 		}
 	}
 
@@ -365,7 +373,7 @@ extension APIRouteCollection {
 			}
 		case .fezUnreadMsg:
 			try await req.redis.markSeamailRead(type: type, in: .lfgMessages, userID: user.userID)
-		case .nextFollowedEventTime, .followedEventStarting:
+		case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting:
 			return  // Can't be cleared
 		}
 		try await req.redis.addUsersWithStateChange([user.userID])
@@ -411,6 +419,34 @@ extension APIRouteCollection {
 				on: req
 			)
 			return (event.startTime, id)
+		}
+		return nil
+	}
+
+	// Calculates the start time of the earliest future joined LFG. Caches the value in Redis for quick access.
+	// LFGs are stored in real-week time (not cruise-week time) so this doesn't need all of the date/time
+	// calculations like storeNextFollowedEvent() above.
+	func storeNextJoinedLFG(userID: UUID, on req: Request) async throws -> (Date, UUID)? {
+		let filterDate = Date()
+		let nextJoinedLFG = try await FriendlyFez.query(on: req.db)
+			.join(FezParticipant.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
+			.filter(FezParticipant.self, \.$user.$id == userID)
+			.filter(\.$fezType !~ [.open, .closed])
+			.filter(\.$startTime != nil)
+			.filter(\.$startTime > filterDate)
+			.sort(\.$startTime, .ascending)
+			.first()
+		// This will "clear" the next LFG values of the UserNotificationData if no LFGs match the
+		// query (which is to say there is no next LFG). Thought about using subtractNotifications()
+		// but this just seems easier for now.
+		try await addNotifications(
+			users: [userID],
+			type: .nextJoinedLFGTime(nextJoinedLFG?.startTime, nextJoinedLFG?.id),
+			info: "",
+			on: req
+		)
+		if let lfg = nextJoinedLFG, let lfgID = lfg.id, let lfgStartTime = lfg.startTime {
+			return (lfgStartTime, lfgID)
 		}
 		return nil
 	}

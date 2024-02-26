@@ -94,11 +94,16 @@ struct AlertController: APIRouteCollection {
 
 		let userHighestReadAnnouncement = try await req.redis.getIntFromUserHash(userHash, field: .announcement(0))
 		let newAnnouncements = try await actives.reduce(0) { $1 > userHighestReadAnnouncement ? $0 + 1 : $0 }
-		// Get the next event this user's following, if any
+		// Get the next event this user's following or lfg this user has joined, if any
 		var nextEvent = try await req.redis.getNextEventFromUserHash(userHash)
 		if let validDate = nextEvent?.0, Date() > validDate {
 			// The previously cached event already happend; figure out what's next
 			nextEvent = try await storeNextFollowedEvent(userID: user.userID, on: req)
+		}
+		var nextLFG = try await req.redis.getNextLFGFromUserHash(userHash)
+		if let validDate = nextLFG?.0, Date() > validDate {
+			// The previously cached LFG already happend; figure out what's next
+			nextLFG = try await storeNextFollowedEvent(userID: user.userID, on: req)
 		}
 		var result = try await UserNotificationData(
 			newFezCount: unreadLFGCount,
@@ -106,7 +111,9 @@ struct AlertController: APIRouteCollection {
 			activeAnnouncementIDs: actives,
 			newAnnouncementCount: newAnnouncements,
 			nextEventTime: nextEvent?.0,
-			nextEvent: nextEvent?.1
+			nextEvent: nextEvent?.1,
+			nextLFGTime: nextLFG?.0,
+			nextLFG: nextLFG?.1
 		)
 		result.twarrtMentionCount = try await req.redis.getIntFromUserHash(userHash, field: .twarrtMention(0))
 		result.newTwarrtMentionCount = try await max(

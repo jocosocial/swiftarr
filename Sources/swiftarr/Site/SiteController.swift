@@ -80,6 +80,7 @@ struct TrunkContext: Encodable {
 			{
 				eventStartingSoon = true
 			}
+			// We don't do the same thing with LFG since that'd be confusing with the chat notifications.
 		}
 		else {
 			alertCounts = UserNotificationData()

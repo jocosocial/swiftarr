@@ -396,6 +396,7 @@ struct FezController: APIRouteCollection {
 		try await newParticipant.save(on: req.db)
 		try forwardMembershipChangeToSockets(fez, participantID: cacheUser.userID, joined: true, on: req)
 		let fezData = try buildFezData(from: fez, with: newParticipant, for: cacheUser, on: req)
+		_ = try await storeNextJoinedLFG(userID: cacheUser.userID, on: req)
 		// return with 201 status
 		let response = Response(status: .created)
 		try response.content.encode(fezData)
@@ -426,6 +427,7 @@ struct FezController: APIRouteCollection {
 		try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID).delete()
 		try await deleteFezNotifications(userIDs: [cacheUser.userID], fez: fez, on: req)
 		try forwardMembershipChangeToSockets(fez, participantID: cacheUser.userID, joined: false, on: req)
+		_ = try await storeNextJoinedLFG(userID: cacheUser.userID, on: req)
 		return try buildFezData(from: fez, with: nil, for: cacheUser, on: req)
 	}
 
@@ -676,6 +678,9 @@ struct FezController: APIRouteCollection {
 		let creatorPivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == creator.userID)
 			.first()
 		let fezData = try buildFezData(from: fez, with: creatorPivot, posts: [], for: user, on: req)
+		for fezParticipant in fez.participantArray {
+			_ = try await storeNextJoinedLFG(userID: fezParticipant, on: req)
+		}
 		// with 201 status
 		let response = Response(status: .created)
 		try response.content.encode(fezData)
@@ -700,6 +705,9 @@ struct FezController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "user does not own this \(fez.fezType.lfgLabel)")
 		}
 		// FIXME: this should send out notifications
+		for fezParticipant in fez.participantArray {
+			_ = try await storeNextJoinedLFG(userID: fezParticipant, on: req)
+		}
 		fez.cancelled = true
 		try await fez.save(on: req.db)
 		let pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
@@ -773,6 +781,9 @@ struct FezController: APIRouteCollection {
 		fez.maxCapacity = data.maxCapacity
 		fez.cancelled = false
 		try await fez.save(on: req.db)
+		for fezParticipant in fez.participantArray {
+			_ = try await storeNextJoinedLFG(userID: fezParticipant, on: req)
+		}
 		let pivot = try await getUserPivot(fez: fez, userID: cacheUser.userID, on: req.db)
 		return try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
 	}
@@ -819,6 +830,7 @@ struct FezController: APIRouteCollection {
 		let effectiveUser = getEffectiveUser(user: requester, req: req, fez: fez)
 		let pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID)
 			.first()
+		_ = try await storeNextJoinedLFG(userID: userID, on: req)
 		return try buildFezData(from: fez, with: pivot, for: requester, on: req)
 	}
 
@@ -1007,6 +1019,7 @@ struct FezController: APIRouteCollection {
 		}
 		fezParticipant.isMuted = true
 		try await fezParticipant.save(on: req.db)
+		_ = try await storeNextJoinedLFG(userID: cacheUser.userID, on: req)
 		return .created
 	}
 
@@ -1035,6 +1048,7 @@ struct FezController: APIRouteCollection {
 		}
 		fezParticipant.isMuted = nil
 		try await fezParticipant.save(on: req.db)
+		_ = try await storeNextJoinedLFG(userID: cacheUser.userID, on: req)
 		return .noContent
 	}
 }
