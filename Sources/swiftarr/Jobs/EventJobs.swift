@@ -1,6 +1,6 @@
+import Fluent
 import Queues
 import Vapor
-import Fluent
 
 /// AsyncJobs require a payload, and apparently we can't just shove Codable at it.
 /// So this struct exists in case the job ever decides to need runtime parameters.
@@ -93,22 +93,72 @@ public struct UpdateJob: AsyncJob {
 
 /// Job to push socket notifications of an upcoming event on a "cron" (and by "cron" I mean Vapor Queue).
 public struct UserEventNotificationJob: AsyncScheduledJob {
-	public func run(context: QueueContext) async throws {
-		context.logger.info("Running UserEventNotificationJob")
-        // Events are managed in the Port Time Zone
-        let portCalendar = Settings.shared.getPortCalendar()
-        let filterStartTime = portCalendar.date(byAdding: .second, value: Int(Settings.shared.upcomingEventNotificationSeconds), to: Settings.shared.getDateInCruiseWeek())!
+	func processEvents(_ context: QueueContext) async throws {
+		// Events are managed in the Port Time Zone
+		let portCalendar = Settings.shared.getPortCalendar()
+		let filterStartTime = portCalendar.date(
+			byAdding: .second,
+			value: Int(Settings.shared.upcomingEventNotificationSeconds),
+			to: Settings.shared.getDateInCruiseWeek()
+		)!
 
 		let upcomingEvents = try await Event.query(on: context.application.db)
-            .with(\.$favorites)
-            .filter(\.$startTime == filterStartTime)
-            .all()
+			.with(\.$favorites)
+			.filter(\.$startTime == filterStartTime)
+			.all()
 
-        for event in upcomingEvents {
-            let eventID = try event.requireID()
-            let favoriteUserIDs = try event.favorites.map { try $0.requireID() }
+		for event in upcomingEvents {
+			let eventID = try event.requireID()
+			let favoriteUserIDs = try event.favorites.map { try $0.requireID() }
 			let infoStr = "\(event.title) is starting Soon™ in \(event.location)."
-            context.application.websocketStorage.forwardToSockets(users: favoriteUserIDs, type: .followedEventStarting(eventID), info: infoStr)
-        }
+			context.application.websocketStorage.forwardToSockets(
+				users: favoriteUserIDs,
+				type: .followedEventStarting(eventID),
+				info: infoStr
+			)
+		}
+	}
+
+	// This is sufficiently complex enough to merit its own function. Unlike the Settings.shared.getDateInCruiseWeek(),
+	// just adding .seconds to Date() isn't enough because Date() returns millisecond-precision. Which no one tells you
+	// unless you do a .timeIntervalSince1970 and get the actual Double value back to look at what's behind the dot.
+	// I'm totally not salty about spending several hours chasing this down. Anywho...
+	// This takes the current Date(), strips the ultra-high-precision that we don't want, and returns Date() with the
+	// upcoming notification offset applied.
+	func getFezFilterDate() -> Date {
+		let portCalendar = Settings.shared.getPortCalendar()
+		let todayDate = Date()
+		let todayCalendar = Settings.shared.calendarForDate(todayDate)
+		let todayComponents = todayCalendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: todayDate)
+		return portCalendar.date(
+			byAdding: .second,
+			value: Int(Settings.shared.upcomingEventNotificationSeconds),
+			to: todayCalendar.date(from: todayComponents)!
+		)!
+	}
+
+	func processFezzes(_ context: QueueContext) async throws {
+		let upcomingFezzes = try await FriendlyFez.query(on: context.application.db)
+			.filter(\.$startTime == getFezFilterDate())
+			.filter(\.$fezType !~ [.open, .closed])
+			.all()
+		for fez in upcomingFezzes {
+			let fezID = try fez.requireID()
+			var infoStr = "\(fez.title) is starting Soon™"
+			if let location = fez.location {
+				infoStr += " in \(location)."
+			}
+			context.application.websocketStorage.forwardToSockets(
+				users: fez.participantArray,
+				type: .joinedLFGStarting(fezID),
+				info: infoStr
+			)
+		}
+	}
+
+	public func run(context: QueueContext) async throws {
+		context.logger.info("Running UserEventNotificationJob")
+		try await processEvents(context)
+		try await processFezzes(context)
 	}
 }
