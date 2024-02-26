@@ -67,6 +67,12 @@
 				</div>
 				<div class="row my-1">
 					<div class="col">
+						<label for="upcomingEventNotificationSeconds">Seconds before upcoming event to trigger notification</label>
+						<input type="number" id="upcomingEventNotificationSeconds" name="upcomingEventNotificationSeconds" min="0" max="1800" value="#(settings.upcomingEventNotificationSeconds)" #if(!enableFields):disabled#endif>
+					</div>
+				</div>
+				<div class="row my-1">
+					<div class="col">
 						<label for="shipWifiSSID">Onboard Wifi Network SSID</label>
 						<input type="text" class="form-control" id="shipWifiSSID" name="shipWifiSSID" value="#(settings.shipWifiSSID)" #if(!enableFields):disabled#endif>
 					</div>

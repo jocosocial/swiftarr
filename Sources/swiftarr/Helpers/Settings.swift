@@ -122,10 +122,13 @@ final class Settings: Encodable {
 	/// Struct representing a set of TimeZoneChange's for this cruise. This setting can then be referenced elsewhere in the application.
 	@SettingsValue var timeZoneChanges: TimeZoneChangeSet = TimeZoneChangeSet()
 
-	/// Number of seconds before an event starts to consider it happening "soon".
-	/// The default value means 15 minutes before an event starts notifications/banners will start.
-	/// @TODO Make this a StoredSetting so it can be dynamically adjusted
-	@SettingsValue var upcomingEventFutureSeconds: Double = 15 * 60.0
+	/// Number of minutes before an event to trigger notifications. Some day this should be set per-user
+	/// based on their preferences. But since we don't have the concept of "User Settings" yet we set
+	/// a sane default instead. This is a StoredSettingsValue so that it can be modified in real time.
+	/// This is a Double because that's what most range comparison operations desire. Though it does make this
+	/// a bit more complex on the Server Settings views and [Site]AdminController because we expose them as Ints
+	/// to the UI. This is to prevent anyone from using truly whacky values.
+	@StoredSettingsValue("upcomingEventNotificationSeconds", defaultValue: 10 * 60.0) var upcomingEventNotificationSeconds: Double
 
 	/// Number of seconds after an upcoming event starts to no longer consider it happening.
 	/// The desired default value means 5 minutes after an event starts notifications/banners will stop.

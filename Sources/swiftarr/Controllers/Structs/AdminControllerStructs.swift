@@ -148,6 +148,7 @@ public struct SettingsAdminData: Content {
 	var disabledFeatures: [SettingsAppFeaturePair]
 	var shipWifiSSID: String?
 	var scheduleUpdateURL: String
+	var upcomingEventNotificationSeconds: Int
 }
 
 extension SettingsAdminData {
@@ -169,6 +170,7 @@ extension SettingsAdminData {
 		}
 		self.shipWifiSSID = settings.shipWifiSSID
 		self.scheduleUpdateURL = settings.scheduleUpdateURL
+		self.upcomingEventNotificationSeconds = Int(settings.upcomingEventNotificationSeconds)
 	}
 }
 
@@ -197,6 +199,8 @@ public struct SettingsUpdateData: Content {
 	var shipWifiSSID: String?
 	/// The URL to use for automated schedule updates. The server polls this every hour to update the Events table.
 	var scheduleUpdateURL: String?
+	/// Number of seconds before an event to trigger the Soon notifications.
+	var upcomingEventNotificationSeconds: Int?
 }
 
 /// Used to return information about the time zone changes scheduled to occur during the cruise.

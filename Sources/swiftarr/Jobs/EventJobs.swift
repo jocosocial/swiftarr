@@ -94,15 +94,16 @@ public struct UpdateJob: AsyncJob {
 /// Job to push socket notifications of an upcoming event on a "cron" (and by "cron" I mean Vapor Queue).
 public struct UserEventNotificationJob: AsyncScheduledJob {
 	public func run(context: QueueContext) async throws {
-		context.logger.info("Running Notification Job")
+		context.logger.info("Running UserEventNotificationJob")
         // Events are managed in the Port Time Zone
         let portCalendar = Settings.shared.getPortCalendar()
-        let filterStartTime = portCalendar.date(byAdding: .second, value: Int(Settings.shared.upcomingEventFutureSeconds), to: Settings.shared.getDateInCruiseWeek())!
+        let filterStartTime = portCalendar.date(byAdding: .second, value: Int(Settings.shared.upcomingEventNotificationSeconds), to: Settings.shared.getDateInCruiseWeek())!
 
 		let upcomingEvents = try await Event.query(on: context.application.db)
             .with(\.$favorites)
             .filter(\.$startTime == filterStartTime)
             .all()
+
         for event in upcomingEvents {
             let eventID = try event.requireID()
             let favoriteUserIDs = try event.favorites.map { try $0.requireID() }

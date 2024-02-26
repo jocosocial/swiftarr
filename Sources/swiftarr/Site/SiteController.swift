@@ -76,7 +76,7 @@ struct TrunkContext: Encodable {
 			// If we have a nextEventTime, and that event starts within the configured notification time bounds,
 			// mark that we have an event starting soon.
 			if let nextEventInterval = alerts?.nextFollowedEventTime?.timeIntervalSince(Settings.shared.getDateInCruiseWeek()),
-				(Settings.shared.upcomingEventPastSeconds...Settings.shared.upcomingEventFutureSeconds).contains(nextEventInterval)
+				(Settings.shared.upcomingEventPastSeconds...Settings.shared.upcomingEventNotificationSeconds).contains(nextEventInterval)
 			{
 				eventStartingSoon = true
 			}
