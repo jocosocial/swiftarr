@@ -667,6 +667,8 @@ extension ForumData {
 public struct ForumListData: Content {
 	/// The forum's ID.
 	var forumID: UUID
+	/// The ID of the forum's containing Category..
+	var categoryID: UUID
 	/// The forum's creator.
 	var creator: UserHeader
 	/// The forum's title.
@@ -716,6 +718,7 @@ extension ForumListData {
 			throw Abort(.internalServerError, reason: "Internal server error--Forum's creator does not match.")
 		}
 		self.forumID = try forum.requireID()
+		self.categoryID = forum.$category.id
 		self.creator = creator
 		self.title = forum.moderationStatus.showsContent() ? forum.title : "Forum Title is under moderator review"
 		self.postCount = postCount
