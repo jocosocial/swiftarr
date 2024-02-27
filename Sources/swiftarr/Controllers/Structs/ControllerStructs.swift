@@ -1313,8 +1313,6 @@ public struct ProfilePublicData: Content {
 	var header: UserHeader
 	/// An optional real world name of the user.
 	var realName: String
-	/// An optional preferred pronoun or form of address.
-	var preferredPronoun: String
 	/// An optional home location for the user.
 	var homeLocation: String
 	/// An optional cabin number for the user.
@@ -1341,7 +1339,6 @@ extension ProfilePublicData {
 			self.email = ""
 			self.homeLocation = ""
 			self.message = "This profile is under moderator review"
-			self.preferredPronoun = ""
 			self.realName = ""
 			self.roomNumber = ""
 			self.dinnerTeam = nil
@@ -1352,7 +1349,6 @@ extension ProfilePublicData {
 			self.email = ""
 			self.homeLocation = ""
 			self.message = "You must be logged in to view this user's Profile details."
-			self.preferredPronoun = ""
 			self.realName = ""
 			self.roomNumber = ""
 			self.dinnerTeam = nil
@@ -1362,7 +1358,6 @@ extension ProfilePublicData {
 			self.email = user.email ?? ""
 			self.homeLocation = user.homeLocation ?? ""
 			self.message = user.message ?? ""
-			self.preferredPronoun = user.preferredPronoun ?? ""
 			self.realName = user.realName ?? ""
 			self.roomNumber = user.roomNumber ?? ""
 			self.dinnerTeam = user.dinnerTeam

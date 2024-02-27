@@ -19,15 +19,6 @@ struct MicroKaraokeController: APIRouteCollection {
 		tokenAuthGroup.on(.POST,"recording", body: .collect(maxSize: "50mb"), use: uploadMicroKaraokeRecording)
 		tokenAuthGroup.get("songlist", use: getCompletedSongList)
 		tokenAuthGroup.get("song", mkSongIDParam, use: getSongManifest)
-
-		let modAuthGroup = addTokenCacheAuthGroup(to: baseRoute).grouped([RequireModeratorMiddleware()])
-		modAuthGroup.get("mod", "songlist", use: getFullSongList)
-		modAuthGroup.get("mod", "song", mkSongIDParam, use: getSongInfo)
-		modAuthGroup.get("mod", "snippets", mkSongIDParam, use: getSnippetsForModeration)
-		modAuthGroup.post("mod", "snippet", mkSnippetIDParam, "delete", use: deleteSnippet)
-		modAuthGroup.delete("mod", "snippet", mkSnippetIDParam, use: deleteSnippet)
-		modAuthGroup.post("mod", "approve", mkSongIDParam, use: approveSong)
-		
 	}
 	
 	/// `POST /api/v3/microkaraoke/offer`
@@ -246,134 +237,7 @@ struct MicroKaraokeController: APIRouteCollection {
 		}
 		return response
 	}
-	
-// MARK: Moderation
-	/// `GET /api/v3/microkaraoke/mod/songlist`
-	///
-	///  Gets info on all the songs that are in Micro Karaoke, including ones being built.
-	///
-	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `[MicroKaraokeCompletedSong]` with info on all the completed songs that can be viewed.
-	func getFullSongList(_ req: Request) async throws -> [MicroKaraokeCompletedSong] {
-		let cacheUser = try req.auth.require(UserCacheData.self)
-		guard cacheUser.accessLevel.hasAccess(.moderator) else {
-			throw Abort(.forbidden, reason: "Only moderators can use this endpoint")
-		}
-		let allSongs = try await MKSong.query(on: req.db).sort(\.$id).all()
-		let result = try allSongs.map { song in
-			return try MicroKaraokeCompletedSong(from: song, userContributed: false)
-		}
-		return result
-	}
-
-	/// `GET /api/v3/microkaraoke/mod/song/:song_id`
-	///
-	///  Gets info on a single song in Micro Karaoke..
-	///
-	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `MicroKaraokeCompletedSong` with info on the song with the given songID.
-	func getSongInfo(_ req: Request) async throws -> MicroKaraokeCompletedSong {
-		let cacheUser = try req.auth.require(UserCacheData.self)
-		guard cacheUser.accessLevel.hasAccess(.moderator) else {
-			throw Abort(.forbidden, reason: "Only moderators can use this endpoint")
-		}
-		guard let songID = req.parameters.get(mkSongIDParam.paramString, as: Int.self) else {
-			throw Abort(.badRequest, reason: "Could not get song parameter from URL path")
-		}
-		guard let song = try await MKSong.query(on: req.db).filter(\.$id == songID).first() else {
-			throw Abort(.badRequest, reason: "No song found with this ID.")
-		}
-		return try MicroKaraokeCompletedSong(from: song, userContributed: false)
-	}
-
-	/// `GET /api/v3/microkaraoke/mod/snippets/:song_id`
-	///
-	///  
-	///
-	/// - Parameter song_id: The song to get a manifest for.
-	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `MicroKaraokeSongManifest` 
-	func getSnippetsForModeration(_ req: Request) async throws -> [MicroKaraokeSnippetModeration] {
-		let cacheUser = try req.auth.require(UserCacheData.self)
-		guard cacheUser.accessLevel.hasAccess(.moderator) else {
-			throw Abort(.forbidden, reason: "Only moderators can use this endpoint")
-		}
-		guard let songID = req.parameters.get(mkSongIDParam.paramString, as: Int.self) else {
-			throw Abort(.badRequest, reason: "Could not get song parameter from URL path")
-		}
-		guard let _ = try await MKSong.find(songID, on: req.db) else {
-			throw Abort(.badRequest, reason: "Could not find a song with this song ID.")
-		}
-		let songSnippets = try await MKSnippet.query(on: req.db).filter(\.$song.$id == songID).sort(\.$songSnippetIndex).all()
-		let result = try songSnippets.map { 
-			let author = try req.userCache.getHeader($0.$author.id)
-			return try MicroKaraokeSnippetModeration(from: $0, by: author)
-		}
-		return result
-	}
-	
-	/// `POST /api/v3/microkaraoke/mod/snippet/:snippet_id/delete`
-	/// `DELETE /api/v3/microkaraoke/mod/snippet/:snippet_id/`
-	///
-	///  Moderator only. By design, users may not delete their own submissions.
-	///
-	/// - Parameter snippet_id: The snippet ID to delete. NOT the snippet index--the index just tells you where the snippet gets inserted into its song.
-	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `MicroKaraokeSongManifest` 
-	func deleteSnippet(_ req: Request) async throws -> HTTPStatus {
-		let cacheUser = try req.auth.require(UserCacheData.self)
-		guard cacheUser.accessLevel.hasAccess(.moderator) else {
-			throw Abort(.forbidden, reason: "Only moderators can use this endpoint")
-		}
-		guard let snippetID = req.parameters.get(mkSnippetIDParam.paramString, as: UUID.self) else {
-			throw Abort(.badRequest, reason: "Could not get snippetID parameter from URL path")
-		}
-		if let snippet = try await MKSnippet.query(on: req.db).filter(\.$id == snippetID).with(\.$song).first() {
-			snippet.song.isComplete = false
-			snippet.song.modApproved = false
-			try await snippet.song.save(on: req.db)
-			try await snippet.delete(on: req.db)
-			try await snippet.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
-		}
-		return .ok
-	}
-	
-	/// `POST /api/v3/microkaraoke/mod/approve/:song_id`
-	///
-	///  Approve a song for release. Once approved, notifications are sent out to each user that sung a clip in the song.
-	///  For this reason, there is not currently an 'unapprove' action, as re-approving would currently re-send all the notifications.
-	///  If an approved song contains an objectionable clip, use the mod tools to delete the clip. 
-	///
-	/// - Parameter song_id: The song ID to approve. 
-	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: HTTP Status` 
-	func approveSong(_ req: Request) async throws -> HTTPStatus {
-		let cacheUser = try req.auth.require(UserCacheData.self)
-		guard cacheUser.accessLevel.hasAccess(.moderator) else {
-			throw Abort(.forbidden, reason: "Only moderators can use this endpoint")
-		}
-		guard let songID = req.parameters.get(mkSongIDParam.paramString, as: Int.self) else {
-			throw Abort(.badRequest, reason: "Could not get snippetID parameter from URL path")
-		}
-		guard let song = try await MKSong.query(on: req.db).filter(\.$id == songID).first() else {
-			throw Abort(.badRequest, reason: "Song not found")
-		}
-		guard song.isComplete else {
-			throw Abort(.badRequest, reason: "Can't approve yet. Song isn't complete.")
-		}
-		song.modApproved = true
-		try await song.save(on: req.db)
-		try await song.logIfModeratorAction(.markReviewed, moderatorID: cacheUser.userID, on: req)
 		
-		// Notify song participants that their song is ready for viewing
-		let snippets = try await MKSnippet.query(on: req.db).filter(\.$song.$id == songID).all()
-		let singers = Array(Set(snippets.map { $0.$author.id }))
-		let infoStr = "A Micro Karaoke song you contributed to is ready for viewing. Go watch the video for song #\(songID)."
-		try await addNotifications(users: singers, type: .microKaraokeSongReady(songID), info: infoStr, on: req)
-
-		return .ok
-	}
-	
 	// MARK: - Utilities
 	
 	// urlForSongDirectory() gets the `/Assets/microkaraoke` directory, where the STATIC file assets are stored (mostly short sound files)
@@ -435,9 +299,9 @@ struct MicroKaraokeController: APIRouteCollection {
 		// For testing, set totalSnippets to a specific number here. This makes it easy and fast-ish to complete lots of songs.
 		let totalSnippets = songInfo.totalSnippets
 //		let totalSnippets = 3
-		let krakenUserID = req.userCache.getUser(username: "kraken")?.userID ?? UUID()
+		let mkUserID = req.userCache.getUser(username: "MicroKaraoke")?.userID ?? UUID()
 		let newSongModel = MKSong(name: songInfo.songname, artist: songInfo.artist, totalSnippets: totalSnippets, 
-				bpm: songInfo.bpm, krakenUserID: krakenUserID)
+				bpm: songInfo.bpm, songCreatorID: mkUserID)
 		try await newSongModel.save(on: req.db)
 		
 		

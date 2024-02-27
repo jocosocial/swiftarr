@@ -558,7 +558,7 @@ struct SiteModController: SiteControllerUtils {
 	/// - Completed/Not Approved: Not yet approved, but all necessary video clips have been uploaded
 	/// - Not Completed: Songs that do not yet have all their video clips uploaded
 	func getMicroKaraokeSongsPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/microkaraoke/mod/songlist")
+		let response = try await apiQuery(req, endpoint: "/mod/microkaraoke/songlist")
 		let modData = try response.content.decode([MicroKaraokeCompletedSong].self)
 		struct ReportContext: Encodable {
 			var trunk: TrunkContext
@@ -581,9 +581,9 @@ struct SiteModController: SiteControllerUtils {
 		guard let songID = req.parameters.get(mkSongIDParam.paramString) else {
 			throw Abort(.badRequest, reason: "Missing songID parameter.")
 		}
-		let response = try await apiQuery(req, endpoint: "/microkaraoke/mod/song/\(songID)")
+		let response = try await apiQuery(req, endpoint: "/mod/microkaraoke/song/\(songID)")
 		let songInfo = try response.content.decode(MicroKaraokeCompletedSong.self)
-		let response2 = try await apiQuery(req, endpoint: "/microkaraoke/mod/snippets/\(songID)")
+		let response2 = try await apiQuery(req, endpoint: "/mod/microkaraoke/snippets/\(songID)")
 		let modData = try response2.content.decode([MicroKaraokeSnippetModeration].self)
 		struct ReportContext: Encodable {
 			var trunk: TrunkContext
@@ -607,7 +607,7 @@ struct SiteModController: SiteControllerUtils {
 		guard let songID = req.parameters.get(mkSongIDParam.paramString) else {
 			throw Abort(.badRequest, reason: "Missing songID parameter.")
 		}
-		let response = try await apiQuery(req, endpoint: "/microkaraoke/mod/approve/\(songID)", method: .POST)
+		let response = try await apiQuery(req, endpoint: "/mod/microkaraoke/approve/\(songID)", method: .POST)
 		return response.status
 	}
 	
@@ -618,7 +618,7 @@ struct SiteModController: SiteControllerUtils {
 		guard let snippetID = req.parameters.get(mkSnippetIDParam.paramString) else {
 			throw Abort(.badRequest, reason: "Missing snippetID parameter.")
 		}
-		let response = try await apiQuery(req, endpoint: "/microkaraoke/mod/snippet/\(snippetID)/delete", method: .POST)
+		let response = try await apiQuery(req, endpoint: "/mod/microkaraoke/snippet/\(snippetID)/delete", method: .POST)
 		return response.status
 	}
 

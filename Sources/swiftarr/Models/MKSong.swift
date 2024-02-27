@@ -46,9 +46,9 @@ final class MKSong: Model {
 	@Children(for: \.$song) var snippets: [MKSnippet]
 	
 	/// In order for content to be reported on by users, there needs to be an author responsible for the content. For songs, however,
-	/// users will report on the song as a whole, not individual video clips submitted by users. So, Micro Karaoke songs are always 'authored' by the Kraken client user
+	/// users will report on the song as a whole, not individual video clips submitted by users. So, Micro Karaoke songs are always 'authored' by the 'MicroKaraoke' user
 	/// and users will report against that user.
-	@Parent(key: "kraken_user") var krakenUser: User
+	@Parent(key: "karaoke_user") var syntheticSongCreator: User
 
 	// MARK: Initialization
 
@@ -58,8 +58,11 @@ final class MKSong: Model {
 	/// Initializes a new MKSong object.
 	///
 	/// - Parameters:
-	///   - word: the word to alert on..
-	init(name: String, artist: String, totalSnippets: Int, bpm: Int, krakenUserID: UUID) {
+	///   - name: Song's title
+	///   - artist: Song's performer.
+	///   - totalSnippets: How many pieces the song is cut up into. Most pieces comprise lines or couplets of the song, some are instrumental 'fill' clips.
+	///   - songCreatorID: The 'MicroKaraoke' synthetic user who acts as the 'author' of MK content for moderation purposes.
+	init(name: String, artist: String, totalSnippets: Int, bpm: Int, songCreatorID: UUID) {
 		self.songName = name
 		self.artistName = artist
 		self.totalSnippets = totalSnippets
@@ -68,16 +71,17 @@ final class MKSong: Model {
 		isPortrait = Bool.random()
 		isComplete = false
 		modApproved = false
-		$krakenUser.id = krakenUserID
+		$syntheticSongCreator.id = songCreatorID
 	}
 }
 
-// Songs can be reported
+// Eventually songs may be reported by users; currently we need them to be reportable content so that song approvals
+// can be put into the Moderator log.
 extension MKSong: Reportable {
 	/// The type for `MKSong` reports.
 	var reportType: ReportType { .mkSong }
 
-	var authorUUID: UUID { $krakenUser.id }	// As entire songs aren't 'authored' by anyone, we set the author to kraken 
+	var authorUUID: UUID { $syntheticSongCreator.id }	// As entire songs aren't 'authored' by anyone, we set the author to 'MicroKaraoke' 
 
 	var autoQuarantineThreshold: Int { 100000 }
 	
@@ -103,7 +107,7 @@ struct CreateMKSongSchema: AsyncMigration {
 			.field("is_portrait", .bool, .required)
 			.field("is_complete", .bool, .required)
 			.field("mod_approved", .bool, .required)
-			.field("kraken_user", .uuid, .required, .references("user", "id"))
+			.field("karaoke_user", .uuid, .required, .references("user", "id"))
 			
 			.field("created_at", .datetime)
 			.field("updated_at", .datetime)

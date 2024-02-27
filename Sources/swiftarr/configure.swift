@@ -607,6 +607,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateSeamailSearchIndexes(), to: .psql)
 		app.migrations.add(RenameWhereAndWhen(), to: .psql)
 		app.migrations.add(AddFoodDrinkCategory(), to: .psql)
+		app.migrations.add(CreateMicroKaraokeUser(), to: .psql)
 	}
 
 	// Perform several sanity checks to verify that we can access the dbs and resource files that we need.

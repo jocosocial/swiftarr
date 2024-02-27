@@ -220,3 +220,36 @@ struct CreateAdminUsers: AsyncMigration {
 		try await user.save(on: database)
 	}
 }
+
+struct CreateMicroKaraokeUser: AsyncMigration {
+	/// Required by `Migration` protocol. Creates the MicroKaraoke user after a bit of sanity check caution.
+	///
+	/// - Parameter database: A connection to the database, provided automatically.
+	/// - Returns: Void.
+	func prepare(on database: Database) async throws {
+		// "MicroKaraoke" is another synthetic user that cannot log in. They are the "author" of all MicroKaraoke songs,
+		// mostly for Moderation purposes.
+		var password = ""
+		var recoveryKey = ""
+		for _ in 0...50 {
+			password.append(String(Unicode.Scalar(Int.random(in: 33...126))!))
+			recoveryKey.append(String(Unicode.Scalar(Int.random(in: 33...126))!))
+		}
+		// abort if no sane values or encryption fails
+		guard let passwordHash = try? Bcrypt.hash(password), let recoveryHash = try? Bcrypt.hash(recoveryKey) else {
+			fatalError("MicroKaraoke user creation failure: invalid password or recoveryKey")
+		}
+		// create user directly
+		let user = User(username: "MicroKaraoke", password: passwordHash, recoveryKey: recoveryHash, 
+				verification: "generated user", parent: nil, accessLevel: .client)
+		try await user.save(on: database)
+	}
+
+	/// Required by `Migration` protocol. Deletes all admin users.
+	///
+	/// - Parameter conn: The database connection.
+	/// - Returns: Void.
+	func revert(on database: Database) async throws {
+		try await User.query(on: database).filter(\.$username ~~ ["admin", "THO", "moderator", "TwitarrTeam"]).delete()
+	}
+}
