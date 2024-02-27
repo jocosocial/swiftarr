@@ -1557,7 +1557,7 @@ public struct UserNotificationData: Content {
 
 	/// The LFG ID of the the next future LFG the user has joined. This LFGs's start time should always be == nextJoinedLFGTime.
 	/// If the user has joined multiple LFGs that start at the same time, this will be random among them.
-	var nextJoinedLFG: UUID?
+	var nextJoinedLFGID: UUID?
 
 	/// For each alertword the user has, this returns data on hit counts for that word.
 	var alertWords: [UserNotificationAlertwordData]
@@ -1615,7 +1615,7 @@ extension UserNotificationData {
 		self.nextFollowedEventTime = nextEventTime
 		self.nextFollowedEventID = nextEvent
 		self.alertWords = []
-		self.nextJoinedLFG = nextLFG
+		self.nextJoinedLFGID = nextLFG
 		self.nextJoinedLFGTime = nextLFGTime
 	}
 
