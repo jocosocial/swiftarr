@@ -149,6 +149,8 @@ public struct SettingsAdminData: Content {
 	var shipWifiSSID: String?
 	var scheduleUpdateURL: String
 	var upcomingEventNotificationSeconds: Int
+	var upcomingEventNotificationSetting: EventNotificationSetting
+	var upcomingLFGNotificationSetting: EventNotificationSetting
 }
 
 extension SettingsAdminData {
@@ -171,6 +173,8 @@ extension SettingsAdminData {
 		self.shipWifiSSID = settings.shipWifiSSID
 		self.scheduleUpdateURL = settings.scheduleUpdateURL
 		self.upcomingEventNotificationSeconds = Int(settings.upcomingEventNotificationSeconds)
+		self.upcomingEventNotificationSetting = settings.upcomingEventNotificationSetting
+		self.upcomingLFGNotificationSetting = settings.upcomingLFGNotificationSetting
 	}
 }
 
@@ -201,6 +205,10 @@ public struct SettingsUpdateData: Content {
 	var scheduleUpdateURL: String?
 	/// Number of seconds before an event to trigger the Soon notifications.
 	var upcomingEventNotificationSeconds: Int?
+	/// Upcoming event notification setting
+	var upcomingEventNotificationSetting: EventNotificationSetting?
+	/// Upcoming joined LFG notification setting
+	var upcomingLFGNotificationSetting: EventNotificationSetting?
 }
 
 /// Used to return information about the time zone changes scheduled to occur during the cruise.

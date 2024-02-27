@@ -134,7 +134,14 @@ final class Settings: Encodable {
 	/// The desired default value means 5 minutes after an event starts notifications/banners will stop.
 	/// However at this time, the AlertController does honor this and cycles the UserNotificationData.nextFollowedEventTime
 	/// immediately afterward. Until that changes, this should be 0.
+	/// This also might entirely go away? Here for consistency throughout the app, but possibly irrelevant.
 	@SettingsValue var upcomingEventPastSeconds: Double = 0 * 60.0
+
+	/// Configuration of the upcoming event notifications.
+	@StoredSettingsValue("upcomingEventNotificationSetting", defaultValue: EventNotificationSetting.cruiseWeek) var upcomingEventNotificationSetting: EventNotificationSetting
+
+	/// Configuration of the upcoming LFG notifications.
+	@StoredSettingsValue("upcomingLFGNotificationSetting", defaultValue: EventNotificationSetting.current) var upcomingLFGNotificationSetting: EventNotificationSetting
 
 	// MARK: Images
 	/// The  set of image file types that we can parse with the GD library. I believe GD hard-codes these values on install based on what ./configure finds.
@@ -225,6 +232,19 @@ extension Settings {
 		let secondsPerWeek = 60 * 60 * 24 * 7
 		let partialWeek = Int(Date().timeIntervalSince(Settings.shared.cruiseStartDate())) % secondsPerWeek
 		return Settings.shared.cruiseStartDate() + TimeInterval(partialWeek)
+	}
+
+	// This is sufficiently complex enough to merit its own function. Unlike the Settings.shared.getDateInCruiseWeek(),
+	// just adding .seconds to Date() isn't enough because Date() returns millisecond-precision. Which no one tells you
+	// unless you do a .timeIntervalSince1970 and get the actual Double value back to look at what's behind the dot.
+	// I'm totally not salty about spending several hours chasing this down. Anywho...
+	// This takes the current Date(), strips the ultra-high-precision that we don't want, and returns Date() with the
+	// upcoming notification offset applied.
+	func getCurrentFilterDate() -> Date {
+		let todayDate = Date()
+		let todayCalendar = Settings.shared.calendarForDate(todayDate)
+		let todayComponents = todayCalendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: todayDate)
+		return todayCalendar.date(from: todayComponents)!
 	}
 }
 

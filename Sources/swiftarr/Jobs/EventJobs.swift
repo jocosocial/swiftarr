@@ -94,19 +94,31 @@ public struct UpdateJob: AsyncJob {
 /// Job to push socket notifications of an upcoming event on a "cron" (and by "cron" I mean Vapor Queue).
 public struct UserEventNotificationJob: AsyncScheduledJob {
 	func processEvents(_ context: QueueContext) async throws {
-		// Events are managed in the Port Time Zone
+		guard Settings.shared.upcomingEventNotificationSetting != .disabled else {
+			context.logger.info("Upcoming event notifications have been disabled.")
+			return
+		}
+
+		// The filter date is calculated by adding the notification offset interval to either:
+		// 1) The current date (as in what the server is experiencing right now).
+		// 2) The current time/day transposed within the cruise week (when we pretend it is).
+		var filterDate: Date
+		if (Settings.shared.upcomingEventNotificationSetting == .cruiseWeek) {
+			filterDate = Settings.shared.getDateInCruiseWeek()
+		} else {
+			filterDate = Settings.shared.getCurrentFilterDate()
+		}
 		let portCalendar = Settings.shared.getPortCalendar()
 		let filterStartTime = portCalendar.date(
 			byAdding: .second,
 			value: Int(Settings.shared.upcomingEventNotificationSeconds),
-			to: Settings.shared.getDateInCruiseWeek()
+			to: filterDate
 		)!
 
 		let upcomingEvents = try await Event.query(on: context.application.db)
 			.with(\.$favorites)
 			.filter(\.$startTime == filterStartTime)
 			.all()
-
 		for event in upcomingEvents {
 			let eventID = try event.requireID()
 			let favoriteUserIDs = try event.favorites.map { try $0.requireID() }
@@ -119,27 +131,27 @@ public struct UserEventNotificationJob: AsyncScheduledJob {
 		}
 	}
 
-	// This is sufficiently complex enough to merit its own function. Unlike the Settings.shared.getDateInCruiseWeek(),
-	// just adding .seconds to Date() isn't enough because Date() returns millisecond-precision. Which no one tells you
-	// unless you do a .timeIntervalSince1970 and get the actual Double value back to look at what's behind the dot.
-	// I'm totally not salty about spending several hours chasing this down. Anywho...
-	// This takes the current Date(), strips the ultra-high-precision that we don't want, and returns Date() with the
-	// upcoming notification offset applied.
-	func getFezFilterDate() -> Date {
+	func processFezzes(_ context: QueueContext) async throws {
+		guard Settings.shared.upcomingLFGNotificationSetting != .disabled else {
+			context.logger.info("LFG joined LFG notifications have been disabled.")
+			return
+		}
+
+		var filterDate: Date
+		if (Settings.shared.upcomingLFGNotificationSetting == .cruiseWeek) {
+			filterDate = Settings.shared.getDateInCruiseWeek()
+		} else {
+			filterDate = Settings.shared.getCurrentFilterDate()
+		}
 		let portCalendar = Settings.shared.getPortCalendar()
-		let todayDate = Date()
-		let todayCalendar = Settings.shared.calendarForDate(todayDate)
-		let todayComponents = todayCalendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: todayDate)
-		return portCalendar.date(
+		let filterStartTime = portCalendar.date(
 			byAdding: .second,
 			value: Int(Settings.shared.upcomingEventNotificationSeconds),
-			to: todayCalendar.date(from: todayComponents)!
+			to: filterDate
 		)!
-	}
 
-	func processFezzes(_ context: QueueContext) async throws {
 		let upcomingFezzes = try await FriendlyFez.query(on: context.application.db)
-			.filter(\.$startTime == getFezFilterDate())
+			.filter(\.$startTime == filterStartTime)
 			.filter(\.$fezType !~ [.open, .closed])
 			.all()
 		for fez in upcomingFezzes {
