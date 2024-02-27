@@ -115,6 +115,30 @@ doesn't have the expansions.
 * Fez `open`, `joined`, and `owned` queries now support a `hidePast` parameter. When `true`, fezzes with a start date more than 1 hour in the past will be hidden. These queries use default values that match query behavior prior to the addition of this parameter, so clients which do not support it will see no change in list behavior.
 * Fez `joined` and `owned` queries now allow the `cruiseday` parameter. It functions identically to the `cruiseday` parameter on `open` fezzes.
 
+## Sep 21, 2023
+* New AdminController endpoint at `GET /api/v3/admin/schedule/viewlog` to view the automatic schedule update log and at `GET /api/v3/admin/schedule/viewlog/:log_id` for specific log event.
+* New AdminController endpoint at `GET /api/v3/admin/schedule/reload` to trigger a run of the automatic schedule update process.
+
+## Dec 15, 2023
+* Announcement management endpoints now have minimum access level of `twitarrTeam` rather than `tho`.
+
+## Dec 27, 2023
+* Add `timeZoneID` to `EventData` struct.
+* Disabled features now return HTTP 451.
+
+## Jan 17, 2024
+* THO and Admin accounts can continue to use Swiftarr features even if those sections have been disabled.
+* New FezController endpoints to mute/unmute a Fez at `POST/DELETE /api/v3/fez/:fez_ID/mute` and `POST /api/v3/fez/:fez_ID/mute/remove`.
+* New ForumController endpoint at `GET /api/v3/forum/unread` to retrieve a list of forums that are unread to the requesting user.
+* `ProfilePublicData` now includes `dinnerTeam` field, and no longer includes `preferredPronoun`. Pronouns were moved to `UserHeader`.
+* Add `timeZoneID` to `FezData` and `ForumListData`.
+* Moderators and above can specify a `creatorid` parameter in the `GET /api/v3/forum/search` request.
+* Moderator Action Log now returns a `ModeratorActionLogResponseData` rather than `[ModeratorActionLogData]`.
+
+## Feb 12, 2024
+* New ForumController endpoints for retrieving pinned posts (`GET /api/v3/forum/:forumID/pinnedposts`) and pinning/unpinning them (`POST/DELETE /api/v3/forum/post/:postID/pin`).
+* New ForumController endpoints for moderators to pin a forum thread at `POST/DELETE /api/v3/forum/ID/pin`.
+
 ## Feb 19, 2024
 
  New Micro Karaoke feature. API changes include:
