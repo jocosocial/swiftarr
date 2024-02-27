@@ -24,6 +24,7 @@ public func routes(_ app: Application) throws {
 		UserController(),
 		UsersController(),
 		PhonecallController(),
+		MicroKaraokeController(),
 	]
 	try apiControllers.forEach { try $0.registerRoutes(app) }
 

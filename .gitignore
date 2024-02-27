@@ -19,6 +19,7 @@ __pycache__/
 !/Sources/swiftarr/seeds/Private Swiftarr Config/Template.env
 !/Sources/swiftarr/seeds/Private Swiftarr Config/Docker-Template.env
 /[Ii]mages/
+/Sources/swiftarr/Resources/Assets/microkaraoke
 
 # Auto-generated Documentation
 docs/Output

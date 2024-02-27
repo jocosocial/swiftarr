@@ -880,6 +880,162 @@ public struct KeywordData: Content {
 	var keywords: [String]
 }
 
+/// Used to return a list of completed Micro Karaoke songs, that is, finished videos the user can watch.
+///
+/// Returned by:
+/// * `GET /api/v3/karaoke/mk/songlist`
+///
+/// See `UsersController.headerHandler(_:)`, `ClientController.userHeadersHandler(_:)`.
+public struct MicroKaraokeCompletedSong: Content {
+	/// Each song the server works on collecting (via piecing together multiple song clips from users) gets an ID
+	var songID: Int
+	// The song title, as it'd appear in karaoke metadata
+	var songName: String
+	/// The artist, as they'd appear in karaoke metadata
+	var artistName: String
+	/// Always TRUE unless the user is a mod, in which case will be FALSE for songs that have all the necessary clips recorded but require mod approval to publish.
+	var modApproved: Bool
+	/// When the song's clips were last modified. Usually the time the final snippet gets uploaded (although 'final' means '30th out of 30'
+	/// and not 'the one at the end of the song'). However, clips can get deleted via moderation, causing the server to re-issue an offer
+	/// for the deleted clip, which may change the completion time. NIL if song isn't complete
+	var completionTime: Date?
+	/// TRUE if the current user contributed to the song
+	var userContributed: Bool
+}
+
+extension MicroKaraokeCompletedSong {
+	init(from song: MKSong, userContributed: Bool) throws {
+		songID = try song.requireID()
+		songName = song.songName
+		artistName = song.artistName
+		completionTime = song.isComplete ? (song.updatedAt ?? Date()) : nil
+		modApproved = song.modApproved
+		self.userContributed = userContributed
+	}
+}
+
+/// Used to upload a Micro Karaoke video. The offerID comes from the server when it offers a song clip.
+///
+/// Used by:
+/// * `POST /api/v3/karaoke/mk/recording`
+///
+public struct MicroKaraokeRecordingData: Content {
+	/// The offer from the server that this upload is fulfilling. Basically the reservation the server gives the client for a song clip.
+	var offerID: UUID
+	/// The uploaded video; usually a .mp4
+	var videoData: Data
+}
+
+public struct MicroKaraokeSnippetModeration: Content {
+	///	The ID of this offer, or completed snippet
+	var snippetID: UUID
+	/// Each song the server works on collecting (via piecing together multiple song clips from users) gets an ID
+	var songID: Int
+	/// The index into the Edit Decision List for this snippet. Not that there's an actual EDL.
+	var snippetIndex: Int
+	/// The user who has the reservation on this snippet.
+	var user: UserHeader
+	/// The location of the uploaded video for this snippet. NIL if this snippet is an open offer for some user
+	var videoURL: String?
+}
+
+extension MicroKaraokeSnippetModeration {
+	/// Author must be the UserHeader for the snippet's author.
+	init(from snippet: MKSnippet, by author: UserHeader) throws {
+		snippetID = try snippet.requireID()
+		songID = snippet.$song.id
+		snippetIndex = snippet.songSnippetIndex
+		self.user = author
+		videoURL = snippet.mediaURL
+	}
+}
+
+
+/// When a user starts the Micro Karaoke flow to sing and record part of a song, the server reserves a song slot for that user and returns into
+/// about their reservation, including the lyrics they should sing, what song it's part of, and URLs for the vocal and no-vocal song clipe.
+///
+/// Returned by:
+/// * `POST /api/v3/karaoke/mk/offer`
+///
+public struct MicroKaraokeOfferPacket: Content {
+	///	The ID of this offer. Offers are good for 30 minutes (or until fulfilled with a snippet upload), and a user may only
+	/// have 1 open offer at a time. If a user re-requests while the offser is open, they should get the same offer response.
+	/// This prevents users shopping for the lyric they want to sing.
+	var offerID: UUID
+	/// Each song the server works on collecting (via piecing together multiple song clips from users) gets an ID
+	var songID: Int
+	/// The song title, as it'd appear in karaoke metadata
+	var songName: String
+	/// The artist, as they'd appear in karaoke metadata
+	var artistName: String
+	/// Song tempo. May not be exact; used for the timing of the countdown prompt before recording starts.
+	var bpm: Int
+	/// TRUE if all the clips for this song must be recorded in portrait mode. FALSE if they all need to be landscape.
+	var portraitMode: Bool
+	/// Which song snippet is being offered (songs are divided into 30-50 snippets when configured for use on Swiftarr)
+	var snippetIndex: Int
+	/// The lyrics the user is supposed to sing. Generally 1-2 lines. NOT the entire lyrics for the song.
+	var lyrics: String
+	/// An URL that points to a .mp3 file containing ~6 seconds of the original song
+	/// This clip will have the artist singing the lyrics of 1-2 lines of the song, for the user to listen to before recording.
+	var originalSnippetSoundURL: String
+	/// This is a karaoke backing snippet to play while recording. It will be the same part of the song as `originalSnippetSoundURL`
+	/// but MAY NOT quite be the same duration (karaoke versions of songs are sometimes faster or slower tempo then their originals).
+	/// As a karaoke track, this snippet won't have main vocals, but it also could have slightly diffeent instruments/sounds.
+	var karaokeSnippetSoundURL: String
+	/// The time that this offer expires. If no upload has happened by this time, the user will need to request a new snippet offer,
+	/// which will likely be for a different part of the song, or even a different song altogether.
+	var offerExpirationTime: Date
+}
+
+extension MicroKaraokeOfferPacket {
+	init(from snippet: MKSnippet, song: MKSong, snippetDirectory: URL, lyrics: String) throws {
+		offerID = try snippet.requireID()
+		songID = snippet.$song.id
+		songName = song.songName
+		artistName = song.artistName
+		bpm = song.bpm
+		portraitMode = song.isPortrait
+		snippetIndex = snippet.songSnippetIndex
+		self.lyrics = lyrics
+		originalSnippetSoundURL = snippetDirectory.appendingPathComponent("listen.mp3").absoluteString
+		karaokeSnippetSoundURL = snippetDirectory.appendingPathComponent("record.mp3").absoluteString
+		offerExpirationTime = snippet.deletedAt ?? Date().addingTimeInterval(30 * 60)
+	}
+}
+
+public struct MicroKaraokeSongManifest: Content {
+	/// Each song the server works on collecting (via piecing together multiple song clips from users) gets an ID
+	var songID: Int
+	/// TRUE if all the clips for this song must be recorded in portrait mode. FALSE if they all need to be landscape.
+	var portraitMode: Bool
+	/// The video snippets that make up the song. Some snippets may be 'filler', such as for a song's instrumental section.
+	var snippetVideoURLs: [URL]
+	/// How long each snippet should be, in seconds.
+	var snippetDurations: [Double]
+	/// The karaoke audio for the song
+	var karaokeMusicTrack: URL
+}
+
+extension MicroKaraokeSongManifest {
+	init(from snippets: [MKSnippet], song: MKSong, info: SongInfoJSON, karaokeMusicTrack: URL) throws {
+		guard let first = snippets.first else {
+			throw Abort(.internalServerError, reason: "No song clips found for supposedly completed micro karaoke song.")
+		}
+		songID = first.$song.id
+		portraitMode = song.isPortrait
+		snippetVideoURLs = try snippets.map { 
+			guard let mediaURL = $0.mediaURL, let url = URL(string: mediaURL) else {
+				throw Abort(.internalServerError, reason: "Could not make URL out of video clip file.")
+			}
+			return url
+		}
+		self.karaokeMusicTrack = karaokeMusicTrack
+		self.snippetDurations = info.durations
+	}
+}
+
+
 /// Used to create a `UserNote` when viewing a user's profile. Also used to create a Karaoke song log entry.
 ///
 /// Required by:
@@ -1170,10 +1326,10 @@ public struct ProfilePublicData: Content {
 	var about: String
 	/// An optional greeting/message to visitors of the profile.
 	var message: String
-	/// A UserNote owned by the visiting user, about the profile's user (see `UserNote`).
-	var note: String?
 	/// An optional dinner team assignemnt.
 	var dinnerTeam: DinnerTeam?
+	/// A UserNote owned by the visiting user, about the profile's user (see `UserNote`).
+	var note: String?
 }
 
 extension ProfilePublicData {
@@ -1188,8 +1344,8 @@ extension ProfilePublicData {
 			self.message = "This profile is under moderator review"
 			self.realName = ""
 			self.roomNumber = ""
-			self.note = note
 			self.dinnerTeam = nil
+			self.note = note
 		}
 		else if requesterAccessLevel == .banned {
 			self.about = ""
@@ -1207,8 +1363,8 @@ extension ProfilePublicData {
 			self.message = user.message ?? ""
 			self.realName = user.realName ?? ""
 			self.roomNumber = user.roomNumber ?? ""
-			self.note = note
 			self.dinnerTeam = user.dinnerTeam
+			self.note = note
 		}
 	}
 }
@@ -1554,6 +1710,9 @@ public struct UserNotificationData: Content {
 	/// The event ID of the the next future event the user has followed. This event's start time should always be == nextFollowedEventTime.
 	/// If the user has favorited multiple events that start at the same time, this will be random among them.
 	var nextFollowedEventID: UUID?
+	
+	/// The number of Micro Karaoke songs the user has contributed to and can now view.
+	var microKaraokeFinishedSongCount: Int
 
 	/// For each alertword the user has, this returns data on hit counts for that word.
 	var alertWords: [UserNotificationAlertwordData]
@@ -1591,7 +1750,8 @@ extension UserNotificationData {
 		activeAnnouncementIDs: [Int],
 		newAnnouncementCount: Int,
 		nextEventTime: Date?,
-		nextEvent: UUID?
+		nextEvent: UUID?,
+		microKaraokeFinishedSongCount: Int
 	) {
 		serverTime = ISO8601DateFormatter().string(from: Date())
 		serverTimeOffset = Settings.shared.timeZoneChanges.tzAtTime().secondsFromGMT(for: Date())
@@ -1608,6 +1768,7 @@ extension UserNotificationData {
 		self.newFezMessageCount = newFezCount
 		self.nextFollowedEventTime = nextEventTime
 		self.nextFollowedEventID = nextEvent
+		self.microKaraokeFinishedSongCount = microKaraokeFinishedSongCount
 		self.alertWords = []
 	}
 
@@ -1627,6 +1788,7 @@ extension UserNotificationData {
 		self.newSeamailMessageCount = 0
 		self.newFezMessageCount = 0
 		self.nextFollowedEventTime = nil
+		self.microKaraokeFinishedSongCount = 0
 		self.alertWords = []
 	}
 }

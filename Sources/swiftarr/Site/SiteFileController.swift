@@ -14,6 +14,7 @@ struct SiteFileController: SiteControllerUtils {
 		app.get("css", "**", use: streamCSSFile)
 		app.get("img", "**", use: streamImgFile)
 		app.get("js", "**", use: streamJSFile)
+		app.get("microkaraoke", "**", use: streamMKFile)
 		// This replaces FileMiddleware from Sources/swiftarr/configure.swift.
 		app.get("public", "**", use: streamPublicFile)
 		app.get("faq", use: streamFaqFile)
@@ -35,6 +36,11 @@ struct SiteFileController: SiteControllerUtils {
 	// `GET /js/:catchall`
 	func streamJSFile(_ req: Request) throws -> Response {
 		return try streamFile(req, basePath: "js")
+	}
+
+	// `GET /microkaraoke/:catchall`
+	func streamMKFile(_ req: Request) throws -> Response {
+		return try streamFile(req, basePath: "microkaraoke")
 	}
 
 	// `GET /public/:catchall`

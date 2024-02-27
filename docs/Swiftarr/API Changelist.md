@@ -138,3 +138,14 @@ doesn't have the expansions.
 ## Feb 12, 2024
 * New ForumController endpoints for retrieving pinned posts (`GET /api/v3/forum/:forumID/pinnedposts`) and pinning/unpinning them (`POST/DELETE /api/v3/forum/post/:postID/pin`).
 * New ForumController endpoints for moderators to pin a forum thread at `POST/DELETE /api/v3/forum/ID/pin`.
+
+## Feb 19, 2024
+
+ New Micro Karaoke feature. API changes include:
+ * new Controller Structs (DTOs) only used by Micro Karaoke
+ * a new field in the Global Notification struct,
+ * a new App Feature enum case, 
+ * new notification type,
+ * new Report types (both Songs and Song Snippets are Reportable content),
+ * new User Role -- KaraokeAmbassador
+

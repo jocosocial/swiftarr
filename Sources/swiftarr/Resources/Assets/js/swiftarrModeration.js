@@ -19,6 +19,9 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 	else if (action == "setCategory") {
 		btn.addEventListener("click", setForumCategoryAction);
 	}
+	else if (action == "approveSong") {
+		btn.addEventListener("click", approveSongAction);
+	}
 }
 
 function handleAllReportsAction() {
@@ -123,4 +126,22 @@ function setForumCategoryAction() {
 			console.log(response);
 		}
 	})
+}
+
+function approveSongAction() {
+	let tappedButton = event.target;
+	let path = tappedButton.dataset.actionpath;
+	let errorDiv = document.getElementById(tappedButton.dataset.errordiv);
+	let req = new Request(path, { method: 'POST' });
+	fetch(req).then(function (response) {
+		if (response.ok) {
+			location.reload();
+		}
+		else {
+			console.log(response);
+		}
+	}).catch(error => {
+		errorDiv.innerHTML = "<b>Error:</b> " + error;
+		errorDiv.classList.remove("d-none");
+	});
 }

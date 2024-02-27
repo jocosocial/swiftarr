@@ -102,6 +102,8 @@ struct SocketNotificationData: Content {
 		case moderatorForumMention
 		/// A new or edited forum post that now @mentions @twitarrteam.
 		case twitarrTeamForumMention
+		/// A Micro Karaoke song the user contributed to is ready for viewing. .
+		case microKaraokeSongReady
 	}
 	/// The type of event that happened. See `SocketNotificationData.NotificationTypeData` for values.
 	var type: NotificationTypeData
@@ -128,6 +130,7 @@ extension SocketNotificationData {
 		case .nextFollowedEventTime: self.type = .followedEventStarting
 		case .moderatorForumMention: self.type = .moderatorForumMention
 		case .twitarrTeamForumMention: self.type = .twitarrTeamForumMention
+		case .microKaraokeSongReady: self.type = .microKaraokeSongReady
 		}
 		self.info = info
 		self.contentID = id
