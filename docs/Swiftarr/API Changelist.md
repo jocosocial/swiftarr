@@ -138,3 +138,8 @@ doesn't have the expansions.
 ## Feb 12, 2024
 * New ForumController endpoints for retrieving pinned posts (`GET /api/v3/forum/:forumID/pinnedposts`) and pinning/unpinning them (`POST/DELETE /api/v3/forum/post/:postID/pin`).
 * New ForumController endpoints for moderators to pin a forum thread at `POST/DELETE /api/v3/forum/ID/pin`.
+
+## Feb 27, 2024
+* `UserNotificationData` now includes `nextJoinedLFGID` and `nextJoinedLFGTime`.
+* `SettingsAdminData` now includes `upcomingEventNotificationSeconds`, `upcomingEventNotificationSetting`, and `upcomingLFGNotificationSetting`.
+* New `SocketNotificationType` of `joinedLFGStarting`.
