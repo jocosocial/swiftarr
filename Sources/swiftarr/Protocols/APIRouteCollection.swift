@@ -411,13 +411,16 @@ extension APIRouteCollection {
 			.join(EventFavorite.self, on: \Event.$id == \EventFavorite.$event.$id)
 			.filter(EventFavorite.self, \.$user.$id == userID)
 			.first()
+		// This will "clear" the next Event values of the UserNotificationData if no Events match the
+		// query (which is to say there is no next Event). Thought about using subtractNotifications()
+		// but this just seems easier for now.
+		try await addNotifications(
+			users: [userID],
+			type: .nextFollowedEventTime(nextFavoriteEvent?.startTime, nextFavoriteEvent?.id),
+			info: "",
+			on: req
+		)
 		if let event = nextFavoriteEvent, let id = event.id {
-			try await addNotifications(
-				users: [userID],
-				type: .nextFollowedEventTime(event.startTime, id),
-				info: "",
-				on: req
-			)
 			return (event.startTime, id)
 		}
 		return nil
