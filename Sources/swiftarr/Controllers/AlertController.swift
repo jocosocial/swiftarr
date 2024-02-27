@@ -103,7 +103,7 @@ struct AlertController: APIRouteCollection {
 		var nextLFG = try await req.redis.getNextLFGFromUserHash(userHash)
 		if let validDate = nextLFG?.0, Date() > validDate {
 			// The previously cached LFG already happend; figure out what's next
-			nextLFG = try await storeNextFollowedEvent(userID: user.userID, on: req)
+			nextLFG = try await storeNextJoinedLFG(userID: user.userID, on: req)
 		}
 		var result = try await UserNotificationData(
 			newFezCount: unreadLFGCount,
