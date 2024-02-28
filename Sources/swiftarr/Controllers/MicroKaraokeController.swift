@@ -124,7 +124,7 @@ struct MicroKaraokeController: APIRouteCollection {
 		let snippetURL = try getUserUploadedClipsDir().appendingPathComponent(offer.requireID().uuidString).appendingPathExtension("mp4")
 // TODO: For files this big, we might need nonblocking writes
 		try data.videoData.write(to: snippetURL)
-		var serverSnippetDirURL = Settings.shared.apiUrlComponents
+		var serverSnippetDirURL = Settings.shared.canonicalServerURLComponents
 		serverSnippetDirURL.path = try "/api/v3/microkaraoke/video/\(offer.requireID().uuidString).mp4"
 		guard let mediaURL = serverSnippetDirURL.url?.absoluteString else {
 			throw Abort(.internalServerError, reason: "Couldn't construct URL for uploaded media.")
@@ -191,7 +191,7 @@ struct MicroKaraokeController: APIRouteCollection {
 		}
 		let songSnippets = try await MKSnippet.query(on: req.db).filter(\.$song.$id == songID ).sort(\.$songSnippetIndex).all()
 		let songInfo = try await getSongInfo(forSongNamed: song.songName, on: req)
-		var karaokeTrack = Settings.shared.apiUrlComponents
+		var karaokeTrack = Settings.shared.canonicalServerURLComponents
 		karaokeTrack.path = "/microkaraoke/\(song.songName)/karaokeAudio.mp3"
 		guard let karaokeTrackURL = karaokeTrack.url else {
 			throw Abort(.internalServerError, reason: "Could not build audio file URL for karaoke audio track.")
@@ -267,7 +267,7 @@ struct MicroKaraokeController: APIRouteCollection {
 		let localSnippetDir = urlForSongDirectory(songName: song.songName, snippetIndex: snippet.songSnippetIndex)
 		let lyricsFileURL = localSnippetDir.appendingPathComponent("lyric.txt")
 		let lyrics = try String(contentsOf: lyricsFileURL, encoding: .utf8)
-		var serverSnippetDirURL = Settings.shared.apiUrlComponents
+		var serverSnippetDirURL = Settings.shared.canonicalServerURLComponents
 		serverSnippetDirURL.path = "/microkaraoke/\(song.songName)/\(snippet.songSnippetIndex)"
 		guard let url = serverSnippetDirURL.url else {
 			throw Abort(.internalServerError, reason: "Could not convert URL Components to URL")

@@ -122,6 +122,11 @@ final class Settings: Encodable {
 	/// Struct representing a set of TimeZoneChange's for this cruise. This setting can then be referenced elsewhere in the application.
 	@SettingsValue var timeZoneChanges: TimeZoneChangeSet = TimeZoneChangeSet()
 
+	/// Enable Late Day Flip where the site UI shows the next days schedule after 3:00AM rather than after Midnight.
+	/// For example, with this setting enabled opening the schedule at 2:00AM on Thursday will show you Wednesday's
+	/// schedule by default. If this setting is disabled, at 2:00AM on Thursday you would see Thursdays schedule by default.
+	@SettingsValue var enableLateDayFlip: Bool = false
+
 	// MARK: Images
 	/// The  set of image file types that we can parse with the GD library. I believe GD hard-codes these values on install based on what ./configure finds.
 	/// If our server app is moved to a new machine after it's built, the valid input types will likely differ.
@@ -146,16 +151,18 @@ final class Settings: Encodable {
 	/// User uploaded images will be inside this dir.
 	@SettingsValue var userImagesRootPath: URL = URL(fileURLWithPath: "~/swiftarrImages")
 
-	/// Endpoint to call for the API.
-	@SettingsValue var apiUrlComponents: URLComponents = URLComponents(string: "http://localhost:8081/api/v3")!
+	// MARK: URLs
+	/// This is the EXTERNALLY VISIBLE URL for the server. If a user asks "What should I type into my browser to get to Twitarr?" you could tell them this.
+	/// The server uses this to generate URLs referring to itself. Be wary of using this for web UI URLs; it could cause cross-origin problems in browsers.
+	@SettingsValue var canonicalServerURLComponents: URLComponents = URLComponents(string: "http://localhost:8081")!
 
-	/// Canonical hostnames for the Twitarr server.
+	/// Canonical hostnames for the Twitarr server. The server uses this to find links to itself inside posts.
 	@SettingsValue var canonicalHostnames: [String] = ["twitarr.com", "joco.hollandamerica.com"]
 
-	/// Enable Late Day Flip where the site UI shows the next days schedule after 3:00AM rather than after Midnight.
-	/// For example, with this setting enabled opening the schedule at 2:00AM on Thursday will show you Wednesday's
-	/// schedule by default. If this setting is disabled, at 2:00AM on Thursday you would see Thursdays schedule by default.
-	@SettingsValue var enableLateDayFlip: Bool = false
+	/// Base URL that the web UI uses to call API level endpoints.
+	@SettingsValue var apiUrlComponents: URLComponents = URLComponents(string: "http://localhost:8081/api/v3")!
+
+
 }
 
 /// Derivative directory paths. These are computed property getters that return a path based on a root path.
