@@ -15,6 +15,10 @@ public enum ReportType: String, Codable {
 	case fez
 	/// a `FezPost`
 	case fezPost
+	/// an `MKSong`
+	case mkSong
+	/// an `MKSnippet`
+	case mkSongSnippet
 }
 
 /// Moderation status of a piece of reportable content.

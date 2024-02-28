@@ -103,6 +103,8 @@ struct SocketNotificationData: Content {
 		case twitarrTeamForumMention
 		/// An LFG the user has joined is about to start.
 		case joinedLFGStarting
+		/// A Micro Karaoke song the user contributed to is ready for viewing. .
+		case microKaraokeSongReady
 	}
 	/// The type of event that happened. See `SocketNotificationData.NotificationTypeData` for values.
 	var type: NotificationTypeData
@@ -133,6 +135,7 @@ extension SocketNotificationData {
 		case .followedEventStarting: self.type = .followedEventStarting
 		case .nextJoinedLFGTime: self.type = .joinedLFGStarting
 		case .joinedLFGStarting: self.type = .joinedLFGStarting
+		case .microKaraokeSongReady: self.type = .microKaraokeSongReady
 		}
 		self.info = info
 		self.contentID = id

@@ -91,9 +91,9 @@ struct KaraokeController: APIRouteCollection {
 					KaraokeFavorite.self,
 					on: .custom(
 						"""
-																		LEFT JOIN "karaoke+favorite" ON "karaoke_song"."id" = "karaoke+favorite"."song" AND 
-																		"karaoke+favorite"."user" = '\(user.userID)'
-																		"""
+						LEFT JOIN "karaoke+favorite" ON "karaoke_song"."id" = "karaoke+favorite"."song" AND 
+						"karaoke+favorite"."user" = '\(user.userID)'
+						"""
 					)
 				)
 			}

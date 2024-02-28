@@ -27,9 +27,12 @@ extension APIRouteCollection {
 	var accessLevelParam: PathComponent { PathComponent(":access_level") }
 	var boardgameIDParam: PathComponent { PathComponent(":boardgame_id") }
 	var songIDParam: PathComponent { PathComponent(":karaoke_song+id") }
+	var mkSongIDParam: PathComponent { PathComponent(":micro_karaoke_song_id") }
+	var mkSnippetIDParam: PathComponent { PathComponent(":micro_karaoke_snippet_id") }
 	var userRoleParam: PathComponent { PathComponent(":user_role") }
 	var phonecallParam: PathComponent { PathComponent(":phone_call") }
 	var scheduleLogIDParam: PathComponent { PathComponent(":schedule_log_id") }
+	var filenameParam: PathComponent { PathComponent(":filename") }
 
 	/// Transforms a string that might represent a date (either a `Double` or an ISO 8601
 	/// representation) into a `Date`, if possible.
@@ -189,6 +192,10 @@ extension APIRouteCollection {
 				}
 			case .followedEventStarting(_), .joinedLFGStarting(_):
 				break
+			case .microKaraokeSongReady(_):
+				for userID in users {
+					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
+				}
 			}
 
 			if forwardToSockets {
@@ -252,38 +259,22 @@ extension APIRouteCollection {
 			case .twarrtMention(_):
 				for userID in users {
 					group.addTask {
-						try await req.redis.incrementIntInUserHash(
-							field: type,
-							userID: userID,
-							incAmount: 0 - subtractCount
-						)
+						try await req.redis.incrementIntInUserHash(field: type, userID: userID, incAmount: 0 - subtractCount)
 					}
 				}
 			case .forumMention(_), .twitarrTeamForumMention(_), .moderatorForumMention(_):
 				for userID in users {
 					group.addTask {
-						try await req.redis.incrementIntInUserHash(
-							field: type,
-							userID: userID,
-							incAmount: 0 - subtractCount
-						)
+						try await req.redis.incrementIntInUserHash(field: type, userID: userID, incAmount: 0 - subtractCount)
 					}
 				}
 			case .alertwordTwarrt(let word, _):
 				for userID in users {
-					try await req.redis.incrementAlertwordTwarrtInUserHash(
-						word: word,
-						userID: userID,
-						incAmount: 0 - subtractCount
-					)
+					try await req.redis.incrementAlertwordTwarrtInUserHash(word: word, userID: userID, incAmount: 0 - subtractCount)
 				}
 			case .alertwordPost(let word, _):
 				for userID in users {
-					try await req.redis.incrementAlertwordPostInUserHash(
-						word: word,
-						userID: userID,
-						incAmount: 0 - subtractCount
-					)
+					try await req.redis.incrementAlertwordPostInUserHash(word: word, userID: userID, incAmount: 0 - subtractCount)
 				}
 			case .seamailUnreadMsg(let msgID):
 				// For seamail msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
@@ -292,11 +283,7 @@ extension APIRouteCollection {
 					let modList = req.userCache.allUsersWithAccessLevel(.moderator).map { $0.userID }
 					for modUserID in modList {
 						group.addTask {
-							try await req.redis.deletedUnreadMessage(
-								msgID: msgID,
-								userID: modUserID,
-								inbox: .moderatorSeamail
-							)
+							try await req.redis.deletedUnreadMessage(msgID: msgID, userID: modUserID, inbox: .moderatorSeamail)
 						}
 					}
 				}
@@ -304,11 +291,7 @@ extension APIRouteCollection {
 					let ttList = req.userCache.allUsersWithAccessLevel(.twitarrteam).map { $0.userID }
 					for ttUserID in ttList {
 						group.addTask {
-							try await req.redis.deletedUnreadMessage(
-								msgID: msgID,
-								userID: ttUserID,
-								inbox: .twitarrTeamSeamail
-							)
+							try await req.redis.deletedUnreadMessage(msgID: msgID, userID: ttUserID, inbox: .twitarrTeamSeamail)
 						}
 					}
 				}
@@ -327,6 +310,13 @@ extension APIRouteCollection {
 				}
 			case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting:
 				break
+			case .microKaraokeSongReady(_):
+				// There is currently no method by which songs become not-ready. But,
+				for userID in users {
+					group.addTask {
+						try await req.redis.incrementIntInUserHash(field: type, userID: userID, incAmount: 0 - subtractCount)
+					}
+				}
 			}
 			group.addTask { try await req.redis.addUsersWithStateChange(users) }
 
@@ -375,6 +365,8 @@ extension APIRouteCollection {
 			try await req.redis.markSeamailRead(type: type, in: .lfgMessages, userID: user.userID)
 		case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting:
 			return  // Can't be cleared
+		case .microKaraokeSongReady:
+			try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)			
 		}
 		try await req.redis.addUsersWithStateChange([user.userID])
 	}

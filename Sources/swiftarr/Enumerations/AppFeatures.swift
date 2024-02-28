@@ -40,6 +40,7 @@ public enum SwiftarrFeature: String, Content, CaseIterable {
 	case schedule
 	case friendlyfez
 	case karaoke
+	case microkaraoke
 	case gameslist
 	case images
 	case users

@@ -1,0 +1,61 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 mt-2">
+    		<div class="row justify-content-between align-items-center my-1">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/moderator">Moderator</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Micro Karaoke Songs</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+    		<div class="row align-items-end">
+    			<div class="col col-auto">
+			    	<h6><b>All Songs, including Unapproved and Incomplete</b></h6>
+				</div>
+			</div>
+			<div class="list-group">
+			#for(song in modData):
+				<div class="list-group-item" href="/moderate/microkaraoke/song/#(song.songID)">
+					<div class="container-fluid">
+						<div class="row align-items-center">
+							<div class="col col-auto">
+								<b>Song \#</b>#(song.songID)
+							</div>
+							<div class="col col-auto me-auto">
+								#(song.songName)
+							</div>
+						</div>
+						<div class="row">
+						</div>
+						<div class="row align-items-center">
+							<div class="col col-auto">
+								<a class="btn btn-outline-primary btn-sm" href="/moderate/microkaraoke/song/#(song.songID)">View Clips</a>
+							</div>
+							<div class="col justify-content-end text-end">
+								#if(song.completionTime):
+									#if(song.modApproved):
+										Approved
+									#else:
+										Ready for Review
+									#endif
+								#else:
+									Not complete yet
+								#endif
+							</div>
+						</div>
+						<div class="row">
+							<div class="col text-end text-danger d-none" id="#(song.songID)_errorDisplay">
+								Could not change approval status: <span class="errortext"></span>
+							</div>
+						</div>	
+					</div>
+				</div>
+			#endfor
+			</div>
+		</div>
+		<script src="/js/swiftarrModeration.js"></script>
+    #endexport
+#endextend

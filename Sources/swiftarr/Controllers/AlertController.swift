@@ -91,6 +91,8 @@ struct AlertController: APIRouteCollection {
 		async let unreadLFGCount = try req.redis.getSeamailUnreadCounts(userID: user.userID, inbox: .lfgMessages)
 		async let actives = try getActiveAnnouncementIDs(on: req)
 		async let modData = try getModeratorNotifications(for: user, on: req)
+		let finishedSongCount = try await max(0, req.redis.getIntFromUserHash(userHash, field: .microKaraokeSongReady(0)) -
+				req.redis.getIntFromUserHash(userHash, field: .microKaraokeSongReady(0), viewed: true))
 
 		let userHighestReadAnnouncement = try await req.redis.getIntFromUserHash(userHash, field: .announcement(0))
 		let newAnnouncements = try await actives.reduce(0) { $1 > userHighestReadAnnouncement ? $0 + 1 : $0 }
@@ -113,7 +115,8 @@ struct AlertController: APIRouteCollection {
 			nextEventTime: nextEvent?.0,
 			nextEvent: nextEvent?.1,
 			nextLFGTime: nextLFG?.0,
-			nextLFG: nextLFG?.1
+			nextLFG: nextLFG?.1,
+			microKaraokeFinishedSongCount: finishedSongCount
 		)
 		result.twarrtMentionCount = try await req.redis.getIntFromUserHash(userHash, field: .twarrtMention(0))
 		result.newTwarrtMentionCount = try await max(

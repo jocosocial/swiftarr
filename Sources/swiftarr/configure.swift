@@ -562,6 +562,8 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateKaraokeFavoriteSchema(), to: .psql)
 		app.migrations.add(CreateTimeZoneChangeSchema(), to: .psql)
 		app.migrations.add(CreateScheduleLogSchema(), to: .psql)
+		app.migrations.add(CreateMKSongSchema(), to: .psql)
+		app.migrations.add(CreateMKSnippetSchema(), to: .psql)
 
 		// Third, *updates* to the schema since we started tracking them (Dec 2022-ish).
 		// These migrations generally mutate schema created in Group 2, and should appear in the order the migrations were added.
@@ -606,6 +608,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateSeamailSearchIndexes(), to: .psql)
 		app.migrations.add(RenameWhereAndWhen(), to: .psql)
 		app.migrations.add(AddFoodDrinkCategory(), to: .psql)
+		app.migrations.add(CreateMicroKaraokeUser(), to: .psql)
 	}
 
 	// Perform several sanity checks to verify that we can access the dbs and resource files that we need.
