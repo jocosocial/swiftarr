@@ -89,8 +89,7 @@ struct SocketNotificationData: Content {
 		case twarrtMention
 		/// A user has posted a Forum Post that @mentions this user.
 		case forumMention
-		/// An event the user is following is about to start. NOT CURRENTLY IMPLEMENTED. Plan is to add support for this as a bulk process that runs every 30 mins
-		/// at :25 and :55, giving all users following an event about to start a notification 5 mins before the event start time.
+		/// An event the user is following is about to start.
 		case followedEventStarting
 		/// Someone is trying to call this user via KrakenTalk.
 		case incomingPhoneCall
@@ -102,6 +101,8 @@ struct SocketNotificationData: Content {
 		case moderatorForumMention
 		/// A new or edited forum post that now @mentions @twitarrteam.
 		case twitarrTeamForumMention
+		/// An LFG the user has joined is about to start.
+		case joinedLFGStarting
 		/// A Micro Karaoke song the user contributed to is ready for viewing. .
 		case microKaraokeSongReady
 	}
@@ -127,9 +128,13 @@ extension SocketNotificationData {
 		case .alertwordPost: self.type = .alertwordPost
 		case .twarrtMention: self.type = .twarrtMention
 		case .forumMention: self.type = .forumMention
-		case .nextFollowedEventTime: self.type = .followedEventStarting
 		case .moderatorForumMention: self.type = .moderatorForumMention
 		case .twitarrTeamForumMention: self.type = .twitarrTeamForumMention
+		// nextFollowedEventTime and nextJoinedLFGTime are not a socket event, so is this OK?
+		case .nextFollowedEventTime: self.type = .followedEventStarting
+		case .followedEventStarting: self.type = .followedEventStarting
+		case .nextJoinedLFGTime: self.type = .joinedLFGStarting
+		case .joinedLFGStarting: self.type = .joinedLFGStarting
 		case .microKaraokeSongReady: self.type = .microKaraokeSongReady
 		}
 		self.info = info

@@ -173,6 +173,15 @@ struct AdminController: APIRouteCollection {
 		if let value = data.scheduleUpdateURL {
 			Settings.shared.scheduleUpdateURL = value
 		}
+		if let value = data.upcomingEventNotificationSeconds {
+			Settings.shared.upcomingEventNotificationSeconds = Double(value)
+		}
+		if let value = data.upcomingEventNotificationSetting {
+			Settings.shared.upcomingEventNotificationSetting = value
+		}
+		if let value = data.upcomingLFGNotificationSetting {
+			Settings.shared.upcomingLFGNotificationSetting = value
+		}
 		var localDisables = Settings.shared.disabledFeatures.value
 		for pair in data.enableFeatures {
 			if let app = SwiftarrClientApp(rawValue: pair.app), let feature = SwiftarrFeature(rawValue: pair.feature) {

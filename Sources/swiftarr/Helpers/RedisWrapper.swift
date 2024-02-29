@@ -66,6 +66,16 @@ extension Request.Redis {
 		return nil
 	}
 
+	func getNextLFGFromUserHash(_ hash: [String: RESPValue]) -> (Date, UUID)? {
+		if let values = hash["nextJoinedLFG"]?.string?.split(separator: " "), values.count == 2,
+			let doubleDate = Double(values[0]),
+			let lfgID = UUID(uuidString: String(values[1]))
+		{
+			return (Date(timeIntervalSince1970: doubleDate), lfgID)
+		}
+		return nil
+	}
+
 	func markAllViewedInUserHash(field: NotificationType, userID: UUID) async throws {
 		let hitCount = try await hget(field.redisFieldName(), from: userHashRedisKey(userID: userID)).get()
 		if hitCount != .null {
@@ -96,6 +106,16 @@ extension Request.Redis {
 		}
 		else {
 			_ = try await hdel("nextFollowedEvent", from: userHashRedisKey(userID: userID)).get()
+		}
+	}
+
+	func setNextLFGInUserHash(date: Date?, lfgID: UUID?, userID: UUID) async throws {
+		if let date = date, let lfgID = lfgID {
+			let value = "\(date.timeIntervalSince1970) \(lfgID)"
+			_ = try await hset("nextJoinedLFG", to: value, in: userHashRedisKey(userID: userID)).get()
+		}
+		else {
+			_ = try await hdel("nextJoinedLFG", from: userHashRedisKey(userID: userID)).get()
 		}
 	}
 

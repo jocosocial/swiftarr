@@ -51,7 +51,7 @@ final class Event: Model, Searchable {
 	/// so the forum can keep existing even if the event is deleted.
 	@OptionalParent(key: "forum_id") var forum: Forum?
 
-	/// The users that have favorited this game.
+	/// The users that have favorited this event.
 	@Siblings(through: EventFavorite.self, from: \.$event, to: \.$user) var favorites: [User]
 
 	// MARK: Initialization

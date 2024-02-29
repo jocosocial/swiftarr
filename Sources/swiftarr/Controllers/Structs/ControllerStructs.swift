@@ -1714,6 +1714,13 @@ public struct UserNotificationData: Content {
 	/// The number of Micro Karaoke songs the user has contributed to and can now view.
 	var microKaraokeFinishedSongCount: Int
 
+	/// The start time of the earliest LFG that the user has joined with a start time > now. nil if not logged in or no matching LFG.
+	var nextJoinedLFGTime: Date?
+
+	/// The LFG ID of the the next future LFG the user has joined. This LFGs's start time should always be == nextJoinedLFGTime.
+	/// If the user has joined multiple LFGs that start at the same time, this will be random among them.
+	var nextJoinedLFGID: UUID?
+
 	/// For each alertword the user has, this returns data on hit counts for that word.
 	var alertWords: [UserNotificationAlertwordData]
 
@@ -1751,6 +1758,8 @@ extension UserNotificationData {
 		newAnnouncementCount: Int,
 		nextEventTime: Date?,
 		nextEvent: UUID?,
+		nextLFGTime: Date?,
+		nextLFG: UUID?,
 		microKaraokeFinishedSongCount: Int
 	) {
 		serverTime = ISO8601DateFormatter().string(from: Date())
@@ -1770,6 +1779,8 @@ extension UserNotificationData {
 		self.nextFollowedEventID = nextEvent
 		self.microKaraokeFinishedSongCount = microKaraokeFinishedSongCount
 		self.alertWords = []
+		self.nextJoinedLFGID = nextLFG
+		self.nextJoinedLFGTime = nextLFGTime
 	}
 
 	// Initializes an dummy struct, for when there's no user logged in.
@@ -1790,6 +1801,7 @@ extension UserNotificationData {
 		self.nextFollowedEventTime = nil
 		self.microKaraokeFinishedSongCount = 0
 		self.alertWords = []
+		self.nextJoinedLFGTime = nil
 	}
 }
 

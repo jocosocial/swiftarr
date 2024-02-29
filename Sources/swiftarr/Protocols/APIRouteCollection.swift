@@ -141,10 +141,16 @@ extension APIRouteCollection {
 				// Force cache of active announcementIDs to get rebuilt
 				group.addTask { try await req.redis.resetActiveAnnouncementIDs() }
 			case .nextFollowedEventTime(let date, let id):
-				//
 				for userID in users {
 					group.addTask {
 						try await req.redis.setNextEventInUserHash(date: date, eventID: id, userID: userID)
+					}
+				}
+				forwardToSockets = false
+			case .nextJoinedLFGTime(let date, let id):
+				for userID in users {
+					group.addTask {
+						try await req.redis.setNextLFGInUserHash(date: date, lfgID: id, userID: userID)
 					}
 				}
 				forwardToSockets = false
@@ -184,6 +190,8 @@ extension APIRouteCollection {
 				for userID in users {
 					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
+			case .followedEventStarting(_), .joinedLFGStarting(_):
+				break
 			case .microKaraokeSongReady(_):
 				for userID in users {
 					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
@@ -192,18 +200,7 @@ extension APIRouteCollection {
 
 			if forwardToSockets {
 				// Send a message to all involved users with open websockets.
-				let socketeers = req.webSocketStore.getSockets(users)
-				if socketeers.count > 0 {
-					req.logger.log(level: .info, "Socket: Sending \(type) msg to \(socketeers.count) client.")
-					let msgStruct = SocketNotificationData(type, info: info, id: type.objectID())
-					if let jsonData = try? JSONEncoder().encode(msgStruct),
-						let jsonDataStr = String(data: jsonData, encoding: .utf8)
-					{
-						socketeers.forEach { userSocket in
-							userSocket.socket.send(jsonDataStr)
-						}
-					}
-				}
+				app.websocketStorage.forwardToSockets(users: users, type: type, info: info)
 			}
 
 			let notifyUsersCopy = notifyUsers
@@ -311,7 +308,7 @@ extension APIRouteCollection {
 						try await req.redis.deletedUnreadMessage(msgID: msgID, userID: userID, inbox: .lfgMessages)
 					}
 				}
-			case .nextFollowedEventTime(_, _):
+			case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting:
 				break
 			case .microKaraokeSongReady(_):
 				// There is currently no method by which songs become not-ready. But,
@@ -329,9 +326,11 @@ extension APIRouteCollection {
 	}
 
 	// When a user leaves a fez or the fez is deleted, delete the unread count for that fez for all participants; it no longer applies.
+	// Also recalculate the next joined LFG for each former participant.
 	func deleteFezNotifications(userIDs: [UUID], fez: FriendlyFez, on req: Request) async throws {
 		for userID in userIDs {
 			try await req.redis.markLFGDeleted(msgID: fez.requireID(), userID: userID)
+			_ = try await storeNextJoinedLFG(userID: userID, on: req)
 		}
 	}
 
@@ -364,7 +363,7 @@ extension APIRouteCollection {
 			}
 		case .fezUnreadMsg:
 			try await req.redis.markSeamailRead(type: type, in: .lfgMessages, userID: user.userID)
-		case .nextFollowedEventTime:
+		case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting:
 			return  // Can't be cleared
 		case .microKaraokeSongReady:
 			try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)			
@@ -404,14 +403,45 @@ extension APIRouteCollection {
 			.join(EventFavorite.self, on: \Event.$id == \EventFavorite.$event.$id)
 			.filter(EventFavorite.self, \.$user.$id == userID)
 			.first()
+		// This will "clear" the next Event values of the UserNotificationData if no Events match the
+		// query (which is to say there is no next Event). Thought about using subtractNotifications()
+		// but this just seems easier for now.
+		try await addNotifications(
+			users: [userID],
+			type: .nextFollowedEventTime(nextFavoriteEvent?.startTime, nextFavoriteEvent?.id),
+			info: "",
+			on: req
+		)
 		if let event = nextFavoriteEvent, let id = event.id {
-			try await addNotifications(
-				users: [userID],
-				type: .nextFollowedEventTime(event.startTime, id),
-				info: "",
-				on: req
-			)
 			return (event.startTime, id)
+		}
+		return nil
+	}
+
+	// Calculates the start time of the earliest future joined LFG. Caches the value in Redis for quick access.
+	// LFGs are stored in real-week time (not cruise-week time) so this doesn't need all of the date/time
+	// calculations like storeNextFollowedEvent() above.
+	func storeNextJoinedLFG(userID: UUID, on req: Request) async throws -> (Date, UUID)? {
+		let filterDate = Date()
+		let nextJoinedLFG = try await FriendlyFez.query(on: req.db)
+			.join(FezParticipant.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
+			.filter(FezParticipant.self, \.$user.$id == userID)
+			.filter(\.$fezType !~ [.open, .closed])
+			.filter(\.$startTime != nil)
+			.filter(\.$startTime > filterDate)
+			.sort(\.$startTime, .ascending)
+			.first()
+		// This will "clear" the next LFG values of the UserNotificationData if no LFGs match the
+		// query (which is to say there is no next LFG). Thought about using subtractNotifications()
+		// but this just seems easier for now.
+		try await addNotifications(
+			users: [userID],
+			type: .nextJoinedLFGTime(nextJoinedLFG?.startTime, nextJoinedLFG?.id),
+			info: "",
+			on: req
+		)
+		if let lfg = nextJoinedLFG, let lfgID = lfg.id, let lfgStartTime = lfg.startTime {
+			return (lfgStartTime, lfgID)
 		}
 		return nil
 	}

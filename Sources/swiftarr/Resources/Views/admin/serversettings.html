@@ -67,6 +67,39 @@
 				</div>
 				<div class="row my-1">
 					<div class="col">
+						<label for="upcomingEventNotificationSeconds">Upcoming event/LFG notification offset (seconds)</label>
+						<input type="number" id="upcomingEventNotificationSeconds" name="upcomingEventNotificationSeconds" min="0" max="1800" value="#(settings.upcomingEventNotificationSeconds)" #if(!enableFields):disabled#endif>
+					</div>
+				</div>
+				<div class="row my-1">
+					
+				</div>
+				<div class="row my-2">
+					<div class="col col-auto">
+						<label for="upcomingEventNotificationSetting">Upcoming event notifications</label>
+					</div>
+					<div class="col col-auto">
+						<select class="form-select" name="upcomingEventNotificationSetting" #if(!enableFields):disabled#endif>
+							<option #if(settings.upcomingEventNotificationSetting == "disabled"):selected#endif value="disabled">Disabled (no notifications)</option>
+							<option #if(settings.upcomingEventNotificationSetting == "cruiseWeek"):selected#endif value="cruiseWeek">Cruise Week (time travel)</option>
+							<option #if(settings.upcomingEventNotificationSetting == "current"):selected#endif value="current">Current (real-time date)</option>
+						</select
+					</div>
+				</div>
+				<div class="row my-2">
+					<div class="col col-auto">
+						<label for="upcomingLFGNotificationSetting">Upcoming joined LFG notifications</label>
+					</div>
+					<div class="col col-auto">
+						<select class="form-select" name="upcomingLFGNotificationSetting" #if(!enableFields):disabled#endif>
+							<option #if(settings.upcomingLFGNotificationSetting == "disabled"):selected#endif value="disabled">Disabled (no notifications)</option>
+							<option #if(settings.upcomingLFGNotificationSetting == "cruiseWeek"):selected#endif value="cruiseWeek">Cruise Week (time travel)</option>
+							<option #if(settings.upcomingLFGNotificationSetting == "current"):selected#endif value="current">Current (real-time date)</option>
+						</select
+					</div>
+				</div>
+				<div class="row my-1">
+					<div class="col">
 						<label for="shipWifiSSID">Onboard Wifi Network SSID</label>
 						<input type="text" class="form-control" id="shipWifiSSID" name="shipWifiSSID" value="#(settings.shipWifiSSID)" #if(!enableFields):disabled#endif>
 					</div>

@@ -56,6 +56,12 @@ enum NotificationType {
 	case twitarrTeamForumMention(Int)
 	/// An upcoming event that the user has followed.
 	case nextFollowedEventTime(Date?, UUID?)
+	/// An event the user is following is about to start.
+	case followedEventStarting(UUID)
+	/// An upcoming LFG that the user has joined.
+	case nextJoinedLFGTime(Date?, UUID?)
+	/// An LFG the user is joined is about to start.
+	case joinedLFGStarting(UUID)
 	/// A Micro Karaoke song the user contributed to is ready for viewing. Associated value is song ID
 	case microKaraokeSongReady(Int)
 
@@ -72,6 +78,9 @@ enum NotificationType {
 		case .moderatorForumMention: return "moderatorForumMention"
 		case .twitarrTeamForumMention: return "twitarrTeamForumMention"
 		case .nextFollowedEventTime: return "nextFollowedEventTime"
+		case .followedEventStarting: return "followedEventStarting"
+		case .nextJoinedLFGTime: return "nextJoinedLFGTime"
+		case .joinedLFGStarting: return "joinedLFGStarting"
 		case .microKaraokeSongReady: return "microKaraokeSongReady"
 		}
 	}
@@ -94,6 +103,9 @@ enum NotificationType {
 		case .moderatorForumMention: return "NotificationHash-\(userID)"
 		case .twitarrTeamForumMention: return "NotificationHash-\(userID)"
 		case .nextFollowedEventTime: return "NotificationHash-\(userID)"
+		case .followedEventStarting: return "NotificationHash-\(userID)"
+		case .nextJoinedLFGTime: return "NotificationHash-\(userID)"
+		case .joinedLFGStarting: return "NotificationHash-\(userID)"
 		case .microKaraokeSongReady: return "NotificationHash-\(userID)"
 		}
 	}
@@ -122,6 +134,9 @@ enum NotificationType {
 		case .moderatorForumMention(let id): return String(id)
 		case .twitarrTeamForumMention(let id): return String(id)
 		case .nextFollowedEventTime(_, let uuid): return uuid != nil ? String(uuid!) : ""
+		case .followedEventStarting(let id): return String(id)
+		case .nextJoinedLFGTime(_, let uuid): return uuid != nil ? String(uuid!) : ""
+		case .joinedLFGStarting(let id): return String(id)
 		case .microKaraokeSongReady(let songID): return String(songID)
 		}
 	}

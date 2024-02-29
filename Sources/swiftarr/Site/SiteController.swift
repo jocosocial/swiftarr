@@ -73,13 +73,14 @@ struct TrunkContext: Encodable {
 			let alerts = try? JSONDecoder().decode(UserNotificationData.self, from: alertData)
 			alertCounts = alerts ?? UserNotificationData()
 
-			// If we have a nextEventTime, and that event starts between 15 mins in the past -> 30 mins in the future,
-			// mark that we have an event starting soon
-			if let nextEventInterval = alerts?.nextFollowedEventTime?.timeIntervalSinceNow,
-				((-15 * 60.0)...(30 * 60.0)).contains(nextEventInterval)
+			// If we have a nextEventTime, and that event starts within the configured notification time bounds,
+			// mark that we have an event starting soon.
+			if let nextEventInterval = alerts?.nextFollowedEventTime?.timeIntervalSince(Settings.shared.getDateInCruiseWeek()),
+				(Settings.shared.upcomingEventPastSeconds...Settings.shared.upcomingEventNotificationSeconds).contains(nextEventInterval)
 			{
 				eventStartingSoon = true
 			}
+			// We don't do the same thing with LFG since that'd be confusing with the chat notifications.
 		}
 		else {
 			alertCounts = UserNotificationData()

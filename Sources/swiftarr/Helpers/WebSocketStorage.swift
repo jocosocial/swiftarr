@@ -43,6 +43,33 @@ extension Application {
 		var notificationSockets: [UUID: [UserSocket]] = [:]
 		// Stored by fezID, so fezID : [UserSocket]
 		var fezSockets: [UUID: [UserSocket]] = [:]
+
+		func getSockets<T: Sequence>(_ userIDs: T) -> [UserSocket] where T.Element == UUID {
+			let cacheLock = app.locks.lock(for: Application.WebSocketStorageLockKey.self)
+			let cacheResult = cacheLock.withLock { () -> [UserSocket] in
+				let dict = app.websocketStorage.notificationSockets
+				return userIDs.flatMap { dict[$0] ?? [] }
+			}
+			return cacheResult
+		}
+
+		// Send a message to all involved users with open websockets.
+		// This logic used to be in APIRouteCollection.swift. But with the introduction of the
+		// UserEventNotificationJob we needed this function in a non-Request context.
+		func forwardToSockets(users: [UUID], type: NotificationType, info: String) -> Void {
+			let socketeers = app.websocketStorage.getSockets(users)
+			if socketeers.count > 0 {
+				app.logger.log(level: .info, "Socket: Sending \(type) msg to \(socketeers.count) client.")
+				let msgStruct = SocketNotificationData(type, info: info, id: type.objectID())
+				if let jsonData = try? JSONEncoder().encode(msgStruct),
+					let jsonDataStr = String(data: jsonData, encoding: .utf8)
+				{
+					socketeers.forEach { userSocket in
+						userSocket.socket.send(jsonDataStr)
+					}
+				}
+			}
+		}
 	}
 
 	/// Storage key used by Vapor's Services API. Used by UserCache to access its cache data.

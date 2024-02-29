@@ -122,6 +122,27 @@ final class Settings: Encodable {
 	/// Struct representing a set of TimeZoneChange's for this cruise. This setting can then be referenced elsewhere in the application.
 	@SettingsValue var timeZoneChanges: TimeZoneChangeSet = TimeZoneChangeSet()
 
+	/// Number of minutes before an event to trigger notifications. Some day this should be set per-user
+	/// based on their preferences. But since we don't have the concept of "User Settings" yet we set
+	/// a sane default instead. This is a StoredSettingsValue so that it can be modified in real time.
+	/// This is a Double because that's what most range comparison operations desire. Though it does make this
+	/// a bit more complex on the Server Settings views and [Site]AdminController because we expose them as Ints
+	/// to the UI. This is to prevent anyone from using truly whacky values.
+	@StoredSettingsValue("upcomingEventNotificationSeconds", defaultValue: 10 * 60.0) var upcomingEventNotificationSeconds: Double
+
+	/// Number of seconds after an upcoming event starts to no longer consider it happening.
+	/// The desired default value means 5 minutes after an event starts notifications/banners will stop.
+	/// However at this time, the AlertController does honor this and cycles the UserNotificationData.nextFollowedEventTime
+	/// immediately afterward. Until that changes, this should be 0.
+	/// This also might entirely go away? Here for consistency throughout the app, but possibly irrelevant.
+	@SettingsValue var upcomingEventPastSeconds: Double = 0 * 60.0
+
+	/// Configuration of the upcoming event notifications.
+	@StoredSettingsValue("upcomingEventNotificationSetting", defaultValue: EventNotificationSetting.cruiseWeek) var upcomingEventNotificationSetting: EventNotificationSetting
+
+	/// Configuration of the upcoming LFG notifications.
+	@StoredSettingsValue("upcomingLFGNotificationSetting", defaultValue: EventNotificationSetting.current) var upcomingLFGNotificationSetting: EventNotificationSetting
+
 	/// Enable Late Day Flip where the site UI shows the next days schedule after 3:00AM rather than after Midnight.
 	/// For example, with this setting enabled opening the schedule at 2:00AM on Thursday will show you Wednesday's
 	/// schedule by default. If this setting is disabled, at 2:00AM on Thursday you would see Thursdays schedule by default.
@@ -206,6 +227,31 @@ extension Settings {
 		var cal = Calendar(identifier: .gregorian)
 		cal.timeZone = portTimeZone
 		return cal
+	}
+
+	// Generate a `Date` that lets us pretend we are at that point in time during the sailing.
+	// It can be difficult to test schedule functionality because the events are all coded for
+	// their actual times. So at various points in the app we display the data of "what would be".
+	// This takes it a step further and pretends based on the time rather than just a weekday.
+	func getDateInCruiseWeek() -> Date {
+		// @TODO Ensure this honors or passes sanity check for portTimeZone or something like that.
+		// It's probably OK, but we should be sure.
+		let secondsPerWeek = 60 * 60 * 24 * 7
+		let partialWeek = Int(Date().timeIntervalSince(Settings.shared.cruiseStartDate())) % secondsPerWeek
+		return Settings.shared.cruiseStartDate() + TimeInterval(partialWeek)
+	}
+
+	// This is sufficiently complex enough to merit its own function. Unlike the Settings.shared.getDateInCruiseWeek(),
+	// just adding .seconds to Date() isn't enough because Date() returns millisecond-precision. Which no one tells you
+	// unless you do a .timeIntervalSince1970 and get the actual Double value back to look at what's behind the dot.
+	// I'm totally not salty about spending several hours chasing this down. Anywho...
+	// This takes the current Date(), strips the ultra-high-precision that we don't want, and returns Date() with the
+	// upcoming notification offset applied.
+	func getCurrentFilterDate() -> Date {
+		let todayDate = Date()
+		let todayCalendar = Settings.shared.calendarForDate(todayDate)
+		let todayComponents = todayCalendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: todayDate)
+		return todayCalendar.date(from: todayComponents)!
 	}
 }
 
