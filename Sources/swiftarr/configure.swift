@@ -36,7 +36,7 @@ import gd
 /// * RECOVERY_KEY:
 ///
 /// * SWIFTARR_USER_IMAGES:  Root directory for storing user-uploaded images. These images are referenced by filename in the db.
-///
+/// * SWIFTARR_EXTERNAL_URL: Externally-visible URL to get to the server. The server uses this to create URLs pointing to itself.
 
 
 // The configurator object doesn't persist; it'll be destroyed soon after configure() ends.
@@ -379,13 +379,25 @@ struct SwiftarrConfigurator {
 		// canonical hostnames. The built-in defaults are set in Settings.swift but without a feature switch boolean
 		// you can't disable them. So you can specify the environment variable empty and it will effectively
 		// generate a hostname that will never exist, thus the regexes in CustomLeafTags will never match.
+		var primaryHostAndPort: String = "localhost:8081"
 		if let canonicalHostnamesStr: String = Environment.get("SWIFTARR_CANONICAL_HOSTNAMES") {
 			Settings.shared.canonicalHostnames = canonicalHostnamesStr.split(separator: ",").map { String($0) }
+			primaryHostAndPort = Settings.shared.canonicalHostnames.first ?? "localhost:8081"
 		}
 		else if !app.http.server.configuration.hostname.isEmpty {
 			Settings.shared.canonicalHostnames.append(app.http.server.configuration.hostname)
 		}
 		configLog.debug("Setting canonical hostnames: \(Settings.shared.canonicalHostnames)")
+		
+		// canonicalServerURLComponents is used when the server needs to build an externally-visible URL pointing to itself.
+		if let canonicalServerURL: String = Environment.get("SWIFTARR_EXTERNAL_URL"), let components = URLComponents(string: canonicalServerURL) {
+			Settings.shared.canonicalServerURLComponents = components
+		}
+		else if let components = URLComponents(string: "http://\(primaryHostAndPort)") {
+			// If we have a specified hostname, use it and best guess the rest
+			Settings.shared.canonicalServerURLComponents = components
+		}
+		configLog.notice("Externally-routable canonical URL: \(Settings.shared.canonicalServerURLComponents)")
 	}
 
 	func configureAPIURL(_ app: Application) throws {
