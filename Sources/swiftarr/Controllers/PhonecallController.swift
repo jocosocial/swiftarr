@@ -454,6 +454,9 @@ struct PhonecallController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Cannot call this user.")
 		}
 		// Or if the callee has not favorited the caller.
+		// It's less ideal that this doesn't use the cache for two reasons:
+		// 1) We should use the cache more.
+		// 2) The convenience functions don't eagerly load the User.$favorites. If there's a better way, I'm all ears.
 		guard let calleeUser = try await User.query(on: req.db).with(\.$favorites).filter(\.$id == calleeID).first() else {
 			throw Abort(.badRequest, reason: "Couldn't find user to call.")
 		}
