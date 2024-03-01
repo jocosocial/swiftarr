@@ -196,15 +196,8 @@ struct PhonecallController: APIRouteCollection {
 		else {
 			throw Abort(.badRequest, reason: "Request parameter user_ID is missing.")
 		}
-
-		// Disallow if the callee mutes or blocks the caller
 		let caller = try req.auth.require(UserCacheData.self)
-		guard let callee = req.userCache.getUser(calleeID) else {
-			throw Abort(.badRequest, reason: "Couldn't find user to call.")
-		}
-		if callee.getMutes().contains(caller.userID) || callee.getBlocks().contains(caller.userID) {
-			throw Abort(.badRequest, reason: "Cannot call this user.")
-		}
+		let _ = try await userCanCall(callerID: caller.userID, calleeID: calleeID, req: req)
 
 		// Make sure we can notify the callee
 		let callerNotificationSockets = req.webSocketStore.getSockets(calleeID)
@@ -238,6 +231,10 @@ struct PhonecallController: APIRouteCollection {
 			try? await ws.close()
 			return
 		}
+
+		// If we didn't do this here as well, a dubiously programmed client such as swiftarr-socket-client
+		// could skip the GET request above and directly open a socket.
+		let _ = try? await userCanCall(callerID: caller.userID, calleeID: calleeID, req: req)
 
 		// Double-check we can notify the callee
 		let calleeNotificationSockets = req.webSocketStore.getSockets(calleeID)
@@ -445,6 +442,23 @@ struct PhonecallController: APIRouteCollection {
 			}
 			// Remove the call object
 			await ActivePhoneCalls.shared.endPhoneCall(callID: callID)
+		}
+	}
+
+	func userCanCall(callerID: UUID, calleeID: UUID, req: Request) async throws -> Void {
+		// Disallow if the callee mutes or blocks the caller
+		guard let callee = req.userCache.getUser(calleeID) else {
+			throw Abort(.badRequest, reason: "Couldn't find user to call.")
+		}
+		if callee.getMutes().contains(callerID) || callee.getBlocks().contains(callerID) {
+			throw Abort(.badRequest, reason: "Cannot call this user.")
+		}
+		// Or if the callee has not favorited the caller.
+		guard let calleeUser = try await User.query(on: req.db).with(\.$favorites).filter(\.$id == calleeID).first() else {
+			throw Abort(.badRequest, reason: "Couldn't find user to call.")
+		}
+		if !calleeUser.favorites.map({ $0.$favorite.id }).contains(callerID) {
+			throw Abort(.badRequest, reason: "User must favorite you first before you can call them.")
 		}
 	}
 }
