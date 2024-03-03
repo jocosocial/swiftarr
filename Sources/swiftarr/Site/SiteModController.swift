@@ -589,11 +589,29 @@ struct SiteModController: SiteControllerUtils {
 			var trunk: TrunkContext
 			var songInfo: MicroKaraokeCompletedSong
 			var modData: [MicroKaraokeSnippetModeration]
+			var numSlotsUploaded: Int
+			var numSlotsOffered: Int			// Only includes non-expired offers, even through they might be accepted late.
+			var numFillerSlots: Int				// Most songs have a few filler sections with no vocals.
 
 			init(_ req: Request, modData: [MicroKaraokeSnippetModeration], songInfo: MicroKaraokeCompletedSong) throws {
 				trunk = .init(req, title: "Micro Karaoke Moderation", tab: .moderator)
 				self.songInfo = songInfo
 				self.modData = modData
+				
+				numFillerSlots = 0
+				numSlotsOffered = 0
+				numSlotsUploaded = 0
+				for clip in modData {
+					if clip.user.username == "MicroKaraoke" {
+						numFillerSlots += 1
+					}
+					else if clip.videoURL == nil {
+						numSlotsOffered += 1
+					}
+					else {
+						numSlotsUploaded += 1
+					}
+				}
 			}
 		}
 		let ctx = try ReportContext(req, modData: modData, songInfo: songInfo)

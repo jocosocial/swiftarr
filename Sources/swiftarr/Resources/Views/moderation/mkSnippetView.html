@@ -17,6 +17,11 @@
 			    	<h6><b>Song Clips for Song \##(songInfo.songID)</b></h6>
 				</div>
 			</div>
+    		<div class="row align-items-end">
+    			<div class="col col-auto">
+			    	#(count(modData))/#(songInfo.totalSnippetSlots) slots; #(numFillerSlots) filler, #(numSlotsOffered) offered, #(numSlotsUploaded) uploaded
+				</div>
+			</div>
 			<div class="list-group">
 				#if(count(modData) == 0):
 					<div class="row">
@@ -33,7 +38,7 @@
 										<b>Clip \#</b>#(clip.snippetIndex)
 									</div>
 									<div class="col col-auto me-auto">
-										#if(clip.user.username == "kraken"):
+										#if(clip.user.username == "MicroKaraoke"):
 											Filler Video
 										#elseif(clip.videoURL):
 											Uploaded by: #userByline(clip.user)
@@ -46,7 +51,7 @@
 									<div class="col col-auto">
 										#if(clip.videoURL):<a class="btn btn-outline-primary btn-sm" href="#(clip.videoURL)">Watch Clip</a>#endif
 									</div>
-									#if(clip.user.username != "kraken" && clip.videoURL):
+									#if(clip.user.username != "MicroKaraoke" && clip.videoURL):
 										<div class="col col-auto">
 											<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
 										</div>
