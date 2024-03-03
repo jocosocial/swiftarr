@@ -98,12 +98,14 @@ struct AlertController: APIRouteCollection {
 		let newAnnouncements = try await actives.reduce(0) { $1 > userHighestReadAnnouncement ? $0 + 1 : $0 }
 		// Get the next event this user's following or lfg this user has joined, if any
 		var nextEvent = try await req.redis.getNextEventFromUserHash(userHash)
-		if let validDate = nextEvent?.0, Date() > validDate {
+		let eventDateNow = Settings.shared.getScheduleReferenceDate(Settings.shared.upcomingEventNotificationSetting)
+		if let validDate = nextEvent?.0, eventDateNow > validDate {
 			// The previously cached event already happend; figure out what's next
 			nextEvent = try await storeNextFollowedEvent(userID: user.userID, on: req)
 		}
+		let lfgDateNow = Settings.shared.getScheduleReferenceDate(Settings.shared.upcomingLFGNotificationSetting)
 		var nextLFG = try await req.redis.getNextLFGFromUserHash(userHash)
-		if let validDate = nextLFG?.0, Date() > validDate {
+		if let validDate = nextLFG?.0, lfgDateNow > validDate {
 			// The previously cached LFG already happend; figure out what's next
 			nextLFG = try await storeNextJoinedLFG(userID: user.userID, on: req)
 		}

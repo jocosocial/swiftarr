@@ -238,7 +238,10 @@ extension Settings {
 		// It's probably OK, but we should be sure.
 		let secondsPerWeek = 60 * 60 * 24 * 7
 		let partialWeek = Int(Date().timeIntervalSince(Settings.shared.cruiseStartDate())) % secondsPerWeek
-		return Settings.shared.cruiseStartDate() + TimeInterval(partialWeek)
+		// When startDate is in the future, the partialWeek is negative. Which if taken at face value returns
+		// the current date (start - time since start = now). When startDate is in the past, the partialWeek is 
+		// positive. Since the whole point of this functionality is to time travel, we abs() it.
+		return Settings.shared.cruiseStartDate() + abs(TimeInterval(partialWeek))
 	}
 
 	// This is sufficiently complex enough to merit its own function. Unlike the Settings.shared.getDateInCruiseWeek(),
@@ -252,6 +255,22 @@ extension Settings {
 		let todayCalendar = Settings.shared.calendarForDate(todayDate)
 		let todayComponents = todayCalendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: todayDate)
 		return todayCalendar.date(from: todayComponents)!
+	}
+
+	// Common accessor for getting a comparison reference date to an Event or LFG.
+	// Often in the code we use Date() to get the current time, but this can sometimes cause
+	// strange behavior because we occasionally pretend to be in the cruise week.
+	func getScheduleReferenceDate(_ settingType: EventNotificationSetting) -> Date {
+		// The filter date is calculated by adding the notification offset interval to either:
+		// 1) The current date (as in what the server is experiencing right now).
+		// 2) The current time/day transposed within the cruise week (when we pretend it is).
+		var filterDate: Date
+		if (settingType == .cruiseWeek) {
+			filterDate = Settings.shared.getDateInCruiseWeek()
+		} else {
+			filterDate = Settings.shared.getCurrentFilterDate()
+		}
+		return filterDate
 	}
 }
 

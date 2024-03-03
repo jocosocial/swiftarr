@@ -99,15 +99,7 @@ public struct UserEventNotificationJob: AsyncScheduledJob {
 			return
 		}
 
-		// The filter date is calculated by adding the notification offset interval to either:
-		// 1) The current date (as in what the server is experiencing right now).
-		// 2) The current time/day transposed within the cruise week (when we pretend it is).
-		var filterDate: Date
-		if (Settings.shared.upcomingEventNotificationSetting == .cruiseWeek) {
-			filterDate = Settings.shared.getDateInCruiseWeek()
-		} else {
-			filterDate = Settings.shared.getCurrentFilterDate()
-		}
+		let filterDate = Settings.shared.getScheduleReferenceDate(Settings.shared.upcomingEventNotificationSetting)
 		let portCalendar = Settings.shared.getPortCalendar()
 		let filterStartTime = portCalendar.date(
 			byAdding: .second,
@@ -137,12 +129,7 @@ public struct UserEventNotificationJob: AsyncScheduledJob {
 			return
 		}
 
-		var filterDate: Date
-		if (Settings.shared.upcomingLFGNotificationSetting == .cruiseWeek) {
-			filterDate = Settings.shared.getDateInCruiseWeek()
-		} else {
-			filterDate = Settings.shared.getCurrentFilterDate()
-		}
+		let filterDate = Settings.shared.getScheduleReferenceDate(Settings.shared.upcomingLFGNotificationSetting)
 		let portCalendar = Settings.shared.getPortCalendar()
 		let filterStartTime = portCalendar.date(
 			byAdding: .second,
