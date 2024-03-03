@@ -893,6 +893,8 @@ public struct MicroKaraokeCompletedSong: Content {
 	var songName: String
 	/// The artist, as they'd appear in karaoke metadata
 	var artistName: String
+	/// How many song slots this song has. NOT how many are currently filled. This number includes pre-filled 'filler' slots for instrumental sections.
+	var totalSnippetSlots: Int
 	/// Always TRUE unless the user is a mod, in which case will be FALSE for songs that have all the necessary clips recorded but require mod approval to publish.
 	var modApproved: Bool
 	/// When the song's clips were last modified. Usually the time the final snippet gets uploaded (although 'final' means '30th out of 30'
@@ -908,6 +910,7 @@ extension MicroKaraokeCompletedSong {
 		songID = try song.requireID()
 		songName = song.songName
 		artistName = song.artistName
+		totalSnippetSlots = song.totalSnippets
 		completionTime = song.isComplete ? (song.updatedAt ?? Date()) : nil
 		modApproved = song.modApproved
 		self.userContributed = userContributed

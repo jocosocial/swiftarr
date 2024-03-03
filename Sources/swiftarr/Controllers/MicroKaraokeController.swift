@@ -309,8 +309,8 @@ struct MicroKaraokeController: APIRouteCollection {
 //		let snippets = try FileManager.default.contentsOfDirectory(at: selectedSong, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
 		for index in 0..<totalSnippets {
 			let fillPath = selectedSong.appendingPathComponent("\(index)").appendingPathComponent("fill.mp3")
-			if FileManager.default.fileExists(atPath: fillPath.path), let krakenUser = req.userCache.getUser(username: "kraken") {
-				let newSnippetModel = try MKSnippet(song: newSongModel, songSnippetIndex: index, author: krakenUser)
+			if FileManager.default.fileExists(atPath: fillPath.path), let mkUser = req.userCache.getUser(username: "MicroKaraoke") {
+				let newSnippetModel = try MKSnippet(song: newSongModel, songSnippetIndex: index, author: mkUser)
 				var mediaURL = Settings.shared.apiUrlComponents
 				let filename = newSongModel.isPortrait ? "fillVideoPortrait" : "fillVideoLandscape"
 				mediaURL.path = "/microkaraoke/\(songInfo.songname)/\(index)/\(filename).mp4"
