@@ -142,6 +142,10 @@ struct PhonecallController: APIRouteCollection {
 		if callee.getMutes().contains(caller.userID) || callee.getBlocks().contains(caller.userID) {
 			throw Abort(.badRequest, reason: "Cannot call this user.")
 		}
+		guard let _ = try await UserFavorite.query(on: req.db).filter(\.$user.$id == callee.userID)
+				.filter(\.$favorite.$id == caller.userID).first() else {
+			throw Abort(.badRequest, reason: "Cannot call a user who has not made you a favorite user.")
+		}
 
 		let calleeNotificationSockets = req.webSocketStore.getSockets(calleeID)
 		guard !calleeNotificationSockets.isEmpty else {
@@ -205,6 +209,10 @@ struct PhonecallController: APIRouteCollection {
 		if callee.getMutes().contains(caller.userID) || callee.getBlocks().contains(caller.userID) {
 			throw Abort(.badRequest, reason: "Cannot call this user.")
 		}
+		guard let _ = try await UserFavorite.query(on: req.db).filter(\.$user.$id == callee.userID)
+				.filter(\.$favorite.$id == caller.userID).first() else {
+			throw Abort(.badRequest, reason: "Cannot call a user who has not made you a favorite user.")
+		}
 
 		// Make sure we can notify the callee
 		let callerNotificationSockets = req.webSocketStore.getSockets(calleeID)
@@ -250,8 +258,8 @@ struct PhonecallController: APIRouteCollection {
 		// Send incoming call notification to all of the callee's devices
 		let msgStruct = SocketNotificationData(callID: callID, caller: caller.makeHeader(), callerAddr: nil)
 		if let jsonData = try? encoder.encode(msgStruct), let jsonDataStr = String(data: jsonData, encoding: .utf8) {
+			req.logger.log(level: .notice, "Sending incoming phonecall to callee's \(calleeNotificationSockets.count) devices.")
 			calleeNotificationSockets.forEach { userSocket in
-				req.logger.log(level: .notice, "Sending incoming phonecall to callee.")
 				userSocket.socket.send(jsonDataStr)
 			}
 		}
