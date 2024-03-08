@@ -520,17 +520,21 @@ struct SiteModController: SiteControllerUtils {
 			var firstReport: ReportModerationData?
 			var finalEditAuthor: UserHeader?
 			var postModUrl: String
+			var postContentType: String // @TODO enum?
 
 			init(_ req: Request, modData: FezPostModerationData) throws {
-				trunk = .init(req, title: "Fez Post Moderation", tab: .moderator)
 				self.modData = modData
 				firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 				switch modData.fezType {
 					case .open, .closed:
 						self.postModUrl = "/seamail/\(modData.fezID)"
+						self.postContentType = "Seamail"
 					default:
 						self.postModUrl = "/lfg/\(modData.fezID)"
+						self.postContentType = "LFG"
 				}
+
+				trunk = .init(req, title: "\(self.postContentType) Post Moderation", tab: .moderator)
 			}
 		}
 		let ctx = try ReportContext(req, modData: modData)
