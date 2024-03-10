@@ -3,9 +3,18 @@
     	<div class="container-md ms-0 mt-2">
     		<div class="row align-items-end">
     			<div class="col col-auto">
-			    	<h6><b>Moderate Fez Post \##(modData.fezPost.postID)</b></h6>
+			    	<h6><b>Moderate #(postContentType) Post \##(modData.fezPost.postID)</b></h6>
 				</div>
 			</div>
+			#if(postContentType == "Seamail"):
+			<div class="row my-1">
+				<div class="col">
+					<div class="alert alert-warning" role="alert">
+						Heads up! The reported post is within a private Seamail conversation.
+					</div>
+				</div>
+			</div>
+			#endif
 			<div class="row justify-content-between mb-3">
 				<div class="col" data-reportabletype="fezpost" data-reportableid="#(modData.fezPost.postID)" data-postid="#(modData.fezPost.postID)">
 					#if(!modData.isDeleted):
