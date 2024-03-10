@@ -311,7 +311,7 @@ struct MicroKaraokeController: APIRouteCollection {
 			let fillPath = selectedSong.appendingPathComponent("\(index)").appendingPathComponent("fill.mp3")
 			if FileManager.default.fileExists(atPath: fillPath.path), let mkUser = req.userCache.getUser(username: "MicroKaraoke") {
 				let newSnippetModel = try MKSnippet(song: newSongModel, songSnippetIndex: index, author: mkUser)
-				var mediaURL = Settings.shared.apiUrlComponents
+				var mediaURL = Settings.shared.canonicalServerURLComponents
 				let filename = newSongModel.isPortrait ? "fillVideoPortrait" : "fillVideoLandscape"
 				mediaURL.path = "/microkaraoke/\(songInfo.songname)/\(index)/\(filename).mp4"
 				guard let url = mediaURL.url else {
@@ -338,7 +338,7 @@ struct MicroKaraokeController: APIRouteCollection {
 //		let fillPath = selectedSong.appendingPathComponent("\(index)").appendingPathComponent("fill.mp3")
 //		if FileManager.default.fileExists(atPath: fillPath.path), let krakenUser = req.userCache.getUser(username: "kraken") {
 //			let newSnippetModel = try MKSnippet(song: song, songSnippetIndex: snippetIndex, author: krakenUser)
-//			var mediaURL = Settings.shared.apiUrlComponents
+//			var mediaURL = Settings.shared.canonicalServerURLComponents
 //			mediaURL.path = "/microkaraoke/\(song.songName)/\(snippetIndex)/video.mp4"
 //			guard let url = mediaURL.url else {
 //				throw Abort(.internalServerError, reason: "Could not create URL for song filler video.")
