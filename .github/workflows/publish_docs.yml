@@ -13,7 +13,7 @@ jobs:
     - uses: actions/checkout@v2
     - uses: swift-actions/setup-swift@v2
       with:
-        swift-version: "5.10.0"
+        swift-version: "5.9.2"
     - name: Get swift version
       run: swift --version
     - name: Publish Jazzy Docs
