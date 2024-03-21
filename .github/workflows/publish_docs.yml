@@ -4,20 +4,40 @@ on:
   push:
     branches:
     - master
-    - swift510
 jobs:
-  publish:
-    #if: github.repository == 'jocosocial/swiftarr'
+  build:
+    if: github.repository == 'jocosocial/swiftarr'
     runs-on: macos-13
     steps:
-    - uses: actions/checkout@v2
-    - uses: swift-actions/setup-swift@v2
+    - name: Install SourceKitten
+      run: brew install sourcekitten
+    - name: Install Jazzy
+      run: sudo gem install jazzy
+    - name: Install Swift
+      uses: swift-actions/setup-swift@v2
       with:
         swift-version: "5.9.2"
-    - name: Get swift version
+    - name: Confirm Swift Version
       run: swift --version
-    - name: Publish Jazzy Docs
-      uses: jocosocial/publish-jazzy-docs@v2.1
+    - name: Checkout Swiftarr
+      uses: actions/checkout@v2
+    - name: Generate Docs
+      run: scripts/generatedocs.sh
+    - name: Upload Artifact
+      uses: actions/upload-pages-artifact@v3
       with:
-        personal_access_token: ${{ secrets.DOCS_ACCESS_TOKEN }}
-        config: .jazzy.yaml
+        name: github-pages
+        path: docs/Output
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
