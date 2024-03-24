@@ -1,13 +1,13 @@
 # Builder image
 # 
 # This sets up the environment used to build swiftarr.
-FROM docker.io/library/swift:5.8-jammy as builder
+FROM docker.io/library/swift:5.9.2-jammy as builder
 
 ARG env
 
 RUN apt-get -qq update && apt-get install -y \
     libssl-dev zlib1g-dev libgd-dev
-RUN mkdir -p /build/lib && cp -R /usr/lib/swift/linux/*.so* /build/lib
+RUN mkdir -p /build/lib && cp -HR /usr/lib/swift/linux/*.so* /build/lib
 
 WORKDIR /app
 
