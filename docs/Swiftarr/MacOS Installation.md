@@ -50,8 +50,8 @@ If this is a publicly accessible install, you should make a copy of the `Templat
 
 If you have a particular environment, add `--env <your-environment-name>`.
 
-1. `swift run Run migrate`, you should see a list of migrations that'll be run--hit `y`.
-2. `swift run Run serve` If you don't have an environment file that defines the hostname to serve from, add the `--hostname` parameter.
+1. `swift run swiftarr migrate`, you should see a list of migrations that'll be run--hit `y`.
+2. `swift run swiftarr serve` If you don't have an environment file that defines the hostname to serve from, add the `--hostname` parameter.
 
 ## More Info on Postgres
 
@@ -67,7 +67,7 @@ If you install redis locally you'll need to run `redis-server` from the command 
 
 When launching Swiftarr from the command line, use:
 
-`swift run Run serve --env production`
+`swift run swiftarr serve --env production`
 
 with the environment you want to use. `development` is the default; if you're only doing development builds you probably don't need to make a development.env file. If this is a publicly accessible install, you should make a copy of the `Template.env` Environment setup file in `Sources/swiftarr/seeds/Private Swiftarr Config` folder, name it with the name of your environment and fill in passwords and such with private values.
 

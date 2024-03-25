@@ -26,6 +26,3 @@ The Docker Stack deployment configuration containerizes all dependencies and the
 `Sources/swiftarr/seeds/Private Swiftarr Config` copy the `Docker-Template.env` to your desired runtime environment (example: `production.env`). You must then fill in the blanks for passwords, keys, etc.
 * `ENVIRONMENT` should match the name of the file (such as `production`).
 * Fill in appropriate database and redis passwords (we suggest good ones), along with account passwords (again, good) & recovery keys (any sequence of words).
-
-Server Deployment
------------------
