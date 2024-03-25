@@ -108,10 +108,12 @@ final class Settings: Encodable {
 	/// A Date set to midnight on the day the cruise ship leaves port, in the timezone the ship leaves from. Used by the Events Controller for date arithimetic.
 	/// The default here should get overwritten in configure.swift. This is purely for convenience to set the start date via
 	/// configure.swift. This setting should not be referenced anywhere. That's what cruiseStartDate()` below is for.
+	/// This must align with cruiseStartDayOfWeek set immediately below.
 	@SettingsValue var cruiseStartDateComponents: DateComponents = DateComponents(year: 2024, month: 3, day: 9)
 
 	/// The day of week when the cruise embarks, expressed as number as Calendar's .weekday uses them: Range 1...7, Sunday == 1.
-	@SettingsValue var cruiseStartDayOfWeek: Int = 1
+	/// Doing DateComponents(year: 2024, month: 3, day: 9).weekday! didnt work here. Hmm....
+	@SettingsValue var cruiseStartDayOfWeek: Int = 7
 
 	/// The length in days of the cruise, includes partial days. A cruise that embarks on Saturday and returns the next Saturday should have a value of 8.
 	@SettingsValue var cruiseLengthInDays: Int = 8
