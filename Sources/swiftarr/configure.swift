@@ -172,6 +172,9 @@ struct SwiftarrConfigurator {
 			}
 			Settings.shared.portTimeZone = portTimeZone
 		}
+		// This sets both the cruiseStartDateComponents and cruiseStartDayOfWeek from the same
+		// SWIFTARR_START_DATE value. If you don't specify this env var, the defaults in Settings.swift
+		// take over. That isn't quite as intelligent.
 		if let cruiseStartDate = Environment.get("SWIFTARR_START_DATE"), cruiseStartDate != "" {
 			let startFormatter = DateFormatter()
 			startFormatter.dateFormat = "yyyy-MM-dd"  // 2023-03-05
@@ -379,10 +382,10 @@ struct SwiftarrConfigurator {
 		// canonical hostnames. The built-in defaults are set in Settings.swift but without a feature switch boolean
 		// you can't disable them. So you can specify the environment variable empty and it will effectively
 		// generate a hostname that will never exist, thus the regexes in CustomLeafTags will never match.
-		var primaryHostAndPort: String = "localhost:8081"
+		var primaryHostAndPort: String = "localhost:\(port)"
 		if let canonicalHostnamesStr: String = Environment.get("SWIFTARR_CANONICAL_HOSTNAMES") {
 			Settings.shared.canonicalHostnames = canonicalHostnamesStr.split(separator: ",").map { String($0) }
-			primaryHostAndPort = Settings.shared.canonicalHostnames.first ?? "localhost:8081"
+			primaryHostAndPort = Settings.shared.canonicalHostnames.first ?? "localhost:\(port)"
 		}
 		else if !app.http.server.configuration.hostname.isEmpty {
 			Settings.shared.canonicalHostnames.append(app.http.server.configuration.hostname)

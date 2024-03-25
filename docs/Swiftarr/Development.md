@@ -49,7 +49,7 @@ Docker containers.
 
 ```shell
 xcodebuild -project "swiftarr.xcodeproj" -scheme "Migrate"
-./DerivedData/swiftarr/Build/Products/Debug/Run migrate
+./DerivedData/swiftarr/Build/Products/Debug/swiftarr migrate
 ```
 
 You'll be asked to approve a bunch of migrations; these mostly create database tables. 
@@ -75,7 +75,10 @@ Linux
 ### Requirements
 
 You will need to install the Swift compiler and runtime. This is probably available as a package
-via your system packager (`swift-lang`) or via https://www.swift.org/download/
+via your system packager (`swift-lang`) or via https://www.swift.org/download/. However we recommend
+using [Swiftly](https://github.com/swift-server/swiftly) to install the particular version we use.
+Swiftly is like RVM, NVM, or PyEnv in that it allows for multiple versions to be installed in parallel.
+Consult the `.swift-version` file at the root of this repo to see which version you should install.
 
 After that you will likely want the following tools:
 * https://github.com/apple/swift-format

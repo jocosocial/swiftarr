@@ -6,7 +6,7 @@ Database Migration
     to get some data.
     See the [Vapor docs](https://docs.vapor.codes/4.0/fluent/overview/#migrate) for details.
     ```
-    swift run Run migrate [--yes]
+    swift run swiftarr migrate [--yes]
     ```
     Example output:
     ```
@@ -27,13 +27,16 @@ Database Migration
     ```
 
 ### Manual Migration via Docker
-01. If you set `AUTO_MIGRATE` to `false` in your config and wish to perform a manual migration,
+01. If you set `AUTO_MIGRATE` to `false` in your config and wish to perform a manual initial migration,
     you can do this by calling:
     ```
-    scripts/stack.sh -e development run web /app/Run migrate --yes
+    scripts/stack.sh -e development run web /app/swiftarr migrate --yes
     ```
 02. Then you can restart the initial container that was created and died because
     there was no DB for it at the time.
     ```
     scripts/stack.sh -e development restart web
     ```
+
+This only migrates once on startup. If you wish to perform upgrade migrations you will need to trigger
+those manually using the `swiftarr migrate --yes` command within the container.
