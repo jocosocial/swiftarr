@@ -260,45 +260,132 @@ struct ForumController: APIRouteCollection {
 	/// Does not return results from categories for which the user does not have access.
 	///
 	/// **URL Query Parameters**:
+	/// * `?search=STRING` - Matches forums with STRING in their title.
+	/// * `?category=UUID` - Limit results to forums in given category. Adding this multiple times ORs all categories together
+	/// * `?creatorself` - Matches forums created by the current user..
+	/// * `?creator=STRING` - Matches forums created by the given username. Adding this multiple times ORs all forum creators together
+	/// * `?creatorid=UUID` - Matches forums created by the given userID. Adding this multiple times ORs all forum creators together
+	/// * `?favorite` - Limit results to forums that are favorited by the current user.
+	/// * `?mute` - Limit results to forums that are muted by the current user.
+	/// * `?searchposts=STRING` - Matches FORUMS where any post in the forum contains the given search string.
+	/// * `?unread` - Limit resuts to forums that have posts the current user hasn't read
+	/// * `?posted` - Matches forums where the current user posted.
+	/// 
 	/// * `?start=INT` - The index into the array of forums to start returning results. 0 for first forum.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
 	/// * `?sort=[create, update, title]` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first.
 	///
-	/// * `?search=STRING` - Matches forums with STRING in their title.
-	/// * `?creator=STRING` - Matches forums created by the given username.
-	/// * `?creatorid=STRING` - Matches forums created by the given userID.
 	///
 	/// - Parameter searchString: In the URL path.
 	/// - Returns: A `ForumSearchData` containing all matching forums.
 	func forumSearchHandler(_ req: Request) async throws -> ForumSearchData {
+		struct QueryStruct: Content {
+			var search: String?
+			var category: [UUID]?
+			var creatorself: Bool?
+			var creator: [String]?
+			var creatorid: [UUID]?
+			var favorite: Bool?
+			var mute: Bool?
+			var searchposts: String?
+			var unread: Bool?
+			var posted: Bool?
+			var start: Int?
+			var limit: Int?
+			var sort: String?
+			
+			mutating func afterDecode() throws {
+				start = start ?? 0
+				limit = (limit ?? 50).clamped(to: 0...Settings.shared.maximumForums)
+				// postgres "_" and "%" are wildcards, so escape for literals
+				search = search?.replacingOccurrences(of: "_", with: "\\_").replacingOccurrences(of: "%", with: "\\%")
+						.trimmingCharacters(in: .whitespacesAndNewlines)
+				if let search = search, search.isEmpty {
+					throw Abort(.badRequest, reason: "Search string, while optional, must not be empty if it exists.")
+				}
+				searchposts = searchposts?.replacingOccurrences(of: "_", with: "\\_").replacingOccurrences(of: "%", with: "\\%")
+						.trimmingCharacters(in: .whitespacesAndNewlines)
+				if let searchposts = searchposts, searchposts.isEmpty {
+					throw Abort(.badRequest, reason: "Search string, while optional, must not be empty if it exists.")
+				}
+			}
+		}
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let start = (req.query[Int.self, at: "start"] ?? 0)
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
+		var urlQuery = try req.query.decode(QueryStruct.self)
+		// Vapor/URLEncodedForm/URLEncodedFormDecoder.swift doesn't seem to want to decode 'flag' URL query params into structs.
+		// Because of that, we have to do this to set the values. See https://github.com/vapor/vapor/issues/3163
+		urlQuery.creatorself = req.query[Bool.self, at: "creatorself"]
+		urlQuery.favorite = req.query[Bool.self, at: "favorite"]
+		urlQuery.mute = req.query[Bool.self, at: "mute"]
+		urlQuery.unread = req.query[Bool.self, at: "unread"]
+		urlQuery.posted = req.query[Bool.self, at: "posted"]
+		// Searches need to actually include a filter criteria; else this method just returns all the forums
+		guard urlQuery.search != nil || urlQuery.category != nil || urlQuery.creatorself == true || urlQuery.creator != nil || 
+				urlQuery.creatorid != nil || urlQuery.favorite == true || urlQuery.mute == true || urlQuery.searchposts != nil || 
+				urlQuery.unread == true || urlQuery.posted == true else {
+			throw Abort(.badRequest, reason: "Search request must contain at least one search option. You have to filter on something.")
+		}
+			
 		let countQuery = Forum.query(on: req.db)
-			.filter(\.$creator.$id !~ cacheUser.getBlocks())
-			.categoryAccessFilter(for: cacheUser)
-		// postgres "_" and "%" are wildcards, so escape for literals
-		if var search = req.query[String.self, at: "search"] {
-			search = search.replacingOccurrences(of: "_", with: "\\_")
-			search = search.replacingOccurrences(of: "%", with: "\\%")
-			search = search.trimmingCharacters(in: .whitespacesAndNewlines)
+				.filter(\.$creator.$id !~ cacheUser.getBlocks())
+				.categoryAccessFilter(for: cacheUser)
+		if let search = urlQuery.search {
 			countQuery.fullTextFilter(\.$title, search)
 		}
-		if let creator = req.query[String.self, at: "creator"],
-			let creatingUser = req.userCache.getUser(username: creator)
-		{
-			countQuery.filter(\.$creator.$id == creatingUser.userID)
+		if let categoryFilter = urlQuery.category {
+			// categoryAccessFilter() ensures that the Category is joined into the query.
+			countQuery.filter(Category.self, \.$id ~~ categoryFilter)
 		}
-		if let creatorID = req.query[UUID.self, at: "creatorid"], let creatingUser = req.userCache.getUser(creatorID) {
-			countQuery.filter(\.$creator.$id == creatingUser.userID)
+		if urlQuery.creatorself == true {
+			countQuery.filter(\.$creator.$id == cacheUser.userID)
+		}
+		var creatorIDFilter: [UUID] = urlQuery.creatorid ?? []
+		if let creatorNames = urlQuery.creator, !creatorNames.isEmpty {
+			let creatingUsers = req.userCache.getUsers(usernames: creatorNames)
+			guard creatingUsers.count == creatorNames.count else {
+				throw Abort(.badRequest, reason: "No user with username: \(creatorNames).")
+			}
+			creatorIDFilter.append(contentsOf: creatingUsers.map { $0.userID })
+		}
+		if !creatorIDFilter.isEmpty {
+			countQuery.filter(\.$creator.$id ~~ creatorIDFilter)
+		}
+		if urlQuery.favorite == true || urlQuery.mute == true {			
+			countQuery.join(ForumReaders.self, on: \Forum.$id == \ForumReaders.$forum.$id)
+					.filter(ForumReaders.self, \.$user.$id == cacheUser.userID)
+			if urlQuery.favorite == true {
+				countQuery.filter(ForumReaders.self, \.$isFavorite == true)
+			}
+			if urlQuery.mute == true {
+				countQuery.filter(ForumReaders.self, \.$isMuted == true)
+			}
+		}
+		if urlQuery.searchposts != nil || urlQuery.posted == true  {
+			countQuery.join(ForumPost.self, on: \Forum.$id == \ForumPost.$forum.$id)
+			if let search = urlQuery.searchposts  {
+				countQuery.fullTextFilter(ForumPost.self, \.$text, search)
+			}
+			if urlQuery.posted == true {
+				countQuery.filter(ForumPost.self, \ForumPost.$author.$id == cacheUser.userID)
+			}
+		}
+		if urlQuery.unread == true {
+			countQuery.joinWithFilter(method: .left, from: \Forum.$id, to: \ForumReaders.$forum.$id, otherFilters: 
+					[.value(.path(ForumReaders.path(for: \.$user.$id), schema: ForumReaders.schema), .equal, .bind(cacheUser.userID))])
+					.group(.or) { (or) in
+						or.filter(ForumReaders.self, \.$lastPostReadID == nil)
+						or.filter(\Forum.$lastPostID != \ForumReaders.$lastPostReadID)
+					}
 		}
 		// get forums and total forum count, turn into [ForumListData] and then insert into ForumSearchData
 		async let forumCount = try countQuery.count()
+		let start = urlQuery.start ?? 0
+		let limit = urlQuery.limit ?? 50
 		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
-		case "create": _ = forumQuery.sort(\.$createdAt, .descending)
-		case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"))
-		default: _ = forumQuery.sort(\.$lastPostTime, .descending)
+			case "create": _ = forumQuery.sort(\.$createdAt, .descending)
+			case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"))
+			default: _ = forumQuery.sort(\.$lastPostTime, .descending)
 		}
 		async let forums = try forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser)
@@ -1935,5 +2022,15 @@ extension QueryBuilder {
 		return self.group(.or) { group in
 			group.filter(Category.self, \.$requiredRole == nil).filter(Category.self, \.$requiredRole ~~ user.userRoles)
 		}
+	}
+
+	@discardableResult func joinWithFilter<LocalField, Foreign, ForeignField>(method: DatabaseQuery.Join.Method = .inner, 
+			from: KeyPath<Model, LocalField>, to: KeyPath<Foreign, ForeignField>, otherFilters: [DatabaseQuery.Filter]) -> Self 	
+    		where Foreign: Schema, ForeignField: QueryableProperty, LocalField: QueryableProperty, 
+    		ForeignField.Value == LocalField.Value {
+		var filters: [DatabaseQuery.Filter] = otherFilters
+		filters.append(.field(.path(Model.path(for: from), schema: Model.schema), .equal, .path(Foreign.path(for: to), schema: Foreign.schema)))
+		self.join(Foreign.self, filters, method: method)
+		return self
 	}
 }

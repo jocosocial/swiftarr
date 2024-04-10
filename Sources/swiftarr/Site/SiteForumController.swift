@@ -35,7 +35,7 @@ struct ForumPageContext: Encodable {
 	var pinnedPosts: [PostData]
 
 	init(_ req: Request, forum: ForumData, cat: [CategoryData], pinnedPosts: [PostData] = []) throws {
-		trunk = .init(req, title: "\(forum.title) | Forum Thread", tab: .forums, search: "Search")
+		trunk = .init(req, title: "\(forum.title) | Forum Thread", tab: .forums)
 		self.forum = forum
 		self.post = .init(forType: .forumPost(forum.forumID.uuidString))
 		if cat.count > 0 {
@@ -59,6 +59,16 @@ struct ForumPageContext: Encodable {
 	}
 }
 
+// The data from the search form passed in via the URL query to search methods
+struct SearchFormData: Content {
+	var searchType: String
+	var search: String?
+	var creator: String?
+	var creatorid: String?
+	var categoryID: UUID?
+	var forumID: UUID?
+}
+
 // Used for Forum Search, Favorite Forums, Recent Forums and Forums You Created pages.
 struct ForumsSearchPageContext: Encodable {
 	var trunk: TrunkContext
@@ -67,6 +77,8 @@ struct ForumsSearchPageContext: Encodable {
 	var filterDescription: String
 	var searchType: SearchType
 	var sortOrders: [ForumsSortOrder]
+	var formData: SearchFormData?
+	var categoryData: CategoryData?
 
 	enum SearchType: String, Codable {
 		case owned  // Created by this user
@@ -77,17 +89,17 @@ struct ForumsSearchPageContext: Encodable {
 		case unread // Unread forums by this user
 	}
 
-	init(_ req: Request, forums: ForumSearchData, searchType: SearchType, filterDesc: String) throws {
+	init(_ req: Request, forums: ForumSearchData, searchType: SearchType, filterDesc: String, formData: SearchFormData? = nil) throws {
 		var title: String
 		switch searchType {
-		case .owned: title = "Forums You Created"
-		case .favorite: title = "Favorite Forums"
-		case .recent: title = "Recently Viewed"
-		case .textSearch: title = "Forum Search"
-		case .mute: title = "Muted Forums"
-		case .unread: title = "Unread Forums"
+			case .owned: title = "Forums You Created"
+			case .favorite: title = "Favorite Forums"
+			case .recent: title = "Recently Viewed"
+			case .textSearch: title = "Forum Search"
+			case .mute: title = "Muted Forums"
+			case .unread: title = "Unread Forums"
 		}
-		trunk = .init(req, title: title, tab: .forums, search: "Search")
+		trunk = .init(req, title: title, tab: .forums)
 		self.forums = forums
 		self.searchType = searchType
 		guard var paginatorBase = URLComponents(string: req.url.string) else {
@@ -101,6 +113,7 @@ struct ForumsSearchPageContext: Encodable {
 			paginatorBase.queryItems = queryItems
 			return paginatorBase.string ?? ""
 		}
+		self.formData = formData
 		filterDescription = filterDesc
 		if searchType == .recent {
 			sortOrders = []
@@ -168,6 +181,9 @@ struct PostSearchPageContext: Encodable {
 	var searchType: SearchType
 	var paginator: PaginatorContext
 	var filterDescription: String
+	var formData: SearchFormData?
+	var categoryData: CategoryData?		// For showing the breadcrumbs on searches constrained to a cat/forum
+	var forumData: ForumData?
 
 	enum SearchType: String, Codable {
 		case userMentions
@@ -177,7 +193,7 @@ struct PostSearchPageContext: Encodable {
 		case direct  // Request has all search params, see /api/v3/forum/post/search
 	}
 
-	init(_ req: Request, posts: PostSearchData, searchType: SearchType, searchString: String = "") throws {
+	init(_ req: Request, posts: PostSearchData, searchType: SearchType, formData: SearchFormData? = nil) throws {
 		var title: String
 		var paginatorClosure: (Int) -> String
 		switch searchType {
@@ -201,9 +217,9 @@ struct PostSearchPageContext: Encodable {
 			}
 		case .textSearch:
 			title = "Forum Post Search"
-			filterDescription = "\(posts.totalPosts) Posts with \"\(searchString)\""
+			filterDescription = "\(posts.totalPosts) Posts with \"\(formData?.search ?? "search text")\""
 			paginatorClosure = { pageIndex in
-				"/forum/search?search=\(searchString)&searchType=posts&start=\(pageIndex * posts.limit)&limit=\(posts.limit)"
+				"/forum/search?search=\(formData?.search ?? "")&searchType=posts&start=\(pageIndex * posts.limit)&limit=\(posts.limit)"
 			}
 		case .direct:
 			let searchParams = try req.query.decode(ForumPostSearchQueryOptions.self)
@@ -231,9 +247,10 @@ struct PostSearchPageContext: Encodable {
 				return searchParams.buildQuery(baseURL: "/forumpost/search", startOffset: pageIndex * limit) ?? "/"
 			}
 		}
-		trunk = .init(req, title: title, tab: .forums, search: "Search")
+		trunk = .init(req, title: title, tab: .forums)
 		self.postSearch = posts
 		self.searchType = searchType
+		self.formData = formData
 		paginator = .init(
 			start: posts.start,
 			total: Int(posts.totalPosts),
@@ -320,7 +337,7 @@ struct SiteForumController: SiteControllerUtils {
 			var categories: [CategoryData]
 
 			init(_ req: Request, cats: [CategoryData]) throws {
-				trunk = .init(req, title: "Forum Categories", tab: .forums, search: "Search")
+				trunk = .init(req, title: "Forum Categories", tab: .forums)
 				self.categories = cats
 			}
 		}
@@ -348,7 +365,7 @@ struct SiteForumController: SiteControllerUtils {
 			var sortOrders: [ForumsSortOrder]
 
 			init(_ req: Request, forums: CategoryData, start: Int, limit: Int) throws {
-				trunk = .init(req, title: "\(forums.title) | Forum Threads", tab: .forums, search: "Search")
+				trunk = .init(req, title: "\(forums.title) | Forum Threads", tab: .forums)
 				self.forums = forums
 				paginator = .init(start: start, total: Int(forums.numThreads), limit: limit) { pageIndex in
 					"/forums/\(forums.categoryID)?start=\(pageIndex * limit)&limit=\(limit)"
@@ -392,7 +409,7 @@ struct SiteForumController: SiteControllerUtils {
 			var category: CategoryData
 
 			init(_ req: Request, catID: String, cat: [CategoryData]) throws {
-				trunk = .init(req, title: "Create New Forum", tab: .forums, search: "Search")
+				trunk = .init(req, title: "Create New Forum", tab: .forums)
 				self.categoryID = catID
 				self.post = .init(forType: .forum(catID))
 				if cat.count > 0 {
@@ -460,11 +477,7 @@ struct SiteForumController: SiteControllerUtils {
 		}
 		let response = try await apiQuery(req, endpoint: "/forum/\(forumID)")
 		let forum = try response.content.decode(ForumData.self)
-		let catResponse = try await apiQuery(
-			req,
-			endpoint: "/forum/categories?cat=\(forum.categoryID)",
-			passThroughQuery: false
-		)
+		let catResponse = try await apiQuery(req, endpoint: "/forum/categories?cat=\(forum.categoryID)", passThroughQuery: false)
 		let cats = try catResponse.content.decode([CategoryData].self)
 
 		let pinnedPostsResponse = try await apiQuery(req, endpoint: "/forum/\(forum.forumID)/pinnedposts")
@@ -512,7 +525,7 @@ struct SiteForumController: SiteControllerUtils {
 			var post: MessagePostContext
 
 			init(_ req: Request, forum: ForumData) throws {
-				trunk = .init(req, title: "Edit Forum Thread", tab: .forums, search: "Search")
+				trunk = .init(req, title: "Edit Forum Thread", tab: .forums)
 				self.forum = forum
 				self.post = .init(forType: .forumEdit(forum))
 			}
@@ -694,7 +707,7 @@ struct SiteForumController: SiteControllerUtils {
 			var post: MessagePostContext
 
 			init(_ req: Request, post: PostDetailData) throws {
-				trunk = .init(req, title: "Edit Forum Post", tab: .forums, search: "Search")
+				trunk = .init(req, title: "Edit Forum Post", tab: .forums)
 				self.post = .init(forType: .forumPostEdit(post))
 			}
 		}
@@ -854,17 +867,11 @@ struct SiteForumController: SiteControllerUtils {
 	//
 	// Shows results of forum or post searches from the header search bar.
 	func forumSearchPageHandler(_ req: Request) async throws -> View {
-		struct FormData: Content {
-			var search: String?
-			var creator: String?
-			var creatorid: String?
-			var searchType: String
-		}
-		let formData = try req.query.decode(FormData.self)
+		let formData = try req.query.decode(SearchFormData.self)
 		if formData.searchType == "forums" {
 			let response = try await apiQuery(req, endpoint: "/forum/search", passThroughQuery: true)
 			let responseData = try response.content.decode(ForumSearchData.self)
-			var filterDesc = "Forums"
+			var filterDesc = "\(responseData.paginator.total) \(responseData.paginator.total == 1 ? "Forum" : "Forums")"
 			if let creator = formData.creator {
 				filterDesc.append(contentsOf: " by \(creator)")
 			}
@@ -874,28 +881,28 @@ struct SiteForumController: SiteControllerUtils {
 			if let searchStr = formData.search {
 				filterDesc.append(contentsOf: " with \"\(searchStr)\"")
 			}
-			let ctx = try ForumsSearchPageContext(
-				req,
-				forums: responseData,
-				searchType: .textSearch,
-				filterDesc: "\(responseData.paginator.total) \(filterDesc)"
-			)
+			var ctx = try ForumsSearchPageContext(req, forums: responseData, searchType: .textSearch, filterDesc: filterDesc, formData: formData)
+			if let categoryID = formData.categoryID {
+				let catResponse = try await apiQuery(req, endpoint: "/forum/categories", query: [URLQueryItem(name: "cat", value: categoryID.uuidString)])
+				let catInfo = try catResponse.content.decode([CategoryData].self)
+				ctx.categoryData = catInfo.first
+			}
 			return try await req.view.render("Forums/forumsList", ctx)
 		}
 		else {
 			// search for posts
-			guard let querySearch = formData.search?.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-			else {
-				throw Abort(.badRequest, reason: "Invalid search string.")
-			}
-			let response = try await apiQuery(req, endpoint: "/forum/post/search?search=\(querySearch)")
+			let response = try await apiQuery(req, endpoint: "/forum/post/search", passThroughQuery: true)
 			let responseData = try response.content.decode(PostSearchData.self)
-			let ctx = try PostSearchPageContext(
-				req,
-				posts: responseData,
-				searchType: .textSearch,
-				searchString: formData.search ?? ""
-			)
+			var ctx = try PostSearchPageContext(req, posts: responseData, searchType: .textSearch, formData: formData)
+			if let forumID = formData.forumID {
+				let forumResponse = try await apiQuery(req, endpoint: "/forum/\(forumID)", query: [URLQueryItem(name: "limit", value: "0")])
+				ctx.forumData = try forumResponse.content.decode(ForumData.self)
+			}
+			if let categoryID = ctx.forumData?.categoryID ?? formData.categoryID {
+				let catResponse = try await apiQuery(req, endpoint: "/forum/categories", query: [URLQueryItem(name: "cat", value: categoryID.uuidString)])
+				let catInfo = try catResponse.content.decode([CategoryData].self)
+				ctx.categoryData = catInfo.first
+			}
 			return try await req.view.render("Forums/forumPostsList", ctx)
 		}
 	}

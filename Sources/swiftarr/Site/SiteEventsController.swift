@@ -2,7 +2,14 @@ import Crypto
 import FluentSQL
 import Vapor
 
-struct EventPageContext: Encodable {
+fileprivate struct EventsQueryStruct: Content {
+	var search: String?
+	var type: String?
+	var day: String?			// 3 letter abbreviation for a day of the week
+	var cruiseday: Int?			
+}
+
+fileprivate struct EventPageContext: Encodable {
 	struct CruiseDay: Encodable {
 		var name: String  // "Sun", "Mon", etc.
 		var index: Int  // [0...7] For a Saturday...Saturday cruise, embark is day 0, return is day 7.
@@ -15,22 +22,19 @@ struct EventPageContext: Encodable {
 	var isAfterCruise: Bool
 	var upcomingEvent: EventData?
 	var filterString: String
-	var useAllDays: Bool
+	var useAllDays: Bool				// TRUE for search results. Changes the weekday bar into a bunch of filtering checkboxes.
 	var cruiseStartDate: Date
 	var cruiseEndDate: Date
 	var webcalURL: String
+	var query: EventsQueryStruct
 
-	init(_ req: Request, events: [EventData], dayOfCruise: Int, filterString: String, allDays: Bool) {
+	fileprivate init(_ req: Request, events: [EventData], dayOfCruise: Int, filterString: String, query: EventsQueryStruct) {
 		self.events = events
-		trunk = .init(req, title: "Events", tab: .events, search: "Search Events")
+		trunk = .init(req, title: "Events", tab: .events)
+		self.query = query
 		isBeforeCruise = Date() < Settings.shared.cruiseStartDate()
-		isAfterCruise =
-			Date() > Settings.shared.getPortCalendar()
-			.date(
-				byAdding: .day,
-				value: Settings.shared.cruiseLengthInDays,
-				to: Settings.shared.cruiseStartDate()
-			) ?? Date()
+		isAfterCruise = Date() > Settings.shared.getPortCalendar()
+				.date(byAdding: .day, value: Settings.shared.cruiseLengthInDays, to: Settings.shared.cruiseStartDate()) ?? Date()
 
 		// Set up the day buttons, one for each day of the cruise.
 		let daynames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
@@ -46,7 +50,7 @@ struct EventPageContext: Encodable {
 			}
 		}
 		self.filterString = filterString
-		self.useAllDays = allDays
+		self.useAllDays = query.search != nil
 		self.cruiseStartDate = Settings.shared.cruiseStartDate()
 		var dateComponent = DateComponents()
 		dateComponent.day = Settings.shared.cruiseLengthInDays
@@ -111,14 +115,13 @@ struct SiteEventsController: SiteControllerUtils {
 		components.queryItems = []
 		var dayOfCruise: Int = -1
 		var filterString = "Events"
-		var useAllDays: Bool = false
-
-		if let searchParam = req.query[String.self, at: "search"] {
+		let queryStruct = try req.query.decode(EventsQueryStruct.self)
+		
+		if let searchParam = queryStruct.search {
 			components.queryItems?.append(URLQueryItem(name: "search", value: searchParam))
 			filterString = "Events matching \"\(searchParam)\""
-			useAllDays = true
 		}
-		if let weekdayParam = req.query[String.self, at: "day"] {
+		if let weekdayParam = queryStruct.day {
 			components.queryItems?.append(URLQueryItem(name: "day", value: weekdayParam))
 			var dayOfWeek: Int
 			switch weekdayParam {
@@ -133,7 +136,7 @@ struct SiteEventsController: SiteControllerUtils {
 			}
 			dayOfCruise = (7 + dayOfWeek - Settings.shared.cruiseStartDayOfWeek) % 7 + 1
 		}
-		else if let cruisedayParam = req.query[Int.self, at: "cruiseday"] {
+		else if let cruisedayParam = queryStruct.cruiseday {
 			components.queryItems?.append(URLQueryItem(name: "cruiseday", value: String(cruisedayParam)))
 			dayOfCruise = cruisedayParam
 		}
@@ -152,21 +155,9 @@ struct SiteEventsController: SiteControllerUtils {
 			filterString = "Today's " + filterString
 		}
 
-		let response = try await apiQuery(
-			req,
-			endpoint: "/events",
-			query: components.queryItems,
-			passThroughQuery: false
-		)
+		let response = try await apiQuery(req, endpoint: "/events", query: components.queryItems, passThroughQuery: false)
 		let events: [EventData] = try response.content.decode([EventData].self)
-
-		let eventContext = EventPageContext(
-			req,
-			events: events,
-			dayOfCruise: dayOfCruise,
-			filterString: filterString,
-			allDays: useAllDays
-		)
+		let eventContext = EventPageContext(req, events: events, dayOfCruise: dayOfCruise, filterString: filterString, query: queryStruct)
 		return try await req.view.render("events", eventContext)
 	}
 
@@ -178,8 +169,8 @@ struct SiteEventsController: SiteControllerUtils {
 		var events: [EventData] = []
 		var dayOfCruise: Int = -1
 		let filterString = "Event"
-		let useAllDays: Bool = false
 		let cal = Settings.shared.calendarForDate(Date())
+		let queryStruct = try req.query.decode(EventsQueryStruct.self)
 
 		var thisWeekday = cal.component(.weekday, from: Date())
 		if let eventID = req.parameters.get(eventIDParam.paramString)?.percentEncodeFilePathEntry() {
@@ -190,14 +181,7 @@ struct SiteEventsController: SiteControllerUtils {
 		}
 
 		dayOfCruise = (7 + thisWeekday - Settings.shared.cruiseStartDayOfWeek) % 7 + 1
-
-		let eventContext = EventPageContext(
-			req,
-			events: events,
-			dayOfCruise: dayOfCruise,
-			filterString: filterString,
-			allDays: useAllDays
-		)
+		let eventContext = EventPageContext(req, events: events, dayOfCruise: dayOfCruise, filterString: filterString, query: queryStruct)
 		return try await req.view.render("events", eventContext)
 	}
 

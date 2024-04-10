@@ -108,5 +108,27 @@
 		</div>
 		#extend("paginator")
     #endexport
+    #export("hassearch", true)
+    #export("searchform"):
+		<div class="container-fluid collapse swiftarr-searchbar" id="searchBar">
+			<form action="/forum/search">
+  				<input type="hidden" name="categoryID" value="#(forums.categoryID)" /> 
+				<div class="btn-group w-100 mb-1" role="group" aria-label="Toggle for searching Forums or Posts">
+						<input type="radio" class="btn-check" name="searchType" value="forums" id="forumsButton" autocomplete="off" checked>
+						<label class="btn btn-outline-success flex-grow-0 col-6 ms-0" for="forumsButton">Forums</label>
+						<input type="radio" class="btn-check" name="searchType" value="posts" id="postsButton" autocomplete="off">
+						<label class="btn btn-outline-success flex-grow-0 col-6 ms-0" for="postsButton">Posts</label>
+				</div>
+				<div class="row justify-content-between">
+					<div class="col flex-grow-1 pe-0">
+						<input class="form-control" type="search" name="search" value="" placeholder="Search This Category" aria-label="Search" autocapitalize="off" required>
+					</div>
+					<div class="col col-auto ps-0">
+						<button class="btn btn-success ms-2" type="submit">Search</button>
+					</div>
+				</div>
+			</form>
+		</div>
+    #endexport
 #endextend
 

@@ -24,7 +24,7 @@ struct TweetPageContext: Encodable {
 	var filterType: FilterType
 
 	init(_ req: Request, tweets: [TwarrtData], replyGroup: Int? = nil) throws {
-		trunk = .init(req, title: "Tweets", tab: .twarrts, search: "Search Tweets")
+		trunk = .init(req, title: "Tweets", tab: .twarrts)
 		self.tweets = tweets
 		let queryStruct = try req.query.decode(TwarrtQueryOptions.self)
 		var filters: [String] = []

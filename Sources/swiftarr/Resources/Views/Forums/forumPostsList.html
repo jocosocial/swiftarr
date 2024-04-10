@@ -6,6 +6,12 @@
 					<nav aria-label="breadcrumb">
 						<ol class="breadcrumb">
 							<li class="breadcrumb-item"><a href="/forums">Forums</a></li>
+							#if(categoryData != nil):
+								<li class="breadcrumb-item" aria-current="page"><a href="/forums/#(categoryData.categoryID)">#(categoryData.title)</a></li>
+							#endif
+							#if(forumData != nil):
+								<li class="breadcrumb-item" aria-current="page"><a href="/forum/#(forumData.forumID)">#(forumData.title)</a></li>
+							#endif
 							<li class="breadcrumb-item active" aria-current="page">#(filterDescription)</li>
 						</ol>
 					</nav>
@@ -195,6 +201,27 @@
 					</div>
 				</div>
 			</div>
+		</div>
+    #endexport
+    #export("hassearch", true)
+    #export("searchform"):
+		<div class="container-fluid collapse swiftarr-searchbar#if(formData.search): show#endif" id="searchBar">
+			<form action="/forum/search">
+				<div class="btn-group w-100 mb-1" role="group" aria-label="Toggle for searching Forums or Posts">
+						<input type="radio" class="btn-check" name="searchType" value="forums" id="forumsButton" autocomplete="off">
+						<label class="btn btn-outline-success flex-grow-0 col-6 ms-0" for="forumsButton">Forums</label>
+						<input type="radio" class="btn-check" name="searchType" value="posts" id="postsButton" autocomplete="off" checked>
+						<label class="btn btn-outline-success flex-grow-0 col-6 ms-0" for="postsButton">Posts</label>
+				</div>
+				<div class="row justify-content-between">
+					<div class="col flex-grow-1 pe-0">
+						<input class="form-control" type="search" name="search" value="#(formData.search)" placeholder="Search Forum Posts" aria-label="Search" autocapitalize="off" required>
+					</div>
+					<div class="col col-auto ps-0">
+						<button class="btn btn-success ms-2" type="submit">Search</button>
+					</div>
+				</div>
+			</form>
 		</div>
     #endexport
 #endextend

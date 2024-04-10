@@ -3,7 +3,9 @@
     	<div class="container-md ms-0 mt-2">
     		<div class="row mb-2 align-items-end">
     			<div class="col">
-    				<h6><b>#(trunk.title)</b></h6>
+   					<div class="col">
+						<h6><b>#(queryDescription)</b></h6>
+					</div>
 				</div>
     			<div class="col col-auto align-self-end">
 					#if(filterEnable):
@@ -20,10 +22,10 @@
 				#if(count(fezzes) == 0):
 					<div class="row">
 						<div class="col">
-							#if(filterActive):
-								<li class="list-group-item">You have no Seamail chats with new messages.</li>
+							#if(query.search):
+								<li class="list-group-item">No search results found. Try another search, or start a new Seamail by tapping "New Seamail".</li>
 							#else:
-								<li class="list-group-item">#(noSeamails)</li>
+								<li class="list-group-item">You haven't received any Seamail messages yet, but you can create one by tapping "New Seamail"</li>
 							#endif
 						</div>
 					</div>
@@ -64,6 +66,15 @@
 				#endif
 			</div>
 			#extend("paginator")
+		</div>
+    #endexport
+    #export("hassearch", true)
+    #export("searchform"):
+		<div class="container-fluid collapse swiftarr-searchbar#if(query.search): show#endif" id="searchBar">
+			<form class="d-flex" action="/seamail/search">
+				<input class="form-control" type="search" name="search" value="#(query.search)" placeholder="Search Seamails" aria-label="Search" autocapitalize="off" required>
+				<button class="btn btn-success ms-2" type="submit">Search</button>
+			</form>
 		</div>
     #endexport
 #endextend

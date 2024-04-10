@@ -201,4 +201,13 @@
 			</div>
 		</div>
     #endexport
+    #export("hassearch", true)
+    #export("searchform"):
+		<div class="container-fluid collapse swiftarr-searchbar#if(query.search): show#endif" id="searchBar">
+			<form class="d-flex">
+				<input class="form-control" type="search" name="search" value="#(query.search)" placeholder="Search Events" aria-label="Search" autocapitalize="off" required>
+				<button class="btn btn-success ms-2" type="submit">Search</button>
+			</form>
+		</div>
+    #endexport
 #endextend

@@ -6,9 +6,6 @@ import Vapor
 struct TrunkContext: Encodable {
 	var title: String
 	var metaRedirectURL: String?
-	var searchPrompt: String?  // Tells user what search fields does e.g. "Search Tweets"
-	var searchString: String?  // The user's previously entered search string. Nil if this page isn't search results.
-	var searchPosts: Bool  // TRUE if we're searching posts; only relevant if we're using the Forum search form
 
 	// current nav item
 	enum Tab: String, Codable {
@@ -46,7 +43,7 @@ struct TrunkContext: Encodable {
 	var newTweetAlertwords: Bool
 	var newForumAlertwords: Bool
 
-	init(_ req: Request, title: String, tab: Tab, search: String? = nil) {
+	init(_ req: Request, title: String, tab: Tab) {
 		if let user = req.auth.get(UserCacheData.self) {
 			let userAccessLevel = UserAccessLevel(rawValue: req.session.data["accessLevel"] ?? "banned") ?? .banned
 			userIsLoggedIn = true
@@ -89,15 +86,6 @@ struct TrunkContext: Encodable {
 		self.title = title
 		self.tab = tab
 		self.inTwitarrSubmenu = [.home, .lfg, .games, .karaoke, .moderator, .admin].contains(tab)
-		self.searchPrompt = search
-
-		// Pull search params, if any, out of the request's query.
-		// This is to place the (just-run) search params back in the search form.
-		let queryItems = req.url.query?.split(separator: "&")
-		searchString =
-			queryItems?.first(where: { $0.hasPrefix("search=") })?.dropFirst(7).replacingOccurrences(of: "+", with: " ")
-			.removingPercentEncoding
-		searchPosts = queryItems?.contains("searchType=posts") ?? false
 
 		newTweetAlertwords = alertCounts.alertWords.contains { $0.newTwarrtMentionCount > 0 }
 		newForumAlertwords = alertCounts.alertWords.contains { $0.newForumMentionCount > 0 }

@@ -21,7 +21,7 @@ struct GameListContext: Encodable {
 	}
 
 	init(_ req: Request, games: BoardgameResponseData) throws {
-		trunk = .init(req, title: "Board Games List", tab: .games, search: "Search")
+		trunk = .init(req, title: "Board Games List", tab: .games)
 		self.games = games
 		searchText = req.query[String.self, at: "search"] ?? ""
 		if req.query[String.self, at: "favorite"]?.lowercased() == "true" {
