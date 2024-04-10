@@ -74,9 +74,9 @@ final class Settings: Encodable {
 	/// The name of the onboard Wifi network. Delivered to cients in the notification endpoint.
 	@StoredSettingsValue("shipWifiSSID", defaultValue: "NieuwAmsterdam-Guest") var shipWifiSSID: String
 	
-	/// The URL to use when checking for automatic schedule updates. Genearlly a sched.com URL of the form `https://jococruise2023.sched.com/all.ics`
+	/// The URL to use when checking for automatic schedule updates. Genearlly a sched.com URL of the form `https://jococruise2024.sched.com/all.ics`
 	/// Should always point to an URL that returns an iCalendar formatted file.
-	@StoredSettingsValue("scheduleUpdateURL", defaultValue: "http://jococruise2023.sched.com/all.ics") var scheduleUpdateURL: String
+	@StoredSettingsValue("scheduleUpdateURL", defaultValue: "http://jococruise2024.sched.com/all.ics") var scheduleUpdateURL: String
 
 	// MARK: Limits
 	/// The maximum number of alt accounts per primary user account.
@@ -108,10 +108,12 @@ final class Settings: Encodable {
 	/// A Date set to midnight on the day the cruise ship leaves port, in the timezone the ship leaves from. Used by the Events Controller for date arithimetic.
 	/// The default here should get overwritten in configure.swift. This is purely for convenience to set the start date via
 	/// configure.swift. This setting should not be referenced anywhere. That's what cruiseStartDate()` below is for.
-	@SettingsValue var cruiseStartDateComponents: DateComponents = DateComponents(year: 2023, month: 3, day: 5)
+	/// This must align with cruiseStartDayOfWeek set immediately below.
+	@SettingsValue var cruiseStartDateComponents: DateComponents = DateComponents(year: 2024, month: 3, day: 9)
 
 	/// The day of week when the cruise embarks, expressed as number as Calendar's .weekday uses them: Range 1...7, Sunday == 1.
-	@SettingsValue var cruiseStartDayOfWeek: Int = 1
+	/// Doing DateComponents(year: 2024, month: 3, day: 9).weekday! didnt work here. Hmm....
+	@SettingsValue var cruiseStartDayOfWeek: Int = 7
 
 	/// The length in days of the cruise, includes partial days. A cruise that embarks on Saturday and returns the next Saturday should have a value of 8.
 	@SettingsValue var cruiseLengthInDays: Int = 8

@@ -4,16 +4,17 @@ Linux Installation
 Prerequisites
 -------------
 
-01. You will need an instance of PostgreSQL (postgres) and Redis. It is HIGHLY
-    recommended to use the Dockerized instances provided by `scripts/docker-compose-instance.yml`
-    and its wrapper (`scripts/instance.sh`). If you want natively-installed
-    instances of these applications you are on your own.
+01. You will need a Swift toolchain. While this is probably available as a package via your system package manager, 
+    we recommend using [Swiftly](https://github.com/swift-server/swiftly) to install the particular version we use. 
+    Consult the `.swift-version` file at the root of this repo to see which version you should install.
 
-02. Several packages and libraries are required. Install these with your 
-    package manager.
+02. You will need an instance of PostgreSQL (postgres) and Redis. It is HIGHLY recommended to use the Dockerized 
+    instances provided by `scripts/docker-compose-instance.yml` and its wrapper (`scripts/instance.sh`). If you want natively-installed instances of these applications you are on your own.
+
+03. Several packages and libraries are required. Install these with your package manager.
     ```
-    Fedora: gd-devel libjpeg-turbo-devel swift-lang
-    Ubuntu: libgd-dev libjpeg-dev swiftlang (requires 3rd party repo)
+    Fedora: gd-devel libjpeg-turbo-devel
+    Ubuntu: libgd-dev libjpeg-dev
     ```
 
 Configure
@@ -44,7 +45,7 @@ Run
 02. If you are populating a fresh database then you'll need to run a migration.
     to get some data. See the [Vapor docs](https://docs.vapor.codes/4.0/fluent/overview/#migrate) for details.
     ```
-    swift run Run migrate --yes
+    swift run swiftarr migrate --yes
     ```
     Example output:
     ```
