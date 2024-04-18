@@ -21,13 +21,9 @@ struct ModerationController: APIRouteCollection {
 	func registerRoutes(_ app: Application) throws {
 
 		// convenience route group for all /api/v3/mod endpoints
-		let modRoutes = app.grouped("api", "v3", "mod")
-
-		// instantiate authentication middleware
-		let requireModMiddleware = RequireModeratorMiddleware()
+		let moderatorAuthGroup = app.grouped("api", "v3", "mod").addTokenAuthRequirement().grouped(RequireModeratorMiddleware())
 
 		// endpoints available for Moderators only
-		let moderatorAuthGroup = addTokenCacheAuthGroup(to: modRoutes).grouped([requireModMiddleware])
 		moderatorAuthGroup.get("reports", use: reportsHandler)
 		moderatorAuthGroup.post("reports", ":report_id", "handleall", use: beginProcessingReportsHandler)
 		moderatorAuthGroup.post("reports", ":report_id", "closeall", use: closeReportsHandler)

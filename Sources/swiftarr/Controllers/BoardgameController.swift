@@ -10,20 +10,20 @@ struct BoardgameController: APIRouteCollection {
 
 		// convenience route group for all /api/v3/boardgame endpoints
 		let boardgameRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .gameslist))
-			.grouped("api", "v3", "boardgames")
+				.grouped("api", "v3", "boardgames")
 
-		let flexAuthGroup = addFlexCacheAuthGroup(to: boardgameRoutes)
+		let flexAuthGroup = boardgameRoutes.addFlexAuth()
 		flexAuthGroup.get("", use: getBoardgames)
 		flexAuthGroup.get(boardgameIDParam, use: getBoardgame)
 		flexAuthGroup.get("expansions", boardgameIDParam, use: getExpansions)
 		flexAuthGroup.get("recommend", use: recommendGames)
 
-		let tokenAuthGroup = addTokenCacheAuthGroup(to: boardgameRoutes)
+		let tokenAuthGroup = boardgameRoutes.addTokenAuthRequirement()
 		tokenAuthGroup.post(boardgameIDParam, "favorite", use: addFavorite)
 		tokenAuthGroup.post(boardgameIDParam, "favorite", "remove", use: removeFavorite)
 		tokenAuthGroup.delete(boardgameIDParam, "favorite", use: removeFavorite)
 
-		let adminAuthGroup = addTokenCacheAuthGroup(to: boardgameRoutes).grouped([RequireAdminMiddleware()])
+		let adminAuthGroup = boardgameRoutes.addTokenAuthRequirement().grouped([RequireAdminMiddleware()])
 		adminAuthGroup.post("reload", use: reloadBoardGamesData)
 	}
 

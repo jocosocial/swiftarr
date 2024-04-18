@@ -11,19 +11,18 @@ struct ImageController: APIRouteCollection {
 
 		// convenience route group for all /api/v3/image endpoints
 		let imageRoutes = app.grouped("api", "v3", "image")
-		let userImageRoutes = imageRoutes.grouped(DisabledAPISectionMiddleware(feature: .images))
 
 		// open access endpoints
-		userImageRoutes.get("full", ":image_filename", use: getImage_FullHandler)
-		userImageRoutes.get("thumb", ":image_filename", use: getImage_ThumbnailHandler)
+		let userImageRoutes = imageRoutes.grouped(DisabledAPISectionMiddleware(feature: .images))
+		userImageRoutes.get("full", imageFilenameParam, use: getImage_FullHandler)
+		userImageRoutes.get("thumb", imageFilenameParam, use: getImage_ThumbnailHandler)
 		userImageRoutes.get("user", "identicon", userIDParam, use: getUserIdenticonHandler)
 		userImageRoutes.get("user", "full", userIDParam, use: getUserAvatarHandler)
 		userImageRoutes.get("user", "thumb", userIDParam, use: getUserAvatarHandler)
 
 		// Moderator-only endpoints
-		let requireModMiddleware = RequireModeratorMiddleware()
-		let tokenAuthGroup = addTokenCacheAuthGroup(to: imageRoutes).grouped(requireModMiddleware)
-		tokenAuthGroup.get("archive", ":image_filename", use: getImage_ArchivedHandler)
+		let tokenAuthGroup = imageRoutes.addTokenAuthRequirement().grouped(RequireModeratorMiddleware())
+		tokenAuthGroup.get("archive", imageFilenameParam, use: getImage_ArchivedHandler)
 	}
 
 	/// `GET /api/v3/image/full/STRING`
@@ -161,7 +160,7 @@ struct ImageController: APIRouteCollection {
 	func getUserUploadedImage(_ req: Request, sizeGroup: ImageSizeGroup, imageFilename: String? = nil) throws
 		-> Response
 	{
-		let inputFilename = imageFilename ?? req.parameters.get("image_filename")
+		let inputFilename = imageFilename ?? req.parameters.get(imageFilenameParam.paramString)
 		guard let fileParam = inputFilename else {
 			throw Abort(.badRequest, reason: "No image file specified.")
 		}

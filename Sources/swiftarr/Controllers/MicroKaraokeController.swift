@@ -8,13 +8,13 @@ struct MicroKaraokeController: APIRouteCollection {
 	/// Required. Registers routes to the incoming router.
 	func registerRoutes(_ app: Application) throws {
 
-		// convenience route group for all /api/v3/karaoke endpoints
+		// convenience route group for all /api/v3/microkaraoke endpoints
 		let baseRoute = app.grouped(DisabledAPISectionMiddleware(feature: .microkaraoke)).grouped("api", "v3", "microkaraoke")
 
-		let flexAuthGroup = addFlexCacheAuthGroup(to: baseRoute)
+		let flexAuthGroup = baseRoute.addFlexAuth()
 		flexAuthGroup.get("video", filenameParam, use: getUserVideoClip)
 
-		let tokenAuthGroup = addTokenCacheAuthGroup(to: baseRoute)
+		let tokenAuthGroup = baseRoute.addTokenAuthRequirement()
 		tokenAuthGroup.post("offer", use: retrieveMicroKaraokeOffer)
 		tokenAuthGroup.on(.POST,"recording", body: .collect(maxSize: "50mb"), use: uploadMicroKaraokeRecording)
 		tokenAuthGroup.get("songlist", use: getCompletedSongList)

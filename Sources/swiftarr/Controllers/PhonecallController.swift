@@ -93,29 +93,15 @@ struct PhonecallController: APIRouteCollection {
 		// Open access routes
 
 		// endpoints available only when logged in
-		let tokenCacheAuthGroup = addTokenCacheAuthGroup(to: phoneRoutes)
-		tokenCacheAuthGroup.webSocket(
-			"socket",
-			"initiate",
-			phonecallParam,
-			"to",
-			userIDParam,
-			shouldUpgrade: shouldCreatePhoneSocket,
-			onUpgrade: createPhoneSocket
-		)
-		tokenCacheAuthGroup.webSocket(
-			"socket",
-			"answer",
-			phonecallParam,
-			shouldUpgrade: shouldAnswerPhoneSocket,
-			onUpgrade: answerPhoneSocket
-		)
+		let tokenAuthGroup = phoneRoutes.addTokenAuthRequirement()
+		tokenAuthGroup.webSocket("socket", "initiate", phonecallParam, "to", userIDParam, shouldUpgrade: shouldCreatePhoneSocket, onUpgrade: createPhoneSocket)
+		tokenAuthGroup.webSocket("socket", "answer", phonecallParam, shouldUpgrade: shouldAnswerPhoneSocket, onUpgrade: answerPhoneSocket)
 
-		tokenCacheAuthGroup.post("answer", phonecallParam, use: answerPhoneCall)
-		tokenCacheAuthGroup.post("decline", phonecallParam, use: declinePhoneCall)
+		tokenAuthGroup.post("answer", phonecallParam, use: answerPhoneCall)
+		tokenAuthGroup.post("decline", phonecallParam, use: declinePhoneCall)
 
 		// Routes only used for direct-connect phone sessions
-		let directPhoneAuthGroup = tokenCacheAuthGroup.grouped(DisabledAPISectionMiddleware(feature: .directphone))
+		let directPhoneAuthGroup = tokenAuthGroup.grouped(DisabledAPISectionMiddleware(feature: .directphone))
 		directPhoneAuthGroup.post("initiate", phonecallParam, "to", userIDParam, use: initiateCallHandler)
 	}
 

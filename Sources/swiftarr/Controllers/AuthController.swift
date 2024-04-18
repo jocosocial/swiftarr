@@ -58,11 +58,11 @@ struct AuthController: APIRouteCollection {
 		authRoutes.post("recovery", use: recoveryHandler)
 
 		// endpoints available only when not logged in
-		let basicAuthGroup = addBasicAuthGroup(to: authRoutes)
+		let basicAuthGroup = authRoutes.addBasicAuthRequirement()
 		basicAuthGroup.post("login", use: loginHandler)
 
 		// endpoints available only when logged in
-		let tokenAuthGroup = addTokenCacheAuthGroup(to: authRoutes)
+		let tokenAuthGroup = authRoutes.addTokenAuthRequirement()
 		tokenAuthGroup.post("logout", use: logoutHandler)
 	}
 

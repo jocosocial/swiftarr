@@ -11,19 +11,19 @@ struct KaraokeController: APIRouteCollection {
 		// convenience route group for all /api/v3/karaoke endpoints
 		let baseRoute = app.grouped(DisabledAPISectionMiddleware(feature: .karaoke)).grouped("api", "v3", "karaoke")
 
-		let flexAuthGroup = addFlexCacheAuthGroup(to: baseRoute)
+		let flexAuthGroup = baseRoute.addFlexAuth()
 		flexAuthGroup.get("", use: getKaraokeSongs)
 		flexAuthGroup.get(songIDParam, use: getKaraokeSong)
 		flexAuthGroup.get("latest", use: getLatestPerformedSongs)
 
-		let tokenAuthGroup = addTokenCacheAuthGroup(to: baseRoute)
+		let tokenAuthGroup = baseRoute.addTokenAuthRequirement()
 		tokenAuthGroup.post(songIDParam, "favorite", use: addFavorite)
 		tokenAuthGroup.post(songIDParam, "favorite", "remove", use: removeFavorite)
 		tokenAuthGroup.delete(songIDParam, "favorite", use: removeFavorite)
 		tokenAuthGroup.get("userismanager", use: userCanLogKaraokeSongPerformances)
 		tokenAuthGroup.post(songIDParam, "logperformance", use: logSongPerformance)
 
-		let adminAuthGroup = addTokenCacheAuthGroup(to: baseRoute).grouped([RequireAdminMiddleware()])
+		let adminAuthGroup = baseRoute.addTokenAuthRequirement().grouped([RequireAdminMiddleware()])
 		adminAuthGroup.post("reload", use: reloadKaraokeData)
 	}
 

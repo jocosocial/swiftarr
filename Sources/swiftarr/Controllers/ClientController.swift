@@ -22,12 +22,12 @@ struct ClientController: APIRouteCollection {
 		clientRoutes.get("health", use: healthHandler)
 
 		// endpoints available only when logged in
-		let tokenAuthGroup = addTokenCacheAuthGroup(to: clientRoutes)
+		let tokenAuthGroup = clientRoutes.addTokenAuthRequirement()
 		tokenAuthGroup.get("user", "updates", "since", ":date", use: userUpdatesHandler)
 		tokenAuthGroup.get("usersearch", use: userSearchHandler)
 
 		// Endpoints available with HTTP Basic auth. I'd prefer token auth for this, but setting that up looks difficult.
-		let basicAuthGroup = addBasicAuthGroup(to: clientRoutes)
+		let basicAuthGroup = clientRoutes.addBasicAuthRequirement()
 		basicAuthGroup.get("metrics", use: prometheusMetricsSource)
 		basicAuthGroup.post("alert", use: prometheusAlertHandler)
 	}

@@ -22,27 +22,28 @@ struct AlertController: APIRouteCollection {
 
 		// convenience route group for all /api/v3/notification endpoints
 		let alertRoutes = app.grouped("api", "v3", "notification")
+		
+		// Open access routes--no login required
 		alertRoutes.get("hashtags", searchStringParam, use: getHashtagsHandler)
 
 		// Flexible access endpoints -- login not required, although calls may act differently if logged in
-		let flexAuthGroup = addFlexCacheAuthGroup(to: alertRoutes)
+		let flexAuthGroup = alertRoutes.addFlexAuth()
 		flexAuthGroup.get("global", use: globalNotificationHandler)
 		flexAuthGroup.get("user", use: globalNotificationHandler)
 		flexAuthGroup.get("announcements", use: getAnnouncements)
 		flexAuthGroup.get("dailythemes", use: getDailyThemes)
 
 		// endpoints available only when logged in
-		let tokenAuthGroup = addTokenCacheAuthGroup(to: alertRoutes)
+		let tokenAuthGroup = alertRoutes.addTokenAuthRequirement()
 		tokenAuthGroup.webSocket("socket", onUpgrade: createNotificationSocket)  // shouldUpgrade: (Request) -> Headers
 
 		// endpoints available only when logged in as TwitarrTeam or above
-		let ttAuthGroup = addTokenCacheAuthGroup(to: alertRoutes).grouped(RequireTwitarrTeamMiddleware())
+		let ttAuthGroup = alertRoutes.addTokenAuthRequirement().grouped(RequireTwitarrTeamMiddleware())
 		ttAuthGroup.get("announcement", announcementIDParam, use: getSingleAnnouncement)
 		ttAuthGroup.post("announcement", "create", use: createAnnouncement)
 		ttAuthGroup.post("announcement", announcementIDParam, "edit", use: editAnnouncement)
 		ttAuthGroup.post("announcement", announcementIDParam, "delete", use: deleteAnnouncement)
 		ttAuthGroup.delete("announcement", announcementIDParam, use: deleteAnnouncement)
-
 	}
 
 	// MARK: - Hashtags

@@ -17,20 +17,17 @@ struct UsersController: APIRouteCollection {
 	/// Required. Registers routes to the incoming router.
 	func registerRoutes(_ app: Application) throws {
 
-		// convenience route group for all /api/v3/users endpoints
-		let usersRoutes = app.grouped("api", "v3", "users")
-
-		// endpoints available only when logged in
-		let tokenCacheAuthGroup = addTokenCacheAuthGroup(to: usersRoutes)
-		tokenCacheAuthGroup.get("find", ":userSearchString", use: findHandler)
-		tokenCacheAuthGroup.get(userIDParam, use: headerHandler)
-		tokenCacheAuthGroup.get("match", "allnames", searchStringParam, use: matchAllNamesHandler)
-		tokenCacheAuthGroup.get("match", "username", searchStringParam, use: matchUsernameHandler)
-		tokenCacheAuthGroup.get(userIDParam, "profile", use: profileHandler)
-		tokenCacheAuthGroup.post(userIDParam, "report", use: reportHandler)
+		// endpoints available only when logged in, and not subject to feature-disable flags.
+		let tokenAuthGroup = app.grouped("api", "v3", "users").addTokenAuthRequirement()
+		tokenAuthGroup.get("find", ":userSearchString", use: findHandler)
+		tokenAuthGroup.get(userIDParam, use: headerHandler)
+		tokenAuthGroup.get("match", "allnames", searchStringParam, use: matchAllNamesHandler)
+		tokenAuthGroup.get("match", "username", searchStringParam, use: matchUsernameHandler)
+		tokenAuthGroup.get(userIDParam, "profile", use: profileHandler)
+		tokenAuthGroup.post(userIDParam, "report", use: reportHandler)
 
 		// Endpoints available only when logged in, and also can be disabled by server admin
-		let blockableAuthGroup = tokenCacheAuthGroup.grouped(DisabledAPISectionMiddleware(feature: .users))
+		let blockableAuthGroup = tokenAuthGroup.grouped(DisabledAPISectionMiddleware(feature: .users))
 
 		// Notes on users
 		blockableAuthGroup.post(userIDParam, "note", use: noteCreateHandler)

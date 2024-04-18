@@ -15,91 +15,76 @@ struct ForumController: APIRouteCollection {
 		let forumRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .forums)).grouped("api", "v3", "forum")
 
 		// Flex access endpoints
-		let flexAuthGroup = addFlexCacheAuthGroup(to: forumRoutes)
+		let flexAuthGroup = forumRoutes.addFlexAuth()
 		flexAuthGroup.get("categories", use: categoriesHandler)
 
 		// Forum Route Group, requires token
-		let tokenCacheAuthGroup = addTokenCacheAuthGroup(to: forumRoutes)
+		let tokenAuthGroup = forumRoutes.addTokenAuthRequirement()
 
 		// Categories
-		tokenCacheAuthGroup.get("categories", categoryIDParam, use: categoryForumsHandler)
+		tokenAuthGroup.get("categories", categoryIDParam, use: categoryForumsHandler)
 
 		// Forums - CRUD first, then actions on forums
-		tokenCacheAuthGroup.on(
-			.POST,
-			"categories",
-			categoryIDParam,
-			"create",
-			body: .collect(maxSize: "30mb"),
-			use: forumCreateHandler
-		)
-		tokenCacheAuthGroup.get(forumIDParam, use: forumThreadHandler)  // Returns a forum thread by ID
-		tokenCacheAuthGroup.get("post", postIDParam, "forum", use: postForumThreadHandler)  // Returns the forum a post is in.
-		tokenCacheAuthGroup.get("forevent", ":event_id", use: eventForumThreadHandler)  // Returns the forum for an event
-		tokenCacheAuthGroup.post(forumIDParam, "rename", ":new_name", use: forumRenameHandler)
-		tokenCacheAuthGroup.post(forumIDParam, "delete", use: forumDeleteHandler)
-		tokenCacheAuthGroup.delete(forumIDParam, use: forumDeleteHandler)
-
-		tokenCacheAuthGroup.post(forumIDParam, "report", use: forumReportHandler)
+		tokenAuthGroup.on(.POST, "categories", categoryIDParam, "create", body: .collect(maxSize: "30mb"), use: forumCreateHandler)
+		tokenAuthGroup.get(forumIDParam, use: forumThreadHandler)  // Returns a forum thread by ID
+		tokenAuthGroup.get("post", postIDParam, "forum", use: postForumThreadHandler)  // Returns the forum a post is in.
+		tokenAuthGroup.get("forevent", ":event_id", use: eventForumThreadHandler)  // Returns the forum for an event
+		tokenAuthGroup.post(forumIDParam, "rename", ":new_name", use: forumRenameHandler)
+		tokenAuthGroup.post(forumIDParam, "delete", use: forumDeleteHandler)
+		tokenAuthGroup.delete(forumIDParam, use: forumDeleteHandler)
+		tokenAuthGroup.post(forumIDParam, "report", use: forumReportHandler)
 
 		// 'Favorite' applies to forums, while 'Bookmark' is for posts
-		tokenCacheAuthGroup.get("favorites", use: favoritesHandler)
-		tokenCacheAuthGroup.post(forumIDParam, "favorite", use: favoriteAddHandler)
-		tokenCacheAuthGroup.post(forumIDParam, "favorite", "remove", use: favoriteRemoveHandler)
-		tokenCacheAuthGroup.delete(forumIDParam, "favorite", use: favoriteRemoveHandler)
+		tokenAuthGroup.get("favorites", use: favoritesHandler)
+		tokenAuthGroup.post(forumIDParam, "favorite", use: favoriteAddHandler)
+		tokenAuthGroup.post(forumIDParam, "favorite", "remove", use: favoriteRemoveHandler)
+		tokenAuthGroup.delete(forumIDParam, "favorite", use: favoriteRemoveHandler)
 
 		// Muted
-		tokenCacheAuthGroup.get("mutes", use: mutesHandler)
-		tokenCacheAuthGroup.post(forumIDParam, "mute", use: muteAddHandler)
-		tokenCacheAuthGroup.post(forumIDParam, "mute", "remove", use: muteRemoveHandler)
-		tokenCacheAuthGroup.delete(forumIDParam, "mute", use: muteRemoveHandler)
+		tokenAuthGroup.get("mutes", use: mutesHandler)
+		tokenAuthGroup.post(forumIDParam, "mute", use: muteAddHandler)
+		tokenAuthGroup.post(forumIDParam, "mute", "remove", use: muteRemoveHandler)
+		tokenAuthGroup.delete(forumIDParam, "mute", use: muteRemoveHandler)
 
 		// Pins
-		tokenCacheAuthGroup.post(forumIDParam, "pin", use: forumPinAddHandler)
-		tokenCacheAuthGroup.post(forumIDParam, "pin", "remove", use: forumPinRemoveHandler)
-		tokenCacheAuthGroup.delete(forumIDParam, "pin", use: forumPinRemoveHandler)
-		tokenCacheAuthGroup.get(forumIDParam, "pinnedposts", use: forumPinnedPostsHandler)
+		tokenAuthGroup.post(forumIDParam, "pin", use: forumPinAddHandler)
+		tokenAuthGroup.post(forumIDParam, "pin", "remove", use: forumPinRemoveHandler)
+		tokenAuthGroup.delete(forumIDParam, "pin", use: forumPinRemoveHandler)
+		tokenAuthGroup.get(forumIDParam, "pinnedposts", use: forumPinnedPostsHandler)
 
-		tokenCacheAuthGroup.get("search", use: forumSearchHandler)
-		tokenCacheAuthGroup.get("owner", use: ownerHandler)
-		tokenCacheAuthGroup.get("recent", use: recentsHandler)
-		tokenCacheAuthGroup.get("unread", use: unreadHandler)
+		tokenAuthGroup.get("search", use: forumSearchHandler)
+		tokenAuthGroup.get("owner", use: ownerHandler)
+		tokenAuthGroup.get("recent", use: recentsHandler)
+		tokenAuthGroup.get("unread", use: unreadHandler)
 
 		// Posts - CRUD first, then actions on posts
-		tokenCacheAuthGroup.on(.POST, forumIDParam, "create", body: .collect(maxSize: "30mb"), use: postCreateHandler)
-		tokenCacheAuthGroup.get("post", postIDParam, use: postHandler)
-		tokenCacheAuthGroup.on(
-			.POST,
-			"post",
-			postIDParam,
-			"update",
-			body: .collect(maxSize: "30mb"),
-			use: postUpdateHandler
-		)
-		tokenCacheAuthGroup.post("post", postIDParam, "delete", use: postDeleteHandler)
-		tokenCacheAuthGroup.delete("post", postIDParam, use: postDeleteHandler)
+		tokenAuthGroup.on(.POST, forumIDParam, "create", body: .collect(maxSize: "30mb"), use: postCreateHandler)
+		tokenAuthGroup.get("post", postIDParam, use: postHandler)
+		tokenAuthGroup.on(.POST, "post", postIDParam, "update", body: .collect(maxSize: "30mb"), use: postUpdateHandler)
+		tokenAuthGroup.post("post", postIDParam, "delete", use: postDeleteHandler)
+		tokenAuthGroup.delete("post", postIDParam, use: postDeleteHandler)
 
-		tokenCacheAuthGroup.post("post", postIDParam, "laugh", use: postLaughHandler)
-		tokenCacheAuthGroup.post("post", postIDParam, "like", use: postLikeHandler)
-		tokenCacheAuthGroup.post("post", postIDParam, "love", use: postLoveHandler)
-		tokenCacheAuthGroup.post("post", postIDParam, "unreact", use: postUnreactHandler)
-		tokenCacheAuthGroup.delete("post", postIDParam, "laugh", use: postUnreactHandler)
-		tokenCacheAuthGroup.delete("post", postIDParam, "like", use: postUnreactHandler)
-		tokenCacheAuthGroup.delete("post", postIDParam, "love", use: postUnreactHandler)
-		tokenCacheAuthGroup.post("post", postIDParam, "report", use: postReportHandler)
+		tokenAuthGroup.post("post", postIDParam, "laugh", use: postLaughHandler)
+		tokenAuthGroup.post("post", postIDParam, "like", use: postLikeHandler)
+		tokenAuthGroup.post("post", postIDParam, "love", use: postLoveHandler)
+		tokenAuthGroup.post("post", postIDParam, "unreact", use: postUnreactHandler)
+		tokenAuthGroup.delete("post", postIDParam, "laugh", use: postUnreactHandler)
+		tokenAuthGroup.delete("post", postIDParam, "like", use: postUnreactHandler)
+		tokenAuthGroup.delete("post", postIDParam, "love", use: postUnreactHandler)
+		tokenAuthGroup.post("post", postIDParam, "report", use: postReportHandler)
 
 		// Pins
-		tokenCacheAuthGroup.post("post", postIDParam, "pin", use: forumPostPinAddHandler)
-		tokenCacheAuthGroup.post("post", postIDParam, "pin", "remove", use: forumPostPinRemoveHandler)
-		tokenCacheAuthGroup.delete("post", postIDParam, "pin", use: forumPostPinRemoveHandler)
+		tokenAuthGroup.post("post", postIDParam, "pin", use: forumPostPinAddHandler)
+		tokenAuthGroup.post("post", postIDParam, "pin", "remove", use: forumPostPinRemoveHandler)
+		tokenAuthGroup.delete("post", postIDParam, "pin", use: forumPostPinRemoveHandler)
 
 		// 'Favorite' applies to forums, while 'Bookmark' is for posts
-		tokenCacheAuthGroup.post("post", postIDParam, "bookmark", use: bookmarkAddHandler)
-		tokenCacheAuthGroup.post("post", postIDParam, "bookmark", "remove", use: bookmarkRemoveHandler)
-		tokenCacheAuthGroup.delete("post", postIDParam, "bookmark", use: bookmarkRemoveHandler)
+		tokenAuthGroup.post("post", postIDParam, "bookmark", use: bookmarkAddHandler)
+		tokenAuthGroup.post("post", postIDParam, "bookmark", "remove", use: bookmarkRemoveHandler)
+		tokenAuthGroup.delete("post", postIDParam, "bookmark", use: bookmarkRemoveHandler)
 
 		// ForumPost search. Takes a bunch of options.
-		tokenCacheAuthGroup.get("post", "search", use: postSearchHandler)
+		tokenAuthGroup.get("post", "search", use: postSearchHandler)
 	}
 
 	// MARK: - Open Access Handlers

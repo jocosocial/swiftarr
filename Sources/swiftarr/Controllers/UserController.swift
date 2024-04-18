@@ -3,13 +3,10 @@ import Fluent
 import FluentSQL
 import Vapor
 
-/// The collection of `/api/v3/user/*` route endpoints and handler functions related
-/// to a user's own data.
+/// The collection of `/api/v3/user/*` route endpoints and handler functions related to a user's own data.
 ///
-/// Separating these from the endpoints related to users in general helps make for a
-/// cleaner collection, since use of `User.parameter` in the paths here can be avoided
-/// entirely.
-
+/// `UserController` is only for methods that modify the user's own data. See `UsersController` for methods that interact with other users.
+///
 struct UserController: APIRouteCollection {
 
 	// MARK: Properties
@@ -94,7 +91,7 @@ struct UserController: APIRouteCollection {
 		userRoutes.post("create", use: createHandler)
 
 		// endpoints available only when logged in
-		let tokenAuthGroup = addTokenCacheAuthGroup(to: userRoutes)
+		let tokenAuthGroup = userRoutes.addTokenAuthRequirement()
 		tokenAuthGroup.get("whoami", use: whoamiHandler)
 		tokenAuthGroup.post("verify", use: verifyHandler)
 		tokenAuthGroup.post("password", use: passwordHandler)

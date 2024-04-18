@@ -13,10 +13,10 @@ struct AdminController: APIRouteCollection {
 	func registerRoutes(_ app: Application) throws {
 
 		// convenience route group for all /api/v3/admin endpoints
-		let adminRoutes = app.grouped("api", "v3", "admin")
+		let adminRoutes = app.grouped("api", "v3", "admin").addTokenAuthRequirement()
 
 		// endpoints available to TwitarrTeam and above
-		let ttAuthGroup = addTokenCacheAuthGroup(to: adminRoutes).grouped([RequireTwitarrTeamMiddleware()])
+		let ttAuthGroup = adminRoutes.grouped([RequireTwitarrTeamMiddleware()])
 		ttAuthGroup.post("schedule", "update", use: scheduleUploadPostHandler)
 		ttAuthGroup.get("schedule", "verify", use: scheduleChangeVerificationHandler)
 		ttAuthGroup.post("schedule", "update", "apply", use: scheduleChangeApplyHandler)
@@ -31,7 +31,7 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.get("serversettings", use: settingsHandler)
 
 		// endpoints available for THO and Admin only
-		let thoAuthGroup = addTokenCacheAuthGroup(to: adminRoutes).grouped([RequireTHOMiddleware()])
+		let thoAuthGroup = adminRoutes.grouped([RequireTHOMiddleware()])
 		thoAuthGroup.on(.POST, "dailytheme", "create", body: .collect(maxSize: "30mb"), use: addDailyThemeHandler)
 		thoAuthGroup.on(.POST, "dailytheme", dailyThemeIDParam, "edit", body: .collect(maxSize: "30mb"), use: editDailyThemeHandler)
 		thoAuthGroup.post("dailytheme", dailyThemeIDParam, "delete", use: deleteDailyThemeHandler)
@@ -51,9 +51,8 @@ struct AdminController: APIRouteCollection {
 		thoAuthGroup.post("userroles", userRoleParam, "addrole", userIDParam, use: addRoleForUser)
 		thoAuthGroup.post("userroles", userRoleParam, "removerole", userIDParam, use: removeRoleForUser)
 
-		let adminAuthGroup = addTokenCacheAuthGroup(to: adminRoutes).grouped([RequireAdminMiddleware()])
+		let adminAuthGroup = adminRoutes.grouped([RequireAdminMiddleware()])
 		adminAuthGroup.post("serversettings", "update", use: settingsUpdateHandler)
-
 		adminAuthGroup.get("timezonechanges", use: timeZoneChangeHandler)
 		adminAuthGroup.post("timezonechanges", "reloadtzdata", use: reloadTimeZoneChangeData)
 

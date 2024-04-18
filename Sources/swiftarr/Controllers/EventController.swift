@@ -15,12 +15,12 @@ struct EventController: APIRouteCollection {
 		let eventRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .schedule)).grouped("api", "v3", "events")
 
 		// Flexible access endpoints that behave differently for logged-in users
-		let optionalAuthGroup = addFlexCacheAuthGroup(to: eventRoutes)
+		let optionalAuthGroup = eventRoutes.addFlexAuth()
 		optionalAuthGroup.get(use: eventsHandler)
 		optionalAuthGroup.get(eventIDParam, use: singleEventHandler)
 
 		// endpoints available only when logged in
-		let tokenAuthGroup = addTokenCacheAuthGroup(to: eventRoutes)
+		let tokenAuthGroup = eventRoutes.addTokenAuthRequirement()
 		tokenAuthGroup.post(eventIDParam, "favorite", use: favoriteAddHandler)
 		tokenAuthGroup.post(eventIDParam, "favorite", "remove", use: favoriteRemoveHandler)
 		tokenAuthGroup.delete(eventIDParam, "favorite", use: favoriteRemoveHandler)
