@@ -385,6 +385,14 @@ struct ReportPageContext: Encodable {
 		reportFormAction = "/profile/report/\(userID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/user/\(userID)"
 	}
+	
+	// For reporting a photostream photo
+	init(_ req: Request, photostreamID: Int) throws {
+		trunk = .init(req, title: "Report Photostream Photo", tab: .none)
+		reportTitle = "Report a Photostream Photo"
+		reportFormAction = "/photostream/report/\(photostreamID)"
+		reportSuccessURL = req.headers.first(name: "Referer") ?? "/photostream)"
+	}
 }
 
 /// Route gorup that only manages one route: the root route "/".
@@ -401,12 +409,22 @@ struct SiteController: SiteControllerUtils {
 
 	/// GET /
 	///
-	/// Root page. This has a surprising number of queries.
+	/// Root page. This has a surprising number of queries. Because this page now has all the menu links, it's important the page not fail if sub-calls fail.
 	func rootPageHandler(_ req: Request) async throws -> View {
 		async let announcementResponse = try apiQuery(req, endpoint: "/notification/announcements")
 		async let themeResponse = try apiQuery(req, endpoint: "/notification/dailythemes")
-		let announcements = try await announcementResponse.content.decode([AnnouncementData].self)
-		let themes = try await themeResponse.content.decode([DailyThemeData].self)
+		async let photostreamResponse = try apiQuery(req, endpoint: "/photostream")
+		let announcements = (try? await announcementResponse.content.decode([AnnouncementData].self)) ?? []
+		let themes = (try? await themeResponse.content.decode([DailyThemeData].self)) ?? []
+		
+		var photostream: PhotostreamListData?
+		var photostreamError: ErrorResponse?
+		do {
+			photostream = try await photostreamResponse.content.decode(PhotostreamListData.self)
+		}
+		catch {
+			photostreamError = error as? ErrorResponse
+		}
 
 		let cal = Settings.shared.getPortCalendar()
 		let components = cal.dateComponents(
@@ -449,16 +467,47 @@ struct SiteController: SiteControllerUtils {
 		let dailyTheme: DailyThemeData = themes.first { $0.cruiseDay == cruiseDay } ?? backupTheme
 		struct HomePageContext: Encodable {
 			var trunk: TrunkContext
-			var announcements: [AnnouncementData]
 			var dailyTheme: DailyThemeData?
+			var announcements: [AnnouncementData]
+			var twoGroup: [[PhotostreamImageData]]
+			var threeGroup: [[PhotostreamImageData]]
+			var photostreamError: String?
+			var showPhotostream: Bool
 
-			init(_ req: Request, announcements: [AnnouncementData], theme: DailyThemeData) throws {
+			init(_ req: Request, theme: DailyThemeData, announcements: [AnnouncementData], photostream: PhotostreamListData?,
+					photostreamError: ErrorResponse?) throws {
 				trunk = .init(req, title: "Twitarr", tab: .home)
 				self.announcements = announcements
 				self.dailyTheme = theme
+				twoGroup = []
+				threeGroup = []
+				if let photos = photostream?.photos {
+					for index in stride(from: 0, to: photos.count, by: 2) {
+						var newArray = [PhotostreamImageData]() 
+						newArray.append(photos[index])
+						if index + 1 < photos.count {
+							newArray.append(photos[index + 1])
+						}
+						twoGroup.append(newArray)
+					}
+					for index in stride(from: 0, to: photos.count, by: 3) {
+						var newArray = [PhotostreamImageData]() 
+						newArray.append(photos[index])
+						if index + 1 < photos.count {
+							newArray.append(photos[index + 1])
+						}
+						if index + 2 < photos.count {
+							newArray.append(photos[index + 2])
+						}
+						threeGroup.append(newArray)
+					}
+				}
+				self.photostreamError = photostreamError?.reason ?? "No Photostream Photos yet."
+				let features = Settings.shared.disabledFeatures.value
+				showPhotostream = !((features[.all] ?? Set()).union(features[.swiftarr] ?? Set()).contains(.photostream))
 			}
 		}
-		let ctx = try HomePageContext(req, announcements: announcements, theme: dailyTheme)
+		let ctx = try HomePageContext(req, theme: dailyTheme, announcements: announcements, photostream: photostream, photostreamError: photostreamError)
 		return try await req.view.render("home", ctx)
 	}
 
@@ -578,6 +627,7 @@ extension SiteControllerUtils {
 	var songIDParam: PathComponent { PathComponent(":karaoke_song_id") }
 	var mkSongIDParam: PathComponent { PathComponent(":micro_karaoke_song_id") }
 	var mkSnippetIDParam: PathComponent { PathComponent(":micro_karaoke_snippet_id") }
+	var streamPhotoParam: PathComponent { PathComponent(":stream_photo_id") }
 	var usernameParam: PathComponent { PathComponent(":user_name") }
 	var scheduleLogIDParam: PathComponent { PathComponent(":schedule_log_id") }
 

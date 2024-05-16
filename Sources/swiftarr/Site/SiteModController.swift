@@ -55,6 +55,7 @@ struct SiteModController: SiteControllerUtils {
 		modRoutes.get("moderate", "microkaraoke", "song", mkSongIDParam, use: moderateMicroKaraokeSongPageHandler)
 		modRoutes.get("moderate", "userprofile", userIDParam, use: moderateUserProfileContentPageHandler)
 		modRoutes.get("moderate", "user", userIDParam, use: moderateUserContentPageHandler)
+		modRoutes.get("moderate", "photostream", streamPhotoParam, use: moderatePhotostreamPhotoPageHandler)
 		
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
@@ -67,6 +68,8 @@ struct SiteModController: SiteControllerUtils {
 		modPrivateRoutes.post("fezpost", postIDParam, "setstate", modStateParam, use: setFezPostModerationStatePostHandler)
 		modPrivateRoutes.post("lfg", fezIDParam, "setstate", modStateParam, use: setFezModerationStatePostHandler)
 		modPrivateRoutes.post("userprofile", userIDParam, "setstate", modStateParam, use: setUserProfileModerationStatePostHandler)
+		modPrivateRoutes.post("photostream", streamPhotoParam, "delete", use: modDeletePhotostreamPhoto)
+		modPrivateRoutes.delete("photostream", streamPhotoParam, use: modDeletePhotostreamPhoto)
 
 		modPrivateRoutes.post("forum", forumIDParam, "setcategory", categoryIDParam, use: setForumCategoryPostHandler)
 		modPrivateRoutes.post("moderate", "user", userIDParam, "setaccesslevel", accessLevelParam, use: setUserAccessLevelPostHandler)
@@ -643,6 +646,42 @@ struct SiteModController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/mod/microkaraoke/snippet/\(snippetID)/delete", method: .POST)
 		return response.status
 	}
+		
+	/// `GET /moderate/photostream/ID`
+	///
+	/// For linking individual photostream photos from user reports.
+	func moderatePhotostreamPhotoPageHandler(_ req: Request) async throws -> View {
+		guard let photostreamID = req.parameters.get(streamPhotoParam.paramString, as: Int.self) else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		let response = try await apiQuery(req, endpoint: "/mod/photostream/\(photostreamID)")
+		let modData = try response.content.decode(PhotostreamModerationData.self)
+		struct ReportContext: Encodable {
+			var trunk: TrunkContext
+			var modData: PhotostreamModerationData
+			var firstReport: ReportModerationData?
+
+			init(_ req: Request, modData: PhotostreamModerationData) throws {
+				self.modData = modData
+				firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
+				trunk = .init(req, title: "Photostream Photo Moderation", tab: .moderator)
+			}
+		}
+		let ctx = try ReportContext(req, modData: modData)
+		return try await req.view.render("moderation/streamPhoto", ctx)
+	}
+
+	///	`POST /moderate/photostream/:photo_ID/delete`
+	///	`DELETE /moderate/photostream/:photo_ID`
+	///
+	/// Deletes the given photo from the photostream.
+	func modDeletePhotostreamPhoto(_ req: Request) async throws -> HTTPStatus {
+		guard let photoID = req.parameters.get(streamPhotoParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing photoID parameter.")
+		}
+		let response = try await apiQuery(req, endpoint: "/mod/photostream/\(photoID)/delete", method: .POST)
+		return response.status
+	}
 
 	/// `GET /moderate/userprofile/ID`
 	///
@@ -817,6 +856,7 @@ func generateContentGroups(from reports: [ReportModerationData]) -> [ReportConte
 		case .userProfile: contentURL = "/moderate/userprofile/\(report.reportedID)"
 		case .mkSong: contentURL = "/moderate/microkaraoke/song/\(report.reportedID)"
 		case .mkSongSnippet: contentURL = "/moderate/microkaraoke/song/\(report.reportedID)"	// Individual snippets aren't actually reportable yet.
+		case .streamPhoto: contentURL = "/moderate/photostream/\(report.reportedID)"
 		}
 		var newGroup = ReportContentGroup(
 			reportType: report.type,

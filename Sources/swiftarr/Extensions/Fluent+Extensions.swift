@@ -229,4 +229,18 @@ extension QueryBuilder {
 			return filter(joined, field, .custom("ILIKE"), "%\(value)%")
 		}
 	}
+	
+	/// Joins a foriegn table to the current query and attaches filter clauses to the join. This lets us do the fairly common pattern
+	/// `Query on <ModelX> and left join <ModelX_Favorite>, filtering the join for the current user's favorites`
+	/// This returns ModelX rows that nobody has favorited and ModelX rows that others have favorited but the current user hasn't--with Favorite cols set to nil in each case.
+	///  
+	@discardableResult func joinWithFilter<LocalField, Foreign, ForeignField>(method: DatabaseQuery.Join.Method = .inner, 
+			from: KeyPath<Model, LocalField>, to: KeyPath<Foreign, ForeignField>, otherFilters: [DatabaseQuery.Filter]) -> Self 	
+    		where Foreign: Schema, ForeignField: QueryableProperty, LocalField: QueryableProperty, 
+    		ForeignField.Value == LocalField.Value {
+		var filters: [DatabaseQuery.Filter] = otherFilters
+		filters.append(.field(.path(Model.path(for: from), schema: Model.schema), .equal, .path(Foreign.path(for: to), schema: Foreign.schema)))
+		self.join(Foreign.self, filters, method: method)
+		return self
+	}
 }

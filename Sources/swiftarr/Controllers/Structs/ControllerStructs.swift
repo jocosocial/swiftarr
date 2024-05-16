@@ -1119,6 +1119,71 @@ public struct Paginator: Content {
 	var limit: Int
 }
 
+/// Returns info about a single Photo from the Photostream.
+///
+/// Incorporated into `PhotostreamListData`, which is returned by: `GET /api/v3/photostream`
+struct PhotostreamImageData: Content {
+	/// The ID of the photostream record (NOT the id of the image)..
+	var postID: Int
+	/// The time the image was taken--not necessarily the time the image was uploaded..
+	var createdAt: Date
+	/// The post's author.
+	var author: UserHeader
+	/// The filename of the image.
+	var image: String
+	/// The schedule event this image was tagged with, if any. Stream photos will be tagged with either an event or a location.
+	var event: EventData?
+	/// The boat location this image was tagged with, if any. Value will be a raw string from  `PhotoStreamBoatLocation` or nil.  Stream photos will be tagged with either an event or a location.
+	var location: String?
+}
+
+extension PhotostreamImageData {
+	init(streamPhoto: StreamPhoto, author: UserHeader) throws {
+		self.postID = try streamPhoto.requireID()
+		self.createdAt = streamPhoto.captureTime
+		self.image = streamPhoto.image
+		self.author = author
+		if let event = streamPhoto.atEvent {
+			self.event = try EventData(event)
+		}
+		self.location = streamPhoto.boatLocation?.rawValue
+	}
+}
+
+/// Returns paginated data on photos in the photo stream. Non-Mods should only have access to the most recent photos, with no pagination.
+/// However: `/api/v3/photostream` returns one of thse objects even for non-mod users--it just returns 30 photos and sets `paginator.total` to 30.
+///
+/// Returned by: `GET /api/v3/photostream`
+struct PhotostreamListData : Content {
+	var photos: [PhotostreamImageData]
+	var paginator: Paginator
+}
+
+/// Returns information on available tags to use when tagging a photo to be uploaded to the photostream. A photo may be tagged with an event or with a generic
+/// ship location. Calling `api/v3/photostream/placenames` fills the `events` parameter with information about events that are currently happening. When 
+/// a photo is uploaded, its tag is validated, and validation will fail if the tagged event has ended.
+///
+/// Returned by: `GET /api/v3/photostream`
+struct PhotostreamLocationData: Content {
+	var events: [EventData]
+	var locations: [String]
+}
+
+/// Uploads a photo to the photostream. Either the eventID or the locationName must be set.
+/// 
+/// Sent in request body to: `POST /api/v3/photostream/upload`.
+struct PhotostreamUploadData: Content {
+	/// The image data.
+	var image: Data
+	/// The time the image was taken--not necessarily the time the image was uploaded..
+	var createdAt: Date
+	/// The Schedule Event the photo was taken at, if any. ID must refer to an event that is currently happening--that is, an event that `/api/v3/photostream/placenames` returns.
+	/// Either the eventID or locationName field must be non-nil.
+	var eventID: UUID?
+	/// Where the picture was taken. Valid values come from `/api/v3/photostream/placenames` and are transient. Names include titles of events currently happening..
+	var locationName: String?
+}
+
 /// Used to create or update a `ForumPost`, `Twarrt`, or `FezPost`.
 ///
 /// Required by:

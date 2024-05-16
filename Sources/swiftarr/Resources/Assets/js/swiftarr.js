@@ -690,7 +690,6 @@ document.getElementById('imageCarouselModal')?.addEventListener('show.bs.modal',
 	if (pageImg && modalImg) {
 		modalImg.src = pageImg.src.replace("thumb", "full");
 	}
-	deleteBtn.setAttribute('data-delete-postid', postElem.dataset.postid);
 })
 
 // It would be really nice if we could easily break this out into a time-only script. But since

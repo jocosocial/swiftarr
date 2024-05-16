@@ -47,6 +47,12 @@
 										<a href="/moderate/fezpost/#(report.contentID)">LFGPost</a>
 									#elseif(report.contentType == "userProfile"):
 										<a href="/moderate/userprofile/#(report.contentID)">profile</a>
+									#elseif(report.contentType == "mkSong"):
+										<a href="/moderate/microkaraoke/song/#(report.contentID)">microkaraoke song</a>
+									#elseif(report.contentType == "mkSongSnippet"):
+										<a href="/moderate/microkaraoke">song snippet</a>
+									#elseif(report.contentType == "streamPhoto"):
+										<a href="/moderate/photostream/#(report.contentID)">photostream photo</a>
 									#else:
 										#(report.contentType)
 									#endif	

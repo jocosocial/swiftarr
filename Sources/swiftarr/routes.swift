@@ -25,6 +25,7 @@ public func routes(_ app: Application) throws {
 		UsersController(),
 		PhonecallController(),
 		MicroKaraokeController(),
+		PhotostreamController(),
 	]
 	try apiControllers.forEach { try $0.registerRoutes(app) }
 
@@ -47,6 +48,7 @@ public func routes(_ app: Application) throws {
 		SiteKaraokeController(),
 		SiteModController(),
 		SiteAdminController(),
+		SitePhotostreamController(),
 	]
 	try siteControllers.forEach { try $0.registerRoutes(app) }
 }

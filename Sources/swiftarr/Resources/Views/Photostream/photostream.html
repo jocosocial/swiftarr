@@ -1,0 +1,38 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 mt-2 mb-5">
+    		<div class="row align-items-center justify-content-between mb-2">
+    			<div class="col col-12">
+					<nav aria-label="breadcrumb">
+						<span class="swiftarr-breadcrumb-item"><a href="/">Home</a></span>
+						<span class="swiftarr-breadcrumb-item active" aria-current="page"><a href="/photostream)">Photo Stream</a></span>
+					</nav>
+				</div>
+			</div>
+			<ul class="list-group">
+				#for(photo in photostream.photos):
+					<li class="list-group-item d-flex">
+						<button type="button" class="btn p-0 border-0" data-bs-toggle="modal" data-bs-target="\#imageCarouselModal">
+							<img src="/api/v3/image/thumb/#(photo.image)" class="swiftarr-post-image rounded img-fluid" alt="Photostream Image">
+						</button>
+						<div class="col-6 ms-2">
+							#if(photo.event != nil):
+								<h5 class="text-truncate"><a href="/events/#(photo.event.eventID)">#(photo.event.title)</a></h5>
+							#else:
+								<h5>#(photo.location)</h5>
+							#endif
+							<div>#staticTime(photo.createdAt)</div>
+							<a class="btn btn-primary" role="button" href="photostream/#(photo.postID)">link</a>
+							<a class="btn btn-primary" role="button" href="photostream/report/#(photo.postID)">Report</a>
+							#if(trunk.userIsMod):
+								<a class="btn btn-primary" role="button" href="moderate/photostream/#(photo.postID)">Mod</a>
+							#endif
+						</div>
+					</li>
+				#endfor
+			</ul>
+			#extend("paginator")
+		</div>
+		#extend("imageOverlay")
+    #endexport
+#endextend

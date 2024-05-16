@@ -2009,13 +2009,4 @@ extension QueryBuilder {
 		}
 	}
 
-	@discardableResult func joinWithFilter<LocalField, Foreign, ForeignField>(method: DatabaseQuery.Join.Method = .inner, 
-			from: KeyPath<Model, LocalField>, to: KeyPath<Foreign, ForeignField>, otherFilters: [DatabaseQuery.Filter]) -> Self 	
-    		where Foreign: Schema, ForeignField: QueryableProperty, LocalField: QueryableProperty, 
-    		ForeignField.Value == LocalField.Value {
-		var filters: [DatabaseQuery.Filter] = otherFilters
-		filters.append(.field(.path(Model.path(for: from), schema: Model.schema), .equal, .path(Foreign.path(for: to), schema: Foreign.schema)))
-		self.join(Foreign.self, filters, method: method)
-		return self
-	}
 }

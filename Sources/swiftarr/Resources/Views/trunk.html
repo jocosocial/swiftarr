@@ -18,14 +18,17 @@
 	<nav class="navbar navbar-dark bg-light pt-3 mb-2 sticky-top" style="background-image: url('/img/header-waves.png'); background-repeat: repeat-x;">
 		<div class="container-fluid px-0">
 			<div class="row justify-content-between w-100 ms-3 me-2">
-				<div class="col-auto px-0 mt-1 me-1">
-					<span class="link-light navbar-brand me-0 #if(trunk.alertCounts.newAnnouncementCount > 0):border-bottom border-danger#endif" data-bs-toggle="collapse" data-bs-target="\#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-						#if(trunk.inTwitarrSubmenu):
+				<div class="col-auto px-0">
+					<a class="nav-item nav-link link-light px-1
+							#if(trunk.tab == "home"): active#endif
+							#if(trunk.alertCounts.newAnnouncementCount > 0):border-bottom border-danger#endif"
+							href="/">
+						#if(trunk.tab == "home"):
 							<img src="/img/menuIconBold.png" width=24 height=24 alt="Twit-arr">
 						#else:
 							<img src="/img/menuIcon.png" width=24 height=24 alt="Twit-arr">
 						#endif
-					</span>
+					</a>
 				</div>
 				<div class="col-auto px-0">
 					<a class="nav-item nav-link link-light px-1#if(trunk.tab == "forums"): active#endif" #if(trunk.tab == "forums"):aria-current="page"#endif href="/forums">
@@ -63,97 +66,6 @@
 						</span>
 					</div>
 				#endif
-			</div>
-			<div class="collapse navbar-collapse px-3" id="navbarSupportedContent">
-				<ul class="navbar-nav navbar-dark bg-transparent mb-3">
-					<li class="nav-item d-flex align-items-center">
-						<a class="nav-link #if(trunk.tab == "home"): active#endif" href="/">
-							<span class="#if(trunk.alertCounts.newAnnouncementCount > 0):border-bottom border-danger#endif">Home</span>
-						</a>
-						#if(trunk.alertCounts.newAnnouncementCount > 1):
-							<span class="text-muted"><i>#(trunk.alertCounts.newAnnouncementCount) New Announcements</i></span>
-						#elseif(trunk.alertCounts.newAnnouncementCount == 1):
-							<span class="text-muted"><i>1 New Announcement</i></span>
-						#elseif(count(trunk.alertCounts.activeAnnouncementIDs) > 1):
-							<span class="text-muted"><i>#(count(trunk.alertCounts.activeAnnouncementIDs)) Announcements</i></span>
-						#elseif(count(trunk.alertCounts.activeAnnouncementIDs) == 1):
-							<span class="text-muted"><i>1 Announcement</i></span>
-						#endif
-					</li>
-					<li class="nav-item">
-						<a class="nav-link #if(trunk.tab == "games"): active#endif" href="/boardgames">Games</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link #if(trunk.tab == "karaoke"): active#endif" href="/karaoke">Karaoke</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link #if(trunk.tab == "time"): active#endif" href="/time">Time Zone Check</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link #if(trunk.tab == "map"): active#endif" href="/map">Ship Map</a>
-					</li>
-					#if(trunk.userIsShutternautManager):
-						<li>
-							<hr class="main-menu-divider">
-						</li>
-						<li class="nav-item d-flex align-items-center">
-							<a class="nav-link #if(trunk.tab == "moderator"): active#endif" href="/userrole/shutternaut/manage">
-								Manage Shutternauts
-							</a>
-						</li>
-					#endif
-					#if(trunk.userIsMod):
-						<li>
-							<hr class="main-menu-divider">
-						</li>
-						<li class="nav-item d-flex align-items-center">
-							<a class="nav-link #if(trunk.tab == "moderator"): active#endif" href="/moderator">
-								<span class="#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 0 || trunk.alertCounts.moderatorData.openReportCount || trunk.alertCounts.moderatorData.newModeratorForumMentionCount):border-bottom border-danger#endif">Moderator Pages</span>
-							</a>
-							#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):
-								<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount) Msgs</i></span>
-							#elseif(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount == 1):
-								<span class="text-muted"><i>1 Msg</i></span>
-							#endif
-							#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 0 && trunk.alertCounts.moderatorData.openReportCount > 0):
-								<span class="text-muted"><i>,&nbsp;</i></span>
-							#endif
-							#if(trunk.alertCounts.moderatorData.openReportCount > 1):
-								<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.openReportCount) Reports</i></span>
-							#elseif(trunk.alertCounts.moderatorData.openReportCount == 1):
-								<span class="text-muted"><i>1 Report</i></span>
-							#endif
-							#if(trunk.alertCounts.moderatorData.newModeratorForumMentionCount > 1):
-								<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newModeratorForumMentionCount) Mentions</i></span>
-							#elseif(trunk.alertCounts.moderatorData.newModeratorForumMentionCount == 1):
-								<span class="text-muted"><i>1 Mention</i></span>
-							#endif
-						</li>
-					#endif
-					#if(trunk.userIsTwitarrTeam):
-						<li class="nav-item d-flex align-items-center">
-							<a class="nav-link#if(trunk.tab == "admin"): active#endif" href="/admin">
-								<span class="#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0 || trunk.alertCounts.moderatorData.newTTForumMentionCount > 0):border-bottom border-danger#endif">Admin Pages</span>
-							</a>
-							#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0):
-								<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newTTSeamailMessageCount) Msg#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):s#endif</i></span>
-							#endif
-							#if(trunk.alertCounts.moderatorData.newTTForumMentionCount > 0):
-								<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newTTForumMentionCount) Mention#if(trunk.alertCounts.moderatorData.newTTForumMentionCount > 1):s#endif</i></span>
-							#endif
-						</li>
-					#endif
-					<li>
-						<hr class="main-menu-divider">
-					</li>
-					<li class="nav-item">
-					#if(trunk.userIsLoggedIn):
-						<a class="nav-link" href="/logout">Logout #(trunk.username)</a>
-					#else:
-						<a class="nav-link" href="/login">Login</a>
-					#endif
-					</li>
-				</ul>
 			</div>
 			#import("searchform")
 		</div>

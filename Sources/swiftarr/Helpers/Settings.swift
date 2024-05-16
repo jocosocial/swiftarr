@@ -94,6 +94,9 @@ final class Settings: Encodable {
 	/// Largest image we allow to be uploaded, in bytes.
 	@StoredSettingsValue("maxImageSize", defaultValue: 20 * 1024 * 1024) var maxImageSize: Int
 
+	/// How long a single user must wait between photostream uploads, in seconds.
+	@StoredSettingsValue("photostreamUploadRateLimit", defaultValue: 300) var photostreamUploadRateLimit: TimeInterval
+
 	// MARK: Quarantine
 	/// The number of reports to trigger forum auto-quarantine.
 	@StoredSettingsValue("forumAutoQuarantineThreshold", defaultValue: 3) var forumAutoQuarantineThreshold: Int
@@ -107,7 +110,7 @@ final class Settings: Encodable {
 	// MARK: Dates
 	/// A Date set to midnight on the day the cruise ship leaves port, in the timezone the ship leaves from. Used by the Events Controller for date arithimetic.
 	/// The default here should get overwritten in configure.swift. This is purely for convenience to set the start date via
-	/// configure.swift. This setting should not be referenced anywhere. That's what cruiseStartDate()` below is for.
+	/// configure.swift. This setting should not be referenced anywhere. That's what `cruiseStartDate()` below is for.
 	/// This must align with cruiseStartDayOfWeek set immediately below.
 	@SettingsValue var cruiseStartDateComponents: DateComponents = DateComponents(year: 2024, month: 3, day: 9)
 

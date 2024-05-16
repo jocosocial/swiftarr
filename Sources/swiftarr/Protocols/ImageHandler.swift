@@ -12,6 +12,8 @@ enum ImageUsage: String {
 	case userProfile
 	/// The image is for a `DailyTheme`.
 	case dailyTheme
+	/// The image is for a `StreamPhoto`.
+	case photostream
 }
 
 /// Internally, the Image Handler stores images at multiple sizes upon image upload. The exact sizes stored for each sizeGroup

@@ -204,6 +204,14 @@ public struct ModeratorActionLogResponseData: Content {
 	var paginator: Paginator
 }
 
+/// Used to return mod data on a Photostream photo
+struct PhotostreamModerationData: Content {
+	var photo: PhotostreamImageData
+	var isDeleted: Bool
+	var moderationStatus: ContentModerationStatus
+	var reports: [ReportModerationData]
+}
+
 /// Used to return a `TwarrtEdit` or `ForumPost`'s data for moderators. The two models use the same data structure, as all the fields happen to be the same.
 ///
 ///	Included in:
