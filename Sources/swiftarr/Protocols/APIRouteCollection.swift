@@ -197,7 +197,7 @@ extension APIRouteCollection {
 
 			if forwardToSockets {
 				// Send a message to all involved users with open websockets.
-				app.websocketStorage.forwardToSockets(users: users, type: type, info: info)
+				req.application.websocketStorage.forwardToSockets(app: req.application, users: users, type: type, info: info)
 			}
 
 			let notifyUsersCopy = notifyUsers

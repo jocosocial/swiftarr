@@ -51,7 +51,7 @@ struct SwiftarrConfigurator {
 
 	/// Called before your application initializes. Calls several other config methods to do its work. Sub functions are only
 	/// here for easier organization. If order-of-initialization issues arise, rearrange as necessary.
-	public func configure() throws {
+	public func configure() async throws {
 
 		// use iso8601ms for dates
 		let jsonEncoder = JSONEncoder()
@@ -75,15 +75,14 @@ struct SwiftarrConfigurator {
 		try configurePrometheus(app)
 		try routes(app)
 		try configureMigrations(app)
-
-		// Settings loads values from Redis during startup, and Redis isn't available until app.boot() completes.
-		// Posts on RedisKit's github bug db say the solution is to call boot() early.
-		try app.boot()
-
+	}
+	
+	// Called after the lifecycle `didBoot` handlers run and databases are available.
+	func postBootConfigure() async throws {
 		try configureAPIURL(app)
 
 		// Check that we can access everything.
-		try verifyConfiguration(app)
+		try await verifyConfiguration(app)
 
 		// Now load the settings that we need Redis access to acquire.
 		try configureStoredSettings(app)
@@ -91,7 +90,7 @@ struct SwiftarrConfigurator {
 		// UserCache had previously done startup initialization with a lifecycle handler. However, Redis isn't ready
 		// for use until its 'didBoot' lifecycle handler has run, and I don't like opaque ordering dependencies.
 		// As a lifecycle handler, our 'didBoot' callback got put in a list with Redis's, and we had to hope Vapor called them first.
-		try app.initializeUserCache(app)
+		try await app.initializeUserCache(app)
 
 		// Add custom commands
 		configureCommands(app)
@@ -528,8 +527,8 @@ struct SwiftarrConfigurator {
 	}
 
 	func configurePrometheus(_ app: Application) throws {
-		let myProm = PrometheusClient()
-		MetricsSystem.bootstrap(PrometheusMetricsFactory(client: myProm))
+		let myProm = PrometheusCollectorRegistry()
+		MetricsSystem.bootstrap(PrometheusMetricsFactory(registry: myProm))
 	}
 
 	func configureMigrations(_ app: Application) throws {
@@ -629,16 +628,15 @@ struct SwiftarrConfigurator {
 
 	// Perform several sanity checks to verify that we can access the dbs and resource files that we need.
 	// If we're misconfigured, this can emit more useful errors than the ones that'll come from deep inside db drivers.
-	func verifyConfiguration(_ app: Application) throws {
+	func verifyConfiguration(_ app: Application) async throws {
 		var postgresChecksFailed = false
 		// Test that we have a Postgres connection (requires that we've connected *and* authed).
 		if !postgresChecksFailed, let postgresDB = app.db as? PostgresDatabase {
 			do {
-				let connClosed =
-					try postgresDB.withConnection { conn in
-						return postgresDB.eventLoop.future(conn.isClosed)
-					}
-					.wait()
+				let connectionFuture = postgresDB.withConnection { conn in
+					return postgresDB.eventLoop.future(conn.isClosed)
+				}
+				let connClosed: Bool = try await connectionFuture.get()
 				guard connClosed == false else {
 					throw "Postgres DB driver doesn't report any open connections."
 				}
@@ -654,7 +652,7 @@ struct SwiftarrConfigurator {
 		// be called something other than 'swiftarr'.
 		if !postgresChecksFailed, let sqldb = app.db as? SQLDatabase {
 			do {
-				let query = try sqldb.raw("SELECT 1 FROM pg_database WHERE datname='swiftarr'").first().wait()
+				let query = try await sqldb.raw("SELECT 1 FROM pg_database WHERE datname='swiftarr'").first().get()
 				guard let sqlrow = query else {
 					throw "No result from SQL query."
 				}

@@ -154,6 +154,6 @@ struct PopulateForumLastPostIDMigration: AsyncMigration {
 	}
 
 	func revert(on database: Database) async throws {
-		app.logger.log(level: .info, "No revert for this migration.")
+		database.logger.log(level: .info, "No revert for this migration.")
 	}
 }

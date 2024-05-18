@@ -1608,7 +1608,7 @@ extension ForumController {
 			.join(SQLIdentifier(ForumPost.schema), on: idFieldName, .equal, SQLRaw("latestposts.latestpostid"))
 			.all()
 		let posts: [UUID: ForumPost] = try rows.reduce(into: [:]) { dict, row in
-			let post = try row.decode(model: ForumPost.self)
+			let post = try row.decode(fluentModel: ForumPost.self)
 			dict[post.$forum.id] = post
 		}
 		return posts

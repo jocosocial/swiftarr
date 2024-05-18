@@ -44,8 +44,8 @@ struct CreateSeamailSearchIndexes: AsyncMigration {
 	func createSearchIndex(on database: SQLDatabase, tableName: String) async throws {
 		try await database.raw(
 			"""
-			  CREATE INDEX IF NOT EXISTS idx_\(raw: tableName)_search
-			  ON \(raw: tableName)
+			  CREATE INDEX IF NOT EXISTS idx_\(unsafeRaw: tableName)_search
+			  ON \(ident: tableName)
 			  USING GIN
 			  (fulltext_search)
 			"""

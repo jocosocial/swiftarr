@@ -229,7 +229,7 @@ extension Application {
 	/// After boot but before handling requests, this code runs to fill the cache with data on all known
 	/// `User`s. LifecycleHandler is another part of Vapor's Services API.
 	/// Load all users into cache at startup.
-	func initializeUserCache(_ app: Application) throws {
+	func initializeUserCache(_ app: Application) async throws {
 		if app.environment.arguments.count > 1,
 			app.environment.arguments[1].lowercased().hasSuffix("migrate")
 		{
@@ -238,14 +238,10 @@ extension Application {
 
 		//		let _ = Task {
 		var initialStorage = UserCacheStorage()
-		let results = try User.query(on: app.db)
-			.with(\.$token)
-			.with(\.$roles)
-			.with(\.$muteWords)
-			.all().wait()
+		let results = try await User.query(on: app.db).with(\.$token).with(\.$roles).with(\.$muteWords).all().get()
 		for user in results {
 			let userID = try user.requireID()
-			let blocks = try app.redis.getBlocks(for: userID)
+			let blocks = try await app.redis.getBlocks(for: userID)
 			let mutewords = user.muteWords.map { $0.word }
 			let cacheData = UserCacheData(userID: userID, user: user, blocks: blocks, mutewords: mutewords)
 			initialStorage.cacheUser(cacheData)

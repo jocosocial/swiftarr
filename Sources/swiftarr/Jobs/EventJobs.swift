@@ -116,6 +116,7 @@ public struct UserEventNotificationJob: AsyncScheduledJob {
 			let favoriteUserIDs = try event.favorites.map { try $0.requireID() }
 			let infoStr = "\(event.title) is starting Soon™ in \(event.location)."
 			context.application.websocketStorage.forwardToSockets(
+				app: context.application,
 				users: favoriteUserIDs,
 				type: .followedEventStarting(eventID),
 				info: infoStr
@@ -148,6 +149,7 @@ public struct UserEventNotificationJob: AsyncScheduledJob {
 				infoStr += " in \(location)."
 			}
 			context.application.websocketStorage.forwardToSockets(
+				app: context.application,
 				users: fez.participantArray,
 				type: .joinedLFGStarting(fezID),
 				info: infoStr

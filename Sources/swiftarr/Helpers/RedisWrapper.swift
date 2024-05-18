@@ -313,9 +313,9 @@ extension Application.Redis {
 
 	// Redis stores blocks as users you've blocked AND users who have blocked you,
 	// for all subaccounts of both you and the other user.
-	func getBlocks(for userUUID: UUID) throws -> [UUID] {
+	func getBlocks(for userUUID: UUID) async throws -> [UUID] {
 		let redisKey: RedisKey = "rblocks:\(userUUID.uuidString)"
-		let blocks = try smembers(of: redisKey, as: UUID.self).wait()
+		let blocks = try await smembers(of: redisKey, as: UUID.self).get()
 		return blocks.compactMap { $0 }
 	}
 }
