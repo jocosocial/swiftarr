@@ -73,9 +73,9 @@ struct SiteEventsController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
 		// Routes that the user does not need to be logged in to access.
-		let openRoutes = getOpenRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .schedule))
-		openRoutes.get("events", use: eventsPageHandler)
-		openRoutes.get("events", eventIDParam, use: eventGetPageHandler)
+		let openRoutes = getOpenRoutes(app, feature: .schedule)
+		openRoutes.get("events", use: eventsPageHandler).destination("the schedule")
+		openRoutes.get("events", eventIDParam, use: eventGetPageHandler).destination("this event")
 		openRoutes.get("events", eventIDParam, "calendarevent.ics", use: eventsDownloadICSHandler)
 
 		// The route calendar subscriptions use to poll for their .ics file. Has special middleware needs.
@@ -89,7 +89,7 @@ struct SiteEventsController: SiteControllerUtils {
 		calendaringRoute.get("events", "subscribe", usernameParam, "following.ics", use: eventsDownloadFollowingHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
-		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .schedule))
+		let privateRoutes = getPrivateRoutes(app, feature: .schedule)
 		privateRoutes.post("events", eventIDParam, "favorite", use: eventsAddRemoveFavoriteHandler)
 		privateRoutes.delete("events", eventIDParam, "favorite", use: eventsAddRemoveFavoriteHandler)
 	}
@@ -313,7 +313,7 @@ struct SiteEventsController: SiteControllerUtils {
 }
 
 // A specialized middleware just for the ics route that Calendaring apps use. This middleware is inserted before the
-// SessionMiddleware that sets the session cookie, and it's job is to modify the cookie's domain path.
+// SessionMiddleware that sets the session cookie, and its job is to modify the cookie's domain path.
 struct CalendarSessionFixerMiddleware: AsyncMiddleware {
 	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
 		let response = try await next.respond(to: request)

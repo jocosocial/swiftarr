@@ -21,7 +21,7 @@ struct ModerationController: APIRouteCollection {
 	func registerRoutes(_ app: Application) throws {
 
 		// convenience route group for all /api/v3/mod endpoints
-		let moderatorAuthGroup = app.grouped("api", "v3", "mod").addTokenAuthRequirement().grouped(RequireModeratorMiddleware())
+		let moderatorAuthGroup = app.tokenRoutes(minAccess: .moderator, path: "api", "v3", "mod")
 
 		// endpoints available for Moderators only
 		moderatorAuthGroup.get("reports", use: reportsHandler)
@@ -642,7 +642,7 @@ struct ModerationController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "This user cannot set access levels.")
 		}
 		guard let accessLevelString = req.parameters.get(accessLevelParam.paramString),
-			let targetAccessLevel = UserAccessLevel.fromRawString(accessLevelString),
+			let targetAccessLevel = UserAccessLevel(fromRawString: accessLevelString),
 			[.unverified, .banned, .quarantined, .verified].contains(targetAccessLevel)
 		else {
 			throw Abort(

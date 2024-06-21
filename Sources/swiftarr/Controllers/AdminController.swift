@@ -2,6 +2,7 @@ import Crypto
 import Dispatch
 import FluentSQL
 import Vapor
+import ZIPFoundation
 
 /// The collection of `/api/v3/admin` route endpoints and handler functions related to admin tasks.
 ///
@@ -13,10 +14,10 @@ struct AdminController: APIRouteCollection {
 	func registerRoutes(_ app: Application) throws {
 
 		// convenience route group for all /api/v3/admin endpoints
-		let adminRoutes = app.grouped("api", "v3", "admin").addTokenAuthRequirement()
+		let adminRoutes = app.grouped("api", "v3", "admin")
 
 		// endpoints available to TwitarrTeam and above
-		let ttAuthGroup = adminRoutes.grouped([RequireTwitarrTeamMiddleware()])
+		let ttAuthGroup = adminRoutes.tokenRoutes(minAccess: .twitarrteam)
 		ttAuthGroup.post("schedule", "update", use: scheduleUploadPostHandler)
 		ttAuthGroup.get("schedule", "verify", use: scheduleChangeVerificationHandler)
 		ttAuthGroup.post("schedule", "update", "apply", use: scheduleChangeApplyHandler)
@@ -31,7 +32,7 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.get("serversettings", use: settingsHandler)
 
 		// endpoints available for THO and Admin only
-		let thoAuthGroup = adminRoutes.grouped([RequireTHOMiddleware()])
+		let thoAuthGroup = adminRoutes.tokenRoutes(minAccess: .tho)
 		thoAuthGroup.on(.POST, "dailytheme", "create", body: .collect(maxSize: "30mb"), use: addDailyThemeHandler)
 		thoAuthGroup.on(.POST, "dailytheme", dailyThemeIDParam, "edit", body: .collect(maxSize: "30mb"), use: editDailyThemeHandler)
 		thoAuthGroup.post("dailytheme", dailyThemeIDParam, "delete", use: deleteDailyThemeHandler)
@@ -51,10 +52,15 @@ struct AdminController: APIRouteCollection {
 		thoAuthGroup.post("userroles", userRoleParam, "addrole", userIDParam, use: addRoleForUser)
 		thoAuthGroup.post("userroles", userRoleParam, "removerole", userIDParam, use: removeRoleForUser)
 
-		let adminAuthGroup = adminRoutes.grouped([RequireAdminMiddleware()])
+		// Routes that only the Admin account can access
+		let adminAuthGroup = adminRoutes.tokenRoutes(minAccess: .admin)
 		adminAuthGroup.post("serversettings", "update", use: settingsUpdateHandler)
 		adminAuthGroup.get("timezonechanges", use: timeZoneChangeHandler)
 		adminAuthGroup.post("timezonechanges", "reloadtzdata", use: reloadTimeZoneChangeData)
+		adminAuthGroup.get("bulkuserfile", "download", use: userfileDownloadHandler)
+		adminAuthGroup.post("bulkuserfile", "upload", use: userfileUploadPostHandler)
+		adminAuthGroup.get("bulkuserfile", "verify", use: userfileVerificationHandler)
+		adminAuthGroup.get("bulkuserfile", "update", "apply", use: userfileApplyHandler)
 
 		// Only admin may promote to THO
 		adminAuthGroup.post("tho", "promote", userIDParam, use: makeTHOHandler)
@@ -139,6 +145,16 @@ struct AdminController: APIRouteCollection {
 	/// - Returns: `HTTP 200 OK` if the settings were updated.
 	func settingsUpdateHandler(_ req: Request) async throws -> HTTPStatus {
 		let data = try ValidatingJSONDecoder().decode(SettingsUpdateData.self, fromBodyOf: req)
+		if let value = data.minUserAccessLevel, let level = UserAccessLevel(fromRawString: value),
+				[.banned, .moderator, .twitarrteam, .tho, .admin].contains(level) {
+			Settings.shared.minAccessLevel = level
+		}
+		else {
+			Settings.shared.minAccessLevel = .banned
+		}
+		if let value = data.enablePreregistration {
+			Settings.shared.enablePreregistration = value
+		}
 		if let value = data.maxAlternateAccounts {
 			Settings.shared.maxAlternateAccounts = value
 		}
@@ -227,113 +243,6 @@ struct AdminController: APIRouteCollection {
 		let migrator = ImportTimeZoneChanges()
 		try await migrator.loadTZFile(on: req.db, isMigrationTime: false)
 		return .ok
-	}
-
-	/// `POST /api/v3/admin/schedule/update`
-	///
-	///  Handles the POST of a new schedule .ics file.
-	///
-	///  - Warning: Updating the schedule isn't thread-safe, especially if admin is logged in twice. Uploading a schedule file while another
-	///  admin account was attempting to apply its contents will cause errors. Once uploaded, an events file should be safe to verify and
-	///  apply multiple times in parallel.
-	///
-	/// - Parameter requestBody: `EventsUpdateData` which is really one big String (the .ics file) wrapped in JSON.
-	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `HTTP 200 OK`
-	func scheduleUploadPostHandler(_ req: Request) async throws -> HTTPStatus {
-		var schedule = try req.content.decode(EventsUpdateData.self).schedule
-		schedule = schedule.replacingOccurrences(of: "&amp;", with: "&")
-		schedule = schedule.replacingOccurrences(of: "\\,", with: ",")
-		let filepath = try uploadSchedulePath()
-		// If we attempt an upload, it's important we end up with the uploaded file or nothing at the filepath.
-		// Leaving the previous file there would be bad.
-		try? FileManager.default.removeItem(at: filepath)
-		try await req.fileio.writeFile(ByteBuffer(string: schedule), at: filepath.path)
-		return .ok
-	}
-
-	/// `GET /api/v3/admin/schedule/verify`
-	///
-	///  Returns a struct showing the differences between the current schedule and the (already uploaded and saved to a local file) new schedule.
-	///
-	///  - Note: This is a separate GET call, instead of the response from POSTing the updated .ics file, so that verifying and applying a schedule
-	///  update can be idempotent. Once an update is uploaded, you can call the validate and apply endpoints repeatedly if necessary.
-	///
-	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `EventUpdateDifferenceData`
-	func scheduleChangeVerificationHandler(_ req: Request) async throws -> EventUpdateDifferenceData {
-		let filepath = try uploadSchedulePath()
-		let buffer = try await req.fileio.collectFile(at: filepath.path)
-		guard let scheduleFileStr = buffer.getString(at: 0, length: buffer.readableBytes) else {
-			throw Abort(.badRequest, reason: "Could not read schedule file.")
-		}
-		let result =  try await EventParser().validateEventsInICS(scheduleFileStr, on: req.db)
-		return result
-	}
-
-	/// `POST /api/v3/admin/schedule/update/apply`
-	///
-	/// Applies schedule changes to the schedule. Reads in a previously uploaded schedule file from `/admin/uploadschedule.ics` and creates,
-	/// deletes, and updates Event objects as necessary. If `forumPosts` is `true`, creates posts in Event forums notifying users of the schedule
-	/// change. Whether `forumPosts` is true or not, forums are created for new Events, and forum titles and initial posts are updated to match
-	/// the updated event info.
-	///
-	/// **URL Query Parameters:**
-	///
-	/// - `?processDeletes=true` to delete existing events not in the update list. Only set this if the update file is a comprehensive list of all events.
-	/// - `?forumPosts=true` to create posts in the Event Forum of each modified event, alerting readers of the event change. We may want to forego
-	///   	 	change posts if we update the schedule as soon as we board the ship. For events created by this update, we always try to create and associate
-	///   	 	a forum for the event.
-	///
-	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `HTTP 200 OK`
-	func scheduleChangeApplyHandler(_ req: Request) async throws -> HTTPStatus {
-		let user = try req.auth.require(UserCacheData.self)
-		let processDeletes = req.query[String.self, at: "processDeletes"]?.lowercased() == "true"
-		let makeForumPosts = req.query[String.self, at: "forumPosts"]?.lowercased() == "true"
-		let filepath = try uploadSchedulePath()
-		let buffer = try await req.fileio.collectFile(at: filepath.path)
-		guard let scheduleFileStr = buffer.getString(at: 0, length: buffer.readableBytes) else {
-			throw Abort(.badRequest, reason: "Could not read schedule file.")
-		}
-		let differences =  try await EventParser().validateEventsInICS(scheduleFileStr, on: req.db)
-		try await EventParser().updateDatabaseFromICS(scheduleFileStr, on: req.db, forumAuthor: user.makeHeader(), 
-				processDeletes: processDeletes, makeForumPosts: makeForumPosts)
-		try await ScheduleLog(diff: differences, isAutomatic: false).save(on: req.db)
-		return .ok
-	}
-	
-	/// `GET /api/v3/admin/schedule/viewlog`
-	///
-	///  Gets the last 100 entries in the schedule update log, showing what the automatic (and manual) updates to the schedule have been doing.
-	///
-	/// - Returns: `[EventUpdateLogData]` the most recent 100 log entries, in descending order of update time.
-	func scheduleChangeLogHandler(_ req: Request) async throws -> [EventUpdateLogData] {
-		let logEntries = try await ScheduleLog.query(on: req.db).sort(\.$createdAt, .descending).limit(100).all()
-		return try logEntries.map { try .init($0) }
-	}
-	
-	/// `GET /api/v3/admin/schedule/viewlog/:log_id`
-	///
-	/// ** Parameters:**
-	/// - `:log_id` the ID of the schedule change log entry to return.
-	/// 
-	///  NOTE: Unless you've requested the most recent change, the returned data may not match the state of the schedule in the db.  
-	///
-	/// - Returns: `EventUpdateDifferenceData` showing what events were modified by this change to the schedule
-	func scheduleGetLogEntryHandler(_ req: Request) async throws -> EventUpdateDifferenceData {
-		guard let entryIDString = req.parameters.get(scheduleLogIDParam.paramString, as: String.self), let entryID = Int(entryIDString) else {
-			throw Abort(.badRequest, reason: "Could not parse log ID from request URL.")
-		}
-		guard let entry = try await ScheduleLog.query(on: req.db).filter(\.$id == entryID).first() else {
-			throw Abort(.badRequest, reason: "No schedule log entry with this ID.")
-		}
-		guard let differenceData = entry.differenceData else {
-			// Return an empty difference data object if this was an automatic schedule update that resulted in no changes.
-			return EventUpdateDifferenceData()
-		}
-		// Yes, in this case we're decoding the JSON into the struct just so the response builder can encode it back.
-		return try JSONDecoder().decode(EventUpdateDifferenceData.self, from: differenceData)
 	}
 
 	/// `GET /api/v3/admin/regcodes/stats`
@@ -604,7 +513,115 @@ struct AdminController: APIRouteCollection {
 		try await req.userCache.updateUser(targetUserID)
 		return .ok
 	}
+	
+	// MARK: - Schedule Updating
+	
+	/// `POST /api/v3/admin/schedule/update`
+	///
+	///  Handles the POST of a new schedule .ics file.
+	///
+	///  - Warning: Updating the schedule isn't thread-safe, especially if admin is logged in twice. Uploading a schedule file while another
+	///  admin account was attempting to apply its contents will cause errors. Once uploaded, an events file should be safe to verify and
+	///  apply multiple times in parallel.
+	///
+	/// - Parameter requestBody: `EventsUpdateData` which is really one big String (the .ics file) wrapped in JSON.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `HTTP 200 OK`
+	func scheduleUploadPostHandler(_ req: Request) async throws -> HTTPStatus {
+		var schedule = try req.content.decode(EventsUpdateData.self).schedule
+		schedule = schedule.replacingOccurrences(of: "&amp;", with: "&")
+		schedule = schedule.replacingOccurrences(of: "\\,", with: ",")
+		let filepath = try uploadSchedulePath()
+		// If we attempt an upload, it's important we end up with the uploaded file or nothing at the filepath.
+		// Leaving the previous file there would be bad.
+		try? FileManager.default.removeItem(at: filepath)
+		try await req.fileio.writeFile(ByteBuffer(string: schedule), at: filepath.path)
+		return .ok
+	}
 
+	/// `GET /api/v3/admin/schedule/verify`
+	///
+	///  Returns a struct showing the differences between the current schedule and the (already uploaded and saved to a local file) new schedule.
+	///
+	///  - Note: This is a separate GET call, instead of the response from POSTing the updated .ics file, so that verifying and applying a schedule
+	///  update can be idempotent. Once an update is uploaded, you can call the validate and apply endpoints repeatedly if necessary.
+	///
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `EventUpdateDifferenceData`
+	func scheduleChangeVerificationHandler(_ req: Request) async throws -> EventUpdateDifferenceData {
+		let filepath = try uploadSchedulePath()
+		let buffer = try await req.fileio.collectFile(at: filepath.path)
+		guard let scheduleFileStr = buffer.getString(at: 0, length: buffer.readableBytes) else {
+			throw Abort(.badRequest, reason: "Could not read schedule file.")
+		}
+		let result =  try await EventParser().validateEventsInICS(scheduleFileStr, on: req.db)
+		return result
+	}
+
+	/// `POST /api/v3/admin/schedule/update/apply`
+	///
+	/// Applies schedule changes to the schedule. Reads in a previously uploaded schedule file from `/admin/uploadschedule.ics` and creates,
+	/// deletes, and updates Event objects as necessary. If `forumPosts` is `true`, creates posts in Event forums notifying users of the schedule
+	/// change. Whether `forumPosts` is true or not, forums are created for new Events, and forum titles and initial posts are updated to match
+	/// the updated event info.
+	///
+	/// **URL Query Parameters:**
+	///
+	/// - `?processDeletes=true` to delete existing events not in the update list. Only set this if the update file is a comprehensive list of all events.
+	/// - `?forumPosts=true` to create posts in the Event Forum of each modified event, alerting readers of the event change. We may want to forego
+	///   	 	change posts if we update the schedule as soon as we board the ship. For events created by this update, we always try to create and associate
+	///   	 	a forum for the event.
+	///
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `HTTP 200 OK`
+	func scheduleChangeApplyHandler(_ req: Request) async throws -> HTTPStatus {
+		let user = try req.auth.require(UserCacheData.self)
+		let processDeletes = req.query[String.self, at: "processDeletes"]?.lowercased() == "true"
+		let makeForumPosts = req.query[String.self, at: "forumPosts"]?.lowercased() == "true"
+		let filepath = try uploadSchedulePath()
+		let buffer = try await req.fileio.collectFile(at: filepath.path)
+		guard let scheduleFileStr = buffer.getString(at: 0, length: buffer.readableBytes) else {
+			throw Abort(.badRequest, reason: "Could not read schedule file.")
+		}
+		let differences =  try await EventParser().validateEventsInICS(scheduleFileStr, on: req.db)
+		try await EventParser().updateDatabaseFromICS(scheduleFileStr, on: req.db, forumAuthor: user.makeHeader(), 
+				processDeletes: processDeletes, makeForumPosts: makeForumPosts)
+		try await ScheduleLog(diff: differences, isAutomatic: false).save(on: req.db)
+		return .ok
+	}
+	
+	/// `GET /api/v3/admin/schedule/viewlog`
+	///
+	///  Gets the last 100 entries in the schedule update log, showing what the automatic (and manual) updates to the schedule have been doing.
+	///
+	/// - Returns: `[EventUpdateLogData]` the most recent 100 log entries, in descending order of update time.
+	func scheduleChangeLogHandler(_ req: Request) async throws -> [EventUpdateLogData] {
+		let logEntries = try await ScheduleLog.query(on: req.db).sort(\.$createdAt, .descending).limit(100).all()
+		return try logEntries.map { try .init($0) }
+	}
+	
+	/// `GET /api/v3/admin/schedule/viewlog/:log_id`
+	///
+	/// ** Parameters:**
+	/// - `:log_id` the ID of the schedule change log entry to return.
+	/// 
+	///  NOTE: Unless you've requested the most recent change, the returned data may not match the state of the schedule in the db.  
+	///
+	/// - Returns: `EventUpdateDifferenceData` showing what events were modified by this change to the schedule
+	func scheduleGetLogEntryHandler(_ req: Request) async throws -> EventUpdateDifferenceData {
+		guard let entryIDString = req.parameters.get(scheduleLogIDParam.paramString, as: String.self), let entryID = Int(entryIDString) else {
+			throw Abort(.badRequest, reason: "Could not parse log ID from request URL.")
+		}
+		guard let entry = try await ScheduleLog.query(on: req.db).filter(\.$id == entryID).first() else {
+			throw Abort(.badRequest, reason: "No schedule log entry with this ID.")
+		}
+		guard let differenceData = entry.differenceData else {
+			// Return an empty difference data object if this was an automatic schedule update that resulted in no changes.
+			return EventUpdateDifferenceData()
+		}
+		// Yes, in this case we're decoding the JSON into the struct just so the response builder can encode it back.
+		return try JSONDecoder().decode(EventUpdateDifferenceData.self, from: differenceData)
+	}
 
 	/// `GET /api/v3/admin/schedule/reload`
 	///
@@ -615,8 +632,274 @@ struct AdminController: APIRouteCollection {
 		try await req.queue.dispatch(UpdateJob.self, .init())
 		return .ok
 	}
+	
+	// MARK: - Bulk User Update
+	
+	/// `GET /api/v3/admin/bulkuserfile/download`
+	///
+	///  Handles the GET of a userfile. A userfile is a zip file continaing a bunch of user records, with profile data and avatars. Intended to be used to
+	///  facilitate server-to-server transfer of users.
+	///  
+	///  Warning: Uses blocking IO--the thing that isn't great for multithreaded servers. 
+	///
+	/// - Parameter requestBody: `EventsUpdateData` which is really one big String (the .ics file) wrapped in JSON.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `HTTP 200 OK`
+	func userfileDownloadHandler(_ req: Request) async throws -> Response {
+		guard Settings.shared.minAccessLevel == .admin else {
+			throw Abort(.badRequest, reason: "Server should be in admin-only mode before downloading a userfile archive.")
+		}
+		guard Settings.shared.enablePreregistration == false else {
+			throw Abort(.badRequest, reason: "Server's 'enable pre-embark UI' setting should be OFF before downloading a userfile archive.")
+		}
+		let archiveName = "Twitarr_userfile"
+		let temporaryDirectoryURL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+				.appending(path: ProcessInfo().globallyUniqueString, directoryHint: .isDirectory)
+		let sourceDirectoryURL = temporaryDirectoryURL.appending(path: archiveName, directoryHint: .isDirectory)
+		try FileManager.default.createDirectory(at: sourceDirectoryURL, withIntermediateDirectories: true)
+		// Get the list of users we'll be archiving, save to 'userfile.json'
+		let users = try await User.query(on: req.db).filter(\.$verification != "generated user")
+				.filter(\.$verification != nil).with(\.$favoriteEvents).with(\.$roles).all()
+		let dto = users.compactMap { UserSaveRestoreData(user: $0) }
+		let data = try JSONEncoder().encode(dto)
+		let userfile = sourceDirectoryURL.appending(path: "userfile.json", directoryHint: .notDirectory)
+		try data.write(to: userfile, options: .atomic)
 
+		// Copy user avatar images into the '/images' dir inside our temp dir.
+		let destImageDir = sourceDirectoryURL.appending(path: "userImages", directoryHint: .isDirectory)
+		try FileManager.default.createDirectory(at: destImageDir, withIntermediateDirectories: true)
+		let imageNames = users.compactMap { $0.userImage }
+		for imageName in imageNames {
+			do {
+				let imgSource = Settings.shared.userImagesRootPath.appendingPathComponent(ImageSizeGroup.full.rawValue)
+						.appendingPathComponent(String(imageName.prefix(2)))
+						.appendingPathComponent(imageName)
+				let imgDest = destImageDir.appending(path: imageName, directoryHint: .notDirectory)
+				try FileManager.default.copyItem(at: imgSource, to: imgDest)
+			}
+			catch {
+				req.logger.error("While copying userImage: \(error.localizedDescription)")
+			}
+		}
+		// Zip the whole thing, stream download it.
+		let zipDestURL = temporaryDirectoryURL.appending(path: "\(archiveName).zip")
+		try FileManager.default.zipItem(at: sourceDirectoryURL, to: zipDestURL, compressionMethod: .deflate)
+		let	response = req.fileio.streamFile(at: zipDestURL.path())
+		response.headers.replaceOrAdd(name: "Content-Disposition", value: "attachment; filename=\"\(archiveName).zip\"")
+		return response
+	}
+
+	/// `POST /api/v3/admin/bulkuserfile/upload`
+	///
+	///  Handles the POST of a new userfile.
+	///
+	/// - Parameter requestBody: `Data` of the zip'ed userfile..
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `HTTP 200 OK`
+	func userfileUploadPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard Settings.shared.minAccessLevel == .admin else {
+			throw Abort(.badRequest, reason: "Server must be in admin-only mode when uploading a userfile archive.")
+		}
+		guard Settings.shared.enablePreregistration == false else {
+			throw Abort(.badRequest, reason: "Server's 'enable pre-embark UI' setting should be OFF when uploading a userfile archive.")
+		}
+		let fileData = try req.content.decode(Data.self)
+		let destDirPath = try uploadUserDirPath()
+		try? FileManager.default.removeItem(at: destDirPath)
+		let destFilePath = try uploadUserfilePath()
+		// If we attempt an upload, it's important we end up with the uploaded file or nothing at the filepath.
+		// Leaving the previous file there would be bad. Also, 'unzippedDirPath' is what the zipfile *should* create 
+		// when we unzip it, but what it actually creates is embedded in the zipfile itself.
+		let unzippedDirPath = destDirPath.appending(path: "Twitarr_userfile")
+		guard !FileManager.default.fileExists(atPath: destFilePath.path()), !FileManager.default.fileExists(atPath: unzippedDirPath.path()) else {
+			throw Abort(.internalServerError, reason: "Userfile upload dir not empty after emptying it--this could lead to applying a previously-uploaded userfile and not the one you tried to upload just now.")
+		}
+		try await req.fileio.writeFile(ByteBuffer(data: fileData), at: destFilePath.path)
+		try FileManager.default.unzipItem(at: destFilePath, to: destDirPath)
+		return .ok
+	}
+
+	/// `GET /api/v3/admin/bulkuserfile/verify`
+	///
+	///  Returns a struct showing the differences between the current schedule and the (already uploaded and saved to a local file) new schedule.
+	///
+	///  - Note: This is a separate GET call, instead of the response from POSTing the updated .ics file, so that verifying and applying a schedule
+	///  update can be idempotent. Once an update is uploaded, you can call the validate and apply endpoints repeatedly if necessary.
+	///
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `EventUpdateDifferenceData`
+	func userfileVerificationHandler(_ req: Request) async throws -> BulkUserUpdateVerificationData {
+		return try await importUsersFromUploadedUserfile(req, verifyOnly: true)
+	}
+
+	/// `POST /api/v3/admin/bulkuserfile/update/apply`
+	///
+	/// 
+	///
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `HTTP 200 OK`
+	func userfileApplyHandler(_ req: Request) async throws -> BulkUserUpdateVerificationData {
+		return try await importUsersFromUploadedUserfile(req, verifyOnly: false)
+	}
+	
 	// MARK: - Utilities
+
+	// Imports each user in the userfile into the database. 
+	func importUsersFromUploadedUserfile(_ req: Request, verifyOnly: Bool) async throws -> BulkUserUpdateVerificationData {
+		guard Settings.shared.minAccessLevel == .admin else {
+			throw Abort(.badRequest, reason: "Bulk User Import is only allowed when the server is in Admin-only mode..")
+		}
+		guard Settings.shared.enablePreregistration == false else {
+			throw Abort(.badRequest, reason: "Server's 'enable pre-embark UI' setting must be OFF when performing bulk user import.")
+		}
+		let filepath = try uploadUserDirPath().appending(path: "Twitarr_userfile/userfile.json")
+		let buffer = try await req.fileio.collectFile(at: filepath.path)
+		let importUserList = try JSONDecoder().decode([UserSaveRestoreData].self, from: buffer)
+		var verification = BulkUserUpdateVerificationData(forVerification: verifyOnly)
+		for newUser in importUserList where newUser.parentUsername == nil {
+			await importUser(req, userToImport: newUser, verifyOnly: verifyOnly, verification: &verification)
+		}
+		for newUser in importUserList where newUser.parentUsername != nil {
+			await importUser(req, userToImport: newUser, verifyOnly: verifyOnly, verification: &verification)
+		}
+		return verification
+	}
+
+	// Imports a single user, as described in a `UserSaveRestoreData` struct, into the `User` table. Does a bunch of validity checcks
+	// as part of importing, records results of the import in an existing `BulkUserUpdateVerificationData` structure.
+	//
+	// Since we don't want an error thrown during a single user's import to fail the entire operation, and also *some* errors shouldn't 
+	// cancel a single user's import, and we want to log all the errors that occur, this method has some zany error handling.
+	func importUser(_ req: Request, userToImport: UserSaveRestoreData, verifyOnly: Bool, verification: inout BulkUserUpdateVerificationData) async {
+		// Exists because we can't pass the inout verification struct into the transaction
+		enum ImportResult {
+			case duplicate
+			case regCodeConflict(String)
+			case usernameConflict(String)
+			case noRegCodeFound(String)
+			case errorNotImported(String)
+			case imported(UUID?)
+		}
+		
+		// Copy the userImage first; in the db transaction below we set the user.userImage to nil if the userImage copy failed. 
+		var copiedUserImage: String?
+		var imageImportError: String?
+		do {
+			if let userImage = userToImport.userImage {
+				let archiveSource = try uploadUserDirPath().appending(path: "Twitarr_userfile/userImages")
+						.appendingPathComponent(userImage)
+				let serverImageDest = Settings.shared.userImagesRootPath.appendingPathComponent(ImageSizeGroup.full.rawValue)
+						.appendingPathComponent(String(userImage.prefix(2)))
+						.appendingPathComponent(userImage)
+				if !FileManager.default.fileExists(atPath: serverImageDest.path) {
+					throw Abort(.badRequest, reason: "Source image file not found")
+				}
+				if !verifyOnly, !FileManager.default.fileExists(atPath: serverImageDest.path) {
+					try FileManager.default.copyItem(at: archiveSource, to: serverImageDest)
+				}
+				copiedUserImage = userImage
+			}
+		}
+		catch {
+			// Gets added to verification.otherErrors if the user import succeeds.
+			imageImportError = "Couldn't copy userImage for user \(userToImport.username): \(error.localizedDescription)"
+		}
+		
+		let userImage = copiedUserImage
+		var importedUserID: UUID?
+		do {
+			let importResult: ImportResult = try await req.db.transaction { transaction in
+				if let _ = try await User.query(on: transaction).filter(\.$verification == userToImport.verification.lowercased())
+						.filter(\.$username == userToImport.username).first() {
+					return .duplicate
+				}
+				if let dbUserNameMatch = try await User.query(on: transaction).filter(\.$username == userToImport.username).first() {
+					return .usernameConflict(dbUserNameMatch.username)
+				}
+				guard let regCode = try await RegistrationCode.query(on: transaction).filter(\.$code == userToImport.verification).first() else {
+					return .noRegCodeFound(userToImport.username)
+				}
+				let newUser = User(username: userToImport.username, password: userToImport.password, recoveryKey: userToImport.recoveryKey, 
+						accessLevel: userToImport.accessLevel)
+				if let parentUsername = userToImport.parentUsername {
+					guard let parentUser = try await User.query(on: transaction).filter(\.$username == parentUsername).first()  else {
+						return .errorNotImported("While importing alternate account \"\(userToImport.username)\": Couldn't find primary account to attach")
+					}
+					guard parentUser.$parent.id == nil else {
+						return .errorNotImported("While importing alternate account \"\(userToImport.username)\": 'parent' account is not a primary account")
+					}
+					guard parentUser.verification == userToImport.verification else {
+						return .errorNotImported("While importing alternate account \"\(userToImport.username)\": primary account has different verification code.")
+					}
+					let altAccountCount = try await User.query(on: transaction).filter(\.$parent.$id == parentUser.requireID()).count()
+					guard altAccountCount < Settings.shared.maxAlternateAccounts else {
+						return .errorNotImported("While importing alternate account \"\(userToImport.username)\": Maximum number of alternate accounts reached.")
+					}
+					newUser.$parent.id = try parentUser.requireID()
+				}
+				else if regCode.$user.id != nil {
+					// If the regcode is already assigned, it's an error unless we're adding an alt account to the same primary, with the same regcode
+					return .regCodeConflict("While importing \"\(userToImport.username)\": Reg code already in use") 
+				}
+				newUser.roles = userToImport.roles
+				newUser.displayName = userToImport.displayName
+				newUser.realName = userToImport.realName
+				newUser.userImage = userImage
+				newUser.about = userToImport.about
+				newUser.email = userToImport.email
+				newUser.homeLocation = userToImport.homeLocation
+				newUser.message = userToImport.message
+				newUser.preferredPronoun = userToImport.preferredPronoun
+				newUser.roomNumber = userToImport.roomNumber
+				newUser.displayName = userToImport.displayName
+				newUser.dinnerTeam = userToImport.dinnerTeam
+				if verifyOnly {
+					return .imported(nil)
+				}
+				else {
+					try await newUser.save(on: transaction)
+					regCode.$user.id = try newUser.requireID()
+					try await regCode.save(on: transaction)
+					try await req.userCache.updateUser(newUser.requireID())
+					return try .imported(newUser.requireID())
+				}
+			}
+			switch importResult {
+				case .duplicate: verification.duplicateCount += 1
+				case .usernameConflict(let name): verification.usernameConflicts.append("User \(name) already exists; tied to a different reg code")
+				case .regCodeConflict(let errorstring): verification.regCodeConflicts.append(errorstring)
+				case .noRegCodeFound(let name): verification.errorNotImported.append("While importing \(name): Reg code doesn't match any code in db")
+				case .errorNotImported(let err): verification.errorNotImported.append(err.localizedDescription)
+				case .imported(let userID): 
+					verification.importedUserCount += 1
+					importedUserID = userID
+			}
+		}
+		catch {
+			verification.errorNotImported.append("During db transaction for user \(userToImport.username): \(error.localizedDescription)")
+		}
+		
+		// Now do other importing actions related to this user; stuff that shouldn't fail the user import transaction if it doesn't work
+		if !verifyOnly, let newUserID = importedUserID {
+			do {
+				guard let addedUser = try await User.find(newUserID, on: req.db) else {
+					throw Abort(.internalServerError, reason: "User not found in User table")
+				}
+				if let err = imageImportError {
+					verification.otherErrors.append(err)
+				}
+
+				let matchedEvents = try await Event.query(on: req.db).filter(\.$uid ~~ userToImport.favoriteEvents).all()
+				for event in matchedEvents {
+					try await event.$favorites.attach(addedUser, on: req.db)
+				}
+				_ = try await storeNextFollowedEvent(userID: newUserID, on: req)
+			}
+			catch {
+				verification.otherErrors.append(error.localizedDescription)
+			}
+		}
+	} 
 
 	// Gets the path where the uploaded schedule is kept. Only one schedule file can be in the hopper at a time.
 	// This fn ensures intermediate directories are created.
@@ -625,4 +908,19 @@ struct AdminController: APIRouteCollection {
 		return filePath
 	}
 
+	// Gets the directory path to the directory where we store the "Twitarr_userfile.zip" and the unzipped "Twitarr_userfile" dir.
+	// Creates the dir if necessary. 
+	func uploadUserDirPath() throws -> URL {
+		let dirPath = Settings.shared.adminDirectoryPath.appendingPathComponent("uploadUserfileDir")
+		try FileManager.default.createDirectory(at: dirPath, withIntermediateDirectories: true)
+		return dirPath
+	}
+	
+	// Gets the path where the uploaded userfile.zip is kept. Only one file can be in the hopper at a time.
+	// The folder decompressed from the ZIP archive will be right alonsize the archive, at "/<adminDirectoryPath>/Twitarr_userfile/"
+	// This fn ensures intermediate directories are created.
+	func uploadUserfilePath() throws -> URL {
+		let filePath = try uploadUserDirPath().appendingPathComponent("Twitarr_userfile.zip")
+		return filePath
+	}
 }

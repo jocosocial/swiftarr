@@ -90,6 +90,14 @@ final class Event: Model, Searchable {
 	}
 }
 
+// events can be filtered by creator
+extension Event: ContentFilterable {
+
+	func contentTextStrings() -> [String] {
+		return [self.title, self.info, self.location]
+	}
+}
+
 struct CreateEventSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		try await database.schema("event")

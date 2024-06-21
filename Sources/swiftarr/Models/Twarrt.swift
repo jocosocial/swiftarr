@@ -84,6 +84,23 @@ final class Twarrt: Model, Searchable {
 	}
 }
 
+// twarrts can be filtered by author and content
+extension Twarrt: ContentFilterable {
+	func contentTextStrings() -> [String] {
+		return [self.text]
+	}
+}
+
+// twarrts can be reported
+extension Twarrt: Reportable {
+	/// The type for `Twarrt` reports.
+	var reportType: ReportType { .twarrt }
+
+	var authorUUID: UUID { $author.id }
+
+	var autoQuarantineThreshold: Int { Settings.shared.postAutoQuarantineThreshold }
+}
+
 struct CreateTwarrtSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		let modStatusEnum = try await database.enum("moderation_status").read()

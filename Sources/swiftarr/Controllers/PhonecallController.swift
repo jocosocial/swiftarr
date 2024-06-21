@@ -88,19 +88,17 @@ struct PhonecallController: APIRouteCollection {
 	/// Required. Registers routes to the incoming router.
 	func registerRoutes(_ app: Application) throws {
 		// convenience route group for all /api/v3/phone endpoints
-		let phoneRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .phone)).grouped("api", "v3", "phone")
-
-		// Open access routes
+		let phoneRoutes = app.grouped("api", "v3", "phone")
 
 		// endpoints available only when logged in
-		let tokenAuthGroup = phoneRoutes.addTokenAuthRequirement()
+		let tokenAuthGroup = phoneRoutes.tokenRoutes(feature: .phone)
 		tokenAuthGroup.webSocket("socket", "initiate", phonecallParam, "to", userIDParam, shouldUpgrade: shouldCreatePhoneSocket, onUpgrade: createPhoneSocket)
 		tokenAuthGroup.webSocket("socket", "answer", phonecallParam, shouldUpgrade: shouldAnswerPhoneSocket, onUpgrade: answerPhoneSocket)
 
 		tokenAuthGroup.post("answer", phonecallParam, use: answerPhoneCall)
 		tokenAuthGroup.post("decline", phonecallParam, use: declinePhoneCall)
 
-		// Routes only used for direct-connect phone sessions
+		// Routes only used for direct-connect phone sessions. These routes are also disabled if .phone is disabled.
 		let directPhoneAuthGroup = tokenAuthGroup.grouped(DisabledAPISectionMiddleware(feature: .directphone))
 		directPhoneAuthGroup.post("initiate", phonecallParam, "to", userIDParam, use: initiateCallHandler)
 	}

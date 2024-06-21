@@ -267,10 +267,10 @@ struct SiteForumController: SiteControllerUtils {
 		// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
 		// redirect-chained through /login and back.
 		let globalRoutes = getGlobalRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .forums))
-		globalRoutes.get("forums", use: forumCategoriesPageHandler)
-		globalRoutes.get("forums", categoryIDParam, use: forumPageHandler)
-		globalRoutes.get("forum", forumIDParam, use: forumThreadPageHandler)
-		globalRoutes.get("forum", "containingpost", postIDParam, use: forumThreadFromPostPageHandler)
+		globalRoutes.get("forums", use: forumCategoriesPageHandler).destination("the forums")
+		globalRoutes.get("forums", categoryIDParam, use: forumPageHandler).destination("this forum")
+		globalRoutes.get("forum", forumIDParam, use: forumThreadPageHandler).destination("this forum thread")
+		globalRoutes.get("forum", "containingpost", postIDParam, use: forumThreadFromPostPageHandler).destination("this forum thread")
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .forums))

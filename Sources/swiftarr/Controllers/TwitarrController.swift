@@ -150,11 +150,8 @@ struct TwitarrController: APIRouteCollection {
 	
 	/// Required. Registers routes to the incoming router.
 	func DISABLED_registerRoutes(_ app: Application) throws {
-		// convenience route group for all /api/v3/twitarr endpoints
-		let twitarrRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .tweets)).grouped("api", "v3", "twitarr")
-
 		// endpoints only available when logged in
-		let tokenAuthGroup = twitarrRoutes.addTokenAuthRequirement()
+		let tokenAuthGroup = app.tokenRoutes(feature: .tweets, path: "api", "v3", "twitarr")
 		tokenAuthGroup.get("", use: twarrtsHandler)
 		tokenAuthGroup.get(twarrtIDParam, use: twarrtHandler)
 		tokenAuthGroup.on(.POST, "create", body: .collect(maxSize: "30mb"), use: twarrtCreateHandler)
@@ -177,8 +174,6 @@ struct TwitarrController: APIRouteCollection {
 	}
 
 	// MARK: - tokenAuthGroup Handlers (logged in)
-	// All handlers in this route group require a valid HTTP Bearer Authentication
-	// header in the request.
 
 	/**
 	`GET /api/v3/twitarr/ID`

@@ -23,7 +23,7 @@
 							#if(trunk.tab == "home"): active#endif
 							#if(trunk.alertCounts.newAnnouncementCount > 0):border-bottom border-danger#endif"
 							href="/">
-						Home
+						Today
 					</a>
 				</div>
 				<div class="col-auto px-0">
@@ -66,6 +66,13 @@
 			#import("searchform")
 		</div>
 	</nav>
+	#if(trunk.minAccessLevel != nil):
+    	<div class="container-md ms-0 mt-2">
+			<div class="alert alert-warning mt-3" role="alert">
+				Twitarr is in maintenance mode: Only #(trunk.minAccessLevel) users and above may log in.
+			</div>
+		</div>
+	#endif
 
 	#import("body")
 

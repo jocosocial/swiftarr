@@ -84,6 +84,16 @@ final class Forum: Model, Searchable {
 	}
 }
 
+// forums can be reported
+extension Forum: Reportable {
+	/// The report type for `Forum` reports.
+	var reportType: ReportType { .forum }
+
+	var authorUUID: UUID { $creator.id }
+
+	var autoQuarantineThreshold: Int { Settings.shared.forumAutoQuarantineThreshold }
+}
+
 struct CreateForumSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		let modStatusEnum = try await database.enum("moderation_status").read()

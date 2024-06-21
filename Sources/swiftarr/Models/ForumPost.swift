@@ -85,6 +85,21 @@ final class ForumPost: Model, Searchable {
 	}
 }
 
+// posts can be filtered by author and content
+extension ForumPost: ContentFilterable {
+	func contentTextStrings() -> [String] {
+		return [self.text]
+	}
+}
+
+extension ForumPost: Reportable {
+	var reportType: ReportType { .forumPost }
+
+	var authorUUID: UUID { $author.id }
+
+	var autoQuarantineThreshold: Int { Settings.shared.postAutoQuarantineThreshold }
+}
+
 struct CreateForumPostSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		let modStatusEnum = try await database.enum("moderation_status").read()

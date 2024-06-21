@@ -35,15 +35,20 @@ struct NotificationsMiddleware: AsyncMiddleware, SiteControllerUtils {
 		guard hasChanges || isStale else {
 			return try await next.respond(to: req)
 		}
-		req.session.data["lastNotificationCheckTime"] = String(Date().timeIntervalSince1970)
-		let response = try await apiQuery(req, endpoint: "/notification/user", passThroughQuery: false)
-		if response.status == .ok {
-			// I dislike decoding the response JSON just to re-encode it into a string for session storage.
-			// response.body?.getString(at: 0, length: response.body!.capacity)
-			let alertCounts = try response.content.decode(UserNotificationData.self)
-			let alertCountsJSON = try JSONEncoder().encode(alertCounts)
-			let alertCountStr = String(data: alertCountsJSON, encoding: .utf8)
-			req.session.data["alertCounts"] = alertCountStr
+		do {
+			req.session.data["lastNotificationCheckTime"] = String(Date().timeIntervalSince1970)
+			let response = try await apiQuery(req, endpoint: "/notification/user", passThroughQuery: false)
+			if response.status == .ok {
+				// I dislike decoding the response JSON just to re-encode it into a string for session storage.
+				// response.body?.getString(at: 0, length: response.body!.capacity)
+				let alertCounts = try response.content.decode(UserNotificationData.self)
+				let alertCountsJSON = try JSONEncoder().encode(alertCounts)
+				let alertCountStr = String(data: alertCountsJSON, encoding: .utf8)
+				req.session.data["alertCounts"] = alertCountStr
+			}
+		}
+		catch let err as ErrorResponse where err.status == HTTPResponseStatus.forbidden.code {
+
 		}
 		return try await next.respond(to: req)
 	}

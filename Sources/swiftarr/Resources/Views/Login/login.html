@@ -41,47 +41,8 @@
 					</div>
 				</form>
 			</div>
-		#else:			
-			<div class="container-fluid mt-3">
-				<div class="row">
-					<div class="col">
-						<h5>Welcome to Twit-arr! Please log in.</h5>
-					</div>
-				</div>
-				<form action="/login" method="POST">
-					<div class="row mb-2">
-						<div class="col">
-							<label for="username" class="form-label">Username</label>
-							<input type="text" class="form-control swiftarr-textfield" id="username" name="username" value="#(prevUsername)" 
-									spellcheck="off" autocapitalize="none" autocomplete="username">
-						</div>
-					</div>
-					<div class="row mb-2">
-						<div class="col">
-							<label for="password" class="form-label">Password</label>
-							<input type="password" class="form-control swiftarr-textfield" id="password" name="password" autocomplete="current-password">
-						</div>
-					</div>
-					<button type="submit" class="btn btn-primary">Login<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
-				</form>
-			</div>
-			
-			#if(error):
-			<div class="alert alert-danger mt-3" role="alert">
-				<b>Error:</b> #(error.reason)
-			</div>
-			#endif
-			<div class="container-fluid mt-3">
-				<div class="row nav-item">
-					<a class="nav-link" href="/conductAgree">I want to create an account</a>
-				</div>
-				<div class="row nav-item">
-					<a class="nav-link" href="/resetPassword">I forgot my password!</a>
-				</div>
-				<div class="row nav-item">
-					<a class="nav-link" href="/codeOfConduct">I want to read the Code of Conduct and Twit-arr Rules!</a>
-				</div>
-			</div>
+		#else:
+			#extend("Login/loginPane")	
 		#endif
 	  </div>
     #endexport

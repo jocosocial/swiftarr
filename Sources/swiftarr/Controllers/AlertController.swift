@@ -27,18 +27,18 @@ struct AlertController: APIRouteCollection {
 		alertRoutes.get("hashtags", searchStringParam, use: getHashtagsHandler)
 
 		// Flexible access endpoints -- login not required, although calls may act differently if logged in
-		let flexAuthGroup = alertRoutes.addFlexAuth()
+		let flexAuthGroup = alertRoutes.flexRoutes()
 		flexAuthGroup.get("global", use: globalNotificationHandler)
 		flexAuthGroup.get("user", use: globalNotificationHandler)
 		flexAuthGroup.get("announcements", use: getAnnouncements)
 		flexAuthGroup.get("dailythemes", use: getDailyThemes)
 
 		// endpoints available only when logged in
-		let tokenAuthGroup = alertRoutes.addTokenAuthRequirement()
+		let tokenAuthGroup = alertRoutes.tokenRoutes()
 		tokenAuthGroup.webSocket("socket", onUpgrade: createNotificationSocket)  // shouldUpgrade: (Request) -> Headers
 
 		// endpoints available only when logged in as TwitarrTeam or above
-		let ttAuthGroup = alertRoutes.addTokenAuthRequirement().grouped(RequireTwitarrTeamMiddleware())
+		let ttAuthGroup = alertRoutes.tokenRoutes(minAccess: .twitarrteam)
 		ttAuthGroup.get("announcement", announcementIDParam, use: getSingleAnnouncement)
 		ttAuthGroup.post("announcement", "create", use: createAnnouncement)
 		ttAuthGroup.post("announcement", announcementIDParam, "edit", use: editAnnouncement)

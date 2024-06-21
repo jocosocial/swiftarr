@@ -442,7 +442,7 @@ struct SwiftarrConfigurator {
 		new.use(corsMiddleware, at: .beginning)
 
 		new.use(SwiftarrErrorMiddleware(environment: app.environment))
-		new.use(SiteErrorMiddleware(environment: app.environment))
+		new.use(SiteNoRouteErrorMiddleware(environment: app.environment))
 		app.middleware = new
 
 		// Change the default bcrypt cost for user accounts

@@ -61,13 +61,13 @@ struct SiteBoardgameController: SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws {
 		// Routes that the user does not need to be logged in to access.
 		let openRoutes = getOpenRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .gameslist))
-		openRoutes.get("boardgames", use: gamesPageHandler)
-		openRoutes.get("boardgames", boardgameIDParam, "expansions", use: expansionPageHandler)
-		openRoutes.get("boardgames", boardgameIDParam, "createfez", use: createFezForGame)
-		openRoutes.get("boardgames", "guide", use: boardgameGuideHandler)
+		openRoutes.get("boardgames", use: gamesPageHandler).destination("the boardgames list")
+		openRoutes.get("boardgames", boardgameIDParam, "expansions", use: expansionPageHandler).destination("this boardgame")
+		openRoutes.get("boardgames", boardgameIDParam, "createfez", use: createFezForGame).destination("the LFG page to play a game")
+		openRoutes.get("boardgames", "guide", use: boardgameGuideHandler).destination("the boardgames guide")
 
 		// Routes that the user needs to be logged in to access.
-		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .gameslist))
+		let privateRoutes = getPrivateRoutes(app, feature: .gameslist)
 		privateRoutes.post("boardgames", boardgameIDParam, "favorite", use: addFavoriteGame)
 		privateRoutes.delete("boardgames", boardgameIDParam, "favorite", use: removeFavoriteGame)
 	}

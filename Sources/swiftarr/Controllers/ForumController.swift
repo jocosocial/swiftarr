@@ -12,14 +12,14 @@ struct ForumController: APIRouteCollection {
 	func registerRoutes(_ app: Application) throws {
 
 		// convenience route group for all /api/v3/forum endpoints
-		let forumRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .forums)).grouped("api", "v3", "forum")
+		let forumRoutes = app.grouped("api", "v3", "forum")
 
 		// Flex access endpoints
-		let flexAuthGroup = forumRoutes.addFlexAuth()
+		let flexAuthGroup = forumRoutes.flexRoutes(feature: .forums)
 		flexAuthGroup.get("categories", use: categoriesHandler)
 
 		// Forum Route Group, requires token
-		let tokenAuthGroup = forumRoutes.addTokenAuthRequirement()
+		let tokenAuthGroup = forumRoutes.tokenRoutes(feature: .forums)
 
 		// Categories
 		tokenAuthGroup.get("categories", categoryIDParam, use: categoryForumsHandler)

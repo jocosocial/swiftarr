@@ -189,8 +189,8 @@ struct SiteTwitarrController: SiteControllerUtils {
 		// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
 		// redirect-chained through /login and back.
 		let globalRoutes = getGlobalRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .tweets))
-		globalRoutes.get("tweets", use: tweetsPageHandler)
-		globalRoutes.get("tweets", twarrtIDParam, use: tweetReplyPageHandler)
+		globalRoutes.get("tweets", use: tweetsPageHandler).destination("the twarrt stream")
+		globalRoutes.get("tweets", twarrtIDParam, use: tweetReplyPageHandler).destination("the twarrt replies for this twarrt")
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .tweets))

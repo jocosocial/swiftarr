@@ -23,7 +23,7 @@ struct ClientController: APIRouteCollection {
 		clientRoutes.get("health", use: healthHandler)
 
 		// endpoints available only when logged in
-		let tokenAuthGroup = clientRoutes.addTokenAuthRequirement()
+		let tokenAuthGroup = clientRoutes.tokenRoutes()
 		tokenAuthGroup.get("user", "updates", "since", ":date", use: userUpdatesHandler)
 		tokenAuthGroup.get("usersearch", use: userSearchHandler)
 

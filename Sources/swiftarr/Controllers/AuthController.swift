@@ -59,7 +59,7 @@ struct AuthController: APIRouteCollection {
 
 		// endpoints available only when not logged in
 		let basicAuthGroup = authRoutes.addBasicAuthRequirement()
-		basicAuthGroup.post("login", use: loginHandler)
+		basicAuthGroup.post("login", use: loginHandler).setUsedForPreregistration()
 
 		// endpoints available only when logged in
 		let tokenAuthGroup = authRoutes.addTokenAuthRequirement()

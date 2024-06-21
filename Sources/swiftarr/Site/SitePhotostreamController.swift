@@ -6,8 +6,10 @@ struct SitePhotostreamController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
 		// Routes that the user needs to be logged in to access.
+		let globalRoutes = getGlobalRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .photostream))
+		globalRoutes.get("photostream", use: showPhotostream).destination("the photostream page")
+
 		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .photostream))
-		privateRoutes.get("photostream", use: showPhotostream)
 		privateRoutes.get("photostream", "report", streamPhotoParam, use: photostreamReportPage)
 		privateRoutes.post("photostream", "report", streamPhotoParam, use: postPhotostreamReport)
 	}

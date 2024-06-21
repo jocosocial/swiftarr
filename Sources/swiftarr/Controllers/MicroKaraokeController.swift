@@ -11,10 +11,10 @@ struct MicroKaraokeController: APIRouteCollection {
 		// convenience route group for all /api/v3/microkaraoke endpoints
 		let baseRoute = app.grouped(DisabledAPISectionMiddleware(feature: .microkaraoke)).grouped("api", "v3", "microkaraoke")
 
-		let flexAuthGroup = baseRoute.addFlexAuth()
+		let flexAuthGroup = baseRoute.flexRoutes(feature: .microkaraoke)
 		flexAuthGroup.get("video", filenameParam, use: getUserVideoClip)
 
-		let tokenAuthGroup = baseRoute.addTokenAuthRequirement()
+		let tokenAuthGroup = baseRoute.tokenRoutes(feature: .microkaraoke)
 		tokenAuthGroup.post("offer", use: retrieveMicroKaraokeOffer)
 		tokenAuthGroup.on(.POST,"recording", body: .collect(maxSize: "50mb"), use: uploadMicroKaraokeRecording)
 		tokenAuthGroup.get("songlist", use: getCompletedSongList)

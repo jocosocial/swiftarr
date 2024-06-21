@@ -17,143 +17,155 @@
 			</div>
 			#endif
 			<form class="ajax" action="/admin/serversettings" enctype="multipart/form-data" method="POST" data-successurl="/admin/serversettings" id="serverSettingsForm">
-				<div class="row my-1">
-					<div class="col">
-						<label for="maximumTwarrts">Maximum Alt Accounts per Primary Acct</label>
-						<input type="number" id="maxAlternateAccounts" name="maxAlternateAccounts" min="0" max="40" value="#(settings.maxAlternateAccounts)" #if(!enableFields):disabled#endif>
-					</div>
-				</div>
-				<div class="row my-1">
-					<div class="col">
-						<label for="maximumTwarrts">Maximum Twarrts per request</label>
-						<input type="number" id="maximumTwarrts" name="maximumTwarrts" min="1" max="1000" value="#(settings.maximumTwarrts)" #if(!enableFields):disabled#endif>
-					</div>
-				</div>
-				<div class="row my-1">
-					<div class="col">
-						<label for="maximumForums">Maximum Forums per request</label>
-						<input type="number" id="maximumForums" name="maximumForums" min="1" max="1000" value="#(settings.maximumForums)" #if(!enableFields):disabled#endif>
-					</div>
-				</div>
-				<div class="row my-1">
-					<div class="col">
-						<label for="maximumForumPosts">Maximum ForumPosts per request</label>
-						<input type="number" id="maximumForumPosts" name="maximumForumPosts" min="1" max="1000" value="#(settings.maximumForumPosts)" #if(!enableFields):disabled#endif>
-					</div>
-				</div>
-				<div class="row my-1">
-					<div class="col">
-						<label for="maxImageSize">Maximum image size</label>
-						<input type="number" id="maxImageSize" name="maxImageSize" min="1" max="1000" value="#(settings.maxImageSize / 1048576)" #if(!enableFields):disabled#endif> MB
-					</div>
-				</div>
-				<div class="row my-1">
-					<div class="col">
-						<label for="forumAutoQuarantineThreshold">Reports to trigger auto-quarantine on a Forum</label>
-						<input type="number" id="forumAutoQuarantineThreshold" name="forumAutoQuarantineThreshold" min="1" max="1000" value="#(settings.forumAutoQuarantineThreshold)" #if(!enableFields):disabled#endif>
-					</div>
-				</div>
-				<div class="row my-1">
-					<div class="col">
-						<label for="postAutoQuarantineThreshold">Reports to trigger auto-quarantine on a Twarrt or Forum Post</label>
-						<input type="number" id="postAutoQuarantineThreshold" name="postAutoQuarantineThreshold" min="1" max="1000" value="#(settings.postAutoQuarantineThreshold)" #if(!enableFields):disabled#endif>
-					</div>
-				</div>
-				<div class="row my-1">
-					<div class="col">
-						<label for="userAutoQuarantineThreshold">Reports to trigger auto-quarantine on a User</label>
-						<input type="number" id="userAutoQuarantineThreshold" name="userAutoQuarantineThreshold" min="1" max="1000" value="#(settings.userAutoQuarantineThreshold)" #if(!enableFields):disabled#endif>
-					</div>
-				</div>
-				<div class="row my-1">
-					<div class="col">
-						<label for="upcomingEventNotificationSeconds">Upcoming event/LFG notification offset (seconds)</label>
-						<input type="number" id="upcomingEventNotificationSeconds" name="upcomingEventNotificationSeconds" min="0" max="1800" value="#(settings.upcomingEventNotificationSeconds)" #if(!enableFields):disabled#endif>
-					</div>
-				</div>
-				<div class="row my-1">
-					
-				</div>
-				<div class="row my-2">
-					<div class="col col-auto">
-						<label for="upcomingEventNotificationSetting">Upcoming event notifications</label>
-					</div>
-					<div class="col col-auto">
-						<select class="form-select" name="upcomingEventNotificationSetting" #if(!enableFields):disabled#endif>
-							<option #if(settings.upcomingEventNotificationSetting == "disabled"):selected#endif value="disabled">Disabled (no notifications)</option>
-							<option #if(settings.upcomingEventNotificationSetting == "cruiseWeek"):selected#endif value="cruiseWeek">Cruise Week (time travel)</option>
-							<option #if(settings.upcomingEventNotificationSetting == "current"):selected#endif value="current">Current (real-time date)</option>
-						</select
-					</div>
-				</div>
-				<div class="row my-2">
-					<div class="col col-auto">
-						<label for="upcomingLFGNotificationSetting">Upcoming joined LFG notifications</label>
-					</div>
-					<div class="col col-auto">
-						<select class="form-select" name="upcomingLFGNotificationSetting" #if(!enableFields):disabled#endif>
-							<option #if(settings.upcomingLFGNotificationSetting == "disabled"):selected#endif value="disabled">Disabled (no notifications)</option>
-							<option #if(settings.upcomingLFGNotificationSetting == "cruiseWeek"):selected#endif value="cruiseWeek">Cruise Week (time travel)</option>
-							<option #if(settings.upcomingLFGNotificationSetting == "current"):selected#endif value="current">Current (real-time date)</option>
-						</select
-					</div>
-				</div>
-				<div class="row my-1">
-					<div class="col">
-						<label for="shipWifiSSID">Onboard Wifi Network SSID</label>
-						<input type="text" class="form-control" id="shipWifiSSID" name="shipWifiSSID" value="#(settings.shipWifiSSID)" #if(!enableFields):disabled#endif>
-					</div>
-				</div>
-				<div class="row my-1">
-					<div class="col">
-						<label for="scheduleUpdateURL">Schedule Update URL</label>
-						<input type="text" class="form-control" id="scheduleUpdateURL" name="scheduleUpdateURL" value="#(settings.scheduleUpdateURL)" #if(!enableFields):disabled#endif>
-					</div>
-				</div>
-				<div class="row my-1">
-					<div class="col">
-						<input type="checkbox" id="allowAnimatedImages" name="allowAnimatedImages" #if(settings.allowAnimatedImages):checked#endif #if(!enableFields):disabled#endif>
-						<label for="allowAnimatedImages">Allow animated image uploads</label>
-					</div>
-				</div>
-				<div class="row my-1">
-					<div class="col">
-						<b>Currently Disabled Features</b><br> Select app-feature pairs to re-enable:
-					</div>
-				</div>
-				<div class="row my-2">
-					<div class="col col-auto">
+				<ul class="list-group">
+					<li class="list-group-item active">
+						<b>Access</b>
+					</li>
+					<li class="list-group-item">
+						<b>Minimum User Access Level:</b><br>Only allow users with the indicated access level (or above) to access the full site. Others will have their access token immediately revoked.
+						<select class="form-select" name="minAccessLevel" #if(!enableFields):disabled#endif>
+							<option #if(settings.minAccessUserLevel == "banned"):selected#endif value="banned">All Users</option>
+							<option #if(settings.minAccessUserLevel == "moderator"):selected#endif value="moderator">Moderator</option>
+							<option #if(settings.minAccessUserLevel == "twitarrteam"):selected#endif value="twitarrteam">TwitarrTeam</option>
+							<option #if(settings.minAccessUserLevel == "tho"):selected#endif value="tho">THO</option>
+							<option #if(settings.minAccessUserLevel == "admin"):selected#endif value="admin">Admin</option>
+						</select>
+					</li>
+					<li class="list-group-item">
+						<input type="checkbox" id="enablePreregistration" name="enablePreregistration" #if(settings.enablePreregistration):checked#endif #if(!enableFields):disabled#endif>
+						<label for="allowAccountCreation">Enable pre-embark UI.</label><br>
+						An alternate, restricted UI allowing users to create accounts, login, and edit their user profile. Only activated for users whose access level is less than the minimum.
+					</li>
+					</li>
+				</ul>
+				<ul class="list-group mt-2">
+					<li class="list-group-item active">
+						<b>Features</b>
+					</li>
+					<li class="list-group-item">
+						<b>Currently Disabled Features:</b><br> Select app-feature pairs to re-enable:
 						<select class="form-select" multiple name="reenable[]" #if(!enableFields):disabled#endif>
 							#for(disabled in settings.disabledFeatures):
 								<option value="#(disabled.app):#(disabled.feature)">#(disabled.app) - #(disabled.feature)</option>
 							#endfor
-						</select
-					</div>
-				</div>
-				<div class="row my-2">
-					<div class="col col-auto">
-						<b>Disable a feature:</b>
-					</div>
-					<div class="col col-12 col-sm-4">
+						</select>
+					</li>
+					<li class="list-group-item">
+						<b>Disable a feature:</b><br>
+						Choose an app and feature pair and then Save to disable that feature for that app. Either the app or feature may be 'all' to disable everything.
 						<select class="form-select" name="disableAppName" aria-label="Disable feature app selector">
 							<option value="" selected>Choose App</option>
 							#for(app in clientAppNames):
 								<option value="#(app)">#(app)</option>
 							#endfor
 						</select>
-					</div>
-					<div class="col col-12 col-sm-4">
 						<select class="form-select" name="disableFeatureName" aria-label="Feature selector for Disable Feature">
 							<option value="" selected>Choose Feature</option>
 							#for(feature in appFeatureNames):
 								<option value="#(feature)">#(feature)</option>
 							#endfor
 						</select>
-					</div>
-				</div>
+					</li>
+				</ul>
+				<ul class="list-group mt-2">
+					<li class="list-group-item active">
+						<b>Limits</b>
+					</li>
+					<li class="list-group-item">
+						<label for="maximumTwarrts">Maximum Alt Accounts per Primary Acct</label>
+						<input type="number" id="maxAlternateAccounts" name="maxAlternateAccounts" min="0" max="40" value="#(settings.maxAlternateAccounts)" #if(!enableFields):disabled#endif>
+					</li>
+					<li class="list-group-item">
+						<label for="maximumTwarrts">Maximum Twarrts per request</label>
+						<input type="number" id="maximumTwarrts" name="maximumTwarrts" min="1" max="1000" value="#(settings.maximumTwarrts)" #if(!enableFields):disabled#endif>
+					</li>
+					<li class="list-group-item">
+						<label for="maximumForums">Maximum Forums per request</label>
+						<input type="number" id="maximumForums" name="maximumForums" min="1" max="1000" value="#(settings.maximumForums)" #if(!enableFields):disabled#endif>
+					</li>
+					<li class="list-group-item">
+						<label for="maximumForumPosts">Maximum ForumPosts per request</label>
+						<input type="number" id="maximumForumPosts" name="maximumForumPosts" min="1" max="1000" value="#(settings.maximumForumPosts)" #if(!enableFields):disabled#endif>
+					</li>
+					<li class="list-group-item">
+						<label for="maxImageSize">Maximum image size</label>
+						<input type="number" id="maxImageSize" name="maxImageSize" min="1" max="1000" value="#(settings.maxImageSize / 1048576)" #if(!enableFields):disabled#endif> MB
+					</li>
+				</ul>
+				<ul class="list-group mt-2">
+					<li class="list-group-item active">
+						<b>Reporting</b>
+					</li>
+					<li class="list-group-item">
+						<label for="forumAutoQuarantineThreshold">Reports to trigger auto-quarantine on a Forum</label>
+						<input type="number" id="forumAutoQuarantineThreshold" name="forumAutoQuarantineThreshold" min="1" max="1000" value="#(settings.forumAutoQuarantineThreshold)" #if(!enableFields):disabled#endif>
+					</li>
+					<li class="list-group-item">
+						<label for="postAutoQuarantineThreshold">Reports to trigger auto-quarantine on a Twarrt or Forum Post</label>
+						<input type="number" id="postAutoQuarantineThreshold" name="postAutoQuarantineThreshold" min="1" max="1000" value="#(settings.postAutoQuarantineThreshold)" #if(!enableFields):disabled#endif>
+					</li>
+					<li class="list-group-item">
+						<label for="userAutoQuarantineThreshold">Reports to trigger auto-quarantine on a User</label>
+						<input type="number" id="userAutoQuarantineThreshold" name="userAutoQuarantineThreshold" min="1" max="1000" value="#(settings.userAutoQuarantineThreshold)" #if(!enableFields):disabled#endif>
+					</li>
+				</ul>
+				<ul class="list-group mt-2">
+					<li class="list-group-item active">
+						<b>Notifications</b>
+					</li>
+					<li class="list-group-item ">
+						<label for="upcomingEventNotificationSeconds">Upcoming event/LFG notification offset (seconds)</label>
+						<input type="number" id="upcomingEventNotificationSeconds" name="upcomingEventNotificationSeconds" min="0" max="1800" value="#(settings.upcomingEventNotificationSeconds)" #if(!enableFields):disabled#endif>
+					</li>
+					<li class="list-group-item">
+						<div class="row">
+							<div class="col col-auto align-items-center d-flex">
+								<label for="upcomingEventNotificationSetting">Upcoming event notifications</label>
+							</div>
+							<div class="col col-auto">
+								<select class="form-select" name="upcomingEventNotificationSetting" #if(!enableFields):disabled#endif>
+									<option #if(settings.upcomingEventNotificationSetting == "disabled"):selected#endif value="disabled">Disabled (no notifications)</option>
+									<option #if(settings.upcomingEventNotificationSetting == "cruiseWeek"):selected#endif value="cruiseWeek">Cruise Week (time travel)</option>
+									<option #if(settings.upcomingEventNotificationSetting == "current"):selected#endif value="current">Current (real-time date)</option>
+								</select
+							</div>
+						</div>
+					</li>
+					<li class="list-group-item">
+						<div class="row">
+							<div class="col col-auto align-items-center d-flex">
+								<label for="upcomingLFGNotificationSetting">Upcoming joined LFG notifications</label>
+							</div>
+							<div class="col col-auto">
+								<select class="form-select" name="upcomingLFGNotificationSetting" #if(!enableFields):disabled#endif>
+									<option #if(settings.upcomingLFGNotificationSetting == "disabled"):selected#endif value="disabled">Disabled (no notifications)</option>
+									<option #if(settings.upcomingLFGNotificationSetting == "cruiseWeek"):selected#endif value="cruiseWeek">Cruise Week (time travel)</option>
+									<option #if(settings.upcomingLFGNotificationSetting == "current"):selected#endif value="current">Current (real-time date)</option>
+								</select
+							</div>
+						</div>
+					</li>
+				</ul>
+				<ul class="list-group mt-2">
+					<li class="list-group-item active">
+						<b>Other</b>
+					</li>
+					<li class="list-group-item">
+						<label for="shipWifiSSID">Onboard Wifi Network SSID</label>
+						<input type="text" class="form-control" id="shipWifiSSID" name="shipWifiSSID" value="#(settings.shipWifiSSID)" #if(!enableFields):disabled#endif>
+					</li>
+					<li class="list-group-item">
+						<label for="scheduleUpdateURL">Schedule Update URL</label>
+						<input type="text" class="form-control" id="scheduleUpdateURL" name="scheduleUpdateURL" value="#(settings.scheduleUpdateURL)" #if(!enableFields):disabled#endif>
+					</li>
+					<li class="list-group-item">
+						<input type="checkbox" id="allowAnimatedImages" name="allowAnimatedImages" #if(settings.allowAnimatedImages):checked#endif #if(!enableFields):disabled#endif>
+						<label for="allowAnimatedImages">Allow animated image uploads</label>
+					</li>
+				</ul>
 				<div class="alert alert-danger mt-3 d-none" role="alert">
 				</div>				
-				<div class="row mb-2">
+				<div class="row my-2">
 					<div class="col col-auto">
 						<button type="submit" class="btn btn-primary" #if(!enableFields):disabled#endif>Save<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
 					</div>

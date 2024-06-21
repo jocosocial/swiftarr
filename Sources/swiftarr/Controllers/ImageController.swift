@@ -13,15 +13,15 @@ struct ImageController: APIRouteCollection {
 		let imageRoutes = app.grouped("api", "v3", "image")
 
 		// open access endpoints
-		let userImageRoutes = imageRoutes.grouped(DisabledAPISectionMiddleware(feature: .images))
-		userImageRoutes.get("full", imageFilenameParam, use: getImage_FullHandler)
-		userImageRoutes.get("thumb", imageFilenameParam, use: getImage_ThumbnailHandler)
+		let userImageRoutes = imageRoutes.flexRoutes(feature: .images)
+		userImageRoutes.get("full", imageFilenameParam, use: getImage_FullHandler).setUsedForPreregistration()
+		userImageRoutes.get("thumb", imageFilenameParam, use: getImage_ThumbnailHandler).setUsedForPreregistration()
 		userImageRoutes.get("user", "identicon", userIDParam, use: getUserIdenticonHandler)
 		userImageRoutes.get("user", "full", userIDParam, use: getUserAvatarHandler)
 		userImageRoutes.get("user", "thumb", userIDParam, use: getUserAvatarHandler)
 
 		// Moderator-only endpoints
-		let tokenAuthGroup = imageRoutes.addTokenAuthRequirement().grouped(RequireModeratorMiddleware())
+		let tokenAuthGroup = imageRoutes.tokenRoutes(feature: .images, minAccess: .moderator)
 		tokenAuthGroup.get("archive", imageFilenameParam, use: getImage_ArchivedHandler)
 	}
 

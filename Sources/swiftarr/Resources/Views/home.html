@@ -1,33 +1,48 @@
 #extend("trunk"):
     #export("body"):
-    	<div class="container-md ms-0 mt-2 mb-5">
-			<div class="card mb-2">	
-				#if(dailyTheme.image):
-					<img class="card-img" src="/api/v3/image/full/#(dailyTheme.image)" alt="Daily Theme Image">
- 					<div class="card-img-overlay">
-						<div class="card-header bg-primary-50">
+		<div class="container-md ms-0 mt-2 mb-5">
+			#if(!trunk.preregistrationMode):
+				<div class="card mb-2">	
+					#if(dailyTheme.image):
+						<img class="card-img" src="/api/v3/image/full/#(dailyTheme.image)" alt="Daily Theme Image">
+						<div class="card-img-overlay">
+							<div class="card-header bg-primary-50">
+								<span class="text-white">
+									<b>Today's Theme: #(dailyTheme.title)</b>
+								</span>
+							</div>
+							<div class="card-body bg-light-50">
+								#(dailyTheme.info)
+							</div>
+						</div>
+					#else:
+						<div class="card-header bg-primary">
 							<span class="text-white">
 								<b>Today's Theme: #(dailyTheme.title)</b>
 							</span>
 						</div>
-						<div class="card-body bg-light-50">
-							#(dailyTheme.info)
+						<div class="card-body bg-light">
+							#formatTwarrtText(dailyTheme.info)
 						</div>
-					</div>
-				#else:
+						#if(dailyTheme.image):
+							<img class="card-img-bottom" src="/api/v3/image/full/#(dailyTheme.image)" alt="Daily Theme Image">
+						#endif
+					#endif
+				</div>
+			#else:
+				<div class="card mb-2">	
 					<div class="card-header bg-primary">
 						<span class="text-white">
-							<b>Today's Theme: #(dailyTheme.title)</b>
+							<b>Twitarr Pre-Registration</b>
 						</span>
 					</div>
 					<div class="card-body bg-light">
-						#formatTwarrtText(dailyTheme.info)
+						<p>Ahoy landlubber! Welcome to Twitarr, your onboard social media server for the JoCo Cruise.</p>
+						<p>If you've received an email from The Home Office with your Twitarr registration code, you can use it here to create a Twitarr account, even if you're marooned ashore because the cruise hasn't started yet.</p>
+						<p>Twitarr's social media features aren't enabled right now (see the JoCo Discord instead), but setting up your account now means your username, profile, and avatar picture will be ready to go when you step on the boat. Don't forget your password!</p>
 					</div>
-					#if(dailyTheme.image):
-						<img class="card-img-bottom" src="/api/v3/image/full/#(dailyTheme.image)" alt="Daily Theme Image">
-					#endif
-				#endif
-			</div>
+				</div>
+			#endif
 
 			#if(count(announcements) > 0):
 				<h4><b>Announcements</b></h4>
@@ -46,179 +61,184 @@
 				#endfor
 			#endif
 						
-			#if(trunk.alertCounts.newTwarrtMentionCount > 0 || trunk.alertCounts.newForumMentionCount > 0):
-				<h6><b>Notifications</b></h6>
-			#endif
-			<div class="list-group">
-			#if(trunk.alertCounts.newForumMentionCount > 0):
-				<a class="list-group-item list-group-item-action" href="/forumpost/mentions">
-					You have #(trunk.alertCounts.newForumMentionCount) new forum @mentions
-				</a>
-			#endif
-			
-			#if(trunk.userIsLoggedIn && showPhotostream):
-				<!-- 2-up carousel, small-size viewports -->
-				<div class="card mb-2 d-md-none">	
-					<div class="card-header bg-primary py-0 d-flex align-content-center">
-						<div class="text-white align-content-center flex-grow-1">
-							<b><a class="link-light" href="/photostream">Photo Stream</a></b>
+			#if(!trunk.preregistrationMode):
+				#if(trunk.alertCounts.newTwarrtMentionCount > 0 || trunk.alertCounts.newForumMentionCount > 0):
+					<h6><b>Notifications</b></h6>
+				#endif
+				<div class="list-group">
+				#if(trunk.alertCounts.newForumMentionCount > 0):
+					<a class="list-group-item list-group-item-action" href="/forumpost/mentions">
+						You have #(trunk.alertCounts.newForumMentionCount) new forum @mentions
+					</a>
+				#endif
+				
+				#if(trunk.userIsLoggedIn && showPhotostream):
+					<!-- 2-up carousel, small-size viewports -->
+					<div class="card mb-2 d-md-none">	
+						<div class="card-header bg-primary py-0 d-flex align-content-center">
+							<div class="text-white align-content-center flex-grow-1">
+								<b><a class="link-light" href="/photostream">Photo Stream</a></b>
+							</div>
+							<button class="flex-grow-0" style="background: none; border: 0; padding: 0; height: 33px;" type="button" data-bs-target="#photostreamCarousel2Up" data-bs-slide="prev">
+								<span class="carousel-control-prev-icon" aria-hidden="true"></span>
+								<span class="visually-hidden">Previous</span>
+							</button>
+							<button class="ms-1 flex-grow-0" style="background: none; border: 0; padding: 0; height: 33px;" type="button" data-bs-target="#photostreamCarousel2Up" data-bs-slide="next">
+								<span class="carousel-control-next-icon" aria-hidden="true"></span>
+								<span class="visually-hidden">Next</span>
+							</button>
 						</div>
-						<button class="flex-grow-0" style="background: none; border: 0; padding: 0; height: 33px;" type="button" data-bs-target="#photostreamCarousel2Up" data-bs-slide="prev">
-							<span class="carousel-control-prev-icon" aria-hidden="true"></span>
-							<span class="visually-hidden">Previous</span>
-						</button>
-						<button class="ms-1 flex-grow-0" style="background: none; border: 0; padding: 0; height: 33px;" type="button" data-bs-target="#photostreamCarousel2Up" data-bs-slide="next">
-							<span class="carousel-control-next-icon" aria-hidden="true"></span>
-							<span class="visually-hidden">Next</span>
-						</button>
-					</div>
-					<div class="card-body bg-light">
-						<div id="photostreamCarousel2Up" class="carousel slide" data-bs-ride="carousel">
-							<div class="carousel-inner">
-								#if(count(twoGroup) == 0):
-									#(photostreamError)
-								#else:
-									#for(couplet in twoGroup):
-										<div class="carousel-item#if(isFirst): active#endif">
-											<div class="row">
-												#for(photo in couplet):
-													<div class="col col-6 text-center">
-														<button type="button" class="btn p-0 border-0" data-bs-toggle="modal" data-bs-target="\#imageCarouselModal">
-															<img src="/api/v3/image/thumb/#(photo.image)" class="swiftarr-post-image rounded img-fluid" alt="Photostream Image">
-														</button>
-														#if(photo.event != nil):
-															<h5 class="text-truncate"><a href="/events/#(photo.event.eventID)">#(photo.event.title)</a></h5>
-														#else:
-															<h5>#(photo.location)</h5>
-														#endif
-														<p>#staticTime(photo.createdAt)</p>
-													</div>
-												#endfor
+						<div class="card-body bg-light">
+							<div id="photostreamCarousel2Up" class="carousel slide" data-bs-ride="carousel">
+								<div class="carousel-inner">
+									#if(count(twoGroup) == 0):
+										#(photostreamError)
+									#else:
+										#for(couplet in twoGroup):
+											<div class="carousel-item#if(isFirst): active#endif">
+												<div class="row">
+													#for(photo in couplet):
+														<div class="col col-6 text-center">
+															<button type="button" class="btn p-0 border-0" data-bs-toggle="modal" data-bs-target="\#imageCarouselModal">
+																<img src="/api/v3/image/thumb/#(photo.image)" class="swiftarr-post-image rounded img-fluid" alt="Photostream Image">
+															</button>
+															#if(photo.event != nil):
+																<h5 class="text-truncate"><a href="/events/#(photo.event.eventID)">#(photo.event.title)</a></h5>
+															#else:
+																<h5>#(photo.location)</h5>
+															#endif
+															<p>#staticTime(photo.createdAt)</p>
+														</div>
+													#endfor
+												</div>
 											</div>
-										</div>
-									#endfor
-								#endif
+										#endfor
+									#endif
+								</div>
 							</div>
 						</div>
 					</div>
-				</div>
-				<!-- 3-up carousel, medium and wider viewports -->
-				<div class="card mb-2 d-none d-md-block">	
-					<div class="card-header bg-primary py-0 d-flex align-content-center">
-						<div class="text-white align-content-center flex-grow-1">
-							<b><a class="link-light" href="/photostream">Photo Stream</a></b>
+					<!-- 3-up carousel, medium and wider viewports -->
+					<div class="card mb-2 d-none d-md-block">	
+						<div class="card-header bg-primary py-0 d-flex align-content-center">
+							<div class="text-white align-content-center flex-grow-1">
+								<b><a class="link-light" href="/photostream">Photo Stream</a></b>
+							</div>
+							<button class="flex-grow-0" style="background: none; border: 0; padding: 0; height: 33px;" type="button" data-bs-target="#photostreamCarousel3Up" data-bs-slide="prev">
+								<span class="carousel-control-prev-icon" aria-hidden="true"></span>
+								<span class="visually-hidden">Previous</span>
+							</button>
+							<button class="ms-1 flex-grow-0" style="background: none; border: 0; padding: 0; height: 33px;" type="button" data-bs-target="#photostreamCarousel3Up" data-bs-slide="next">
+								<span class="carousel-control-next-icon" aria-hidden="true"></span>
+								<span class="visually-hidden">Next</span>
+							</button>
 						</div>
-						<button class="flex-grow-0" style="background: none; border: 0; padding: 0; height: 33px;" type="button" data-bs-target="#photostreamCarousel3Up" data-bs-slide="prev">
-							<span class="carousel-control-prev-icon" aria-hidden="true"></span>
-							<span class="visually-hidden">Previous</span>
-						</button>
-						<button class="ms-1 flex-grow-0" style="background: none; border: 0; padding: 0; height: 33px;" type="button" data-bs-target="#photostreamCarousel3Up" data-bs-slide="next">
-							<span class="carousel-control-next-icon" aria-hidden="true"></span>
-							<span class="visually-hidden">Next</span>
-						</button>
-					</div>
-					<div class="card-body bg-light">
-						<div id="photostreamCarousel3Up" class="carousel slide" data-bs-ride="carousel">
-							<div class="carousel-inner">
-								#if(count(twoGroup) == 0):
-									#(photostreamError)
-								#else:
-									#for(triplet in threeGroup):
-										<div class="carousel-item#if(isFirst): active#endif">
-											<div class="row">
-												#for(photo in triplet):
-													<div class="col col-4 text-center">
-														<button type="button" class="btn p-0 border-0" data-bs-toggle="modal" data-bs-target="\#imageCarouselModal">
-															<img src="/api/v3/image/thumb/#(photo.image)" class="swiftarr-post-image" alt="Photostream Image">
-														</button>
-														#if(photo.event != nil):
-															<h5 class="text-truncate"><a href="/events">#(photo.event.title)</a></h5>
-														#else:
-															<h5>#(photo.location)</h5>
-														#endif
-														<p>#staticTime(photo.createdAt)</p>
-													</div>
-												#endfor
+						<div class="card-body bg-light">
+							<div id="photostreamCarousel3Up" class="carousel slide" data-bs-ride="carousel">
+								<div class="carousel-inner">
+									#if(count(twoGroup) == 0):
+										#(photostreamError)
+									#else:
+										#for(triplet in threeGroup):
+											<div class="carousel-item#if(isFirst): active#endif">
+												<div class="row">
+													#for(photo in triplet):
+														<div class="col col-4 text-center">
+															<button type="button" class="btn p-0 border-0" data-bs-toggle="modal" data-bs-target="\#imageCarouselModal">
+																<img src="/api/v3/image/thumb/#(photo.image)" class="swiftarr-post-image" alt="Photostream Image">
+															</button>
+															#if(photo.event != nil):
+																<h5 class="text-truncate"><a href="/events">#(photo.event.title)</a></h5>
+															#else:
+																<h5>#(photo.location)</h5>
+															#endif
+															<p>#staticTime(photo.createdAt)</p>
+														</div>
+													#endfor
+												</div>
 											</div>
-										</div>
-									#endfor
-								#endif
+										#endfor
+									#endif
+								</div>
 							</div>
 						</div>
 					</div>
-				</div>
+				#endif
 			#endif
 
 			#if(trunk.userIsLoggedIn):
-				<div class="row mt-2">
-					<div class="col">
-						<h4><b>Onboard Activities:</b></h4>
-					</div>
-				</div>
-				<div class="row mb-2">
-					<div class="col">
-						<ul class="list-group">
-							<li class="list-group-item"><a href="/map">Ship Map</a></li>
-							<li class="list-group-item"><a href="/boardgames">Board Games</a></li>
-							<li class="list-group-item"><a href="/karaoke">Karaoke</a></li>
-							#if(trunk.userIsLoggedIn):
-								<li class="list-group-item"><a href="/directory">Find Twitarr Users</a></li>
-							#endif
-							<li class="list-group-item"><a href="/time">Time Zone Check</a></li>
-						</ul>
-					</div>
-				</div>
-				
-				#if(trunk.userIsMod || trunk.userIsShutternautManager || trunk.userIsTwitarrTeam):
+				#if(!trunk.preregistrationMode):
 					<div class="row mt-2">
 						<div class="col">
-							<h4><b>Site Management:</b></h4>
+							<h4><b>Onboard Activities:</b></h4>
 						</div>
 					</div>
 					<div class="row mb-2">
 						<div class="col">
 							<ul class="list-group">
-								#if(trunk.userIsShutternautManager):
-									<li class="list-group-item"><a href="/userrole/shutternaut/manage">Manage Shutternauts</a></li>
+								<li class="list-group-item"><a href="/map">Ship Map</a></li>
+								<li class="list-group-item"><a href="/boardgames">Board Games</a></li>
+								<li class="list-group-item"><a href="/karaoke">Karaoke</a></li>
+								#if(trunk.userIsLoggedIn):
+									<li class="list-group-item"><a href="/directory">Find Twitarr Users</a></li>
 								#endif
-								#if(trunk.userIsMod):
-									<li class="list-group-item align-items-center">
-										<a href="/moderator">Moderator Pages</a>
-										#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):
-											<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount) Msgs</i></span>
-										#elseif(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount == 1):
-											<span class="text-muted"><i>1 Msg</i></span>
-										#endif
-										#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 0 && trunk.alertCounts.moderatorData.openReportCount > 0):
-											<span class="text-muted"><i>,&nbsp;</i></span>
-										#endif
-										#if(trunk.alertCounts.moderatorData.openReportCount > 1):
-											<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.openReportCount) Reports</i></span>
-										#elseif(trunk.alertCounts.moderatorData.openReportCount == 1):
-											<span class="text-muted"><i>1 Report</i></span>
-										#endif
-										#if(trunk.alertCounts.moderatorData.newModeratorForumMentionCount > 1):
-											<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newModeratorForumMentionCount) Mentions</i></span>
-										#elseif(trunk.alertCounts.moderatorData.newModeratorForumMentionCount == 1):
-											<span class="text-muted"><i>1 Mention</i></span>
-										#endif
-									</li>
-								#endif
-								#if(trunk.userIsTwitarrTeam):
-									<li class="list-group-item align-items-center">
-										<a class="nav-link#" href="/admin">Admin Pages</a>
-										#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0):
-											<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newTTSeamailMessageCount) Msg#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):s#endif</i></span>
-										#endif
-										#if(trunk.alertCounts.moderatorData.newTTForumMentionCount > 0):
-											<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newTTForumMentionCount) Mention#if(trunk.alertCounts.moderatorData.newTTForumMentionCount > 1):s#endif</i></span>
-										#endif
-									</li>
-								#endif
+								<li class="list-group-item"><a href="/time">Time Zone Check</a></li>
 							</ul>
 						</div>
 					</div>
+				
+					#if(trunk.userIsMod || trunk.userIsShutternautManager || trunk.userIsTwitarrTeam):
+						<div class="row mt-2">
+							<div class="col">
+								<h4><b>Site Management:</b></h4>
+							</div>
+						</div>
+						<div class="row mb-2">
+							<div class="col">
+								<ul class="list-group">
+									#if(trunk.userIsShutternautManager):
+										<li class="list-group-item"><a href="/userrole/shutternaut/manage">Manage Shutternauts</a></li>
+									#endif
+									#if(trunk.userIsMod):
+										<li class="list-group-item align-items-center">
+											<a href="/moderator">Moderator Pages</a>
+											#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):
+												<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount) Msgs</i></span>
+											#elseif(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount == 1):
+												<span class="text-muted"><i>1 Msg</i></span>
+											#endif
+											#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 0 && trunk.alertCounts.moderatorData.openReportCount > 0):
+												<span class="text-muted"><i>,&nbsp;</i></span>
+											#endif
+											#if(trunk.alertCounts.moderatorData.openReportCount > 1):
+												<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.openReportCount) Reports</i></span>
+											#elseif(trunk.alertCounts.moderatorData.openReportCount == 1):
+												<span class="text-muted"><i>1 Report</i></span>
+											#endif
+											#if(trunk.alertCounts.moderatorData.newModeratorForumMentionCount > 1):
+												<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newModeratorForumMentionCount) Mentions</i></span>
+											#elseif(trunk.alertCounts.moderatorData.newModeratorForumMentionCount == 1):
+												<span class="text-muted"><i>1 Mention</i></span>
+											#endif
+										</li>
+									#endif
+									#if(trunk.userIsTwitarrTeam):
+										<li class="list-group-item align-items-center">
+											<a class="nav-link#" href="/admin">Admin Pages</a>
+											#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0):
+												<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newTTSeamailMessageCount) Msg#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):s#endif</i></span>
+											#endif
+											#if(trunk.alertCounts.moderatorData.newTTForumMentionCount > 0):
+												<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newTTForumMentionCount) Mention#if(trunk.alertCounts.moderatorData.newTTForumMentionCount > 1):s#endif</i></span>
+											#endif
+										</li>
+									#endif
+								</ul>
+							</div>
+						</div>
+					#endif
 				#endif
+				
 				<div class="row mt-2">
 					<div class="col">
 						<h4><b>Account Management:</b></h4>
@@ -229,10 +249,12 @@
 						<ul class="list-group">
 						#if(trunk.userIsLoggedIn):
 							<li class="list-group-item"><a href="/profile">View your User Profile</a></li>
-							<li class="list-group-item"><a href="/blocks">Manage Muted and Blocked Users</a></li>
-							<li class="list-group-item"><a href="/alertwords">Manage Alert and Mute Keywords</a></li>
-							<li class="list-group-item"><a href="/createAltAccount">Create an Alt Account</a></li>
-							<li class="list-group-item"><a href="/resetPassword">Change your Password</a></li>
+							#if(!trunk.preregistrationMode):
+								<li class="list-group-item"><a href="/blocks">Manage Muted and Blocked Users</a></li>
+								<li class="list-group-item"><a href="/alertwords">Manage Alert and Mute Keywords</a></li>
+								<li class="list-group-item"><a href="/createAltAccount">Create an Alt Account</a></li>
+								<li class="list-group-item"><a href="/resetPassword">Change your Password</a></li>
+							#endif
 							<li class="list-group-item"><a href="/logout">Logout #(trunk.username)</a></li>
 						#else:
 							<li class="list-group-item"><a href="/login">Login</a></li>
@@ -243,15 +265,6 @@
 				<div class="row mt-2">
 					<div class="col">
 						<h4><b>Documentation:</b></h4>
-					</div>
-				</div>
-				<div class="row mb-2">
-					<div class="col">
-						<ul class="list-group">
-							<li class="list-group-item"><a href="/faq">JoCo Cruise FAQ</a></li>
-							<li class="list-group-item"><a href="/codeOfConduct">Code of Conduct</a></li>
-							<li class="list-group-item"><a href="/about">About Twitarr</a></li>
-						</ul>
 					</div>
 				</div>
 			#else:
@@ -267,14 +280,14 @@
 						<a class="btn btn-outline-primary" href="/conductAgree">Create Account</a>
 					</div>
 				</div>
-				<div class="row mb-2">
-					<div class="col">
-						<p><a href="/codeOfConduct">Code of Conduct</a></p>
-						<p><a href="/faq">JoCo Cruise FAQ</a></p>
-						<p><a href="/about">About Twitarr</a></p>
-					</div>
-				</div>
 			#endif
+			<div class="row my-4">
+				<div class="col">
+					<p><a href="/codeOfConduct">Code of Conduct</a></p>
+					<p><a href="/faq">JoCo Cruise FAQ</a></p>
+					<p><a href="/about">About Twitarr</a></p>
+				</div>
+			</div>
 		</div>
 		#extend("imageOverlay")
     #endexport

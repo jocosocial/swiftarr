@@ -86,16 +86,16 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws {
 		// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
 		let globalRoutes = getGlobalRoutes(app).grouped("lfg")
-			.grouped(DisabledSiteSectionMiddleware(feature: .friendlyfez))
-		globalRoutes.get("", use: fezRootPageHandler)
-		globalRoutes.get("joined", use: joinedFezPageHandler)
-		globalRoutes.get("owned", use: ownedFezPageHandler)
-		globalRoutes.get(fezIDParam, use: singleFezPageHandler)
-		globalRoutes.get("faq", use: fezFAQHandler)
+				.grouped(DisabledSiteSectionMiddleware(feature: .friendlyfez))
+		globalRoutes.get("", use: fezRootPageHandler).destination("the Looking For Group list")
+		globalRoutes.get("joined", use: joinedFezPageHandler).destination("the LFGs you've joined")
+		globalRoutes.get("owned", use: ownedFezPageHandler).destination("the LFGs you've created")
+		globalRoutes.get(fezIDParam, use: singleFezPageHandler).destination("this LFG")
+		globalRoutes.get("faq", use: fezFAQHandler).destination("the LFG FAQ")
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app).grouped("lfg")
-			.grouped(DisabledSiteSectionMiddleware(feature: .friendlyfez))
+				.grouped(DisabledSiteSectionMiddleware(feature: .friendlyfez))
 		privateRoutes.get("create", use: fezCreatePageHandler)
 		privateRoutes.get(fezIDParam, "update", use: fezUpdatePageHandler)
 		privateRoutes.get(fezIDParam, "edit", use: fezUpdatePageHandler)

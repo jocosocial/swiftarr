@@ -16,6 +16,7 @@ let package = Package(
 		.package(url: "https://github.com/vapor/queues-redis-driver.git", from: "1.1.1"),
 		.package(url: "https://github.com/swift-server/swift-prometheus.git", from: "2.0.0-alpha"),
 		.package(url: "https://github.com/johnsundell/ink.git", from: "0.6.0"),
+		.package(url: "https://github.com/weichsel/ZIPFoundation.git", .upToNextMajor(from: "0.9.0"))
 	],
 	targets: [
 		.systemLibrary(name: "gd", pkgConfig: "gdlib", providers: [.apt(["libgd-dev"]), .brew(["gd"]), .yum(["gd-devel"])]),
@@ -37,6 +38,7 @@ let package = Package(
 				"gd",
 				"jpeg",
 				"gdOverrides",
+				"ZIPFoundation",
 			],
 			resources: [
 				.copy("Resources"),

@@ -1740,6 +1740,8 @@ public struct UserNotificationData: Content {
 	var serverTime: String
 	/// Server Time Zone offset, in seconds from UTC. One hour before UTC is -3600. EST  timezone is -18000.
 	var serverTimeOffset: Int
+	/// The geopolitical region identifier that identifies the time zone -- e.g. "America/Los Angeles" 
+	var serverTimeZoneID: String
 	/// Human-readable time zone name, like "EDT"
 	var serverTimeZone: String
 	/// Features that are turned off by the server. If the `appName` for a feature is `all`, the feature is disabled at the API layer.
@@ -1832,6 +1834,7 @@ extension UserNotificationData {
 	) {
 		serverTime = ISO8601DateFormatter().string(from: Date())
 		serverTimeOffset = Settings.shared.timeZoneChanges.tzAtTime().secondsFromGMT(for: Date())
+		serverTimeZoneID = Settings.shared.timeZoneChanges.tzAtTime().identifier
 		serverTimeZone = Settings.shared.timeZoneChanges.abbrevAtTime()
 		self.disabledFeatures = Settings.shared.disabledFeatures.buildDisabledFeatureArray()
 		self.shipWifiSSID = Settings.shared.shipWifiSSID
@@ -1851,10 +1854,11 @@ extension UserNotificationData {
 		self.nextJoinedLFGTime = nextLFGTime
 	}
 
-	// Initializes an dummy struct, for when there's no user logged in.
+	// Initializes a dummy struct, for when there's no user logged in.
 	init() {
 		serverTime = ISO8601DateFormatter().string(from: Date())
 		serverTimeOffset = Settings.shared.timeZoneChanges.tzAtTime().secondsFromGMT(for: Date())
+		serverTimeZoneID = Settings.shared.timeZoneChanges.tzAtTime().identifier
 		serverTimeZone = Settings.shared.timeZoneChanges.abbrevAtTime()
 		self.disabledFeatures = []
 		self.shipWifiSSID = nil

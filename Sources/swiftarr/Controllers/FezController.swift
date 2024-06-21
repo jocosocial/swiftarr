@@ -51,13 +51,14 @@ struct FezController: APIRouteCollection {
 	func registerRoutes(_ app: Application) throws {
 
 		// convenience route group for all /api/v3/fez endpoints
-		let fezRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .friendlyfez)).grouped("api", "v3", "fez")
+		let fezRoutes = app.grouped("api", "v3", "fez")
 
 		// Open access routes
-		fezRoutes.get("types", use: typesHandler)
+		let flexAuthGroup = fezRoutes.flexRoutes(feature: .friendlyfez)
+		flexAuthGroup.get("types", use: typesHandler)
 
 		// endpoints available only when logged in
-		let tokenAuthGroup = fezRoutes.addTokenAuthRequirement()
+		let tokenAuthGroup = fezRoutes.tokenRoutes(feature: .friendlyfez)
 		tokenAuthGroup.get("open", use: openHandler)
 		tokenAuthGroup.get("joined", use: joinedHandler)
 		tokenAuthGroup.get("owner", use: ownerHandler)
@@ -80,7 +81,6 @@ struct FezController: APIRouteCollection {
 		tokenAuthGroup.post(fezIDParam, "mute", use: muteAddHandler)
 		tokenAuthGroup.delete(fezIDParam, "mute", use: muteRemoveHandler)
 		tokenAuthGroup.post(fezIDParam, "mute", "remove", use: muteRemoveHandler)
-
 	}
 
 	// MARK: - tokenAuthGroup Handlers (logged in)

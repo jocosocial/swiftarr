@@ -88,24 +88,24 @@ struct UserController: APIRouteCollection {
 		let userRoutes = app.grouped("api", "v3", "user")
 
 		// open access endpoints
-		userRoutes.post("create", use: createHandler)
+		userRoutes.post("create", use: createHandler).setUsedForPreregistration()
 
 		// endpoints available only when logged in
-		let tokenAuthGroup = userRoutes.addTokenAuthRequirement()
+		let tokenAuthGroup = userRoutes.tokenRoutes()
 		tokenAuthGroup.get("whoami", use: whoamiHandler)
 		tokenAuthGroup.post("verify", use: verifyHandler)
-		tokenAuthGroup.post("password", use: passwordHandler)
+		tokenAuthGroup.post("password", use: passwordHandler).setUsedForPreregistration()
 		tokenAuthGroup.post("username", use: usernameHandler)
 		tokenAuthGroup.post(userIDParam, "username", use: usernameHandler)
 		tokenAuthGroup.post("add", use: addHandler)
 
-		tokenAuthGroup.on(.POST, "image", body: .collect(maxSize: "30mb"), use: imageHandler)
-		tokenAuthGroup.post("image", "remove", use: imageRemoveHandler)
-		tokenAuthGroup.delete("image", use: imageRemoveHandler)
+		tokenAuthGroup.on(.POST, "image", body: .collect(maxSize: "30mb"), use: imageHandler).setUsedForPreregistration()
+		tokenAuthGroup.post("image", "remove", use: imageRemoveHandler).setUsedForPreregistration()
+		tokenAuthGroup.delete("image", use: imageRemoveHandler).setUsedForPreregistration()
 		tokenAuthGroup.delete(userIDParam, "image", use: imageRemoveHandler)
 
-		tokenAuthGroup.get("profile", use: profileHandler)
-		tokenAuthGroup.post("profile", use: profileUpdateHandler)
+		tokenAuthGroup.get("profile", use: profileHandler).setUsedForPreregistration()
+		tokenAuthGroup.post("profile", use: profileUpdateHandler).setUsedForPreregistration()
 		tokenAuthGroup.post(userIDParam, "profile", use: profileUpdateHandler)
 
 		tokenAuthGroup.get("alertwords", use: alertwordsHandler)
@@ -283,7 +283,7 @@ struct UserController: APIRouteCollection {
 		let parentID = try user.$parent.id ?? user.requireID()
 		let altAccountCount = try await User.query(on: req.db).filter(\.$parent.$id == parentID).count()
 		let parentAccount = try await user.parentAccount(on: req)
-		guard altAccountCount <= Settings.shared.maxAlternateAccounts else {
+		guard altAccountCount < Settings.shared.maxAlternateAccounts else {
 			throw Abort(.badRequest, reason: "Maximum number of alternate accounts reached.")
 		}
 		// check if existing username

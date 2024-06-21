@@ -3,6 +3,7 @@ import FluentSQL
 import Redis
 import Vapor
 
+// only API routes should use the RoutesBuilder extensions. Site routes have different requirements.
 extension RoutesBuilder {
 	/// Adds Flexible Auth to a route. This route can be accessed without a token (while not logged in), but `req.auth.get(User.self)` will still
 	/// return a user if one is logged in. Route handlers for these routes should not call `req.auth.require(User.self)`. A route with no auth
@@ -19,7 +20,7 @@ extension RoutesBuilder {
 	func addBasicAuthRequirement() -> RoutesBuilder {
 		return self.grouped([
 			UserCacheData.BasicAuth(),
-			UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated.")),
+			MinUserAccessLevelMiddleware(requireAuth: true),
 		])
 	}
 
@@ -29,6 +30,28 @@ extension RoutesBuilder {
 			UserCacheData.TokenAuthenticator(),
 			UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated.")),
 		])
+	}
+	
+	func flexRoutes(feature: SwiftarrFeature? = nil, path: PathComponent...) -> RoutesBuilder {
+		var builder = self.addFlexAuth().grouped(path).grouped([
+				UserCacheData.TokenAuthenticator(),
+				MinUserAccessLevelMiddleware(requireAuth: false),
+				])
+		if let feature = feature {
+			builder = builder.grouped(DisabledAPISectionMiddleware(feature: feature))
+		}
+		return builder
+	}
+	
+	func tokenRoutes(feature: SwiftarrFeature? = nil, minAccess: UserAccessLevel = .banned, path: PathComponent...) -> RoutesBuilder {
+		var builder = self.grouped(path).grouped([
+				UserCacheData.TokenAuthenticator(),
+				MinUserAccessLevelMiddleware(requireAuth: true, requireAccessLevel: minAccess),
+				])
+		if let feature = feature {
+			builder = builder.grouped(DisabledAPISectionMiddleware(feature: feature))
+		}
+		return builder
 	}
 }
 

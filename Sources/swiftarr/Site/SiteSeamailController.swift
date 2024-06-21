@@ -81,7 +81,8 @@ struct SiteSeamailController: SiteControllerUtils {
 		// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
 		// redirect-chained through /login and back.
 		let globalRoutes = getGlobalRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .seamail))
-		globalRoutes.get("seamail", use: seamailRootPageHandler)
+		globalRoutes.get("seamail", use: seamailRootPageHandler).destination("your seamail chats")
+		globalRoutes.get("seamail", fezIDParam, use: seamailViewPageHandler).destination("this seamail chat")
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .seamail))
@@ -89,18 +90,11 @@ struct SiteSeamailController: SiteControllerUtils {
 		privateRoutes.get("seamail", "create", use: seamailCreatePageHandler)
 		privateRoutes.get("seamail", "usernames", "search", ":searchString", use: seamailUsernameAutocompleteHandler)
 		privateRoutes.post("seamail", "create", use: seamailCreatePostHandler)
-		privateRoutes.get("seamail", fezIDParam, use: seamailViewPageHandler)
 		privateRoutes.post("seamail", fezIDParam, use: seamailViewPageHandler)
 		privateRoutes.post("seamail", fezIDParam, "post", use: seamailThreadPostHandler)
 		privateRoutes.post("seamail", fezIDParam, "mute", use: seamailAddMutePostHandler)
 		privateRoutes.delete("seamail", fezIDParam, "mute", use: seamailRemoveMutePostHandler)
-		privateRoutes.webSocket(
-			"seamail",
-			fezIDParam,
-			"socket",
-			shouldUpgrade: shouldCreateMsgSocket,
-			onUpgrade: createMsgSocket
-		)
+		privateRoutes.webSocket("seamail", fezIDParam, "socket", shouldUpgrade: shouldCreateMsgSocket, onUpgrade: createMsgSocket)
 	}
 
 	// MARK: - Seamail

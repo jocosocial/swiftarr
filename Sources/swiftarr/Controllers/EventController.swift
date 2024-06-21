@@ -12,19 +12,19 @@ struct EventController: APIRouteCollection {
 	func registerRoutes(_ app: Application) throws {
 
 		// convenience route group for all /api/v3/users endpoints
-		let eventRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .schedule)).grouped("api", "v3", "events")
+		let eventRoutes = app.grouped("api", "v3", "events")
 
 		// Flexible access endpoints that behave differently for logged-in users
-		let optionalAuthGroup = eventRoutes.addFlexAuth()
-		optionalAuthGroup.get(use: eventsHandler)
+		let optionalAuthGroup = eventRoutes.flexRoutes(feature: .schedule)
+		optionalAuthGroup.get(use: eventsHandler).setUsedForPreregistration()
 		optionalAuthGroup.get(eventIDParam, use: singleEventHandler)
 
 		// endpoints available only when logged in
-		let tokenAuthGroup = eventRoutes.addTokenAuthRequirement()
-		tokenAuthGroup.post(eventIDParam, "favorite", use: favoriteAddHandler)
-		tokenAuthGroup.post(eventIDParam, "favorite", "remove", use: favoriteRemoveHandler)
-		tokenAuthGroup.delete(eventIDParam, "favorite", use: favoriteRemoveHandler)
-		tokenAuthGroup.get("favorites", use: favoritesHandler)
+		let tokenAuthGroup = eventRoutes.tokenRoutes(feature: .schedule)
+		tokenAuthGroup.post(eventIDParam, "favorite", use: favoriteAddHandler).setUsedForPreregistration()
+		tokenAuthGroup.post(eventIDParam, "favorite", "remove", use: favoriteRemoveHandler).setUsedForPreregistration()
+		tokenAuthGroup.delete(eventIDParam, "favorite", use: favoriteRemoveHandler).setUsedForPreregistration()
+		tokenAuthGroup.get("favorites", use: favoritesHandler).setUsedForPreregistration()
 	}
 
 	// MARK: - Open Access Handlers

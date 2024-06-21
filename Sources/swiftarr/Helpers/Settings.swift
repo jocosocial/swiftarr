@@ -66,10 +66,16 @@ final class Settings: Encodable {
 	@SettingsValue var friendlyFezID: UUID = UUID()
 
 	// MARK: Sections / Features / Apps
+	
+	/// Sets a minimum access level to use the full server. Logged-in users who don't have this access level will get errors for most routes, but won't redirect to login.
+	@StoredSettingsValue("minAccessLevel", defaultValue: .banned) var minAccessLevel: UserAccessLevel
+
+	/// If TRUE, those that don't have full server access (due to `minAccessLevel`) can create accounts, log in, and edit their user profile in an alternate, restricted UI.
+	/// If FALSE, account creation is disabled and only users with certain elevated user access levels may log in.
+	@StoredSettingsValue("enablePreregistration", defaultValue: false) var enablePreregistration: Bool
 
 	/// Each key-value pair identifies an application and a set of features disabled for that application. Either the app or the featureset may contain '.all'.
-	@StoredSettingsValue("disabledFeatures", defaultValue: DisabledFeaturesGroup(value: [:])) var disabledFeatures:
-		DisabledFeaturesGroup
+	@StoredSettingsValue("disabledFeatures", defaultValue: DisabledFeaturesGroup(value: [:])) var disabledFeatures: DisabledFeaturesGroup
 
 	/// The name of the onboard Wifi network. Delivered to cients in the notification endpoint.
 	@StoredSettingsValue("shipWifiSSID", defaultValue: "NieuwAmsterdam-Guest") var shipWifiSSID: String

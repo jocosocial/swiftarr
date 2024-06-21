@@ -1,0 +1,67 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+			<div class="row">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Bulk User Import/Export</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<ul class="list-group">
+				<li class="list-group-item active">
+					<b>Download archive of registered users</b>
+				</li>
+				<li class="list-group-item bg-transparent">
+					This creates and downloads a ZIP archive of all users who registered with a registration code. Archive does not contain
+					'special' users like @admin, @twitarrteam, and @moderator, nor does it contain test users or users who were issued
+					codes tied to their Discord handle.
+				</li>
+				<li class="list-group-item bg-transparent">
+					The server needs to be in Admin-only mode (Admin->Server Settings->Minimum User Access Level) and 
+					'Enable pre-embark UI' must be OFF before using this. Once the archive is created the server should stay in this
+					state so users don't create accounts after the cutoff.
+				</li>
+				<li class="list-group-item bg-transparent">
+					<!--- This could work better as a javascript thing that displays errors inline, but as-is is fine for admin. Currently, 
+					it's an inline download that opens an error page if the dl fails. --->
+					<a class="btn btn-primary" href="/admin/bulkuser/download">Download</a>
+				</li>
+			</ul>
+			<ul class="list-group mt-3">
+				<li class="list-group-item active">
+					<b>Upload archive of registered users</b>
+				</li>
+				<li class="list-group-item bg-transparent">
+					Uploads a user archive file and validates its contents. After tapping 'Upload' you'll be taken to a page that previews
+					what changes the import will have on the database. 
+				</li>
+				<li class="list-group-item bg-transparent">
+					The server needs to be in Admin-only mode to perform an import. Ideally the server has been admin-only since installation
+					and admin-only can be turned off after this import is completed.
+				</li>
+				<li class="list-group-item bg-transparent">
+					The user archive file *should* be named 'Twitarr_userfile.zip'.
+				</li>
+				<li class="list-group-item bg-transparent mb-3">				
+					<form class="ajax" action="/admin/bulkuser/upload" enctype="multipart/form-data" method="POST" data-successurl="/admin/bulkuser/upload/verify" id="userfileuploadform">
+						<div class="container-fluid">
+							<div class="row mb-2"> 
+								<input type="file" accept=".zip" name="userfile" required>
+							</div>
+							<div class="alert alert-danger mt-3 d-none" role="alert"></div>
+							<div class="row mb-2">
+								<div class="col col-auto gx-0">
+									<button type="submit" class="btn btn-primary">Upload<span class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span></button>
+								</div>
+							</div>
+						</div>
+					</form>
+				</li>
+			</ul>
+    	</div>
+	#endexport
+#endextend

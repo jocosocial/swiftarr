@@ -3,14 +3,30 @@
     	<div class="container-md ms-0 mt-2">
     		<div class="row">
     			<div class="col">
-    				<b>Server Error</b>
+    				#if(status >= 500):
+	    				<b>Server Error</b>
+					#else:
+						<b>Error</b>
+					#endif
 				</div>
 			</div>
 			<div class="alert alert-danger mt-3" role="alert">
 				The server wasn't able to complete your last request.<br>
-				<b>Status:</b> #(status)<br>
+				<b>Status:</b> #(statusText)<br>
 				<b>Error:</b> #(errorString)
 			</div>
+			#if(status == 401):
+				#if(trunk.minAccessLevel == nil):
+					<div class="alert alert-info mt-3" role="alert">
+						#if(linkDesc == nil):
+							You can login to access Twitarr.
+						#else:
+							Logging in will let you see #(linkDesc).<br>
+						#endif
+					</div>
+				#endif
+				#extend("Login/loginPane")
+			#endif
 		</div>
     #endexport
 #endextend

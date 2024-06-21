@@ -1,38 +1,48 @@
 #extend("trunk"):
     #export("body"):
     	<div class="container-md ms-0">
-    		<div class="row justify-content-between align-items-center my-2">
+   			<div class="row justify-content-between align-items-center my-2">
     			<div class="col col-auto">
-			    	<b>Server Admin</b>
+			    	<b>Server Administration</b>
 				</div>
 			</div>
-			<div class="list-group">
+			
+			<ul class="list-group">
+				<li class="list-group-item active">
+					<b>Communication</b>
+				</li>
 				<a class="list-group-item list-group-item-action" href="/admin/announcements">
 					<b>Announcements</b>: Create, Edit and Delete system-wide announcements
 				</a>
 				<a class="list-group-item list-group-item-action" href="/admin/dailythemes">
 					<b>Daily Themes</b>: Set info for Theme Days, including explanatory text and pictures.
 				</a>
+				<a class="list-group-item list-group-item-action" href="/seamail?foruser=twitarrteam">
+					<b>TwitarrTeam Seamail</b>: Seamail to @twitarrteam
+					#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0):
+						<div><span class="text-muted border-bottom border-danger"><i>#(trunk.alertCounts.moderatorData.newTTSeamailMessageCount) New Message#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 1):s#endif</i></span></div>
+					#endif
+				</a>
+				<a class="list-group-item list-group-item-action" href="/forumpost/mentions?mentionname=twitarrteam">
+					<b>TwitarrTeam Forum Mentions</b>: Mentions of @twitarrteam in forum posts
+					#if(trunk.alertCounts.moderatorData.newTTForumMentionCount > 0):
+						<div><span class="text-muted border-bottom border-danger"><i>#(trunk.alertCounts.moderatorData.newTTForumMentionCount) New Mention#if(trunk.alertCounts.moderatorData.newTTForumMentionCount > 1):s#endif</i></span></div>
+					#endif
+				</a>
+			</ul>
+			
+			<ul class="list-group mt-2">
+				<li class="list-group-item active">
+					<b>Configuration</b>
+				</li>
 				<a class="list-group-item list-group-item-action" href="/admin/serversettings">
 					<b>Server Settings</b>: Lots of inscrutable toggles and buttons here.
-				</a>
-				<a class="list-group-item list-group-item-action" href="/admin/schedule">
-					<b>Schedule Manager</b>: View Schedule Update Activity log, or upload a new schedule.ics file.
 				</a>
 				<a class="list-group-item list-group-item-action" href="/admin/regcodes">
 					<b>Registration Codes</b>: View/Manage registration code table.
 				</a>
 				#if(trunk.userIsTHO):
 					#if(trunk.username == "admin"):
-						<a class="list-group-item list-group-item-action" href="/admin/timezonechanges">
-							<b>Time Zones</b>: Every time zone change we undergo during the cruise.
-						</a>
-						<a class="list-group-item list-group-item-action" href="/admin/karaoke">
-							<b>Karaoke</b>: Administer karaoke settings.
-						</a>
-						<a class="list-group-item list-group-item-action" href="/admin/boardgames">
-							<b>Board Games</b>: Administer board game settings.
-						</a>
 						<a class="list-group-item list-group-item-action" href="/admin/tho">
 							<b>Manage THO</b>: View/Manage THO members.
 						</a>
@@ -48,22 +58,33 @@
 						<b>Manage Moderators</b>: View/Manage moderators.
 					</a>
 					<a class="list-group-item list-group-item-action" href="/admin/userroles">
-						<b>Manage User Roles</b>: View/Manage User Roles.
+						<b>Manage User Roles</b>: View/Manage User Roles. Roles are specific capabilities granted to users; separate from the userLevel hierarchy.
 					</a>
 				#endif
-				<a class="list-group-item list-group-item-action" href="/seamail?foruser=twitarrteam">
-					<b>TwitarrTeam Seamail</b>: Seamail to @twitarrteam
-					#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0):
-						<div><span class="text-muted border-bottom border-danger"><i>#(trunk.alertCounts.moderatorData.newTTSeamailMessageCount) New Message#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 1):s#endif</i></span></div>
-					#endif
+			</ul>
+			
+			<ul class="list-group mt-2">
+				<li class="list-group-item active">
+					<b>Data Loading</b>
+				</li>
+				<a class="list-group-item list-group-item-action" href="/admin/schedule">
+					<b>Schedule Manager</b>: View Schedule Update Activity log, or upload a new schedule.ics file.
 				</a>
-				<a class="list-group-item list-group-item-action" href="/forumpost/mentions?mentionname=twitarrteam">
-					<b>TwitarrTeam Forum Mentions</b>: Mentions of @twitarrteam in forum posts
-					#if(trunk.alertCounts.moderatorData.newTTForumMentionCount > 0):
-						<div><span class="text-muted border-bottom border-danger"><i>#(trunk.alertCounts.moderatorData.newTTForumMentionCount) New Mention#if(trunk.alertCounts.moderatorData.newTTForumMentionCount > 1):s#endif</i></span></div>
-					#endif
-				</a>
-			</div>
+				#if(trunk.username == "admin"):
+					<a class="list-group-item list-group-item-action" href="/admin/bulkuser">
+						<b>User</b>: Bulk user import/export.
+					</a>
+					<a class="list-group-item list-group-item-action" href="/admin/karaoke">
+						<b>Karaoke</b>: Administer karaoke settings.
+					</a>
+					<a class="list-group-item list-group-item-action" href="/admin/boardgames">
+						<b>Board Games</b>: Administer board game settings.
+					</a>
+					<a class="list-group-item list-group-item-action" href="/admin/timezonechanges">
+						<b>Time Zones</b>: Every time zone change we undergo during the cruise.
+					</a>
+				#endif
+			</ul>
 		</div>
     #endexport
 #endextend

@@ -11,11 +11,10 @@ struct SiteKaraokeController: SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws {
 		// Routes that the user does not need to be logged in to access.
 		let openRoutes = getOpenRoutes(app).grouped("karaoke").grouped(DisabledSiteSectionMiddleware(feature: .karaoke))
-		openRoutes.get("", use: karaokePageHandler)
+		openRoutes.get("", use: karaokePageHandler).destination("the Karaoke songs page")
 
 		// Routes that the user needs to be logged in to access.
-		let privateRoutes = getPrivateRoutes(app).grouped("karaoke")
-			.grouped(DisabledSiteSectionMiddleware(feature: .karaoke))
+		let privateRoutes = getPrivateRoutes(app).grouped("karaoke").grouped(DisabledSiteSectionMiddleware(feature: .karaoke))
 		privateRoutes.get("logperformance", songIDParam, use: songPerformanceLogEntryPageHandler)
 		privateRoutes.post("logperformance", songIDParam, use: songPerformanceLogEntryPostHandler)
 		privateRoutes.post(songIDParam, "favorite", use: addFavoriteSong)

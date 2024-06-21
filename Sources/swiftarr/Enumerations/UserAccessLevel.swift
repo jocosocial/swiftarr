@@ -1,15 +1,16 @@
 import Fluent
 import Vapor
+import Redis
 
 /// All API endpoints are protected by a minimum user access level.
 /// This `enum` structure MUST match the values in `CreateCustomEnums` in SchemaCreation.swift
 /// as this enum is part of the database schema. This enum is also sent out in several Data Transfer Object types.
 /// Think very carefully about modifying these values.
 public enum UserAccessLevel: String, Codable, Sendable {
-	/// A user account that has not yet been activated. [read-only, limited]
-	case unverified
 	/// A user account that has been banned. [cannot log in]
 	case banned
+	/// A user account that has not yet been activated. [read-only, limited]
+	case unverified
 	/// A `.verified` user account that has triggered Moderator review. [read-only]
 	case quarantined
 	/// A user account that has been activated for full read-write access.
@@ -29,21 +30,25 @@ public enum UserAccessLevel: String, Codable, Sendable {
 
 extension UserAccessLevel {
 
-	static func fromRawString(_ str: String) -> Self? {
-		switch str {
-		case "unverified": return .unverified
-		case "banned": return .banned
-		case "quarantined": return .quarantined
-		case "verified": return .verified
-		case "client": return .client
-		case "moderator": return .moderator
-		case "twitarrteam": return .twitarrteam
-		case "tho": return .tho
-		case "admin": return .admin
+	// Similar to the built-in `init(rawValue:)`, but lets us decouple string values from the enum names if necessary.
+	// Useful for passing accesslevels through API calls or retrieving them from the db.
+	// There's no customization for the inverse; `.rawValue` should be considered canonical. 
+	init?(fromRawString str: String) {
+		switch str.lowercased() {
+		case "banned": self = .banned
+		case "unverified": self = .unverified
+		case "quarantined": self = .quarantined
+		case "verified": self = .verified
+		case "client": self = .client
+		case "moderator": self = .moderator
+		case "twitarrteam": self = .twitarrteam
+		case "tho": self = .tho
+		case "admin": self = .admin
 		default: return nil
 		}
 	}
 
+	// Produces user-facing names for userLevels. Used to describe userLevels in the UI.
 	func visibleName() -> String {
 		switch self {
 		case .unverified: return "Unverified"
@@ -91,8 +96,8 @@ extension UserAccessLevel: Comparable {
 	public static func < (lhs: UserAccessLevel, rhs: UserAccessLevel) -> Bool {
 		func orderFromEnum(val: Self) -> Int {
 			switch val {
-			case .unverified: return 1
-			case .banned: return 2
+			case .banned: return 1
+			case .unverified: return 2
 			case .quarantined: return 3
 			case .verified: return 4
 			case .client: return 5
@@ -105,3 +110,20 @@ extension UserAccessLevel: Comparable {
 		return orderFromEnum(val: lhs) < orderFromEnum(val: rhs)
 	}
 }
+
+extension UserAccessLevel: RESPValueConvertible {
+    /// Attempts to create a new instance of the conforming type based on the value represented by the `RESPValue`.
+    /// - Parameter value: The `RESPValue` representation to attempt to initialize from.
+	public init?(fromRESP value: RESPValue){
+		guard let strValue = value.string, let val = UserAccessLevel(fromRawString: strValue) else {
+			return nil
+		}
+    	self = val
+    }
+
+    /// Creates a `RESPValue` representation of the conforming type's value.
+   public func convertedToRESPValue() -> RESPValue {
+    	return RESPValue(from: self.rawValue)
+    }
+}
+

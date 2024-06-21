@@ -12,21 +12,21 @@ struct SiteLoginController: SiteControllerUtils {
 		openRoutes.post("login", use: loginPagePostHandler)
 		openRoutes.get("createAccount", use: createAccountPageHandler)
 		openRoutes.post("createAccount", use: createAccountPostHandler)
-		openRoutes.get("resetPassword", use: resetPasswordViewHandler)
-		openRoutes.post("resetPassword", use: resetPasswordPostHandler)  // Change pw while logged in
 		openRoutes.post("recoverPassword", use: recoverPasswordPostHandler)  // Change pw while not logged in
 		openRoutes.get("codeOfConduct", use: codeOfConductViewHandler)
 		openRoutes.get("conductAgree", use: codeOfConductViewHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
-		let privateRoutes = getPrivateRoutes(app)
+		let privateRoutes = getPrivateRoutes(app, overrideMinUserAccessLevel: true)
 		privateRoutes.get("logout", use: loginPageViewHandler)
 		privateRoutes.post("logout", use: loginPageLogoutHandler)
+		openRoutes.get("resetPassword", use: resetPasswordViewHandler) 			// Change pw while logged in
+		openRoutes.post("resetPassword", use: resetPasswordPostHandler) 		// Change pw while logged in
 
 		// Routes that the user should be logged in for, but get redirected through /login.
 		let globalRoutes = getGlobalRoutes(app)
 		// https://github.com/jocosocial/swiftarr/issues/256
-		globalRoutes.get("createAltAccount", use: createAltAccountViewHandler)
+		globalRoutes.get("createAltAccount", use: createAltAccountViewHandler).destination("the alt account creation page")
 		globalRoutes.post("createAltAccount", use: createAltAccountPostHandler)
 	}
 

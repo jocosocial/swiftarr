@@ -34,6 +34,8 @@ struct TrunkContext: Encodable {
 	var userIsTwitarrTeam: Bool
 	var userIsTHO: Bool
 	var userIsShutternautManager: Bool
+	var minAccessLevel: String?
+	var preregistrationMode: Bool				// TRUE if we're in preregistration; only allow limited features.
 
 	var username: String
 	var userID: UUID
@@ -44,8 +46,9 @@ struct TrunkContext: Encodable {
 	var newForumAlertwords: Bool
 
 	init(_ req: Request, title: String, tab: Tab) {
+		var userAccessLevel: UserAccessLevel = .banned		// Not logged in is equivalent to can't log in, for our purposes here
 		if let user = req.auth.get(UserCacheData.self) {
-			let userAccessLevel = UserAccessLevel(rawValue: req.session.data["accessLevel"] ?? "banned") ?? .banned
+			userAccessLevel = UserAccessLevel(rawValue: req.session.data["accessLevel"] ?? "banned") ?? .banned
 			userIsLoggedIn = true
 			userIsMod = userAccessLevel.hasAccess(.moderator)
 			userIsTwitarrTeam = userAccessLevel.hasAccess(.twitarrteam)
@@ -63,6 +66,9 @@ struct TrunkContext: Encodable {
 			username = ""
 			userID = UUID()
 		}
+		let minAccess = Settings.shared.minAccessLevel
+		minAccessLevel = minAccess == .banned || Settings.shared.enablePreregistration ? nil : minAccess.visibleName()
+		preregistrationMode = Settings.shared.enablePreregistration && userAccessLevel < minAccess
 		eventStartingSoon = false
 		if req.route != nil, let alertsStr = req.session.data["alertCounts"],
 			let alertData = alertsStr.data(using: .utf8)
@@ -401,10 +407,10 @@ struct SiteController: SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws {
 		// Routes that the user does not need to be logged in to access.
 		let openRoutes = getOpenRoutes(app)
-		openRoutes.get(use: rootPageHandler)
-		openRoutes.get("about", use: aboutTwitarrViewHandler)
-		openRoutes.get("time", use: timePageHandler)
-		openRoutes.get("map", use: mapPageHandler)
+		openRoutes.get(use: rootPageHandler).destination("the Today page")
+		openRoutes.get("about", use: aboutTwitarrViewHandler).destination("the About page")
+		openRoutes.get("time", use: timePageHandler).destination("the server Time page")
+		openRoutes.get("map", use: mapPageHandler).destination("the boat map")
 	}
 
 	/// GET /
@@ -717,33 +723,34 @@ extension SiteControllerUtils {
 	}
 
 	// Routes that the user does not need to be logged in to access.
-	func getOpenRoutes(_ app: Application) -> RoutesBuilder {
+	func getOpenRoutes(_ app: Application, feature: SwiftarrFeature? = nil, path: PathComponent...) -> RoutesBuilder {
 		return app.grouped([
 			app.sessions.middleware,
+			SiteErrorMiddleware(environment: app.environment),
 			UserCacheData.SessionAuth(),
 			Token.authenticator(),  // For apps that want to sometimes open web pages
 			NotificationsMiddleware(),
+			SiteMinUserAccessLevelMiddleware(requireAuth: false),
 		])
 	}
 
 	// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
 	// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
 	// redirect-chained through /login and back.
-	func getGlobalRoutes(_ app: Application) -> RoutesBuilder {
-		// This middleware redirects to "/login" when accessing a global page that requires auth while not logged in.
-		// It saves the page the user was attempting to view in the session, so we can return there post-login.
-		let redirectMiddleware = UserCacheData.redirectMiddleware { (req) -> String in
-			req.session.data["returnAfterLogin"] = req.url.string
-			return "/login"
-		}
-
-		return app.grouped([
-			app.sessions.middleware,
-			UserCacheData.SessionAuth(),
-			Token.authenticator(),  // For apps that want to sometimes open web pages
-			NotificationsMiddleware(),
-			redirectMiddleware,
+	func getGlobalRoutes(_ app: Application, feature: SwiftarrFeature? = nil, minAccess: UserAccessLevel = .banned, path: PathComponent...) -> RoutesBuilder {
+		var builder = app.grouped([
+				app.sessions.middleware,
+				SiteErrorMiddleware(environment: app.environment),
+				UserCacheData.SessionAuth(),
+				Token.authenticator(),  // For apps that want to sometimes open web pages
+				NotificationsMiddleware(),
+//				UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated.")),
+				SiteMinUserAccessLevelMiddleware(requireAuth: true, requireAccessLevel: minAccess),
 		])
+		if let feature = feature {
+			builder = builder.grouped(DisabledSiteSectionMiddleware(feature: feature))
+		}
+		return builder
 	}
 
 	// Routes for non-shareable content. If you're not logged in we failscreen. Most POST actions go here.
@@ -751,12 +758,23 @@ extension SiteControllerUtils {
 	// Private site routes should not allow token auth. Token auth is for apps that want to open a webpage with their
 	// token. They can initiate a web flow with a token, get a session back, and use that to complete the flow. However,
 	// we don't want apps to be able to jump to private web pages.
-	func getPrivateRoutes(_ app: Application) -> RoutesBuilder {
-		return app.grouped([
-			app.sessions.middleware,
-			UserCacheData.SessionAuth(),
-			UserCacheData.guardMiddleware(),
+	func getPrivateRoutes(_ app: Application, feature: SwiftarrFeature? = nil, minAccess: UserAccessLevel = .banned, path: PathComponent...,
+			overrideMinUserAccessLevel: Bool = false) -> RoutesBuilder {
+		var builder = app.grouped(path).grouped([
+				app.sessions.middleware,
+				SiteErrorMiddleware(environment: app.environment),
+				UserCacheData.SessionAuth()
 		])
+		if overrideMinUserAccessLevel {
+			builder = builder.grouped(UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated.")))
+		}
+		else {
+			builder = builder.grouped(SiteMinUserAccessLevelMiddleware(requireAuth: true, requireAccessLevel: minAccess))
+		}
+		if let feature = feature {
+			builder = builder.grouped(DisabledSiteSectionMiddleware(feature: feature))
+		}
+		return builder
 	}
 
 	// Convert a date string submitted by a client into a Date. Usually this comes from a form input field.

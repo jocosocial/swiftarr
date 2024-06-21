@@ -9,7 +9,7 @@ struct SiteAdminController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
 		// Routes for non-shareable content. If you're not logged in we failscreen.
-		let privateTTRoutes = getPrivateRoutes(app).grouped(SiteRequireTwitarrTeamMiddleware()).grouped("admin")
+		let privateTTRoutes = getPrivateRoutes(app, minAccess: .twitarrteam, path: "admin")
 
 		privateTTRoutes.get("", use: adminRootPageHandler)
 
@@ -41,6 +41,13 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.get("scheduleupload", "complete", use: scheduleUpdateCompleteViewtHandler)
 		privateTTRoutes.get("schedulelogview", scheduleLogIDParam, use: scheduleLogEntryViewer)
 		privateTTRoutes.post("schedulereload", use: scheduleReloadHandler)
+		
+		privateTTRoutes.get("bulkuser", use: bulkUserRootViewHandler)
+		privateTTRoutes.get("bulkuser", "download", use: bulkUserFileDownload)
+		privateTTRoutes.post("bulkuser", "upload", use: bulkUserfileUploadPostHandler)
+		privateTTRoutes.get("bulkuser", "upload", "verify", use: bulkUserVerifyViewHandler)
+		privateTTRoutes.get("bulkuser", "upload", "commit", use: bulkUserUpdateCommitHandler)
+		
 
 		privateTTRoutes.get("regcodes", use: getRegCodeHandler)
 		privateTTRoutes.get("regcodes", "showuser", userIDParam, use: getRegCodeForUserHandler)
@@ -51,7 +58,7 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.post("userroles", userRoleParam, "removerole", userIDParam, use: removeRoleFromUser)
 
 		// Mods, TwitarrTeam, and THO levels can all be promoted to, but they all demote back to Verified.
-		let privateTHORoutes = getPrivateRoutes(app).grouped(SiteRequireTHOMiddleware()).grouped("admin")
+		let privateTHORoutes = getPrivateRoutes(app, minAccess: .tho, path: "admin")
 		privateTHORoutes.get("mods", use: getModsHandler)
 		privateTHORoutes.get("twitarrteam", use: getTwitarrTeamHandler)
 		privateTHORoutes.get("tho", use: getTHOHandler)
@@ -59,7 +66,7 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTHORoutes.post("user", userIDParam, "twitarrteam", "promote", use: promoteUserLevel)
 		privateTHORoutes.post("user", userIDParam, "verified", "demote", use: demoteToVerified)
 
-		let privateAdminRoutes = getPrivateRoutes(app).grouped(SiteRequireAdminMiddleware()).grouped("admin")
+		let privateAdminRoutes = getPrivateRoutes(app, minAccess: .admin, path: "admin")
 		privateAdminRoutes.post("user", userIDParam, "tho", "promote", use: promoteUserLevel)
 		privateAdminRoutes.get("karaoke", use: karaokeHandler)
 		privateAdminRoutes.post("karaoke", "reload", use: karaokePostHandler)
@@ -121,7 +128,8 @@ struct SiteAdminController: SiteControllerUtils {
 		let ctx = try AdminRootPageContext(req)
 		return try await req.view.render("admin/root", ctx)
 	}
-
+	
+// MARK: - Announcements
 	// GET /admin/announcements
 	// Shows a list of all existing announcements
 	func announcementsAdminPageHandler(_ req: Request) async throws -> View {
@@ -236,6 +244,7 @@ struct SiteAdminController: SiteControllerUtils {
 		return response.status
 	}
 
+// MARK: - Daily Themes
 	// GET /admin/dailythemes
 	// Shows all daily themes
 	func dailyThemesViewHandler(_ req: Request) async throws -> View {
@@ -352,6 +361,7 @@ struct SiteAdminController: SiteControllerUtils {
 		return .noContent
 	}
 
+// MARK: - Settings
 	// GET /admin/serversettings
 	//
 	// Show a page for editing server settings values.
@@ -383,6 +393,8 @@ struct SiteAdminController: SiteControllerUtils {
 	func settingsPostHandler(_ req: Request) async throws -> HTTPStatus {
 		// The web form decodes into this from a multipart-form
 		struct SettingsPostFormContent: Decodable {
+			var minAccessLevel: String
+			var enablePreregistration: String?
 			var maxAlternateAccounts: Int
 			var maximumTwarrts: Int
 			var maximumForums: Int
@@ -423,6 +435,8 @@ struct SiteAdminController: SiteControllerUtils {
 		}
 
 		let apiPostContent = SettingsUpdateData(
+			minUserAccessLevel: postStruct.minAccessLevel,
+			enablePreregistration: postStruct.enablePreregistration == "on",
 			maxAlternateAccounts: postStruct.maxAlternateAccounts,
 			maximumTwarrts: postStruct.maximumTwarrts,
 			maximumForums: postStruct.maximumForums,
@@ -444,6 +458,15 @@ struct SiteAdminController: SiteControllerUtils {
 		return .ok
 	}
 
+	// POST /admin/serversettings/reloadtzfile
+	//
+	// Kicks off a reload operation. Admin only; the new time zone data file must be uploaded to /seeds, probably via git push.
+	func settingsReloadTZFilePostHandler(_ req: Request) async throws -> HTTPStatus {
+		try await apiQuery(req, endpoint: "/admin/timezonechanges/reloadtzdata", method: .POST)
+		return .ok
+	}
+
+// MARK: - TZ, Karaoke, Games
 	// GET /admin/timezonechanges
 	//
 	// Shows the list of time zone changes that occur during the cruise.
@@ -461,14 +484,6 @@ struct SiteAdminController: SiteControllerUtils {
 		}
 		let ctx = try TZViewContext(req, timeZones: response)
 		return try await req.view.render("admin/timezonechanges", ctx)
-	}
-
-	// POST /admin/serversettings/reloadtzfile
-	//
-	// Kicks off a reload operation. Admin only; the new time zone data file must be uploaded to /seeds, probably via git push.
-	func settingsReloadTZFilePostHandler(_ req: Request) async throws -> HTTPStatus {
-		try await apiQuery(req, endpoint: "/admin/timezonechanges/reloadtzdata", method: .POST)
-		return .ok
 	}
 
 	// GET /admin/karaoke
@@ -519,6 +534,7 @@ struct SiteAdminController: SiteControllerUtils {
 		return .ok
 	}
 
+// MARK: - Schedule
 	// GET /admin/schedule
 	//
 	// Shows a form with a file upload button for upload a new schedule.ics file. This the start of a flow, going from
@@ -606,7 +622,7 @@ struct SiteAdminController: SiteControllerUtils {
 
 	// POST /admin/scheduleverify
 	//
-	// Handled the POST from the schedule verify page form. Schedule Verify shows the admin the changes that will be applied
+	// Handles the POST from the schedule verify page form. Schedule Verify shows the admin the changes that will be applied
 	// before they happen. Accepting the changes POSTs to here. There are 2 options on the form as well:
 	// - Add Posts in Forum Thread. This option, if selected, will create a post in the Event Forum thread of each affected
 	//	 event, (except maybe creates?) explaining the change that occurred.
@@ -649,7 +665,93 @@ struct SiteAdminController: SiteControllerUtils {
 		let ctx = try ScheduleUpdateCompleteViewContext(req)
 		return try await req.view.render("admin/scheduleUpdateComplete", ctx)
 	}
+	
+// MARK: - Bulk User Import/Export
+	// GET /admin/bulkuser
+	//
+	// Shows a form with a file upload button for upload a new schedule.ics file. This the start of a flow, going from
+	// scheduleupload to scheduleverify to scheduleapply.
+	func bulkUserRootViewHandler(_ req: Request) async throws -> View {
+		struct BulkUserRootContext: Encodable {
+			var trunk: TrunkContext
 
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "Bulk User Import/Export", tab: .admin)
+			}
+		}
+		let ctx = try BulkUserRootContext(req)
+		return try await req.view.render("admin/bulkuser", ctx)
+	}
+
+	// GET /admin/bulkuser/download
+	//
+	// Initiates a download of the twitarr userfile, a zip archive containing info on all the registered users.
+	func bulkUserFileDownload(_ req: Request) async throws -> Response {
+		await req.storage.setWithAsyncShutdown(SiteErrorStorageKey.self, to: SiteErrorMiddlewareStorage(produceHTMLFormattedErrors: true))
+		return try await apiQuery(req, endpoint: "/admin/bulkuserfile/download").encodeResponse(for: req)
+	}
+
+	// POST /admin/bulkuser/upload 
+	//
+	// Uploads a previously archived userfile. 
+	func bulkUserfileUploadPostHandler(_ req: Request) async throws -> HTTPStatus {
+		struct BulkUserUploadData: Content {
+			var userfile: Data
+		}
+		let uploadData = try req.content.decode(BulkUserUploadData.self)
+		try await apiQuery(req, endpoint: "/admin/bulkuserfile/upload", method: .POST, encodeContent: uploadData.userfile)
+		return .ok
+	}
+	
+	// GET /admin/bulkuser/upload/verify
+	//
+	// Displays a page showing the schedule changes that will happen when the (saved) uploaded schedule is applied.
+	// We diff the existing schedule with the new update, and display the adds, deletes, and modified events for review.
+	// This page also has a form where the user can approve the changes to apply them to the db.
+	func bulkUserVerifyViewHandler(_ req: Request) async throws -> View {
+		let response = try await apiQuery(req, endpoint: "/admin/bulkuserfile/verify")
+		let verificationData = try response.content.decode(BulkUserUpdateVerificationData.self)
+
+		struct UserfileUpdateVerifyViewContext: Encodable {
+			var trunk: TrunkContext
+			var diff: BulkUserUpdateVerificationData
+
+			init(_ req: Request, verificationData: BulkUserUpdateVerificationData) throws {
+				trunk = .init(req, title: "Verify Bulk User Import Changes", tab: .admin)
+				self.diff = verificationData
+			}
+		}
+		let ctx = try UserfileUpdateVerifyViewContext(req, verificationData: verificationData)
+		return try await req.view.render("admin/bulkUserVerify", ctx)
+	}
+	
+	// GET /admin/bulkuser/upload/commit
+	//
+	// Handles the POST from the schedule verify page form. Schedule Verify shows the admin the changes that will be applied
+	// before they happen. Accepting the changes POSTs to here. There are 2 options on the form as well:
+	// - Add Posts in Forum Thread. This option, if selected, will create a post in the Event Forum thread of each affected
+	//	 event, (except maybe creates?) explaining the change that occurred.
+	// - Ignore Deleted Events. This option causes deletes to not be applied. In a case where you need to update a single event's
+	// 	 time or location, you could make a .ics that only contains that event and upload/apply that file. Without this
+	// 	 option, that one event would be considered an exhaustive list of events for the week, and all other events would be deleted.
+	func bulkUserUpdateCommitHandler(_ req: Request) async throws -> View {
+		let response = try await apiQuery(req, endpoint: "admin/bulkuserfile/update/apply")
+		let verificationData = try response.content.decode(BulkUserUpdateVerificationData.self)
+		struct UserfileUpdateVerifyViewContext: Encodable {
+			var trunk: TrunkContext
+			var diff: BulkUserUpdateVerificationData
+
+			init(_ req: Request, verificationData: BulkUserUpdateVerificationData) throws {
+				trunk = .init(req, title: "Bulk User Import Applied", tab: .admin)
+				self.diff = verificationData
+			}
+		}
+		let ctx = try UserfileUpdateVerifyViewContext(req, verificationData: verificationData)
+		return try await req.view.render("admin/bulkUserVerify", ctx)
+	}
+
+
+// MARK: - Reg Codes
 	// GET /admin/regcodes
 	//
 	// Shows stats on reg code use. Lets admins search on a regcode and get the user it's associated with, if any.
@@ -738,6 +840,7 @@ struct SiteAdminController: SiteControllerUtils {
 		return try await req.view.render("admin/regCodeForUser", ctx)
 	}
 
+// MARK: - UserLevels and Roles
 	// GET /admin/mods
 	//
 	// Only THO and above--mods cannot make more mods.

@@ -1,0 +1,121 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+			<div class="row">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item"><a href="/admin/bulkuser">Bulk User Update</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Verify Updates</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			
+			#if(diff.changesApplied):
+				<div class="alert alert-primary mt-3" role="alert">
+					The update has been applied; shown below are the actual results of the update operation.
+					Since pre-commit validation checks can't catch every case, there may be differences between this and the validation page.
+				</div>
+			#else:
+				<div class="alert alert-info mt-3" role="alert">
+					Shown below are the validation results--what this user import is likely to do once applied.
+					Review that these results match expectations and then tap the <b>Perform User Import</b> button to apply them.
+					<br><a class="btn btn-primary mt-2" href="/admin/bulkuser/upload/commit">Perform User Import</a>
+				</div>
+			#endif
+			
+			<table class="table table-bordered">
+				<thead>
+				</thead>
+				<tbody>
+					<tr>
+						<th scope="row">Total Records Processed</th>
+						<td>#(diff.totalRecordsProcessed)</td>
+					</tr>
+					<tr>
+						<th scope="row">Records Imported</th>
+						<td>#(diff.importedUserCount)</td>
+					</tr>
+					<tr>
+						<th scope="row">Duplicates Found</th>
+						<td>#(diff.duplicateCount)</td>
+					</tr>
+				</tbody>
+			</table>
+			
+			<div class="accordion mb-2" id="importErrors">
+				<div class="accordion-item">
+					<h2 class="accordion-header" id="regCodeConflictHeader">
+						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="\#recCodeConflictsCollapse" aria-expanded="false" aria-controls="recCodeConflictsCollapse">
+							#count(diff.regCodeConflicts) Registration Code Conflicts
+						</button>
+					</h2>
+					<div id="recCodeConflictsCollapse" class="accordion-collapse collapse" aria-labelledby="regCodeConflictHeader" data-bs-parent="\#importErrors">
+						<ul class="container-md mx-0 px-0 list-group">
+							#for(conflict in diff.regCodeConflicts):
+								<li class="list-group-item bg-transparent">
+									#(conflict)		
+								</li>
+							#endfor
+						</ul>
+					</div>
+				</div>
+			
+				<div class="accordion-item">
+					<h2 class="accordion-header">
+						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="\#usernameConflictsCollapse" aria-expanded="false" aria-controls="usernameConflictsCollapse">
+							#count(diff.usernameConflicts) Username Conflicts
+						</button>
+					</h2>
+					<div id="usernameConflictsCollapse" class="accordion-collapse collapse" data-bs-parent="\#importErrors">
+						<ul class="container-md mx-0 px-0 list-group">
+							#for(conflict in diff.usernameConflicts):
+								<li class="list-group-item bg-transparent">
+									#(conflict)		
+								</li>
+							#endfor
+						</ul>
+					</div>
+				</div>
+				
+				<div class="accordion-item">
+					<h2 class="accordion-header">
+						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="\#errorNotImportedCollapse" aria-expanded="false" aria-controls="errorNotImportedCollapse">
+							#count(diff.errorNotImported) Other errors that prevented user import 
+						</button>
+					</h2>
+					<div id="errorNotImportedCollapse" class="accordion-collapse collapse" data-bs-parent="\#importErrors">
+						<ul class="container-md mx-0 px-0 list-group">
+							#for(conflict in diff.errorNotImported):
+								<li class="list-group-item bg-transparent">
+									#(conflict)		
+								</li>
+							#endfor
+						</ul>
+					</div>
+				</div>
+				
+				<div class="accordion-item">
+					<h2 class="accordion-header">
+						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="\#otherErrorsCollapse" aria-expanded="false" aria-controls="otherErrorsCollapse">
+							#count(diff.otherErrors) Errors that didn't prevent user import 
+						</button>
+					</h2>
+					<div id="otherErrorsCollapse" class="accordion-collapse collapse" data-bs-parent="\#importErrors">
+						<ul class="container-md mx-0 px-0 list-group">
+							#for(conflict in diff.otherErrors):
+								<li class="list-group-item bg-transparent">
+									#(conflict)		
+								</li>
+							#endfor
+						</ul>
+					</div>
+				</div>
+			</div>
+			
+
+    	</div>
+	#endexport
+#endextend

@@ -6,17 +6,15 @@ struct PhotostreamController: APIRouteCollection {
 
 	/// Required. Registers routes to the incoming router.
 	func registerRoutes(_ app: Application) throws {
-		// convenience route group for all /api/v3/photostream endpoints
-		let photoRoutes = app.grouped(DisabledAPISectionMiddleware(feature: .photostream)).grouped("api", "v3", "photostream")
-
+	
 		// Photostream Route Group, requires token
-		let tokenAuthGroup = photoRoutes.addTokenAuthRequirement()
+		let tokenAuthGroup = app.tokenRoutes(feature: .photostream, path: "api", "v3", "photostream")
 		tokenAuthGroup.get("", use: photostreamHandler)
 		tokenAuthGroup.get("placenames", use: getPlacenames)
 		tokenAuthGroup.post("upload", use: photostreamUploadHandler)
 		tokenAuthGroup.post("report", streamPhotoIDParam, use: photostreamReportHandler)
 
-		let modRoutes = app.grouped("api", "v3", "mod", "photostream").addTokenAuthRequirement().grouped(RequireModeratorMiddleware())
+		let modRoutes = app.tokenRoutes(feature: .photostream, minAccess: .moderator, path: "api", "v3", "mod", "photostream")
 		modRoutes.get(streamPhotoIDParam, use: getPhotoModerationData)		
 		modRoutes.post(streamPhotoIDParam, "delete", use: modDeleteStreamPhoto)		
 		modRoutes.delete(streamPhotoIDParam, use: modDeleteStreamPhoto)		

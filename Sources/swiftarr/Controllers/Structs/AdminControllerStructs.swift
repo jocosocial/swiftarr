@@ -24,6 +24,48 @@ extension AnnouncementCreateData: RCFValidatable {
 	}
 }
 
+/// Used during bulk import of `User` information. Reports the result of merging the new User data into the database, or for the Verify operation, previews
+/// what that result will be.Purposefully does not report specific regCodes that are in conflict.
+/// 
+/// The idea behind this struct is to split out cases where we might get 1000+ errors under certain import conditions, so we don't just return an array of `Error`s
+/// where there's one important error buried in a thousand 'duplicate name and regcode' errors.
+public struct BulkUserUpdateVerificationData: Content {
+	/// If TRUE, this structure is returned as the result of the 'apply' method, and the values in this struct reflect changes actually made to the db.
+	/// If FALSE, this structure shows the result of the validation pass and no users were actually imported.
+	var changesApplied: Bool
+	/// Number of entries with the same reg code and same username as an existing entry. Doesn't check the other fields in the user object.
+	/// These cases are almost certainly true duplicates--either a previous bulk import, or the same user managed to create accounts on both servers.
+	var duplicateCount: Int		
+	/// Cases where the server has a registered user with the same regcode as the update file, but the usernames differ.
+	/// This may mean the user preregistered and then (somehow) registered on-boat with a different username before the bulk import happened.
+	var regCodeConflicts: [String]		
+	/// Cases where a username already exists on the server, tied to a different regcode. 
+	/// This indicates someone else took the username on the server, and we can't import this user from the preregistration file.
+	/// These are actual merge conflicts where someone who expects to have an account on-boat on embark day won't have one (but they can still create one with their regcode).
+	var usernameConflicts: [String]
+	/// Cases where the import threw an error.
+	var errorNotImported: [String]
+	/// The number of user accounts that were successfully imported.
+	var importedUserCount: Int
+	/// Number of User records processed
+	var totalRecordsProcessed: Int
+	/// Errors that occurred while processing non-critical user data. These errors did not prevent import, but some data tied to the user (like favorite events/songs/boardgames) may not have imported.
+	var otherErrors: [String]
+}
+
+extension BulkUserUpdateVerificationData {
+	init(forVerification: Bool) {
+		changesApplied = !forVerification
+		duplicateCount = 0
+		regCodeConflicts = []
+		usernameConflicts = []
+		errorNotImported = []
+		importedUserCount = 0
+		totalRecordsProcessed = 0
+		otherErrors = []
+	}
+}
+
 /// For admins to upload new daily themes, or edit existing ones.
 public struct DailyThemeUploadData: Content {
 	/// A short string describing the day's theme. e.g. "Cosplay Day", or "Pajamas Day", or "Science Day".
@@ -133,6 +175,8 @@ public struct SettingsAppFeaturePair: Content {
 ///
 /// See `AdminController.settingsHandler()`.
 public struct SettingsAdminData: Content {
+	var minAccessUserLevel: String
+	var enablePreregistration: Bool
 	var maxAlternateAccounts: Int
 	var maximumTwarrts: Int
 	var maximumForums: Int
@@ -155,6 +199,8 @@ public struct SettingsAdminData: Content {
 
 extension SettingsAdminData {
 	init(_ settings: Settings) {
+		self.minAccessUserLevel = settings.minAccessLevel.rawValue
+		self.enablePreregistration = settings.enablePreregistration
 		self.maxAlternateAccounts = settings.maxAlternateAccounts
 		self.maximumTwarrts = settings.maximumTwarrts
 		self.maximumForums = settings.maximumForums
@@ -185,6 +231,8 @@ extension SettingsAdminData {
 ///
 /// See `AdminController.settingsUpdateHandler()`.
 public struct SettingsUpdateData: Content {
+	var minUserAccessLevel: String?
+	var enablePreregistration: Bool?
 	var maxAlternateAccounts: Int?
 	var maximumTwarrts: Int?
 	var maximumForums: Int?
@@ -246,3 +294,67 @@ extension TimeZoneChangeData {
 		currentOffsetSeconds = current.secondsFromGMT(for: Date())
 	}
 }
+
+/// Used to bulk save/restore user accounts. This was created to allow us to download an archive of all registered users from the staging server just before 
+/// embarkation, and then load the archived users onto the prod server as soon as we get on the boat.
+/// 
+/// Just archiving `User`s directly would work, but using a DTO gives us better control in the case of schema changes between staging and prod, or if
+/// we need to massage the data to get the restore to work correctly. Also, this method tries whenever possible to put data from related tables we want
+/// to save/restore right in the User object; otherwise we'd have to export `RegistrationCode` and `EventFavorite`(and maybe a bunch of other tables)
+/// and match everything up as part of import.
+/// 
+/// Also: This DTO contains sensitive data and should only be used for Admin routes.
+struct UserSaveRestoreData: Content {
+	var username: String
+	var displayName: String?
+	var realName: String?
+	var password: String					// BCrypt hashed.
+	var recoveryKey: String					// BCrypt hashed.
+	var verification: String				// Registration code - 6 letters, lowercased
+	var accessLevel: UserAccessLevel
+	var userImage: String?
+	var about: String?
+	var email: String?
+	var homeLocation: String?
+	var message: String?
+	var preferredPronoun: String?
+	var roomNumber: String?
+	var dinnerTeam: DinnerTeam?
+	var parentUsername: String?
+	var roles: [UserRole]
+	var favoriteEvents: [String]		// Event UIDs, the thing in the ICS file spec--NOT database IDs!
+	// karaoke, game favorites?
+}
+
+extension UserSaveRestoreData {
+	init?(user: User) {
+		guard var regCode = user.verification else {
+			return nil
+		}
+		if regCode.first == "*" {
+			regCode = String(regCode.dropFirst())
+		}
+		// Stuff that's important to get right for security reasons
+		username = user.username
+		parentUsername = user.parent?.username
+		password = user.password
+		recoveryKey = user.recoveryKey
+		verification = regCode
+		accessLevel = user.accessLevel
+		roles = user.roles
+
+		// User Profile stuff
+		displayName = user.displayName
+		realName = user.realName
+		userImage = user.userImage
+		about = user.about
+		email = user.email
+		homeLocation = user.homeLocation
+		message = user.message
+		preferredPronoun = user.preferredPronoun
+		roomNumber = user.roomNumber
+		dinnerTeam = user.dinnerTeam
+		favoriteEvents = user.favoriteEvents.map { $0.uid }
+	}
+}
+
