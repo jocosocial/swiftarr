@@ -28,6 +28,7 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.get("regcodes", "stats", use: regCodeStatsHandler)
 		ttAuthGroup.get("regcodes", "find", searchStringParam, use: userForRegCodeHandler)
 		ttAuthGroup.get("regcodes", "findbyuser", userIDParam, use: regCodeForUserHandler)
+		ttAuthGroup.get("regcodes", "discord", "allocate", searchStringParam, use: assignDiscordRegCode)
 
 		ttAuthGroup.get("serversettings", use: settingsHandler)
 
@@ -253,12 +254,18 @@ struct AdminController: APIRouteCollection {
 	///
 	/// - Returns: `RegistrationCodeStatsData`
 	func regCodeStatsHandler(_ req: Request) async throws -> RegistrationCodeStatsData {
-		let codeCount = try await RegistrationCode.query(on: req.db).count()
-		let usedCodes = try await RegistrationCode.query(on: req.db).filter(\.$user.$id != nil).count()
+		let codeCount = try await RegistrationCode.query(on: req.db).filter(\.$isDiscordUser == false).count()
+		let usedCodes = try await RegistrationCode.query(on: req.db).filter(\.$isDiscordUser == false).filter(\.$user.$id != nil).count()
+		let allocatedDiscord = try await RegistrationCode.query(on: req.db).filter(\.$isDiscordUser == true).count()
+		let assignedDiscord = try await RegistrationCode.query(on: req.db).filter(\.$isDiscordUser == true).filter(\.$discordUsername != nil).count()
+		let usedDiscord = try await RegistrationCode.query(on: req.db).filter(\.$isDiscordUser == true).filter(\.$user.$id != nil).count()
 		return RegistrationCodeStatsData(
 			allocatedCodes: codeCount,
 			usedCodes: usedCodes,
 			unusedCodes: codeCount - usedCodes,
+			allocatedDiscordCodes: allocatedDiscord,
+			assignedDiscordCodes: assignedDiscord,
+			usedDiscordCodes: usedDiscord,
 			adminCodes: 0
 		)
 	}
@@ -304,7 +311,34 @@ struct AdminController: APIRouteCollection {
 		let regCodeResult = try await RegistrationCode.query(on: req.db).filter(\.$user.$id ~~ userIDs).first()
 		let regCode = regCodeResult?.code ?? ""
 		let resultUsers = req.userCache.getHeaders(userIDs)
-		return RegistrationCodeUserData(users: resultUsers, regCode: regCode)
+		return RegistrationCodeUserData(users: resultUsers, regCode: regCode, isForDiscordUser: regCodeResult?.isDiscordUser ?? false,
+				discordUsername: regCodeResult?.discordUsername)
+	}
+	
+	/// `POST /api/v3/admin/regcodes/discord/allocate/:username`
+	/// 
+	/// Finds an unallocated regcode that was reserved for Discord users, allocates it and assigns it to the given Discord user. This method allows TwitarrTeam
+	/// members to hand out reg codes to be used on the preproduction Twitarr server for account creation, tying those reg codes to a Discord username.
+	/// 
+	/// This method is for Pre-Production only, as the boat server should not have any regcodes reserved for Discord users in its database.
+	func assignDiscordRegCode(_ req: Request) async throws -> RegistrationCodeUserData {
+		guard let discordUser = req.parameters.get(searchStringParam.paramString, as: String.self) else {
+			throw Abort(.badRequest, reason: "Missing discord uesrname parameter")
+		}
+		// Check the discord username is valid, according to Discord's guidelines:
+		// https://support.discord.com/hc/en-us/articles/12620128861463-New-Usernames-Display-Names
+		guard Set("abcdefghijklmnopqrstuvwxyz0123456789._").isSuperset(of: discordUser) else {
+			throw Abort(.badRequest, reason: "Invalid discord username. Make sure you're using the username, not the display name.")
+		}
+		// Find a Discord regcode that isn't assigned to a Discord user, and isn't associated with a Twitarr account.
+		let registrationCode = try await RegistrationCode.query(on: req.db).filter(\.$isDiscordUser == true)
+				.filter(\.$discordUsername == nil).filter(\.$user.$id == nil).first()
+		guard let registrationCode = registrationCode else {
+			throw Abort(.badRequest, reason: "No registration codes are available for this purpose.")
+		}
+		registrationCode.discordUsername = discordUser
+		try await registrationCode.save(on: req.db)
+		return RegistrationCodeUserData(users: [], regCode: registrationCode.code, isForDiscordUser: true, discordUsername: discordUser)
 	}
 
 	// MARK: - Promote/Demote
@@ -658,8 +692,14 @@ struct AdminController: APIRouteCollection {
 		let sourceDirectoryURL = temporaryDirectoryURL.appending(path: archiveName, directoryHint: .isDirectory)
 		try FileManager.default.createDirectory(at: sourceDirectoryURL, withIntermediateDirectories: true)
 		// Get the list of users we'll be archiving, save to 'userfile.json'
-		let users = try await User.query(on: req.db).filter(\.$verification != "generated user")
-				.filter(\.$verification != nil).with(\.$favoriteEvents).with(\.$roles).all()
+		let users = try await User.query(on: req.db)
+				.filter(\.$verification != "generated user")
+				.filter(\.$verification != nil)
+				.join(RegistrationCode.self, on: \User.$id == \RegistrationCode.$user.$id)
+				.filter(RegistrationCode.self, \RegistrationCode.$isDiscordUser == false)
+				.with(\.$favoriteEvents)
+				.with(\.$roles)
+				.all()
 		let dto = users.compactMap { UserSaveRestoreData(user: $0) }
 		let data = try JSONEncoder().encode(dto)
 		let userfile = sourceDirectoryURL.appending(path: "userfile.json", directoryHint: .notDirectory)
@@ -841,7 +881,7 @@ struct AdminController: APIRouteCollection {
 					// If the regcode is already assigned, it's an error unless we're adding an alt account to the same primary, with the same regcode
 					return .regCodeConflict("While importing \"\(userToImport.username)\": Reg code already in use") 
 				}
-				newUser.roles = userToImport.roles
+				newUser.verification = userToImport.verification
 				newUser.displayName = userToImport.displayName
 				newUser.realName = userToImport.realName
 				newUser.userImage = userImage
@@ -858,9 +898,13 @@ struct AdminController: APIRouteCollection {
 				}
 				else {
 					try await newUser.save(on: transaction)
-					regCode.$user.id = try newUser.requireID()
+					let newUserID = try newUser.requireID()
+					regCode.$user.id = newUserID
 					try await regCode.save(on: transaction)
-					try await req.userCache.updateUser(newUser.requireID())
+					for role in userToImport.roles {
+						let newRole = UserRole(user: newUserID, role: role)
+						try await newRole.save(on: transaction)
+					}
 					return try .imported(newUser.requireID())
 				}
 			}
@@ -878,10 +922,12 @@ struct AdminController: APIRouteCollection {
 		catch {
 			verification.errorNotImported.append("During db transaction for user \(userToImport.username): \(error.localizedDescription)")
 		}
+		verification.totalRecordsProcessed += 1
 		
 		// Now do other importing actions related to this user; stuff that shouldn't fail the user import transaction if it doesn't work
 		if !verifyOnly, let newUserID = importedUserID {
 			do {
+				try await req.userCache.updateUser(newUserID)
 				guard let addedUser = try await User.find(newUserID, on: req.db) else {
 					throw Abort(.internalServerError, reason: "User not found in User table")
 				}

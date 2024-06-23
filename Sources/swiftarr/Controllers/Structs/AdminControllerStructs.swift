@@ -139,6 +139,10 @@ public struct RegistrationCodeUserData: Content {
 	var users: [UserHeader]
 	/// The registration code associated with this account. If this account doesn't have an associated regcode, will be the empty string.
 	var regCode: String
+	/// TRUE if this reg code was created to get allocated to a user on Discord for the purpose of creating an account on the pre-prod server.
+	var isForDiscordUser: Bool
+	/// If this reg code has been allocated to a Discord user, the name of the user. Nil if not a Discord regcode or if not yet allocated.
+	var discordUsername: String?
 }
 
 /// Returns general info about registration codes.
@@ -146,12 +150,19 @@ public struct RegistrationCodeUserData: Content {
 /// Each passenger gets sent an email with a unique registration code; the reg code allows them to create verified accounts.
 /// This struct lets the admins quickly view some basic stats on account usage.
 public struct RegistrationCodeStatsData: Content {
-	/// How many reg codes are in the database.
+	/// How many 'normal' reg codes are in the database.
 	var allocatedCodes: Int
 	/// How many codes have been used to create verified accounts.
 	var usedCodes: Int
 	/// How many codes have not yet been used.
 	var unusedCodes: Int
+	/// The total number of Registration codes alloced for the purpose of offering to users on Discord to create accounts on the pre-prod server.
+	/// Will be 0 on producation.
+	var allocatedDiscordCodes: Int
+	/// The number of codes that have been assigend to Discord users.
+	var assignedDiscordCodes: Int
+	/// The number of Discord codes that have been used to create Twitarr accounts on the pre-prod server.
+	var usedDiscordCodes: Int
 	/// This exists so that if admins create new reg codes for people who lost theirs, we can track it.
 	/// There isn't yet any API for admins to do this; the number will be 0.
 	var adminCodes: Int
@@ -321,12 +332,13 @@ struct UserSaveRestoreData: Content {
 	var roomNumber: String?
 	var dinnerTeam: DinnerTeam?
 	var parentUsername: String?
-	var roles: [UserRole]
+	var roles: [UserRoleType]
 	var favoriteEvents: [String]		// Event UIDs, the thing in the ICS file spec--NOT database IDs!
 	// karaoke, game favorites?
 }
 
 extension UserSaveRestoreData {
+	// For this to work: Must use ".with(\.$roles).with(\.$favoriteEvents)" in query
 	init?(user: User) {
 		guard var regCode = user.verification else {
 			return nil
@@ -341,7 +353,7 @@ extension UserSaveRestoreData {
 		recoveryKey = user.recoveryKey
 		verification = regCode
 		accessLevel = user.accessLevel
-		roles = user.roles
+		roles = user.roles.map { $0.role }
 
 		// User Profile stuff
 		displayName = user.displayName

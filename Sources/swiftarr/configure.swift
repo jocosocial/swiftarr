@@ -591,6 +591,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(UpdateForumPinnedMigration(), to: .psql)
 		app.migrations.add(UpdateForumPostPinnedMigration(), to: .psql)
 		app.migrations.add(FixForumPostPinnedMigration(), to: .psql)
+		app.migrations.add(AddDiscordRegistrationMigration(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 
@@ -604,6 +605,7 @@ struct SwiftarrConfigurator {
 			app.migrations.add(CreateTestData(), to: .psql)
 		}
 		app.migrations.add(PopulateForumLastPostIDMigration(), to: .psql)
+		app.migrations.add(GenerateDiscordRegistrationCodes(), to: .psql)
 
 		// Fifth, migrations that import data from /seeds
 		app.migrations.add(ImportRegistrationCodes(), to: .psql)

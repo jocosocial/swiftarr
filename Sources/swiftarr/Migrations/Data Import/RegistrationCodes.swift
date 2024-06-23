@@ -70,3 +70,53 @@ struct ImportRegistrationCodes: AsyncMigration {
 		try await RegistrationCode.query(on: database).delete()
 	}
 }
+
+struct GenerateDiscordRegistrationCodes: AsyncMigration {
+
+	/// Required by `Migration` protocol. Generates 100 unique registration codes and adds them to the regCode table as Discord codes. 
+	/// Members of TwitarrTeam may then hand these codes out to Discord users via Discord private message so that Discord users can then make
+	/// Twitarr accounts on the public test server. 
+	/// 
+	/// These registration codes all have `isDiscordUser` set to TRUE and should only exist on the public test server, not on production.
+	///
+	/// - Parameter database: A connection to the database, provided automatically.
+	/// - Returns: Void
+	func prepare(on database: Database) async throws {
+		database.logger.info("Starting Discord registration code generation")
+		// Do not perform this migration on the boat server
+		if (try? Environment.detect().isRelease) == true {
+			return
+		}
+		do {
+			var existingCodes = try await RegistrationCode.query(on: database).all().map { $0.code }
+			
+			var newCodes = [RegistrationCode]()
+			while newCodes.count < 100 {
+				var newRegCode = ""
+				for index in 1...6 {
+					newRegCode.append(String(Unicode.Scalar((Unicode.Scalar("a").value...Unicode.Scalar("z").value).randomElement()!)!))
+				}
+				if existingCodes.contains(newRegCode) {
+					continue
+				}
+				existingCodes.append(newRegCode)
+				let newCode = RegistrationCode(code: newRegCode, isForDiscord: true)
+				newCodes.append(newCode)
+			}
+			try await newCodes.create(on: database)
+			database.logger.info("Generated \(newCodes.count) Discord registration codes.")
+		}
+		catch let error {
+			fatalError("Generate Discord Registration Codes failed! error: \(error)")
+		}
+	}
+
+	/// Deletes all registration codes in the "registrationcode" table.
+	///
+	/// - Parameter database: A connection to the database, provided automatically.
+	/// - Returns: Void.
+	func revert(on database: Database) async throws {
+		// Always delete on revert, either it's preprod and we delete 100 codes, or prod and we delete 0 because prod has none.
+		try await RegistrationCode.query(on: database).filter(\.$isDiscordUser == true).delete()
+	}
+}

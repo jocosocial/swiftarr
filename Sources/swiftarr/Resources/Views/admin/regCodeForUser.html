@@ -17,6 +17,13 @@
 					<b>Registered using code:</b> #(regCode)
 				</div>
 			</div>
+			#if(data.isForDiscordUser):
+				<div class="row my-2">
+					<div class="col">
+						This is a Discord reg code, given to Discord user "#(data.discordUsername)"
+					</div>
+				</div>
+			#endif
 			<div class="row my-2">
 				<div class="col">
 					<b>Primary User</b>

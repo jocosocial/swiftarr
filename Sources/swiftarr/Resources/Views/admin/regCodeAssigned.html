@@ -1,0 +1,33 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+			<div class="row">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item"><a href="/admin/regcodes">Registration Codes</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Assign To Discord User</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<ul class="list-group">
+				<li class="list-group-item active" aria-current="true">	
+					Registration Code Assigned to #(data.discordUsername)
+				</li>			
+				<li class="list-group-item bg-transparent">	
+					<b>Next:</b> Open a Discord private chate with @#(data.discordUsername). Paste the following into a message to them:
+				</li>			
+				<li class="list-group-item bg-transparent">
+					<ul class="list-group">
+						<li class="list-group-item list-group-item-secondary">
+							Hello @#(data.discordUsername). The Twitarr Registration code "#(data.regCode)" has been allocated for your use.
+							You can go to http://twitarr.com and use this code to create an account.
+						</li>
+					</ul>		
+				</li>
+			</ul>
+    	</div>
+	#endexport
+#endextend

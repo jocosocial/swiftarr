@@ -1,0 +1,51 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+			<div class="row">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item"><a href="/admin/regcodes">Registration Codes</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Assign To Discord User</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			#if(regCodeStats.allocatedDiscordCodes == 0):
+				<div class="container-md ms-0 mt-2">
+					<div class="alert alert-warning mt-3" role="alert">
+						There are no registration codes in the database allocated for Discord users. If this is the on-boat
+						Twitarr instance, this is expected as users on the cruise cannot create accounts via this method.
+					</div>
+				</div>
+			#elseif(regCodeStats.allocatedDiscordCodes - regCodeStats.assignedDiscordCodes == 0):
+				<div class="container-md ms-0 mt-2">
+					<div class="alert alert-warning mt-3" role="alert">
+						All available registration codes created to give to Discord users have been used already.
+					</div>
+				</div>
+			#else:
+				<ul class="list-group">
+					<li class="list-group-item bg-transparent">	
+						For Use on Pre-Production server only. 
+					</li>			
+					<li class="list-group-item bg-transparent">	
+						How it works: Enter the Discord username of a user on this form, then on the next page you'll receive
+						a copy-and-pasteable message to that user containing a Registration Code and instructions on how to use it to
+						create a Twitarr account on the pre-prod server.
+					</li>			
+					<li class="list-group-item bg-transparent">	
+						Make sure you enter the Discord <b>username</b> and not the display name.
+					</li>			
+					<li class="list-group-item bg-transparent">				
+						<form action="/admin/regcodes/discord/assign" enctype="multipart/form-data" method="POST" id="usernamePostForm">
+							<input type="text" class="form-control" id="username" name="username" placeholder="Discord Username" spellcheck="false" autocapitalize="none">
+							<button type="submit" class="btn btn-primary mt-2">Submit</button>
+						</form>
+					</li>
+				</ul>
+			#endif
+    	</div>
+	#endexport
+#endextend

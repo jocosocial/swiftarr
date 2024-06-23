@@ -22,6 +22,14 @@ final class RegistrationCode: Model {
 
 	/// The registration code, normalized to lowercase without spaces.
 	@Field(key: "code") var code: String
+	
+	/// TRUE if this reg code is allocated for members of TwitarrTeam to give to Discord users on the preprod server. Accounts created from these regcodes are 
+	/// not valid on prod (and Prod should not have any regcodes with this flag set to true).
+	@Field(key: "is_discord_user") var isDiscordUser: Bool
+	
+	/// When this regcode gets given to a Discord user, the username of the user that has it. This ties the account they eventually make to the user's Discord username.
+	/// nil if this regcode has yet to be allocated to anyone. Should always be nil on production server.
+	@OptionalField(key: "discord_username") var discordUsername: String?
 
 	/// Timestamp of the model's last update, set automatically.
 	/// Used to track when the code was assigned.
@@ -40,13 +48,10 @@ final class RegistrationCode: Model {
 	/// Initializes a new RegistrationCode.
 	///
 	/// - Parameters:
-	///   - user: The `User` to which the code is associated, `nil` if not yet
-	///   assigned.
 	///   - code: The registration code string.
-	init(user: User? = nil, code: String) {
-		self.$user.id = user?.id
-		self.$user.value = user
+	init(code: String, isForDiscord: Bool = false) {
 		self.code = code
+		self.isDiscordUser = isForDiscord
 	}
 }
 
@@ -62,5 +67,22 @@ struct CreateRegistrationCodeSchema: AsyncMigration {
 
 	func revert(on database: Database) async throws {
 		try await database.schema("registrationcode").delete()
+	}
+}
+
+// Modifies the RegistrationCode table to add fields required to create the Discord-associated class of reg codes.
+struct AddDiscordRegistrationMigration: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("registrationcode")
+			.field("is_discord_user", .bool, .required, .sql(.default(false)))
+			.field("discord_username", .string)
+			.update()
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema("registrationcode")
+			.deleteField("is_discord_user")
+			.deleteField("discord_username")
+			.update()
 	}
 }

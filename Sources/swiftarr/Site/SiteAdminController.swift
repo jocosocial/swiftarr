@@ -51,6 +51,9 @@ struct SiteAdminController: SiteControllerUtils {
 
 		privateTTRoutes.get("regcodes", use: getRegCodeHandler)
 		privateTTRoutes.get("regcodes", "showuser", userIDParam, use: getRegCodeForUserHandler)
+		privateTTRoutes.get("regcodes", "discord", "assign", use: assignRegCodeToDiscordUser)
+		privateTTRoutes.post("regcodes", "discord", "assign", use: assignRegCodeToDiscordUserResult)
+		
 
 		privateTTRoutes.get("userroles", use: getUserRoleManagementHandler)
 		privateTTRoutes.get("userroles", userRoleParam, use: getUserRoleManagementHandler)
@@ -825,12 +828,14 @@ struct SiteAdminController: SiteControllerUtils {
 		}
 		struct RegCodeUserContext: Encodable {
 			var trunk: TrunkContext
+			var data: RegistrationCodeUserData
 			var primaryUser: UserHeader
 			var altUsers: [UserHeader]
 			var regCode: String
 
 			init(_ req: Request, data: RegistrationCodeUserData) throws {
 				trunk = .init(req, title: "Registration Code for User", tab: .admin)
+				self.data = data
 				self.primaryUser = data.users[0]
 				self.altUsers = Array(data.users.dropFirst(1))
 				self.regCode = data.regCode.isEmpty ? "No registration code found for this user" : data.regCode
@@ -838,6 +843,56 @@ struct SiteAdminController: SiteControllerUtils {
 		}
 		let ctx = try RegCodeUserContext(req, data: regCodeData)
 		return try await req.view.render("admin/regCodeForUser", ctx)
+	}
+	
+	// GET /admin/regcodes/discord/assign
+	//
+	// Shows the form allowing TT and above to assign a Registration Code to a user by tagging that code with a Discord Username.
+	// The reg code chosen will be from the pool allocated for Discord use. This pool only exists on pre-production servers,
+	// therefore this only works for pre-prod. 
+	//
+	// Intent here is to give TT a more structured way to hand out reg codes than looking up unused codes in the table directly
+	// and telling whomever to use that code to create an account.
+	func assignRegCodeToDiscordUser(_ req: Request) async throws -> View {
+		let response = try await apiQuery(req, endpoint: "/admin/regcodes/stats")
+		let regCodeData = try response.content.decode(RegistrationCodeStatsData.self)
+
+		struct RegCodeContext: Encodable {
+			var trunk: TrunkContext
+			var regCodeStats: RegistrationCodeStatsData
+
+			init(_ req: Request, stats: RegistrationCodeStatsData) throws {
+				trunk = .init(req, title: "Assign Registration Code To Discord User", tab: .admin)
+				regCodeStats = stats
+			}
+		}
+		let ctx = try RegCodeContext(req, stats: regCodeData)
+		return try await req.view.render("admin/assignRegCodeForm", ctx)
+	}
+	
+	// POST /admin/regcodes/discord/assign
+	//
+	// Shows the result page for assigning a reg code to a Discord user. Has a proposed direct Discord message contining
+	// the assigned code and instructions on how to use it.
+	func assignRegCodeToDiscordUserResult(_ req: Request) async throws -> View {
+		struct UsernameData: Content {
+			var username: String
+		}
+		let discordUsername = try req.content.decode(UsernameData.self).username
+		let response = try await apiQuery(req, endpoint: "/admin/regcodes/discord/allocate/\(discordUsername)")
+		let regCodeData = try response.content.decode(RegistrationCodeUserData.self)
+		struct RegCodeContext: Encodable {
+			var trunk: TrunkContext
+			var data: RegistrationCodeUserData
+
+			init(_ req: Request, data: RegistrationCodeUserData) throws {
+				trunk = .init(req, title: "Assign Registration Code To Discord User", tab: .admin)
+				self.data = data
+			}
+		}
+		let ctx = try RegCodeContext(req, data: regCodeData)
+		return try await req.view.render("admin/regCodeAssigned", ctx)
+
 	}
 
 // MARK: - UserLevels and Roles
