@@ -722,7 +722,7 @@ struct AdminController: APIRouteCollection {
 			}
 		}
 		// Zip the whole thing, stream download it.
-		let zipDestURL = temporaryDirectoryURL.appending(path: "\(archiveName).zip")
+		let zipDestURL = temporaryDirectoryURL.appendingPathComponent("\(archiveName).zip")
 		try FileManager.default.zipItem(at: sourceDirectoryURL, to: zipDestURL, compressionMethod: .deflate)
 		let	response = req.fileio.streamFile(at: zipDestURL.path())
 		response.headers.replaceOrAdd(name: "Content-Disposition", value: "attachment; filename=\"\(archiveName).zip\"")
