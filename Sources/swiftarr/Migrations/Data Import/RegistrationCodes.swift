@@ -93,7 +93,7 @@ struct GenerateDiscordRegistrationCodes: AsyncMigration {
 			var newCodes = [RegistrationCode]()
 			while newCodes.count < 100 {
 				var newRegCode = ""
-				for index in 1...6 {
+				for _ in 1...6 {
 					newRegCode.append(String(Unicode.Scalar((Unicode.Scalar("a").value...Unicode.Scalar("z").value).randomElement()!)!))
 				}
 				if existingCodes.contains(newRegCode) {

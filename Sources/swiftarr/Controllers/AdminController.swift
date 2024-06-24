@@ -688,8 +688,8 @@ struct AdminController: APIRouteCollection {
 		}
 		let archiveName = "Twitarr_userfile"
 		let temporaryDirectoryURL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-				.appending(path: ProcessInfo().globallyUniqueString, directoryHint: .isDirectory)
-		let sourceDirectoryURL = temporaryDirectoryURL.appending(path: archiveName, directoryHint: .isDirectory)
+				.appendingPathComponent(UUID().uuidString, isDirectory: true)
+		let sourceDirectoryURL = temporaryDirectoryURL.appendingPathComponent(archiveName, isDirectory: true)
 		try FileManager.default.createDirectory(at: sourceDirectoryURL, withIntermediateDirectories: true)
 		// Get the list of users we'll be archiving, save to 'userfile.json'
 		let users = try await User.query(on: req.db)
@@ -702,11 +702,11 @@ struct AdminController: APIRouteCollection {
 				.all()
 		let dto = users.compactMap { UserSaveRestoreData(user: $0) }
 		let data = try JSONEncoder().encode(dto)
-		let userfile = sourceDirectoryURL.appending(path: "userfile.json", directoryHint: .notDirectory)
+		let userfile = sourceDirectoryURL.appendingPathComponent("userfile.json", isDirectory: true)
 		try data.write(to: userfile, options: .atomic)
 
 		// Copy user avatar images into the '/images' dir inside our temp dir.
-		let destImageDir = sourceDirectoryURL.appending(path: "userImages", directoryHint: .isDirectory)
+		let destImageDir = sourceDirectoryURL.appendingPathComponent("userImages", isDirectory: true)
 		try FileManager.default.createDirectory(at: destImageDir, withIntermediateDirectories: true)
 		let imageNames = users.compactMap { $0.userImage }
 		for imageName in imageNames {
@@ -714,7 +714,7 @@ struct AdminController: APIRouteCollection {
 				let imgSource = Settings.shared.userImagesRootPath.appendingPathComponent(ImageSizeGroup.full.rawValue)
 						.appendingPathComponent(String(imageName.prefix(2)))
 						.appendingPathComponent(imageName)
-				let imgDest = destImageDir.appending(path: imageName, directoryHint: .notDirectory)
+				let imgDest = destImageDir.appendingPathComponent(imageName, isDirectory: false)
 				try FileManager.default.copyItem(at: imgSource, to: imgDest)
 			}
 			catch {
@@ -750,8 +750,8 @@ struct AdminController: APIRouteCollection {
 		// If we attempt an upload, it's important we end up with the uploaded file or nothing at the filepath.
 		// Leaving the previous file there would be bad. Also, 'unzippedDirPath' is what the zipfile *should* create 
 		// when we unzip it, but what it actually creates is embedded in the zipfile itself.
-		let unzippedDirPath = destDirPath.appending(path: "Twitarr_userfile")
-		guard !FileManager.default.fileExists(atPath: destFilePath.path()), !FileManager.default.fileExists(atPath: unzippedDirPath.path()) else {
+		let unzippedDirPath = destDirPath.appendingPathComponent("Twitarr_userfile", isDirectory: true)
+		guard !FileManager.default.fileExists(atPath: destFilePath.path), !FileManager.default.fileExists(atPath: unzippedDirPath.path) else {
 			throw Abort(.internalServerError, reason: "Userfile upload dir not empty after emptying it--this could lead to applying a previously-uploaded userfile and not the one you tried to upload just now.")
 		}
 		try await req.fileio.writeFile(ByteBuffer(data: fileData), at: destFilePath.path)
@@ -792,7 +792,7 @@ struct AdminController: APIRouteCollection {
 		guard Settings.shared.enablePreregistration == false else {
 			throw Abort(.badRequest, reason: "Server's 'enable pre-embark UI' setting must be OFF when performing bulk user import.")
 		}
-		let filepath = try uploadUserDirPath().appending(path: "Twitarr_userfile/userfile.json")
+		let filepath = try uploadUserDirPath().appendingPathComponent("Twitarr_userfile/userfile.json", isDirectory: false)
 		let buffer = try await req.fileio.collectFile(at: filepath.path)
 		let importUserList = try JSONDecoder().decode([UserSaveRestoreData].self, from: buffer)
 		var verification = BulkUserUpdateVerificationData(forVerification: verifyOnly)
@@ -826,7 +826,7 @@ struct AdminController: APIRouteCollection {
 		var imageImportError: String?
 		do {
 			if let userImage = userToImport.userImage {
-				let archiveSource = try uploadUserDirPath().appending(path: "Twitarr_userfile/userImages")
+				let archiveSource = try uploadUserDirPath().appendingPathComponent("Twitarr_userfile/userImages", isDirectory: true)
 						.appendingPathComponent(userImage)
 				let serverImageDest = Settings.shared.userImagesRootPath.appendingPathComponent(ImageSizeGroup.full.rawValue)
 						.appendingPathComponent(String(userImage.prefix(2)))

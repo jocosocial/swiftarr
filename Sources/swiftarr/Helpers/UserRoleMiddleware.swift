@@ -107,9 +107,10 @@ struct MinUserAccessLevelMiddleware: AsyncMiddleware {
 			if !user.accessLevel.hasAccess(requireAccessLevel) {
 				throw Abort(.forbidden, reason: "Access is restricted to \(requireAccessLevel.visibleName()) or higher.")
 			}
+			// 503 Service Unavailable might be better for some of these cases, coupled with some cache-direction headers.
 			if !user.accessLevel.hasAccess(Settings.shared.minAccessLevel) {
 				if !Settings.shared.enablePreregistration || request.route?.usedForPreregistration() != true {
-				throw Abort(.forbidden, reason: "Access is restricted to \(Settings.shared.minAccessLevel) or higher.")
+					throw Abort(.forbidden, reason: "Access is restricted to \(Settings.shared.minAccessLevel) or higher.")
 				}
 			}
 		}
