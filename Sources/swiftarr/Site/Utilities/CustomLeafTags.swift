@@ -134,7 +134,8 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 			let range = Range(mentionMatch.range(at: 1), in: modifiedText)!
 			let mention = String(modifiedText[range])
 			let username = String(mention.dropFirst()) // Drop the initial "@"
-            let link = "<a class=\"link-primary\" href=\"/username/\(username)\">\(mention)</a>"
+			var linkStyle = ["admin", "THO", "TwitarrTeam", "moderator"].contains(username) ? "link-danger" : "link-primary"
+            let link = "<a class=\"\(linkStyle)\" href=\"/username/\(username)\">\(mention)</a>"
             modifiedText.replaceSubrange(range, with: link)
 		}
 		string = modifiedText
@@ -568,14 +569,27 @@ struct UserBylineTag: UnsafeUnescapedLeafTag {
 		if ctx.parameters.count >= 2, let newStyle = ctx.parameters[1].string {
 			styling = newStyle
 		}
-		if styling == "nolink" {
-			if let displayName = userHeader["displayName"]?.string?.htmlEscaped() {
-				return LeafData.string("<b>\(displayName)</b> @\(username)")
+		func stylingSearch(style: String, in styling: inout String) -> Bool {
+			if styling.contains(style) {
+				styling = styling.replacingOccurrences(of: style, with: "")
+				return true
 			}
-			return LeafData.string("@\(username)")
+			return false
 		}
-		else if styling != "short", let displayName = userHeader["displayName"]?.string?.htmlEscaped() {
-			if styling == "pronoun", let preferredPronoun = userHeader["preferredPronoun"]?.string?.htmlEscaped() {
+		let shortStyle = stylingSearch(style: "short", in: &styling) 
+		let nolinkStyle = stylingSearch(style: "nolink", in: &styling) 
+		let pronounStyle = stylingSearch(style: "pronoun", in: &styling) 
+		if ["admin", "THO", "TwitarrTeam", "moderator"].contains(username) {
+			styling.append(" text-danger")
+		}
+		if nolinkStyle {
+			if let displayName = userHeader["displayName"]?.string?.htmlEscaped() {
+				return LeafData.string("<span class=\"\(styling)\"><b>\(displayName)</b> @\(username)</span>")
+			}
+			return LeafData.string("<span class=\"\(styling)\">@\(username)</span>")
+		}
+		else if !shortStyle, let displayName = userHeader["displayName"]?.string?.htmlEscaped() {
+			if pronounStyle, let preferredPronoun = userHeader["preferredPronoun"]?.string?.htmlEscaped() {
 				return LeafData.string(
 					"<a class=\"\(styling)\" href=\"/user/\(userID)\"><b>\(displayName)</b> @\(username) (\(preferredPronoun))</a>"
 				)
@@ -585,7 +599,7 @@ struct UserBylineTag: UnsafeUnescapedLeafTag {
 			)
 		}
 		else {
-			if styling == "pronoun", let preferredPronoun = userHeader["preferredPronoun"]?.string?.htmlEscaped() {
+			if pronounStyle, let preferredPronoun = userHeader["preferredPronoun"]?.string?.htmlEscaped() {
 				return LeafData.string(
 					"<a class=\"\(styling)\" href=\"/user/\(userID)\">@\(username) (\(preferredPronoun))</a>"
 				)
