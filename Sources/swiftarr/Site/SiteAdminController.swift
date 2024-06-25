@@ -683,7 +683,7 @@ struct SiteAdminController: SiteControllerUtils {
 			}
 		}
 		let ctx = try BulkUserRootContext(req)
-		return try await req.view.render("admin/bulkuser", ctx)
+		return try await req.view.render("admin/bulkUser", ctx)
 	}
 
 	// GET /admin/bulkuser/download
