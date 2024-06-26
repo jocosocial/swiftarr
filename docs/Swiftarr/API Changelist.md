@@ -152,3 +152,6 @@ New Micro Karaoke feature. API changes include:
 * `UserNotificationData` now includes `nextJoinedLFGID` and `nextJoinedLFGTime`.
 * `SettingsAdminData` now includes `upcomingEventNotificationSeconds`, `upcomingEventNotificationSetting`, and `upcomingLFGNotificationSetting`.
 * New `SocketNotificationType` of `joinedLFGStarting`.
+
+## Jun 25, 2024
+* `PostSearchData` now uses `Paginator` to report pagination data--previously the same data was reported via top-level ints.

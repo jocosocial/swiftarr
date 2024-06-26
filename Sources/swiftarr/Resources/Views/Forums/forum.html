@@ -428,7 +428,7 @@
 		<div class="container-fluid collapse swiftarr-searchbar" id="searchBar">
 			<form action="/forum/search">
   				<input type="hidden" name="searchType" value="posts"/>
-  				#if(forum.forumID != nil):<input type="hidden" name="forumID" value="#(forum.forumID)" />#endif
+  				#if(forum.forumID != nil):<input type="hidden" name="forum" value="#(forum.forumID)" />#endif
 				<div class="row justify-content-between">
 					<div class="col flex-grow-1 pe-0">
 						<input class="form-control" type="search" name="search" value="" placeholder="Search This Forum" aria-label="Search" autocapitalize="off" required>

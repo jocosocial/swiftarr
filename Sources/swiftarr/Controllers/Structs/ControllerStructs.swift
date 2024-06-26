@@ -427,7 +427,7 @@ extension FezContentData: RCFValidatable {
 ///
 ///
 public struct FezListData: Content {
-	/// Pagination into the results set..
+	/// Pagination into the results set.
 	var paginator: Paginator
 	///The fezzes in the result set.
 	var fezzes: [FezData]
@@ -1315,15 +1315,11 @@ extension PostData {
 public struct PostSearchData: Content {
 	/// The search query used to create these results.
 	var queryString: String
-	/// The total number of posts in the result set. The actual # of results returned may be fewer than this, even if we return 'complete' results. This is due to additional filtering that
-	/// is done after the database query. See notes on `ContentFilterable.filterForMention(of:)`
-	var totalPosts: Int
-	/// The index into totalPosts of the first post in the `posts` array. 0 is the index of the first result. This number is usually  a multiple of `limit` and indicates the page of results.
-	var start: Int
-	/// The number of posts the server attempted to gather. posts.count may be less than this number if posts were filtered out by post-query filtering, or if start + limit > totalPosts.
-	var limit: Int
 	/// The posts in the forum.
 	var posts: [PostData]
+	/// Pagination into the results set. Because `/forum/post/search` filters the result set after the db query, `posts.count` could be less than `paginator.limit`
+	/// even if we're not at the end of the results. To get the next 'page' of results, be sure to add `limit` to `start`; don't add`posts.count`.
+	var paginator: Paginator
 }
 
 /// Used to return a `ForumPost`'s data with full user `LikeType` info.

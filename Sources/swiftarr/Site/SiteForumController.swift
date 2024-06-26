@@ -65,8 +65,8 @@ struct SearchFormData: Content {
 	var search: String?
 	var creator: String?
 	var creatorid: String?
-	var categoryID: UUID?
-	var forumID: UUID?
+	var category: UUID?
+	var forum: UUID?
 }
 
 // Used for Forum Search, Favorite Forums, Recent Forums and Forums You Created pages.
@@ -199,27 +199,27 @@ struct PostSearchPageContext: Encodable {
 		switch searchType {
 		case .userMentions:
 			title = "Posts Mentioning You"
-			filterDescription = "\(posts.totalPosts) Posts Mentioning You"
+			filterDescription = "\(posts.paginator.total) Posts Mentioning You"
 			paginatorClosure = { pageIndex in
-				"/forumpost/mentions?start=\(pageIndex * posts.limit)&limit=\(posts.limit)"
+				"/forumpost/mentions?start=\(pageIndex * posts.paginator.limit)&limit=\(posts.paginator.limit)"
 			}
 		case .owned:
 			title = "Your Forum Posts"
-			filterDescription = "Your \(posts.totalPosts) Posts"
+			filterDescription = "Your \(posts.paginator.total) Posts"
 			paginatorClosure = { pageIndex in
-				"/forumpost/owned?start=\(pageIndex * posts.limit)&limit=\(posts.limit)"
+				"/forumpost/owned?start=\(pageIndex * posts.paginator.limit)&limit=\(posts.paginator.limit)"
 			}
 		case .favorite:
 			title = "Favorite Posts"
-			filterDescription = "\(posts.totalPosts) Favorite Posts"
+			filterDescription = "\(posts.paginator.total) Favorite Posts"
 			paginatorClosure = { pageIndex in
-				"/forumpost/favorite?start=\(pageIndex * posts.limit)&limit=\(posts.limit)"
+				"/forumpost/favorite?start=\(pageIndex * posts.paginator.limit)&limit=\(posts.paginator.limit)"
 			}
 		case .textSearch:
 			title = "Forum Post Search"
-			filterDescription = "\(posts.totalPosts) Posts with \"\(formData?.search ?? "search text")\""
+			filterDescription = "\(posts.paginator.total) Posts with \"\(formData?.search ?? "search text")\""
 			paginatorClosure = { pageIndex in
-				"/forum/search?search=\(formData?.search ?? "")&searchType=posts&start=\(pageIndex * posts.limit)&limit=\(posts.limit)"
+				"/forum/search?search=\(formData?.search ?? "")&searchType=posts&start=\(pageIndex * posts.paginator.limit)&limit=\(posts.paginator.limit)"
 			}
 		case .direct:
 			let searchParams = try req.query.decode(ForumPostSearchQueryOptions.self)
@@ -251,12 +251,7 @@ struct PostSearchPageContext: Encodable {
 		self.postSearch = posts
 		self.searchType = searchType
 		self.formData = formData
-		paginator = .init(
-			start: posts.start,
-			total: Int(posts.totalPosts),
-			limit: posts.limit,
-			urlForPage: paginatorClosure
-		)
+		paginator = .init(posts.paginator, urlForPage: paginatorClosure)
 	}
 }
 
@@ -882,7 +877,7 @@ struct SiteForumController: SiteControllerUtils {
 				filterDesc.append(contentsOf: " with \"\(searchStr)\"")
 			}
 			var ctx = try ForumsSearchPageContext(req, forums: responseData, searchType: .textSearch, filterDesc: filterDesc, formData: formData)
-			if let categoryID = formData.categoryID {
+			if let categoryID = formData.category {
 				let catResponse = try await apiQuery(req, endpoint: "/forum/categories", query: [URLQueryItem(name: "cat", value: categoryID.uuidString)])
 				let catInfo = try catResponse.content.decode([CategoryData].self)
 				ctx.categoryData = catInfo.first
@@ -894,11 +889,11 @@ struct SiteForumController: SiteControllerUtils {
 			let response = try await apiQuery(req, endpoint: "/forum/post/search", passThroughQuery: true)
 			let responseData = try response.content.decode(PostSearchData.self)
 			var ctx = try PostSearchPageContext(req, posts: responseData, searchType: .textSearch, formData: formData)
-			if let forumID = formData.forumID {
+			if let forumID = formData.forum {
 				let forumResponse = try await apiQuery(req, endpoint: "/forum/\(forumID)", query: [URLQueryItem(name: "limit", value: "0")])
 				ctx.forumData = try forumResponse.content.decode(ForumData.self)
 			}
-			if let categoryID = ctx.forumData?.categoryID ?? formData.categoryID {
+			if let categoryID = ctx.forumData?.categoryID ?? formData.category {
 				let catResponse = try await apiQuery(req, endpoint: "/forum/categories", query: [URLQueryItem(name: "cat", value: categoryID.uuidString)])
 				let catInfo = try catResponse.content.decode([CategoryData].self)
 				ctx.categoryData = catInfo.first

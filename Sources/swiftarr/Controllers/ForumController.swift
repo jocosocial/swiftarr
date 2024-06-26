@@ -851,19 +851,9 @@ struct ForumController: APIRouteCollection {
 				try await markNotificationViewed(user: cacheUser, type: .forumMention(0), on: req)
 			}
 		}
-		let postData = try await buildPostData(
-			postFilteredPosts,
-			userID: cacheUser.userID,
-			on: req,
-			mutewords: cacheUser.mutewords
-		)
-		return try await PostSearchData(
-			queryString: req.url.query ?? "",
-			totalPosts: totalPostsFound,
-			start: start,
-			limit: limit,
-			posts: postData
-		)
+		let postData = try await buildPostData(postFilteredPosts, userID: cacheUser.userID, on: req, mutewords: cacheUser.mutewords)
+		return try await PostSearchData(queryString: req.url.query ?? "", posts: postData,
+				paginator: Paginator(total: totalPostsFound, start: start, limit: limit))
 	}
 
 	// MARK: POST and DELETE actions
