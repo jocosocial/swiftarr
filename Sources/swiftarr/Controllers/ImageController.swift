@@ -157,9 +157,7 @@ struct ImageController: APIRouteCollection {
 	}
 
 	// MARK: - Utilities
-	func getUserUploadedImage(_ req: Request, sizeGroup: ImageSizeGroup, imageFilename: String? = nil) throws
-		-> Response
-	{
+	func getUserUploadedImage(_ req: Request, sizeGroup: ImageSizeGroup, imageFilename: String? = nil) throws -> Response {
 		let inputFilename = imageFilename ?? req.parameters.get(imageFilenameParam.paramString)
 		guard let fileParam = inputFilename else {
 			throw Abort(.badRequest, reason: "No image file specified.")
@@ -188,8 +186,11 @@ struct ImageController: APIRouteCollection {
 		let subDirName = String(fileParam.prefix(2))
 
 		let fileURL = Settings.shared.userImagesRootPath.appendingPathComponent(sizeGroup.rawValue)
-			.appendingPathComponent(subDirName)
-			.appendingPathComponent(fileUUID.uuidString + "." + fileExtension)
+				.appendingPathComponent(subDirName)
+				.appendingPathComponent(fileUUID.uuidString + "." + fileExtension)
+		guard FileManager.default.fileExists(atPath: fileURL.path) else {
+			throw Abort(.notFound, reason: "No image found with image ID \(fileUUID.uuidString)")
+		}
 		let response = req.fileio.streamFile(at: fileURL.path)
 		// If streamFile is returning the image file, add a cache-control header to the repsonse
 		if response.status == .ok {

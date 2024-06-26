@@ -18,7 +18,7 @@ struct SiteFileController: SiteControllerUtils {
 		// This replaces FileMiddleware from Sources/swiftarr/configure.swift.
 		app.get("public", "**", use: streamPublicFile)
 		app.get("faq", use: streamFaqFile)
-
+		app.get("favicon.ico", use: streamFavicon)
 	}
 
 	// `GET /css/:catchall`
@@ -59,6 +59,14 @@ struct SiteFileController: SiteControllerUtils {
 	// way to implement it as a View here while still allowing moderators to easily make changes.
 	func streamFaqFile(_ req: Request) throws -> Response {
 		return try streamFile(req, basePath: "public/faq.html")
+	}
+	
+	// `GET /favicon.ico
+	//
+	// In accordance with the old ways, this associates '/favicon.ico' with our Microsoft ICO formatted icon file (which is 
+	// actually in "Sources/swiftarr/Resources/Assets/img"). We also refer to this path using the more modern link header (see trunk.html).
+	func streamFavicon(_ req: Request) throws -> Response {
+		return try streamFile(req, basePath: "img/favicon.ico")
 	}
 
 	// Wraps fileio.streamFile. Sanity-checks the path, builds a file system path to the resource,

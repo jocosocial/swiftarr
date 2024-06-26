@@ -23,7 +23,7 @@ public final class SwiftarrErrorMiddleware: AsyncMiddleware {
 			reason = abort.reason
 			status = abort.status
 			headers = abort.headers
-			if status == .notFound {
+			if status == .notFound && reason.isEmpty {
 				reason = "404 Not Found - There's nothing at this URL path"
 			}
 		case let resp as ErrorResponse:
