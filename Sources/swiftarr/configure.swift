@@ -521,7 +521,7 @@ struct SwiftarrConfigurator {
 		// Setup the schedule update job to run at an interval and on-demand.
 		app.queues.schedule(UpdateScheduleJob()).hourly().at(5)
 		app.queues.schedule(UserEventNotificationJob()).minutely().at(0)
-		app.queues.add(UpdateJob())
+		app.queues.add(OnDemandScheduleUpdateJob())
 		try app.queues.startInProcessJobs(on: .default)
 		try app.queues.startScheduledJobs()
 	}

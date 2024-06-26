@@ -663,7 +663,7 @@ struct AdminController: APIRouteCollection {
 	///
 	/// - Returns: HTTP 200 OK.
 	func reloadScheduleHandler(_ req: Request) async throws -> HTTPStatus {
-		try await req.queue.dispatch(UpdateJob.self, .init())
+		try await req.queue.dispatch(OnDemandScheduleUpdateJob.self, .init())
 		return .ok
 	}
 	

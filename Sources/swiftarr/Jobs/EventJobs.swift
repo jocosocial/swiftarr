@@ -14,10 +14,7 @@ class UpdateScheduleJobBase {
 			context.logger.notice("Starting UpdateScheduleJob")
 			let scheduleURLString = Settings.shared.scheduleUpdateURL
 			guard !scheduleURLString.isEmpty else {
-				throw Abort(
-					.internalServerError,
-					reason: "Schedule Updater ran, but the URL is empty, so we're bailing."
-				)
+				return
 			}
 			let scheduleURL = URI(string: Settings.shared.scheduleUpdateURL)
 			let userAgent =
@@ -83,7 +80,7 @@ public struct UpdateScheduleJob: AsyncScheduledJob {
 }
 
 /// Job to update the Sched schedule on demand.
-public struct UpdateJob: AsyncJob {
+public struct OnDemandScheduleUpdateJob: AsyncJob {
 	public typealias Payload = EmptyJobPayload
 
 	public func dequeue(_ context: QueueContext, _ payload: EmptyJobPayload) async throws {
