@@ -1,6 +1,6 @@
-<div class="row align-items-center justify-content-end mb-2">
+<div class="row align-items-center justify-content-end mb-2 gx-1">
     <div class="col col-auto">
-        Filter by:
+        Filter:
     </div>
     <div class="col col-auto">
         <div class="dropdown">
@@ -11,14 +11,9 @@
                 <li><button class="dropdown-item" type="button" data-action="filterFezDay" data-selection="all">All Days</button></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><h6 class="dropdown-header">Only show:</h6></li>
-                <li><button class="dropdown-item #if(daySelection == "0"):active#endif" type="button" data-action="filterFezDay" data-selection="0">Sun</button></li>
-                <li><button class="dropdown-item #if(daySelection == "1"):active#endif" type="button" data-action="filterFezDay" data-selection="1">Mon</button></li>
-                <li><button class="dropdown-item #if(daySelection == "2"):active#endif" type="button" data-action="filterFezDay" data-selection="2">Tue</button></li>
-                <li><button class="dropdown-item #if(daySelection == "3"):active#endif" type="button" data-action="filterFezDay" data-selection="3">Wed</button></li>
-                <li><button class="dropdown-item #if(daySelection == "4"):active#endif" type="button" data-action="filterFezDay" data-selection="4">Thu</button></li>
-                <li><button class="dropdown-item #if(daySelection == "5"):active#endif" type="button" data-action="filterFezDay" data-selection="5">Fri</button></li>
-                <li><button class="dropdown-item #if(daySelection == "6"):active#endif" type="button" data-action="filterFezDay" data-selection="6">Sat</button></li>
-                <li><button class="dropdown-item #if(daySelection == "7"):active#endif" type="button" data-action="filterFezDay" data-selection="7">Second Sun</button></li>
+                #for(day in dayList):
+					<li><button class="dropdown-item #if(daySelection == index):active#endif" type="button" data-action="filterFezDay" data-selection="#(index)">#(day)</button></li>
+				#endfor
             </ul>
         </div>
     </div>

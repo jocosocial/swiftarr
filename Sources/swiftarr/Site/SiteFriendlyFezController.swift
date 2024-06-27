@@ -14,6 +14,7 @@ struct CreateFezPostFormContent: Codable {
 	var postText: String
 }
 
+// Leaf context used in the Fez create, update, and memberlist pages
 struct FezCreateUpdatePageContext: Encodable {
 	var trunk: TrunkContext
 	var fez: FezData?
@@ -81,6 +82,70 @@ struct FezCreateUpdatePageContext: Encodable {
 	}
 }
 
+// Leaf context used in the Find, Joined and Owned Fez pages
+struct FezListPageContext: Encodable {
+	enum FezTab: String, Codable {
+		case faq, find, joined, owned
+	}
+	
+	struct QueryParams: Content {
+		var type: String?
+		var cruiseday: Int?
+		var hidePast: Bool?
+	}
+
+	var trunk: TrunkContext
+	var fezList: FezListData
+	var paginator: PaginatorContext
+	var tab: FezTab
+	var dayList: [String]
+	var typeSelection: String?
+	var daySelection: Int?
+	var hidePastSelection: Bool?
+
+	init(_ req: Request, fezList: FezListData, tab: FezTab) throws {
+		let params = try req.query.decode(QueryParams.self)
+		var title: String
+		var paginationPath: String
+		switch tab {
+			case .faq:
+				title = "LFG Help"
+				paginationPath = "/lfg"
+			case .find: 
+				title = "LFG Find Groups"
+				paginationPath = "/lfg"
+			case .joined: 
+				title = "LFG Joined Groups"
+				paginationPath = "/lfg/joined"
+			case .owned: 
+				title = "LFG Owned Groups"
+				paginationPath = "/lfg/owned"
+		}
+		trunk = .init(req, title: title, tab: .lfg)
+		let limit = fezList.paginator.limit
+		var hidePastPaginationParam = ""
+		if let hidePast = params.hidePast {
+			hidePastPaginationParam = "&hidePast=\(hidePast)"
+		}
+		paginator = .init(fezList.paginator) { pageIndex in
+			"\(paginationPath)?start=\(pageIndex * limit)&limit=\(limit)\(hidePastPaginationParam)"
+		}
+		self.fezList = fezList
+		self.tab = tab
+		typeSelection = params.type ?? "all"
+		daySelection = params.cruiseday
+		hidePastSelection = params.hidePast
+		var cruiseDate = Calendar.current.date(from: Settings.shared.cruiseStartDateComponents)!
+		let dayFormatter = DateFormatter()
+		dayFormatter.setLocalizedDateFormatFromTemplate("E, MMM d")
+		dayList = []
+		for _ in 0..<Settings.shared.cruiseLengthInDays {
+			dayList.append(dayFormatter.string(from: cruiseDate))
+			cruiseDate = Calendar.current.date(byAdding: DateComponents(day: 1), to: cruiseDate)!
+		}
+	}
+}
+
 struct SiteFriendlyFezController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
@@ -126,43 +191,13 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 
 	// MARK: - FriendlyFez
 
-	enum FezTab: String, Codable {
-		case faq, find, joined, owned
-	}
 
 	// GET /lfg
 	// Shows the root Fez page, with a list of all fezzes.
 	func fezRootPageHandler(_ req: Request) async throws -> View {
 		let response = try await apiQuery(req, endpoint: "/fez/open")
 		let fezList = try response.content.decode(FezListData.self)
-		struct FezRootPageContext: Encodable {
-			var trunk: TrunkContext
-			var fezList: FezListData
-			var paginator: PaginatorContext
-			var tab: FezTab
-			var typeSelection: String?
-			var daySelection: Int?
-			var hidePastSelection: Bool?
-
-			init(_ req: Request, fezList: FezListData) throws {
-				trunk = .init(req, title: "LFG Find Groups", tab: .lfg)
-				self.fezList = fezList
-				tab = .find
-				typeSelection = req.query[String.self, at: "type"] ?? "all"
-				daySelection = req.query[Int.self, at: "cruiseday"]
-				let hidePastQuery = req.query[String.self, at: "hidePast"]
-				hidePastSelection = hidePastQuery == nil ? nil : hidePastQuery?.lowercased() == "true"
-				let limit = fezList.paginator.limit
-				var hidePastPaginationParam = ""
-				if let hidePast = hidePastSelection {
-					hidePastPaginationParam = "&hidePast=\(hidePast)"
-				}
-				paginator = .init(fezList.paginator) { pageIndex in
-					"/lfg?start=\(pageIndex * limit)&limit=\(limit)\(hidePastPaginationParam)"
-				}
-			}
-		}
-		let ctx = try FezRootPageContext(req, fezList: fezList)
+		let ctx = try FezListPageContext(req, fezList: fezList, tab: .find)
 		return try await req.view.render("Fez/fezRoot", ctx)
 	}
 
@@ -172,7 +207,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	func fezFAQHandler(_ req: Request) async throws -> View {
 		struct FezFAQPageContext: Encodable {
 			var trunk: TrunkContext
-			var tab: FezTab
+			var tab: FezListPageContext.FezTab
 
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "LFG Help", tab: .lfg)
@@ -189,34 +224,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	func joinedFezPageHandler(_ req: Request) async throws -> View {
 		let response = try await apiQuery(req, endpoint: "/fez/joined?excludetype=closed&excludetype=open")
 		let fezList = try response.content.decode(FezListData.self)
-		struct JoinedFezPageContext: Encodable {
-			var trunk: TrunkContext
-			var fezList: FezListData
-			var paginator: PaginatorContext
-			var tab: FezTab
-			var typeSelection: String?
-			var daySelection: Int?
-			var hidePastSelection: Bool?
-
-			init(_ req: Request, fezList: FezListData) throws {
-				trunk = .init(req, title: "LFG Joined Groups", tab: .lfg)
-				self.fezList = fezList
-				tab = .joined
-				typeSelection = req.query[String.self, at: "type"] ?? "all"
-				daySelection = req.query[Int.self, at: "cruiseday"]
-				let hidePastQuery = req.query[String.self, at: "hidePast"]
-				hidePastSelection = hidePastQuery == nil ? nil : hidePastQuery?.lowercased() == "true"
-				let limit = fezList.paginator.limit
-				var hidePastPaginationParam = ""
-				if let hidePast = hidePastSelection {
-					hidePastPaginationParam = "&hidePast=\(hidePast)"
-				}
-				paginator = .init(fezList.paginator) { pageIndex in
-					"/lfg/joined?start=\(pageIndex * limit)&limit=\(limit)\(hidePastPaginationParam)"
-				}
-			}
-		}
-		let ctx = try JoinedFezPageContext(req, fezList: fezList)
+		let ctx = try FezListPageContext(req, fezList: fezList, tab: .joined)
 		return try await req.view.render("Fez/fezJoined", ctx)
 	}
 
@@ -226,34 +234,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	func ownedFezPageHandler(_ req: Request) async throws -> View {
 		let response = try await apiQuery(req, endpoint: "/fez/owner?excludetype=closed&excludetype=open")
 		let fezList = try response.content.decode(FezListData.self)
-		struct OwnedFezPageContext: Encodable {
-			var trunk: TrunkContext
-			var fezList: FezListData
-			var paginator: PaginatorContext
-			var tab: FezTab
-			var typeSelection: String?
-			var daySelection: Int?
-			var hidePastSelection: Bool?
-
-			init(_ req: Request, fezList: FezListData) throws {
-				trunk = .init(req, title: "LFG Owned Groups", tab: .lfg)
-				self.fezList = fezList
-				tab = .owned
-				typeSelection = req.query[String.self, at: "type"] ?? "all"
-				daySelection = req.query[Int.self, at: "cruiseday"]
-				let hidePastQuery = req.query[String.self, at: "hidePast"]
-				hidePastSelection = hidePastQuery == nil ? nil : hidePastQuery?.lowercased() == "true"
-				let limit = fezList.paginator.limit
-				var hidePastPaginationParam = ""
-				if let hidePast = hidePastSelection {
-					hidePastPaginationParam = "&hidePast=\(hidePast)"
-				}
-				paginator = .init(fezList.paginator) { pageIndex in
-					"/lfg/owned?start=\(pageIndex * limit)&limit=\(limit)\(hidePastPaginationParam)"
-				}
-			}
-		}
-		let ctx = try OwnedFezPageContext(req, fezList: fezList)
+		let ctx = try FezListPageContext(req, fezList: fezList, tab: .owned)
 		return try await req.view.render("Fez/fezOwned", ctx)
 	}
 
