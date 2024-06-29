@@ -79,14 +79,10 @@ public struct BoardgameRecommendationData: Content {
 /// Returned by:
 /// * `GET /api/v3/boardgames`
 public struct BoardgameResponseData: Content {
-	/// How many games are in the result set. If the request included a filter, this value will contain the total number of games that match the filter.
-	var totalGames: Int
-	/// The initial offset into the resultSet array. 0 based.
-	var start: Int
-	/// How many results are to be returned.
-	var limit: Int
 	/// Array of boardgames.
 	var gameArray: [BoardgameData]
+	/// Total games in result set, and the start and limit into the found set. 
+	var paginator: Paginator
 }
 
 /// Used to obtain a list of board games.
@@ -118,6 +114,12 @@ public struct BoardgameData: Content {
 	var yearPublished: String?
 	/// From BGG's API. Usually several paragraphs.
 	var gameDescription: String?
+	/// BGG's 'subdomain' value. Games can have multiple values, but often have none. BGG currently lists 8 subdomains.
+	var gameTypes: [String]
+	/// BGG's 'category' value. Games can have multiple values. BGG currently lists 84 categories.
+	var categories: [String]
+	/// BGG's 'mechanic' value. Games can have multiple values. BGG currently lists 192 mechanics.
+	var mechanics: [String]
 
 	/// From BGG's API.
 	var minPlayers: Int?
@@ -157,6 +159,9 @@ extension BoardgameData {
 		self.gameName = game.gameName
 		self.yearPublished = game.yearPublished
 		self.gameDescription = game.gameDescription
+		self.gameTypes = game.gameTypes
+		self.categories = game.categories
+		self.mechanics = game.mechanisms
 
 		self.minPlayers = game.minPlayers
 		self.maxPlayers = game.maxPlayers

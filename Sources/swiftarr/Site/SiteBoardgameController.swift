@@ -7,6 +7,7 @@ struct GameListContext: Encodable {
 	var trunk: TrunkContext
 	var games: BoardgameResponseData
 	var showingFavorites: Bool
+	var showingExpansions: Bool			// TRUE if on the expansions page
 	var favoriteBtnURL: String
 	var searchText: String
 	var paginator: PaginatorContext
@@ -23,6 +24,7 @@ struct GameListContext: Encodable {
 	init(_ req: Request, games: BoardgameResponseData) throws {
 		trunk = .init(req, title: "Board Games List", tab: .games)
 		self.games = games
+		self.showingExpansions = false
 		searchText = req.query[String.self, at: "search"] ?? ""
 		if req.query[String.self, at: "favorite"]?.lowercased() == "true" {
 			showingFavorites = true
@@ -38,20 +40,11 @@ struct GameListContext: Encodable {
 				favoriteBtnURL.append("&search=\(searchText)")
 			}
 		}
-		paginator = .init(start: games.start, total: games.totalGames, limit: games.limit) { pageIndex in
-			"/boardgames?start=\(pageIndex * games.limit)&limit=\(games.limit)"
+		let limit = games.paginator.limit
+		paginator = .init(games.paginator) { pageIndex in
+			"/boardgames?start=\(pageIndex * limit)&limit=\(limit)"
 		}
 		query = try req.query.decode(QueryOptions.self)
-	}
-}
-
-struct GameExpansionsContext: Encodable {
-	var trunk: TrunkContext
-	var games: [BoardgameData]
-
-	init(_ req: Request, games: [BoardgameData]) throws {
-		trunk = .init(req, title: "Board Games + Expansions", tab: .games)
-		self.games = games
 	}
 }
 
@@ -96,8 +89,10 @@ struct SiteBoardgameController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Missing game ID parameter.")
 		}
 		let response = try await apiQuery(req, endpoint: "/boardgames/expansions/\(gameID)")
-		let games = try response.content.decode([BoardgameData].self)
-		let ctx = try GameExpansionsContext(req, games: games)
+		let games = try response.content.decode(BoardgameResponseData.self)
+		var ctx = try GameListContext(req, games: games)
+		ctx.trunk.title = "Board Games + Expansions"
+		ctx.showingExpansions = true
 		return try await req.view.render("GamesAndSongs/boardgameExpansions", ctx)
 	}
 
@@ -112,8 +107,8 @@ struct SiteBoardgameController: SiteControllerUtils {
 		let game = try response.content.decode(BoardgameData.self)
 		if game.isExpansion {
 			let expansionsResponse = try await apiQuery(req, endpoint: "/boardgames/expansions/\(gameID)")
-			let expansions = try expansionsResponse.content.decode([BoardgameData].self)
-			let basegame = expansions.first(where: { !$0.isExpansion })
+			let expansions = try expansionsResponse.content.decode(BoardgameResponseData.self)
+			let basegame = expansions.gameArray.first(where: { !$0.isExpansion })
 			let ctx = FezCreateUpdatePageContext(req, forGame: game, baseGame: basegame)
 			return try await req.view.render("Fez/fezCreate", ctx)
 		}
@@ -138,7 +133,7 @@ struct SiteBoardgameController: SiteControllerUtils {
 	/// - `complexity=INT`		If nonzero, sorts for games with near this complexity value.
 	func boardgameGuideHandler(_ req: Request) async throws -> View {
 		let queryStruct = try req.query.decode(GameListContext.QueryOptions.self)
-		var games = BoardgameResponseData(totalGames: 0, start: 0, limit: 50, gameArray: [])
+		var games = BoardgameResponseData(gameArray: [], paginator: Paginator(total: 0, start: 0, limit: 50))
 		if let numPlayers = queryStruct.numplayers, let timeToPlay = queryStruct.timetoplay,
 			var maxAge = queryStruct.maxage, let complexity = queryStruct.complexity
 		{

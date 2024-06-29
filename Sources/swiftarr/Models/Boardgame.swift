@@ -28,6 +28,9 @@ final class Boardgame: Model, Searchable {
 	@OptionalField(key: "bggGameName") var bggGameName: String?
 	@OptionalField(key: "yearPublished") var yearPublished: String?
 	@OptionalField(key: "gameDescription") var gameDescription: String?
+	@Field(key: "gameTypes") var gameTypes: [String]
+	@Field(key: "categories") var categories: [String]
+	@Field(key: "mechanisms") var mechanisms: [String]
 
 	@OptionalField(key: "minPlayers") var minPlayers: Int?
 	@OptionalField(key: "maxPlayers") var maxPlayers: Int?
@@ -74,6 +77,9 @@ final class Boardgame: Model, Searchable {
 		self.bggGameName = jsonGame.bggGameName
 		self.yearPublished = jsonGame.yearPublished
 		self.gameDescription = jsonGame.gameDescription
+		self.gameTypes = jsonGame.gameTypes ?? []
+		self.categories = jsonGame.categories ?? []
+		self.mechanisms = jsonGame.mechanisms ?? []
 
 		self.minPlayers = jsonGame.minPlayers
 		self.maxPlayers = jsonGame.maxPlayers
@@ -183,5 +189,23 @@ struct CreateBoardgameSchema: AsyncMigration {
 
 	func revert(on database: Database) async throws {
 		try await database.schema("boardgame").delete()
+	}
+}
+
+struct BoardgameSchemaAdditions1: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("boardgame")
+				.field("gameTypes", .array(of: .string), .required, .sql(.default("{}")))		// Or perhaps '.default("array[]::varchar[]")'
+				.field("categories", .array(of: .string), .required, .sql(.default("{}")))
+				.field("mechanisms", .array(of: .string), .required,  .sql(.default("{}")))
+				.update()
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema("boardgame")
+				.deleteField("gameTypes")
+				.deleteField("categories")
+				.deleteField("mechanisms")
+				.update()
 	}
 }

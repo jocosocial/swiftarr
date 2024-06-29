@@ -60,12 +60,7 @@ struct BoardgameController: APIRouteCollection {
 		async let totalGames = query.copy().count()
 		async let games = query.sort(\.$gameName, .ascending).range(start..<(start + limit)).all()
 		let gamesArray = try await buildBoardgameData(for: user, games: games, on: req.db)
-		return try await BoardgameResponseData(
-			totalGames: totalGames,
-			start: start,
-			limit: limit,
-			gameArray: gamesArray
-		)
+		return try await BoardgameResponseData(gameArray: gamesArray, paginator: Paginator(total: totalGames, start: start, limit: limit))
 	}
 
 	/// `GET /api/v3/boardgames/:boardgameID
@@ -88,7 +83,7 @@ struct BoardgameController: APIRouteCollection {
 	/// - Parameter boardgameID: in URL path
 	/// - Throws: 400 error if the event was not favorited.
 	/// - Returns: An array of `BoardgameData`. First item is the base game, other items are expansions.
-	func getExpansions(_ req: Request) async throws -> [BoardgameData] {
+	func getExpansions(_ req: Request) async throws -> BoardgameResponseData {
 		let user = req.auth.get(UserCacheData.self)
 		let targetGame = try await Boardgame.findFromParameter(boardgameIDParam, on: req) { $0.with(\.$expansions) }
 		let basegameID = try targetGame.$expands.id ?? targetGame.requireID()
@@ -103,7 +98,8 @@ struct BoardgameController: APIRouteCollection {
 			let baseGame = baseGameFirst.remove(at: baseGameIndex)
 			baseGameFirst.insert(baseGame, at: 0)
 		}
-		return try await buildBoardgameData(for: user, games: baseGameFirst, on: req.db)
+		let gamesArray = try await buildBoardgameData(for: user, games: games, on: req.db)
+		return BoardgameResponseData(gameArray: gamesArray, paginator: Paginator(total: gamesArray.count, start: 0, limit: 50))
 	}
 
 	/// `POST /api/v3/boardgames/:boardgameID/favorite`
@@ -204,7 +200,7 @@ struct BoardgameController: APIRouteCollection {
 		let orderedPageOfGames = orderedGames.enumerated()
 			.compactMap { (start...(start + limit)).contains($0.0) ? $0.1.game : nil }
 		let gamesArray = try await buildBoardgameData(for: user, games: orderedPageOfGames, on: req.db)
-		return BoardgameResponseData(totalGames: orderedGames.count, start: start, limit: limit, gameArray: gamesArray)
+		return BoardgameResponseData(gameArray: gamesArray, paginator: Paginator(total: orderedGames.count, start: start, limit: limit))
 	}
 
 	/// `POST /api/v3/boardgames/reload`

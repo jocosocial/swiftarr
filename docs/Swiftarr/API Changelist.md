@@ -155,3 +155,8 @@ New Micro Karaoke feature. API changes include:
 
 ## Jun 25, 2024
 * `PostSearchData` now uses `Paginator` to report pagination data--previously the same data was reported via top-level ints.
+
+## Jun 28, 2024
+* `BoardgameData` has new fields: gameTypes, categories, and mechanics.
+* `BoardgameResponseData` now uses a standard paginator instead of top-level total, start, and limit fields.
+* `/api/v3/boardgames/expansions/:boardgameID` now returns a `BoardgameResponseData` instead of an array of `BoardgameData`

@@ -1,0 +1,122 @@
+<div class="container-fluid">
+	<div class="row">	
+		<div class="col">
+			<b>#(game.gameName)</b>
+		</div>
+		<div class="col col-auto">
+			#(game.yearPublished)
+		</div>
+	</div>
+	<div class="row">
+		<div class="col">
+			#if(game.minPlayers && game.maxPlayers):
+				#if(game.minPlayers < game.maxPlayers):
+					#(game.minPlayers)-#(game.maxPlayers) players
+				#else:
+					#(game.minPlayers) players
+				#endif
+			#endif
+		</div>
+		<div class="col col-auto">
+			#if(game.minPlayingTime && game.maxPlayingTime):
+				#if(game.minPlayingTime < game.maxPlayingTime):
+					#(game.minPlayingTime)-#(game.maxPlayingTime) minutes to play
+				#else:
+					#(game.minPlayingTime) minutes to play
+				#endif
+			#endif
+		</div>
+	</div>
+	<div class="collapse" data-label="actionbar">	
+		<div class="row">
+			<div class="col">
+				#if(game.avgRating && game.avgRating > 0):Rating: #gameRating(game.avgRating)#endif
+			</div>
+			<div class="col col-auto">
+				#if(game.complexity && game.complexitiy != 0):Complexity (1-5): #gameRating(game.complexity)#endif
+			</div>
+		</div>
+		<div class="row justify-content-center">
+			<div class="col col-auto btn-group btn-group-sm">
+				#if(trunk.userIsLoggedIn):
+					<input type="checkbox" class="btn-check" autocomplete="off" data-action="favorite" 
+							data-actionpath="/boardgames/#(game.gameID)/favorite"
+							data-istoggle="true"
+							data-errordiv="#(game.gameID)_errorDisplay"
+							id="#(game.gameID)_favorite"
+							#if(game.isFavorite):checked#endif>
+					<label class="btn btn-outline-primary" for="#(game.gameID)_favorite">
+						Favorite
+						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+						<span class="visually-hidden">Loading...</span>
+					</label>
+					<a class="btn btn-outline-primary" href="/boardgames/#(game.gameID)/createfez">Create LFG</a>
+				#endif
+				#if((game.isExpansion || game.hasExpansions) && !showingExpansions):
+					<a class="btn btn-outline-primary" href="/boardgames/#(game.gameID)/expansions">Show Expansions</a>
+				#endif
+			</div>
+		</div>
+		<div class="row">
+			<div class="col text-end text-danger d-none" id="#(game.gameID)_errorDisplay">
+				Could not set favorite on game: <span class="errortext"></span>
+			</div>
+		</div>
+		<div class="row mt-2">
+			<div class="col">
+				#if(game.gameDescription):
+					#unsafeHTML(game.gameDescription)
+				#endif										
+			</div>
+		</div>
+		#if(count(game.gameTypes) > 0):
+			<div class="row mt-2">
+				<div class="col">
+					<b>Game Types</b>
+				</div>
+			</div>
+			<div class="row mt-2">
+				#for(gameType in game.gameTypes):
+					<div class="ms-3 col col-12">
+						#(gameType)
+					</div>
+				#endfor
+			</div>
+		#endif
+		#if(count(game.categories) > 0):
+			<div class="row mt-2">
+				<div class="col col-12">
+					<b>Categories</b>
+				</div>
+			</div>
+			<div class="row mt-2">
+				#for(cat in game.categories):
+					<div class="ms-3 col col-12">
+						#(cat)
+					</div>
+				#endfor
+			</div>
+		#endif
+		#if(count(game.mechanics) > 0):
+			<div class="row mt-2">
+				<div class="col col-12">
+					<b>Mechanics</b>
+				</div>
+			</div>
+			<div class="row mt-2">
+				#for(mech in game.mechanics):
+					<div class="ms-3 col col-12">
+						#(mech)
+					</div>
+				#endfor
+			</div>
+		#endif
+		#if(game.donatedBy):
+			<div class="row mt-2">
+				<div class="col text-muted">
+					Donated by: #(game.donatedBy)
+				</div>
+			</div>
+		#endif											
+	</div>
+</div>

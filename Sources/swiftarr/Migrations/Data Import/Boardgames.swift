@@ -74,10 +74,13 @@ struct ImportBoardgames: AsyncMigration {
 /// Similar to the structure of the Model object (Boardgame) and the Data Transfer Sruct (BoardgameData), but this
 /// struct is specifically for migration.
 struct JsonGamesListGame: Codable {
-	var gameName: String
-	var bggGameName: String?
-	var yearPublished: String?
-	var gameDescription: String?
+	var gameName: String				// JoCo Games list name for the game
+	var bggGameName: String?			// In BGG's XML responses: <name primary="true">
+	var yearPublished: String?			// <yearpublished>
+	var gameDescription: String?		// <description>
+	var gameTypes: [String]?			// <boardgamesubdomain>
+	var categories: [String]?			// <boardgamecategory>	
+	var mechanisms: [String]?			// <boardgamemechanic>
 
 	var minPlayers: Int?
 	var maxPlayers: Int?
