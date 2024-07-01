@@ -54,6 +54,9 @@ final class Event: Model, Searchable {
 	/// The users that have favorited this event.
 	@Siblings(through: EventFavorite.self, from: \.$event, to: \.$user) var favorites: [User]
 
+	/// The organizers or performers for the event
+	@Siblings(through: EventPerformer.self, from: \.$event, to: \.$performer) var events: [Performer]
+	
 	// MARK: Initialization
 
 	// Used by Fluent

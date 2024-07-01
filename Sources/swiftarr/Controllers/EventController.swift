@@ -219,7 +219,61 @@ struct EventController: APIRouteCollection {
 			.filter(EventFavorite.self, \.$user.$id == user.userID).sort(\.$startTime, .ascending).all()
 		return try events.map { try EventData($0, isFavorite: true) }
 	}
+	
+	/// `GET /api/v3/events/performers/official`
+	///
+	///
+	///
+	///	* `?start=INT` - Offset from start of results set
+	/// * `?limit=INT` - the maximum number of games to retrieve: 1-200, default is 50.
+	func getOfficialPerformers(_ req: Request) async throws -> PerformerResponseData {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let start = req.query[Int.self, at: "start"] ?? 0
+		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+		let query = Performer.query(on: req.db).filter(\.$officialPerformer == true)
+		let performerCount = try await query.count()
+		let performers = try await query.copy().range(start..<(start+limit)).all()
+		let performerDataArray = try performers.map { try PerformerHeaderData($0, includeEvents: true) }
+		return PerformerResponseData(performers: performerDataArray, paginator: Paginator(total: performerCount, start: start, limit: limit))
+	}
 
 	// MARK: Utilities
 
+}
+
+public struct PerformerResponseData: Content {
+	var performers: [PerformerHeaderData]
+	var paginator: Paginator
+}
+
+public struct PerformerHeaderData: Content {
+	var id: UUID
+	var name: String
+	var bio: String?
+	var photo: String?
+	var isOfficialPerformer: Bool
+	
+	/// Website? Title? 
+	
+	
+	/// Will be nil if returned from a call that primarily asked for `Event`s, as `Event`s and `Performer`s each have lists of each other.
+	var events: [EventData]?
+}
+
+extension PerformerHeaderData {
+	init(_ performer: Performer, includeEvents: Bool) throws {
+		id = try performer.requireID()
+		name = performer.name
+		bio = performer.bio
+		photo = performer.photo
+		isOfficialPerformer = performer.officialPerformer
+		if includeEvents {
+			var eventArray = [EventData]()
+			for event in performer.events {
+			// TODO: favorites
+				try eventArray.append(EventData(event, isFavorite: false))
+			}
+			self.events = eventArray
+		}
+	}
 }
