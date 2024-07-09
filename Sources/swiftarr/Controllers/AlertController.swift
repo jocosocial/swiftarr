@@ -229,7 +229,6 @@ struct AlertController: APIRouteCollection {
 			_ = ws.close()
 			return
 		}
-
 		let userSocket = UserSocket(userID: user.userID, socket: ws)
 		req.webSocketStore.storeSocket(userSocket)
 		req.logger.log(level: .info, "Created notification socket for user \(user.username)")
