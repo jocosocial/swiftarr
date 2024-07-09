@@ -236,23 +236,17 @@ struct AlertController: APIRouteCollection {
 		ws.onClose.whenComplete { result in
 			req.webSocketStore.removeSocket(userSocket)
 		}
-
 		
 		ws.eventLoop.execute {
-			// ws.onText { ws, text in
-			// 	Task {
-			// 		req.logger.log(level: .info, "Got message: \(text)")
-			// 	}
-			// }
 			ws.onText { ws, text in 
 				Task {
-					req.logger.log(level: .info, "NotificationSocket has received something from the client.")
-					guard let socketEvent = try? JSONDecoder().decode(SocketNotificationData.self, from: text) else {
+					req.logger.log(level: .debug, "NotificationSocket has received something from the client.")
+					guard let data = text.data(using: .utf8), let socketEvent = try? JSONDecoder().decode(SocketNotificationData.self, from: data) else {
 						req.logger.log(level: .error, "Error decoding socket event from a client.")
 						return
 					}
 					if socketEvent.type == .ping {
-                		let response = SocketNotificationData(type: .pong, info: "pong", contentID: socketEvent.contentID)
+						let response = SocketNotificationData(type: .pong, info: "pong", contentID: socketEvent.contentID)
 						guard let responseData = try? JSONEncoder().encode(response) else {
 							req.logger.log(level: .error, "Error encoding socket pong response.")
 							return
