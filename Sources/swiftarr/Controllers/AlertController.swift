@@ -222,8 +222,8 @@ struct AlertController: APIRouteCollection {
 	/// Creates a notification socket for the user. The client of this socket will receive `SocketNotificationData` updates,
 	/// generally when an event happens that would change a value in the user's `UserNotificationData` struct.
 	///
-	/// This socket only sends `SocketNotificationData` messages from the server to the client; there are no client-initiated
-	/// messages defined for this socket.
+	/// This socket typically sends `SocketNotificationData` messages from the server to the client.
+	/// The NotificationTypeData of .ping is intended to be sent from client to server.
 	func createNotificationSocket(_ req: Request, _ ws: WebSocket) {
 		guard let user = try? req.auth.require(UserCacheData.self) else {
 			_ = ws.close()
@@ -241,13 +241,13 @@ struct AlertController: APIRouteCollection {
 				Task {
 					req.logger.log(level: .debug, "NotificationSocket has received something from the client.")
 					guard let data = text.data(using: .utf8), let socketEvent = try? JSONDecoder().decode(SocketNotificationData.self, from: data) else {
-						req.logger.log(level: .error, "Error decoding socket event from a client.")
+						req.logger.log(level: .warning, "Error decoding socket event from a client.")
 						return
 					}
 					if socketEvent.type == .ping {
 						let response = SocketNotificationData(type: .pong, info: "pong", contentID: socketEvent.contentID)
 						guard let responseData = try? JSONEncoder().encode(response) else {
-							req.logger.log(level: .error, "Error encoding socket pong response.")
+							req.logger.log(level: .warning, "Error encoding socket pong response.")
 							return
 						}
 						ws.send([UInt8](responseData))
