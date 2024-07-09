@@ -105,6 +105,10 @@ struct SocketNotificationData: Content {
 		case joinedLFGStarting
 		/// A Micro Karaoke song the user contributed to is ready for viewing. .
 		case microKaraokeSongReady
+		/// A ping from the client to the server.
+		case ping
+		/// A pong from the server to the client.
+		case pong
 	}
 	/// The type of event that happened. See `SocketNotificationData.NotificationTypeData` for values.
 	var type: NotificationTypeData

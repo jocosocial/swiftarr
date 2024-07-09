@@ -229,11 +229,38 @@ struct AlertController: APIRouteCollection {
 			_ = ws.close()
 			return
 		}
+
 		let userSocket = UserSocket(userID: user.userID, socket: ws)
 		req.webSocketStore.storeSocket(userSocket)
 		req.logger.log(level: .info, "Created notification socket for user \(user.username)")
 		ws.onClose.whenComplete { result in
 			req.webSocketStore.removeSocket(userSocket)
+		}
+
+		
+		ws.eventLoop.execute {
+			// ws.onText { ws, text in
+			// 	Task {
+			// 		req.logger.log(level: .info, "Got message: \(text)")
+			// 	}
+			// }
+			ws.onText { ws, text in 
+				Task {
+					req.logger.log(level: .info, "NotificationSocket has received something from the client.")
+					guard let socketEvent = try? JSONDecoder().decode(SocketNotificationData.self, from: text) else {
+						req.logger.log(level: .error, "Error decoding socket event from a client.")
+						return
+					}
+					if socketEvent.type == .ping {
+                		let response = SocketNotificationData(type: .pong, info: "pong", contentID: socketEvent.contentID)
+						guard let responseData = try? JSONEncoder().encode(response) else {
+							req.logger.log(level: .error, "Error encoding socket pong response.")
+							return
+						}
+						ws.send([UInt8](responseData))
+					}
+				}
+			}
 		}
 	}
 
