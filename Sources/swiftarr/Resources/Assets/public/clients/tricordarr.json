@@ -1,0 +1,14 @@
+{
+    "apiVersion": "v1",
+    "kind": "SwiftarrClientConfig",
+    "metadata": {
+        "name": "tricordarr"
+    },
+    "spec": {
+        "latestVersion": "2024.1.2",
+        "oobeVersion": 2,
+        "cruiseStartDate": "2024-03-09",
+        "cruiseLength": "8",
+        "portTimeZoneID": "America/New_York"
+    }
+}
