@@ -15,12 +15,12 @@ if [ "${AUTO_MIGRATE}" = true ]; then
   psql -P pager=off -c "SELECT * FROM public.user LIMIT 1;" > /dev/null
 
   if [ $? != 0 ]; then
-    echo "Database not initialized. Running migration..."
-    # Papa Bless - https://theswiftdev.com/server-side-swift-projects-inside-docker-using-vapor-4/
-    /app/swiftarr migrate --yes --env "${ENVIRONMENT}"
+    echo "Database not initialized. Running initial migration..."
   else
-    echo "Database already initialized."
+    echo "Database already initialized. Running subsequent migration..."
   fi
+  # Papa Bless - https://theswiftdev.com/server-side-swift-projects-inside-docker-using-vapor-4/
+  /app/swiftarr migrate --yes --env "${ENVIRONMENT}"
 else
   echo "Automatic database migration was disabled."
 fi
