@@ -74,7 +74,7 @@ struct SocketFezMemberChangeData: Content {
 /// Each notification is delivered as a JSON string, containing a type of announcement and a string appropriate for displaying to the user.
 /// The string will be of the form, "User @authorName wrote a forum post that mentioned you."
 struct SocketNotificationData: Content {
-	enum NotificationTypeData: Content {
+	enum NotificationTypeData: String, Content {
 		/// A server-wide announcement has just been added.
 		case announcement
 		/// A participant in a Fez the user is a member of has posted a new message.
@@ -105,6 +105,10 @@ struct SocketNotificationData: Content {
 		case joinedLFGStarting
 		/// A Micro Karaoke song the user contributed to is ready for viewing. .
 		case microKaraokeSongReady
+		/// A ping request, from the client to the server.
+		case ping
+		/// A response to a ping, from the server to the client.
+		case pong
 	}
 	/// The type of event that happened. See `SocketNotificationData.NotificationTypeData` for values.
 	var type: NotificationTypeData
