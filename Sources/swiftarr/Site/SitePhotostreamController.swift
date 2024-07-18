@@ -60,7 +60,7 @@ struct SitePhotostreamController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Missing photostream_ID parameter.")
 		}
 		let report = try req.content.decode(ReportData.self)
-		try await apiQuery(req, endpoint: "/photostream/report/\(photostreamID)", method: .POST, encodeContent: report)
+		try await apiQuery(req, endpoint: "/photostream/\(photostreamID)/report", method: .POST, encodeContent: report)
 		return .created
 	}
 }
