@@ -65,6 +65,7 @@ custom_categories:
     - MicroKaraokeController
     - ModerationController
     - PhonecallController
+    - PhotostreamController
     - TestController
     - TwitarrController
     - UserController
