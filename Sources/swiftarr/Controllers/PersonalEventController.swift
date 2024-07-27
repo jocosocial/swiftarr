@@ -17,6 +17,7 @@ struct PersonalEventController: APIRouteCollection {
 		// Endpoints available only when logged in.
 		let tokenAuthGroup = personalEventRoutes.tokenRoutes(feature: .personalevents)
 		tokenAuthGroup.get(use: personalEventsHandler)
+
 		tokenAuthGroup.post("create", use: personalEventCreateHandler)
 		tokenAuthGroup.get(personalEventIDParam, use: personalEventHandler)
 		tokenAuthGroup.post(personalEventIDParam, use: personalEventUpdateHandler)
@@ -26,6 +27,8 @@ struct PersonalEventController: APIRouteCollection {
 
 		tokenAuthGroup.post(personalEventIDParam, "user", userIDParam, "remove", use: personalEventUserRemoveHandler)
 		tokenAuthGroup.delete(personalEventIDParam, "user", userIDParam, use: personalEventUserRemoveHandler)
+
+		tokenAuthGroup.post(personalEventIDParam, "report", use: personalEventReportHandler)
 	}
 
 	// MARK: - tokenAuthGroup Handlers (logged in)
@@ -82,24 +85,25 @@ struct PersonalEventController: APIRouteCollection {
 			}
 		}
 		let events = try await query.all()
-        return try await buildPersonalEventDataList(events, on: req)
+		return try await buildPersonalEventDataList(events, on: req)
 	}
 
 	/// `POST /api/v3/personalevents/create`
-	/// 
+	///
 	/// Create a new PersonalEvent.
-	/// 
+	///
 	/// - Parameter requestBody: `PersonalEventContentData` payload in the HTTP body.
 	/// - Throws: 400 error if the supplied data does not validate.
 	/// - Returns: 201 Created; `PersonalEventData` containing the newly created event.
 	func personalEventCreateHandler(_ req: Request) async throws -> Response {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let data: PersonalEventContentData = try ValidatingJSONDecoder().decode(PersonalEventContentData.self, fromBodyOf: req)
+		let data: PersonalEventContentData = try ValidatingJSONDecoder()
+			.decode(PersonalEventContentData.self, fromBodyOf: req)
 
 		let favorites = try await UserFavorite.query(on: req.db).filter(\.$favorite.$id == cacheUser.userID).all()
 		let favoritesUserIDs = try favorites.map({ try $0.user.requireID() })
-		try data.participants.forEach { userID in 
-			if (!favoritesUserIDs.contains(userID)) {
+		try data.participants.forEach { userID in
+			if !favoritesUserIDs.contains(userID) {
 				throw Abort(.forbidden, reason: "Cannot have a participant who has not favorited you.")
 			}
 		}
@@ -118,8 +122,11 @@ struct PersonalEventController: APIRouteCollection {
 	}
 
 	/// `GET /api/v3/personalevents/:eventID`
-	/// 
+	///
 	/// Get a single `PersonalEvent`.
+	///
+	/// - Throws: 403 error if you're not allowed.
+	/// - Returns: `PersonalEventData` containing the event.
 	func personalEventHandler(_ req: Request) async throws -> PersonalEventData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let personalEvent = try await PersonalEvent.findFromParameter(personalEventIDParam, on: req)
@@ -130,23 +137,24 @@ struct PersonalEventController: APIRouteCollection {
 	}
 
 	/// `POST /api/v3/personalevents/:eventID`
-	/// 
+	///
 	/// Updates an existing `PersonalEvent`.
 	/// Note: All fields in the supplied `PersonalEventContentData` must be filled, just as if the event
-	/// were being created from scratch. 
-	/// 
+	/// were being created from scratch.
+	///
 	/// - Parameter requestBody: `PersonalEventContentData` payload in the HTTP body.
 	/// - Throws: 400 error if the supplied data does not validate.
 	/// - Returns: `PersonalEventData` containing the updated event.
 	func personalEventUpdateHandler(_ req: Request) async throws -> PersonalEventData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let personalEvent = try await PersonalEvent.findFromParameter(personalEventIDParam, on: req)
-		let data: PersonalEventContentData = try ValidatingJSONDecoder().decode(PersonalEventContentData.self, fromBodyOf: req)
+		let data: PersonalEventContentData = try ValidatingJSONDecoder()
+			.decode(PersonalEventContentData.self, fromBodyOf: req)
 
 		let favorites = try await UserFavorite.query(on: req.db).filter(\.$favorite.$id == cacheUser.userID).all()
-		let favoritesUserIDs = try favorites.map({ try $0.user.requireID() })
-		try data.participants.forEach { userID in 
-			if (!favoritesUserIDs.contains(userID)) {
+		let favoritesUserIDs = favorites.map { $0.$user.id }
+		try data.participants.forEach { userID in
+			if !favoritesUserIDs.contains(userID) {
 				throw Abort(.forbidden, reason: "Cannot have a participant who has not favorited you.")
 			}
 		}
@@ -161,6 +169,7 @@ struct PersonalEventController: APIRouteCollection {
 
 		// @TODO generate socket notifications for participants
 		// @TODO add next private event to UND
+		// @TODO generate notifications for newly added participants
 
 		return try buildPersonalEventData(personalEvent, on: req)
 
@@ -168,9 +177,9 @@ struct PersonalEventController: APIRouteCollection {
 
 	/// `POST /api/v3/personalevents/:eventID/delete`
 	/// `DELETE /api/v3/personalevents/:eventID`
-	/// 
+	///
 	/// Deletes the given `PersonalEvent`.
-	/// 
+	///
 	/// - Parameter eventID: in URL path.
 	/// - Throws: 403 error if the user is not permitted to delete.
 	/// - Returns: 204 No Content on success.
@@ -187,10 +196,10 @@ struct PersonalEventController: APIRouteCollection {
 
 	/// `POST /api/v3/personalevents/:eventID/user/:userID/delete`
 	/// `DELETE /api/v3/personalevents/:eventID/user/:userID`
-	/// 
+	///
 	/// Removes a `User` from the `PersonalEvent`.
 	/// Intended to be called by the `User` if they do not want to see this event.
-	/// 
+	///
 	/// - Parameter eventID: in URL path.
 	/// - Parameter userID: in the URL path.
 	/// - Throws: 403 error if the user is not permitted to delete.
@@ -199,12 +208,34 @@ struct PersonalEventController: APIRouteCollection {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let personalEvent = try await PersonalEvent.findFromParameter(personalEventIDParam, on: req)
 		let removeUser = try await User.findFromParameter(userIDParam, on: req)
-		guard personalEvent.participantArray.contains(cacheUser.userID) || cacheUser.accessLevel.hasAccess(.moderator) else {
+		guard
+			personalEvent.$owner.id == cacheUser.userID || personalEvent.participantArray.contains(cacheUser.userID)
+				|| cacheUser.accessLevel.hasAccess(.moderator)
+		else {
 			throw Abort(.forbidden, reason: "You cannot access this personal event.")
 		}
 		personalEvent.participantArray.removeAll { $0 == removeUser.id }
 		try await personalEvent.save(on: req.db)
+		try await personalEvent.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: req)
 		return .noContent
+	}
+
+	/// `POST /api/v3/personalevents/:eventID/report`
+	///
+	/// Creates a `Report` regarding the specified `PersonalEvent`.
+	///
+	/// - Note: The accompanying report message is optional on the part of the submitting user,
+	///   but the `ReportData` is mandatory in order to allow one. If there is no message,
+	///   send an empty string in the `.message` field.
+	///
+	/// - Parameter eventID: in URL path, the PersonalEvent ID to report.
+	/// - Parameter requestBody: `ReportData`
+	/// - Returns: 201 Created on success.
+	func personalEventReportHandler(_ req: Request) async throws -> HTTPStatus {
+		let submitter = try req.auth.require(UserCacheData.self)
+		let data = try req.content.decode(ReportData.self)
+		let reportedEvent = try await PersonalEvent.findFromParameter(personalEventIDParam, on: req)
+		return try await reportedEvent.fileReport(submitter: submitter, submitterMessage: data.message, on: req)
 	}
 }
 
