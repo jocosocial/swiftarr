@@ -47,6 +47,7 @@ public enum SwiftarrFeature: String, Content, CaseIterable {
 	case phone				// User-to-user VOIP, voice data passes through server
 	case directphone		// Also User-to-user VOIP, voice data goes directly phone to phone.
 	case photostream		// Photos taken on the ship. Web UI cannot have photo upload, for THO reasons. 
+	case personalevents     // Personal event schedule
 	
 	case all
 

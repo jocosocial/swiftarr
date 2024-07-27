@@ -2144,3 +2144,37 @@ public struct HealthResponse: Content {
 	var reason: String = "OK"
 	var error: Bool = false
 }
+
+// MARK: Personal Events
+///
+/// Used to return a `PersonalEvent`'s data.
+public struct PersonalEventData: Content {
+	var personalEventID: UUID
+	var title: String
+	var description: String
+	var startTime: Date
+	var endTime: Date
+	var timeZone: String
+	var timeZoneID: String
+	var location: String
+	var lastUpdateTime: Date
+	var owner: UserHeader
+	var participants: [UserHeader]
+}
+
+extension PersonalEventData {
+	init(_ personalEvent: PersonalEvent, ownerHeader: UserHeader, participantHeaders: [UserHeader]) throws {
+		let timeZoneChanges = Settings.shared.timeZoneChanges
+		self.personalEventID = try personalEvent.requireID()
+		self.title = personalEvent.title
+		self.description = personalEvent.description
+		self.startTime = timeZoneChanges.portTimeToDisplayTime(personalEvent.startTime)
+		self.endTime = timeZoneChanges.portTimeToDisplayTime(personalEvent.endTime)
+		self.timeZone = timeZoneChanges.abbrevAtTime(self.startTime)
+		self.timeZoneID = timeZoneChanges.tzAtTime(self.startTime).identifier
+		self.location = personalEvent.location
+		self.lastUpdateTime = personalEvent.updatedAt ?? Date()
+		self.owner = ownerHeader
+		self.participants = participantHeaders
+	}
+}

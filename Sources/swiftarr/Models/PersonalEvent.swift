@@ -44,8 +44,7 @@ final class PersonalEvent: Model, Searchable {
 
     // MARK: Relations
 
-    /// The `Us
-    /// er` that created this `PersonalEvent`.
+    /// The `User` that created this `PersonalEvent`.
 	@Parent(key: "owner") var owner: User
  
     // MARK: Initialization
