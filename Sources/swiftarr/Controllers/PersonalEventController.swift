@@ -23,6 +23,9 @@ struct PersonalEventController: APIRouteCollection {
 		tokenAuthGroup.post(personalEventIDParam, "update", use: personalEventUpdateHandler)
 		tokenAuthGroup.post(personalEventIDParam, "delete", use: personalEventDeleteHandler)
 		tokenAuthGroup.delete(personalEventIDParam, use: personalEventDeleteHandler)
+
+		tokenAuthGroup.post(personalEventIDParam, "user", userIDParam, "remove", use: personalEventUserRemoveHandler)
+		tokenAuthGroup.delete(personalEventIDParam, "user", userIDParam, use: personalEventUserRemoveHandler)
 	}
 
 	// MARK: - tokenAuthGroup Handlers (logged in)
@@ -179,6 +182,28 @@ struct PersonalEventController: APIRouteCollection {
 		// @TODO send socket notifications
 		// @TODO add next private event to UND
 		try await personalEvent.delete(on: req.db)
+		return .noContent
+	}
+
+	/// `POST /api/v3/personalevents/:eventID/user/:userID/delete`
+	/// `DELETE /api/v3/personalevents/:eventID/user/:userID`
+	/// 
+	/// Removes a `User` from the `PersonalEvent`.
+	/// Intended to be called by the `User` if they do not want to see this event.
+	/// 
+	/// - Parameter eventID: in URL path.
+	/// - Parameter userID: in the URL path.
+	/// - Throws: 403 error if the user is not permitted to delete.
+	/// - Returns: 204 No Content on success.
+	func personalEventUserRemoveHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let personalEvent = try await PersonalEvent.findFromParameter(personalEventIDParam, on: req)
+		let removeUser = try await User.findFromParameter(userIDParam, on: req)
+		guard personalEvent.participantArray.contains(cacheUser.userID) || cacheUser.accessLevel.hasAccess(.moderator) else {
+			throw Abort(.forbidden, reason: "You cannot access this personal event.")
+		}
+		personalEvent.participantArray.removeAll { $0 == removeUser.id }
+		try await personalEvent.save(on: req.db)
 		return .noContent
 	}
 }
