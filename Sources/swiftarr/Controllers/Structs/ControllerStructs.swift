@@ -2151,12 +2151,12 @@ public struct HealthResponse: Content {
 public struct PersonalEventData: Content {
 	var personalEventID: UUID
 	var title: String
-	var description: String
+	var description: String?
 	var startTime: Date
 	var endTime: Date
 	var timeZone: String
 	var timeZoneID: String
-	var location: String
+	var location: String?
 	var lastUpdateTime: Date
 	var owner: UserHeader
 	var participants: [UserHeader]
@@ -2176,5 +2176,35 @@ extension PersonalEventData {
 		self.lastUpdateTime = personalEvent.updatedAt ?? Date()
 		self.owner = ownerHeader
 		self.participants = participantHeaders
+	}
+}
+
+public struct PersonalEventContentData: Content {
+	/// The title for the PersonalEvent.
+	var title: String
+	/// A description of the PersonalEvent.
+	var description: String?
+	/// The starting time for the PersonalEvent.
+	var startTime: Date
+	/// The ending time for the PersonalEvent.
+	var endTime: Date
+	/// The location for the PersonalEvent.
+	var location: String?
+	/// Users to invite to this PersonalEvent.
+	var participants: [UUID]
+}
+
+extension PersonalEventContentData: RCFValidatable {
+	func runValidations(using decoder: ValidatingDecoder) throws {
+		let tester = try decoder.validator(keyedBy: CodingKeys.self)
+		tester.validate(title.count >= 2, forKey: .title, or: "title field has a 2 character minimum")
+		tester.validate(title.count <= 100, forKey: .title, or: "title field has a 100 character limit")
+		// tester.validate(
+		// @TODO ok to be nil
+		// 	description.count <= 2048,
+		// 	forKey: .description,
+		// 	or: "description field length of \(description.count) is over the 2048 character limit"
+		// )
+		// TODO: validations for startTime and endTime
 	}
 }

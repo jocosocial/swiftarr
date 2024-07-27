@@ -17,6 +17,9 @@ struct PersonalEventController: APIRouteCollection {
 		// Endpoints available only when logged in.
 		let tokenAuthGroup = personalEventRoutes.tokenRoutes(feature: .personalevents)
 		tokenAuthGroup.get(use: personalEventsHandler)
+		tokenAuthGroup.post("create", use: personalEventCreateHandler)
+		tokenAuthGroup.post(personalEventIDParam, "delete", use: personalEventDeleteHandler)
+		tokenAuthGroup.delete(personalEventIDParam, use: personalEventDeleteHandler)
 	}
 
 	// MARK: - tokenAuthGroup Handlers (logged in)
@@ -51,7 +54,7 @@ struct PersonalEventController: APIRouteCollection {
 			var joined: Bool?
 		}
 		let options = try req.query.decode(QueryOptions.self)
-		let particpantArrayFieldName = SQLIdentifier(PersonalEvent().$participantArray.key.description)
+		let particpantArrayFieldName = PersonalEvent().$participantArray.key.description
 
 		let query = PersonalEvent.query(on: req.db).sort(\.$startTime, .ascending)
 		if let _ = options.owned {
@@ -60,30 +63,80 @@ struct PersonalEventController: APIRouteCollection {
 		}
 		else if let _ = options.joined {
 			req.logger.log(level: .debug, "Joined only")
-			query.filter(.sql(unsafeRaw: "\(cacheUser.userID) = ANY(\(particpantArrayFieldName))"))
+			query.filter(.sql(unsafeRaw: "\(cacheUser.userID) = ANY(\"\(particpantArrayFieldName)\")"))
 		}
 		else {
 			req.logger.log(level: .debug, "Owner and Joined")
 			query.group(.or) { group in
 				group.filter(\.$owner.$id == cacheUser.userID)
-				group.filter(.sql(unsafeRaw: "\(cacheUser.userID) = ANY(\(particpantArrayFieldName))"))
+				group.filter(.sql(unsafeRaw: "'\(cacheUser.userID)' = ANY(\"\(particpantArrayFieldName)\")"))
 			}
 		}
 		let events = try await query.all()
         return try await buildPersonalEventDataList(events, on: req)
 	}
+
+	/// `POST /api/v3/personalevents/create`
+	/// 
+	/// Create a new PersonalEvent.
+	/// 
+	/// - Parameter requestBody: `FezContentData` payload in the HTTP body.
+	/// - Throws: 400 error if the supplied data does not validate.
+	/// - Returns: 201 Created; `FezData` containing the newly created fez.
+	func personalEventCreateHandler(_ req: Request) async throws -> Response {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let data: PersonalEventContentData = try ValidatingJSONDecoder().decode(PersonalEventContentData.self, fromBodyOf: req)
+
+		let favorites = try await UserFavorite.query(on: req.db).filter(\.$favorite.$id == cacheUser.userID).all()
+		let favoritesUserIDs = try favorites.map({ try $0.user.requireID() })
+		try data.participants.forEach { userID in 
+			if (!favoritesUserIDs.contains(userID)) {
+				throw Abort(.forbidden, reason: "Cannot have a participant who has not favorited you.")
+			}
+		}
+
+		let personalEvent = PersonalEvent(data, cacheOwner: cacheUser)
+		try await personalEvent.save(on: req.db)
+		let personalEventData = try buildPersonalEventData(personalEvent, on: req)
+
+		// Return with 201 status
+		let response = Response(status: .created)
+		try response.content.encode(personalEventData)
+		return response
+	}
+
+	/// `POST /api/v3/personalevents/:eventID/delete`
+	/// `DELETE /api/v3/personalevents/:eventID`
+	/// 
+	/// Deletes the given `PersonalEvent`.
+	/// 
+	/// - Parameter eventID: in URL path.
+	/// - Throws: 403 error if the user is not permitted to delete.
+	/// - Returns: 204 No Content on success.
+	func personalEventDeleteHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let personalEvent = try await PersonalEvent.findFromParameter(personalEventIDParam, on: req)
+		try cacheUser.guardCanModifyContent(personalEvent)
+		// try await fez.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
+		try await personalEvent.delete(on: req.db)
+		return .noContent
+	}
 }
 
 // MARK: Utility Functions
 extension PersonalEventController {
+	/// Builds a `PersonalEventData` from a `PersonalEvent`.
+	func buildPersonalEventData(_ personalEvent: PersonalEvent, on: Request) throws -> PersonalEventData {
+		let ownerHeader = try on.userCache.getHeader(personalEvent.$owner.id)
+		let participantHeaders = on.userCache.getHeaders(personalEvent.participantArray)
+		return try PersonalEventData(personalEvent, ownerHeader: ownerHeader, participantHeaders: participantHeaders)
+	}
+
 	/// Builds an array of `PersonalEventData` from the given `PersonalEvent`s.
 	func buildPersonalEventDataList(_ personalEvents: [PersonalEvent], on: Request) async throws -> [PersonalEventData]
 	{
-		let returnListData = try personalEvents.map { event in
-			let ownerHeader = try on.userCache.getHeader(event.$owner.id)
-            let participantHeaders = on.userCache.getHeaders(event.participantArray)
-			return try PersonalEventData(event, ownerHeader: ownerHeader, participantHeaders: participantHeaders)
+		return try personalEvents.map { event in
+			try buildPersonalEventData(event, on: on)
 		}
-        return returnListData
 	}
 }

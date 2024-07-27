@@ -15,16 +15,16 @@ final class PersonalEvent: Model, Searchable {
 	@Field(key: "title") var title: String
  
     /// A description of the event.
-	@Field(key: "description") var description: String
+	@Field(key: "description") var description: String?
  
     /// The start time of the event.
-	@Field(key: "startTime") var startTime: Date
+	@Field(key: "start_time") var startTime: Date
  
     /// The end time of the event.
-	@Field(key: "endTime") var endTime: Date
+	@Field(key: "end_time") var endTime: Date
 
     /// The location of the event.
-	@Field(key: "location") var location: String
+	@Field(key: "location") var location: String?
 
     /// An ordered list of participants in the event. Newly joined members are
     // appended to the array, meaning this array stays sorted by join time.
@@ -62,10 +62,10 @@ final class PersonalEvent: Model, Searchable {
 	///   - owner: The ID of the owning user.
 	init(
 		title: String,
-		description: String,
+		description: String?,
         startTime: Date,
 		endTime: Date,
-		location: String,
+		location: String?,
         owner: UUID
 	) {
 		self.startTime = startTime
@@ -74,6 +74,19 @@ final class PersonalEvent: Model, Searchable {
 		self.description = description
 		self.location = location
         self.$owner.id = owner
+		self.moderationStatus = .normal
+		self.participantArray = []
+	}
+
+	init(_ data: PersonalEventContentData, cacheOwner: UserCacheData) {
+		self.startTime = data.startTime
+		self.endTime = data.endTime
+		self.title = data.title
+		self.description = data.description
+		self.location = data.location
+        self.$owner.id = cacheOwner.userID
+		self.moderationStatus = .normal
+		self.participantArray = data.participants
 	}
 }
 
@@ -95,9 +108,9 @@ struct CreatePersonalEventSchema: AsyncMigration {
 		try await database.schema(CreatePersonalEventSchema.schema)
 			.id()
 			.field("title", .string, .required)
-			.field("description", .string, .required)
-            .field("start_time", .datetime)
-			.field("end_time", .datetime)
+			.field("description", .string)
+            .field("start_time", .datetime, .required)
+			.field("end_time", .datetime, .required)
 			.field("location", .string)
 			.field("mod_status", modStatusEnum, .required)
 			.field("participant_array", .array(of: .uuid), .required)

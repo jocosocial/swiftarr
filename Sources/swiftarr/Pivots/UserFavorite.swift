@@ -13,10 +13,10 @@ final class UserFavorite: Model {
 
 	// MARK: Relations
 
-	/// The associated `User` who likes this.
+	/// The associated `User` who has favorited another `User`.
 	@Parent(key: "user") var user: User
 
-	/// The associated `Twarrt` that was liked.
+	/// The associated `User` that was favorited.
 	@Parent(key: "favorite") var favorite: User
 
 	// MARK: Initialization

@@ -621,7 +621,7 @@ struct FezController: APIRouteCollection {
 		let user = try req.auth.require(UserCacheData.self)
 		try user.guardCanCreateContent(customErrorString: "User cannot create LFGs/Seamails.")
 		// see `FezContentData.validations()`
-		let data = try ValidatingJSONDecoder().decode(FezContentData.self, fromBodyOf: req)
+		let data: FezContentData = try ValidatingJSONDecoder().decode(FezContentData.self, fromBodyOf: req)
 		var creator = user
 		if data.createdByTwitarrTeam == true {
 			guard user.accessLevel >= .twitarrteam else {
