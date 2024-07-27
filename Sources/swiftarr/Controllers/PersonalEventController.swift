@@ -18,6 +18,9 @@ struct PersonalEventController: APIRouteCollection {
 		let tokenAuthGroup = personalEventRoutes.tokenRoutes(feature: .personalevents)
 		tokenAuthGroup.get(use: personalEventsHandler)
 		tokenAuthGroup.post("create", use: personalEventCreateHandler)
+		tokenAuthGroup.get(personalEventIDParam, use: personalEventHandler)
+		tokenAuthGroup.post(personalEventIDParam, use: personalEventUpdateHandler)
+		tokenAuthGroup.post(personalEventIDParam, "update", use: personalEventUpdateHandler)
 		tokenAuthGroup.post(personalEventIDParam, "delete", use: personalEventDeleteHandler)
 		tokenAuthGroup.delete(personalEventIDParam, use: personalEventDeleteHandler)
 	}
@@ -54,19 +57,22 @@ struct PersonalEventController: APIRouteCollection {
 			var joined: Bool?
 		}
 		let options = try req.query.decode(QueryOptions.self)
+		if let _ = options.owned, let _ = options.joined {
+			throw Abort(.badRequest, reason: "Cannot specify both parameters 'joined' and 'owned'.")
+		}
 		let particpantArrayFieldName = PersonalEvent().$participantArray.key.description
 
 		let query = PersonalEvent.query(on: req.db).sort(\.$startTime, .ascending)
 		if let _ = options.owned {
-			req.logger.log(level: .debug, "Owner only")
+			req.logger.log(level: .info, "Owner only")
 			query.filter(\.$owner.$id == cacheUser.userID)
 		}
 		else if let _ = options.joined {
-			req.logger.log(level: .debug, "Joined only")
-			query.filter(.sql(unsafeRaw: "\(cacheUser.userID) = ANY(\"\(particpantArrayFieldName)\")"))
+			req.logger.log(level: .info, "Joined only")
+			query.filter(.sql(unsafeRaw: "\'\(cacheUser.userID)\' = ANY(\"\(particpantArrayFieldName)\")"))
 		}
 		else {
-			req.logger.log(level: .debug, "Owner and Joined")
+			req.logger.log(level: .info, "Owner and Joined")
 			query.group(.or) { group in
 				group.filter(\.$owner.$id == cacheUser.userID)
 				group.filter(.sql(unsafeRaw: "'\(cacheUser.userID)' = ANY(\"\(particpantArrayFieldName)\")"))
@@ -80,9 +86,9 @@ struct PersonalEventController: APIRouteCollection {
 	/// 
 	/// Create a new PersonalEvent.
 	/// 
-	/// - Parameter requestBody: `FezContentData` payload in the HTTP body.
+	/// - Parameter requestBody: `PersonalEventContentData` payload in the HTTP body.
 	/// - Throws: 400 error if the supplied data does not validate.
-	/// - Returns: 201 Created; `FezData` containing the newly created fez.
+	/// - Returns: 201 Created; `PersonalEventData` containing the newly created event.
 	func personalEventCreateHandler(_ req: Request) async throws -> Response {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let data: PersonalEventContentData = try ValidatingJSONDecoder().decode(PersonalEventContentData.self, fromBodyOf: req)
@@ -99,10 +105,62 @@ struct PersonalEventController: APIRouteCollection {
 		try await personalEvent.save(on: req.db)
 		let personalEventData = try buildPersonalEventData(personalEvent, on: req)
 
+		// @TODO generate socket notifications for participants
+		// @TODO add next private event to UND
+
 		// Return with 201 status
 		let response = Response(status: .created)
 		try response.content.encode(personalEventData)
 		return response
+	}
+
+	/// `GET /api/v3/personalevents/:eventID`
+	/// 
+	/// Get a single `PersonalEvent`.
+	func personalEventHandler(_ req: Request) async throws -> PersonalEventData {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let personalEvent = try await PersonalEvent.findFromParameter(personalEventIDParam, on: req)
+		guard personalEvent.$owner.id == cacheUser.userID || cacheUser.accessLevel.hasAccess(.moderator) else {
+			throw Abort(.forbidden, reason: "You cannot access this personal event.")
+		}
+		return try buildPersonalEventData(personalEvent, on: req)
+	}
+
+	/// `POST /api/v3/personalevents/:eventID`
+	/// 
+	/// Updates an existing `PersonalEvent`.
+	/// Note: All fields in the supplied `PersonalEventContentData` must be filled, just as if the event
+	/// were being created from scratch. 
+	/// 
+	/// - Parameter requestBody: `PersonalEventContentData` payload in the HTTP body.
+	/// - Throws: 400 error if the supplied data does not validate.
+	/// - Returns: `PersonalEventData` containing the updated event.
+	func personalEventUpdateHandler(_ req: Request) async throws -> PersonalEventData {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let personalEvent = try await PersonalEvent.findFromParameter(personalEventIDParam, on: req)
+		let data: PersonalEventContentData = try ValidatingJSONDecoder().decode(PersonalEventContentData.self, fromBodyOf: req)
+
+		let favorites = try await UserFavorite.query(on: req.db).filter(\.$favorite.$id == cacheUser.userID).all()
+		let favoritesUserIDs = try favorites.map({ try $0.user.requireID() })
+		try data.participants.forEach { userID in 
+			if (!favoritesUserIDs.contains(userID)) {
+				throw Abort(.forbidden, reason: "Cannot have a participant who has not favorited you.")
+			}
+		}
+
+		personalEvent.title = data.title
+		personalEvent.description = data.description
+		personalEvent.startTime = data.startTime
+		personalEvent.endTime = data.endTime
+		personalEvent.location = data.location
+		personalEvent.participantArray = data.participants
+		try await personalEvent.save(on: req.db)
+
+		// @TODO generate socket notifications for participants
+		// @TODO add next private event to UND
+
+		return try buildPersonalEventData(personalEvent, on: req)
+
 	}
 
 	/// `POST /api/v3/personalevents/:eventID/delete`
@@ -117,7 +175,9 @@ struct PersonalEventController: APIRouteCollection {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let personalEvent = try await PersonalEvent.findFromParameter(personalEventIDParam, on: req)
 		try cacheUser.guardCanModifyContent(personalEvent)
-		// try await fez.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
+		try await personalEvent.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
+		// @TODO send socket notifications
+		// @TODO add next private event to UND
 		try await personalEvent.delete(on: req.db)
 		return .noContent
 	}
