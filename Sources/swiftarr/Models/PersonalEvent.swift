@@ -26,6 +26,13 @@ final class PersonalEvent: Model, Searchable {
     /// The location of the event.
 	@Field(key: "location") var location: String
 
+    /// An ordered list of participants in the event. Newly joined members are
+    // appended to the array, meaning this array stays sorted by join time.
+	@Field(key: "participant_array") var participantArray: [UUID]
+
+    /// Moderators can set several statuses on fezPosts that modify editability and visibility.
+	@Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
+
     /// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
 
@@ -40,10 +47,7 @@ final class PersonalEvent: Model, Searchable {
     /// The `Us
     /// er` that created this `PersonalEvent`.
 	@Parent(key: "owner") var owner: User
-
-    /// The participants in this `PersonalEvent`.
-	@Siblings(through: PersonalEventParticipant.self, from: \.$personalEvent, to: \.$user) var participants: [User]
-
+ 
     // MARK: Initialization
 	// Used by Fluent
 	init() {}
@@ -57,7 +61,6 @@ final class PersonalEvent: Model, Searchable {
 	///   - endTime: The end time of the event.
 	///   - location: The location of the event.
 	///   - owner: The ID of the owning user.
-	///   - uid: The event's sched.com identifier.
 	init(
 		title: String,
 		description: String,
@@ -86,4 +89,27 @@ extension PersonalEvent: Reportable {
 	var autoQuarantineThreshold: Int { Int.max }
 }
 
-// @TODO searchable
+struct CreatePersonalEventSchema: AsyncMigration {
+    static let schema = "personal_event"
+	func prepare(on database: Database) async throws {
+		let modStatusEnum = try await database.enum("moderation_status").read()
+		try await database.schema(CreatePersonalEventSchema.schema)
+			.id()
+			.field("title", .string, .required)
+			.field("description", .string, .required)
+            .field("start_time", .datetime)
+			.field("end_time", .datetime)
+			.field("location", .string)
+			.field("mod_status", modStatusEnum, .required)
+			.field("participant_array", .array(of: .uuid), .required)
+			.field("owner", .uuid, .required, .references("user", "id", onDelete: .cascade))
+			.field("created_at", .datetime)
+			.field("updated_at", .datetime)
+			.field("deleted_at", .datetime)
+			.create()
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema(CreatePersonalEventSchema.schema).delete()
+	}
+}
