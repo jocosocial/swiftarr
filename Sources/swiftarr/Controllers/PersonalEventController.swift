@@ -58,8 +58,6 @@ struct PersonalEventController: APIRouteCollection {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		struct QueryOptions: Content {
 			var cruiseday: Int?
-			var date: Date?
-			var time: Date?
 			var search: String?
 			var owned: Bool?
 			var joined: Bool?
@@ -71,6 +69,7 @@ struct PersonalEventController: APIRouteCollection {
 		let particpantArrayFieldName = PersonalEvent().$participantArray.key.description
 
 		let query = PersonalEvent.query(on: req.db).sort(\.$startTime, .ascending)
+
 		if let _ = options.owned {
 			req.logger.log(level: .info, "Owner only")
 			query.filter(\.$owner.$id == cacheUser.userID)
@@ -86,19 +85,40 @@ struct PersonalEventController: APIRouteCollection {
 				group.filter(.sql(unsafeRaw: "'\(cacheUser.userID)' = ANY(\"\(particpantArrayFieldName)\")"))
 			}
 		}
+
+		if let cruiseday = options.cruiseday {
+			let portCalendar = Settings.shared.getPortCalendar()
+			let cruiseStartDate = Settings.shared.cruiseStartDate()
+			// This is close to Events, but not quite.
+			// https://github.com/jocosocial/swiftarr/issues/230
+			let searchStartTime = portCalendar.date(byAdding: .day, value: cruiseday, to: cruiseStartDate)
+			let searchEndTime = portCalendar.date(byAdding: .day, value: cruiseday + 1, to: cruiseStartDate)
+			if let start = searchStartTime, let end = searchEndTime {
+				query.filter(\.$startTime >= start).filter(\.$startTime < end)
+			}
+		}
+
+		if var search = options.search {
+			// postgres "_" and "%" are wildcards, so escape for literals
+			search = search.replacingOccurrences(of: "_", with: "\\_")
+			search = search.replacingOccurrences(of: "%", with: "\\%")
+			search = search.trimmingCharacters(in: .whitespacesAndNewlines)
+			query.fullTextFilter(\.$title, search)  // This is also getting description...
+		}
+
 		let events = try await query.all()
 		return try await buildPersonalEventDataList(events, on: req)
 	}
 
 	/// `GET /api/v3/personalevents/users`
-	/// 
+	///
 	/// Returns a list of `User`s who you can invite to participate in your
 	/// `PersonalEvent`s. We don't yet have a common pattern for this sort of
 	/// inbound-consent-required situation. At this time only KrakenTalk and
 	/// PrivateEvent depend on it. In the future this may broaden to a more widely
 	/// used API. I really don't love the idea of a "getMyFriendsHandler()" but
 	/// that's kinda what this is.
-	/// 
+	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: An array of `UserHeader` containing the favoriting users.
 	func personalEventUsersHandler(_ req: Request) async throws -> [UserHeader] {
