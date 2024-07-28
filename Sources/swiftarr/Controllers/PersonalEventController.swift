@@ -188,7 +188,6 @@ struct PersonalEventController: APIRouteCollection {
 		let personalEvent = try await PersonalEvent.findFromParameter(personalEventIDParam, on: req)
 		try cacheUser.guardCanModifyContent(personalEvent)
 		try await personalEvent.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
-		// @TODO send socket notifications
 		// @TODO add next private event to UND
 		try await personalEvent.delete(on: req.db)
 		return .noContent

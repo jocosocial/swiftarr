@@ -64,6 +64,8 @@ enum NotificationType {
 	case joinedLFGStarting(UUID)
 	/// A Micro Karaoke song the user contributed to is ready for viewing. Associated value is song ID
 	case microKaraokeSongReady(Int)
+	/// A Private Event the user has created or was added to is about to start.
+	case privateEventStarting(UUID)
 
 	/// Returns the hash field name used to store info about this notification type in Redis.
 	func redisFieldName() -> String {
@@ -82,6 +84,7 @@ enum NotificationType {
 		case .nextJoinedLFGTime: return "nextJoinedLFGTime"
 		case .joinedLFGStarting: return "joinedLFGStarting"
 		case .microKaraokeSongReady: return "microKaraokeSongReady"
+		case .privateEventStarting: return "privateEventStarting"
 		}
 	}
 
@@ -107,6 +110,7 @@ enum NotificationType {
 		case .nextJoinedLFGTime: return "NotificationHash-\(userID)"
 		case .joinedLFGStarting: return "NotificationHash-\(userID)"
 		case .microKaraokeSongReady: return "NotificationHash-\(userID)"
+		case .privateEventStarting: return "NotificationHash-\(userID)"
 		}
 	}
 
@@ -138,6 +142,7 @@ enum NotificationType {
 		case .nextJoinedLFGTime(_, let uuid): return uuid != nil ? String(uuid!) : ""
 		case .joinedLFGStarting(let id): return String(id)
 		case .microKaraokeSongReady(let songID): return String(songID)
+		case .privateEventStarting(let id): return String(id)
 		}
 	}
 }
