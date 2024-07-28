@@ -492,6 +492,8 @@ struct UsersController: APIRouteCollection {
 		return .noContent
 	}
 
+	// MARK: Favorites
+
 	/// `GET /api/v3/users/favorites`
 	///
 	/// Returns a list of the user's currently favorited users.
