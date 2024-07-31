@@ -141,7 +141,7 @@ struct PersonalEventController: APIRouteCollection {
 			.decode(PersonalEventContentData.self, fromBodyOf: req)
 
 		let favorites = try await UserFavorite.query(on: req.db).filter(\.$favorite.$id == cacheUser.userID).all()
-		let favoritesUserIDs = try favorites.map({ try $0.user.requireID() })
+		let favoritesUserIDs = favorites.map({ $0.$user.id })
 		try data.participants.forEach { userID in
 			if !favoritesUserIDs.contains(userID) {
 				throw Abort(.forbidden, reason: "Cannot have a participant who has not favorited you.")
