@@ -71,15 +71,12 @@ struct PersonalEventController: APIRouteCollection {
 		let query = PersonalEvent.query(on: req.db).sort(\.$startTime, .ascending)
 
 		if let _ = options.owned {
-			req.logger.log(level: .info, "Owner only")
 			query.filter(\.$owner.$id == cacheUser.userID)
 		}
 		else if let _ = options.joined {
-			req.logger.log(level: .info, "Joined only")
 			query.filter(.sql(unsafeRaw: "\'\(cacheUser.userID)\' = ANY(\"\(particpantArrayFieldName)\")"))
 		}
 		else {
-			req.logger.log(level: .info, "Owner and Joined")
 			query.group(.or) { group in
 				group.filter(\.$owner.$id == cacheUser.userID)
 				group.filter(.sql(unsafeRaw: "'\(cacheUser.userID)' = ANY(\"\(particpantArrayFieldName)\")"))
