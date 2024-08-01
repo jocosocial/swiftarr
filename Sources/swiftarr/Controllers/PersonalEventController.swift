@@ -47,8 +47,8 @@ struct PersonalEventController: APIRouteCollection {
 	/// - ?date=DATE        Returns events occurring on the given day. Empty list if there are no cruise events on that day.
 	/// - ?time=DATE        Returns events whose startTime is earlier (or equal) to DATE and endTime is later than DATE. Note that this will often include 'all day' events.
 	/// - ?search=STRING    Returns events whose title or description contain the given string.
-	/// - ?owned=true       Returns events only that the user has created. Mutually exclusive with joined.
-	/// - ?joined=true      Returns events only that the user has joined. Mutually exclusive with owned.
+	/// - ?owned=BOOLEAN    Returns events only that the user has created. Mutually exclusive with joined.
+	/// - ?joined=BOOLEAN   Returns events only that the user has joined. Mutually exclusive with owned.
 	///
 	/// The day and date parameters actually return events from 3AM local time on the given day until 3AM the next day--some events start after midnight and tend to get lost by those
 	/// looking at daily schedules.
@@ -62,7 +62,7 @@ struct PersonalEventController: APIRouteCollection {
 			var owned: Bool?
 			var joined: Bool?
 		}
-		let options = try req.query.decode(QueryOptions.self)
+		let options: QueryOptions = try req.query.decode(QueryOptions.self)
 		if let _ = options.owned, let _ = options.joined {
 			throw Abort(.badRequest, reason: "Cannot specify both parameters 'joined' and 'owned'.")
 		}

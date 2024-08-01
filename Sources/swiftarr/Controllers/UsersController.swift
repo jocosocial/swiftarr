@@ -164,6 +164,9 @@ struct UsersController: APIRouteCollection {
 	///   username harvesting.
 	///
 	/// For bulk `.userSearch` data retrieval, see the `ClientController` endpoints.
+	/// 
+	/// **URL Query Parameters:**
+	/// - ?favors=BOOLEAN Show only resulting users that have favorited the requesting user.
 	///
 	/// - Parameter STRING: in URL path. The search string to use. Must be at least 2 characters long.
 	/// - Throws: 403 error if the search term is not permitted.
@@ -184,13 +187,36 @@ struct UsersController: APIRouteCollection {
 		guard search.count >= 2 else {
 			throw Abort(.badRequest, reason: "User search requires at least 2 valid characters in search string..")
 		}
-		// remove blocks from results
-		let matchingUsers = try await User.query(on: req.db)
-			.filter(\.$userSearch, .custom("ILIKE"), "%\(search)%")
-			.filter(\.$id !~ requester.getBlocks())
-			.sort(\.$username, .ascending)
-			.range(0..<10)
-			.all()
+
+		// Process query params
+		struct QueryOptions: Content {
+			var favors: Bool?
+		}
+		let options: QueryOptions = try req.query.decode(QueryOptions.self)
+
+		// Return matches based on the query mode.
+		// Remove any blocks from the results.
+		var matchingUsers: [User] = []
+		if let _ = options.favors {
+			let favoritingUsers = try await UserFavorite.query(on: req.db)
+				.join(User.self, on: \UserFavorite.$favorite.$id == \User.$id)
+				.with(\.$user)
+				.filter(\.$user.$id !~ requester.getBlocks())
+				.filter(\.$favorite.$id == requester.userID)
+				// .filter(User.self, \.$userSearch, .custom("ILIKE"), "%\(search)%")
+				// .filter(UserFavorite.self, \UserFavorite.$favorite.userSearch, .custom("ILIKE"), "%\(search)%")
+				.sort(User.self, \.$username, .ascending)
+				.range(0..<10)
+				.all()
+			matchingUsers = favoritingUsers.map { $0.user }
+		} else {
+			matchingUsers = try await User.query(on: req.db)
+				.filter(\.$userSearch, .custom("ILIKE"), "%\(search)%")
+				.filter(\.$id !~ requester.getBlocks())
+				.sort(\.$username, .ascending)
+				.range(0..<10)
+				.all()
+		}
 		return try matchingUsers.map { try UserHeader(user: $0) }
 	}
 
