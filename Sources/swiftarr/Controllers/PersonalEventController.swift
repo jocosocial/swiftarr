@@ -18,8 +18,6 @@ struct PersonalEventController: APIRouteCollection {
 		let tokenAuthGroup = personalEventRoutes.tokenRoutes(feature: .personalevents)
 		tokenAuthGroup.get(use: personalEventsHandler)
 
-		tokenAuthGroup.get("users", use: personalEventUsersHandler)
-
 		tokenAuthGroup.post("create", use: personalEventCreateHandler)
 		tokenAuthGroup.get(personalEventIDParam, use: personalEventHandler)
 		tokenAuthGroup.post(personalEventIDParam, use: personalEventUpdateHandler)
@@ -105,24 +103,6 @@ struct PersonalEventController: APIRouteCollection {
 
 		let events = try await query.all()
 		return try await buildPersonalEventDataList(events, on: req)
-	}
-
-	/// `GET /api/v3/personalevents/users`
-	///
-	/// Returns a list of `User`s who you can invite to participate in your
-	/// `PersonalEvent`s. We don't yet have a common pattern for this sort of
-	/// inbound-consent-required situation. At this time only KrakenTalk and
-	/// PrivateEvent depend on it. In the future this may broaden to a more widely
-	/// used API. I really don't love the idea of a "getMyFriendsHandler()" but
-	/// that's kinda what this is.
-	///
-	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: An array of `UserHeader` containing the favoriting users.
-	func personalEventUsersHandler(_ req: Request) async throws -> [UserHeader] {
-		let cacheUser = try req.auth.require(UserCacheData.self)
-		let favoritingUsers = try await UserFavorite.query(on: req.db).filter(\.$favorite.$id == cacheUser.userID).all()
-		let favoritingUserIDs: [UUID] = favoritingUsers.map { $0.$user.id }
-		return req.userCache.getHeaders(favoritingUserIDs).sorted { $0.username < $1.username }
 	}
 
 	/// `POST /api/v3/personalevents/create`

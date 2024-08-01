@@ -199,14 +199,13 @@ struct UsersController: APIRouteCollection {
 		var matchingUsers: [User] = []
 		if let _ = options.favors {
 			let favoritingUsers = try await UserFavorite.query(on: req.db)
-				.join(User.self, on: \UserFavorite.$favorite.$id == \User.$id)
-				.with(\.$user)
+				.join(User.self, on: \UserFavorite.$user.$id == \User.$id, method: .left)
 				.filter(\.$user.$id !~ requester.getBlocks())
 				.filter(\.$favorite.$id == requester.userID)
-				// .filter(User.self, \.$userSearch, .custom("ILIKE"), "%\(search)%")
-				// .filter(UserFavorite.self, \UserFavorite.$favorite.userSearch, .custom("ILIKE"), "%\(search)%")
+				.filter(User.self, \.$userSearch, .custom("ILIKE"), "%\(search)%")
 				.sort(User.self, \.$username, .ascending)
 				.range(0..<10)
+				.with(\.$user)
 				.all()
 			matchingUsers = favoritingUsers.map { $0.user }
 		} else {
