@@ -203,7 +203,7 @@ struct UsersController: APIRouteCollection {
 		// Return matches based on the query mode.
 		// Remove any blocks from the results.
 		var matchingUsers: [User] = []
-		if let _ = options.favorers {
+		if options.favorers ?? false {
 			let favoritingUsers = try await UserFavorite.query(on: req.db)
 				.join(User.self, on: \UserFavorite.$user.$id == \User.$id, method: .left)
 				.filter(\.$user.$id !~ requester.getBlocks())
