@@ -45,6 +45,7 @@ struct UsersController: APIRouteCollection {
 		blockableAuthGroup.get("favorites", use: favoritesHandler)
 		blockableAuthGroup.post(userIDParam, "favorite", use: favoriteAddHandler)
 		blockableAuthGroup.post(userIDParam, "unfavorite", use: favoriteRemoveHandler)
+		blockableAuthGroup.delete(userIDParam, "favorite", use: favoriteRemoveHandler)
 
 		// User Role Management for non-THO. Currently, this means the Shutternaut Manager managing the Shutternaut role
 		blockableAuthGroup.get("userrole", userRoleParam, use: getUsersWithRole)
@@ -132,11 +133,16 @@ struct UsersController: APIRouteCollection {
 		if profiledUser.accessLevel == .banned && !requester.accessLevel.hasAccess(.moderator) {
 			throw Abort(.notFound, reason: "profile is not available")
 		}
+		// If the requester has favorited this user.
+		let isFavorite = try await UserFavorite.query(on: req.db)
+			.filter(\.$user.$id == requester.userID)
+			.filter(\.$favorite.$id == profiledUser.requireID()).first() != nil
 		// Profile hidden if user quarantined and requester not mod, or if requester is banned.
 		var publicProfile = try ProfilePublicData(
 			user: profiledUser,
 			note: nil,
-			requesterAccessLevel: requester.accessLevel
+			requesterAccessLevel: requester.accessLevel,
+			requesterHasFavorite: isFavorite
 		)
 		// include UserNote if any, then return
 		if let note = try await UserNote.query(on: req.db).filter(\.$author.$id == requester.userID)
@@ -558,6 +564,7 @@ struct UsersController: APIRouteCollection {
 	}
 
 	/// `POST /api/v3/users/:user_ID/unfavorite`
+	/// `DELETE /api/v3/users/:user_id/favorite`
 	///
 	/// Removes a favorite of the specified `User` by the current user.
 	///

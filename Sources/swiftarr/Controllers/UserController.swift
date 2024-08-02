@@ -509,7 +509,7 @@ struct UserController: APIRouteCollection {
 	/// - Returns: `ProfilePublicData` containing the editable properties of the profile.
 	func profileHandler(_ req: Request) async throws -> ProfilePublicData {
 		let user = try await req.auth.require(UserCacheData.self).getUser(on: req.db)
-		return try ProfilePublicData(user: user, note: nil, requesterAccessLevel: user.accessLevel)
+		return try ProfilePublicData(user: user, note: nil, requesterAccessLevel: user.accessLevel, requesterHasFavorite: false)
 	}
 
 	/// `POST /api/v3/user/profile`
@@ -561,7 +561,7 @@ struct UserController: APIRouteCollection {
 		try await targetUser.save(on: req.db)
 		try await req.userCache.updateUser(targetUser.requireID())
 		await targetUser.logIfModeratorAction(.edit, user: cacheUser, on: req)
-		return try ProfilePublicData(user: targetUser, note: nil, requesterAccessLevel: user.accessLevel)
+		return try ProfilePublicData(user: targetUser, note: nil, requesterAccessLevel: user.accessLevel, requesterHasFavorite: false)
 	}
 
 	// MARK: - Alertwords

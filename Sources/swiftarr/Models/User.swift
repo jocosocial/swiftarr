@@ -233,9 +233,10 @@ final class User: Model {
 		buildUserSearchString()
 	}
 
-	func makeUserHeader() throws -> UserHeader {
-		return try UserHeader(userID: requireID(), username: username, displayName: displayName, userImage: userImage, preferredPronoun: preferredPronoun)
-	}
+	// @available(*, deprecated, message: "Unused")
+	// func makeUserHeader() throws -> UserHeader {
+	// 	return try UserHeader(userID: requireID(), username: username, displayName: displayName, userImage: userImage, preferredPronoun: preferredPronoun)
+	// }
 }
 
 /// Creates the `User` table in the database and specifies its fields. 

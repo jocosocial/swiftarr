@@ -1399,11 +1399,14 @@ public struct ProfilePublicData: Content {
 	var dinnerTeam: DinnerTeam?
 	/// A UserNote owned by the visiting user, about the profile's user (see `UserNote`).
 	var note: String?
+	/// Whether the requesting user has favorited this user.
+	var isFavorite: Bool
 }
 
 extension ProfilePublicData {
-	init(user: User, note: String?, requesterAccessLevel: UserAccessLevel) throws {
+	init(user: User, note: String?, requesterAccessLevel: UserAccessLevel, requesterHasFavorite: Bool) throws {
 		self.header = try UserHeader(user: user)
+		self.isFavorite = requesterHasFavorite
 		if !user.moderationStatus.showsContent() && !requesterAccessLevel.hasAccess(.moderator) {
 			self.header.displayName = nil
 			self.header.userImage = nil
