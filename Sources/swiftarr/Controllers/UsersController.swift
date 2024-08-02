@@ -172,7 +172,7 @@ struct UsersController: APIRouteCollection {
 	/// For bulk `.userSearch` data retrieval, see the `ClientController` endpoints.
 	/// 
 	/// **URL Query Parameters:**
-	/// - ?favors=BOOLEAN Show only resulting users that have favorited the requesting user.
+	/// - ?favorers=BOOLEAN Show only resulting users that have favorited the requesting user.
 	///
 	/// - Parameter STRING: in URL path. The search string to use. Must be at least 2 characters long.
 	/// - Throws: 403 error if the search term is not permitted.
@@ -196,14 +196,14 @@ struct UsersController: APIRouteCollection {
 
 		// Process query params
 		struct QueryOptions: Content {
-			var favors: Bool?
+			var favorers: Bool?
 		}
 		let options: QueryOptions = try req.query.decode(QueryOptions.self)
 
 		// Return matches based on the query mode.
 		// Remove any blocks from the results.
 		var matchingUsers: [User] = []
-		if let _ = options.favors {
+		if let _ = options.favorers {
 			let favoritingUsers = try await UserFavorite.query(on: req.db)
 				.join(User.self, on: \UserFavorite.$user.$id == \User.$id, method: .left)
 				.filter(\.$user.$id !~ requester.getBlocks())
