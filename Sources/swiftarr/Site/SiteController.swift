@@ -636,6 +636,7 @@ extension SiteControllerUtils {
 	var streamPhotoParam: PathComponent { PathComponent(":stream_photo_id") }
 	var usernameParam: PathComponent { PathComponent(":user_name") }
 	var scheduleLogIDParam: PathComponent { PathComponent(":schedule_log_id") }
+	var personalEventIDParam: PathComponent { PathComponent(":personal_event_id") }
 
 	@discardableResult func apiQuery<EncodableContent: Encodable>(
 		_ req: Request,
