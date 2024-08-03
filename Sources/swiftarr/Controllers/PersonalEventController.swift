@@ -147,7 +147,11 @@ struct PersonalEventController: APIRouteCollection {
 	func personalEventHandler(_ req: Request) async throws -> PersonalEventData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let personalEvent = try await PersonalEvent.findFromParameter(personalEventIDParam, on: req)
-		guard personalEvent.$owner.id == cacheUser.userID || cacheUser.accessLevel.hasAccess(.moderator) else {
+		guard (
+			personalEvent.$owner.id == cacheUser.userID || 
+			cacheUser.accessLevel.hasAccess(.moderator) || 
+			personalEvent.participantArray.contains(cacheUser.userID)
+		) else {
 			throw Abort(.forbidden, reason: "You cannot access this personal event.")
 		}
 		return try buildPersonalEventData(personalEvent, on: req)
