@@ -211,7 +211,7 @@ extension APIRouteCollection {
 				for userID in users {
 					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
-			case .followedEventStarting(_), .joinedLFGStarting(_), .privateEventStarting(_):
+			case .followedEventStarting(_), .joinedLFGStarting(_), .personalEventStarting(_):
 				break
 			case .microKaraokeSongReady(_):
 				for userID in users {
@@ -329,7 +329,7 @@ extension APIRouteCollection {
 						try await req.redis.deletedUnreadMessage(msgID: msgID, userID: userID, inbox: .lfgMessages)
 					}
 				}
-			case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting, .privateEventStarting:
+			case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting, .personalEventStarting:
 				break
 			case .microKaraokeSongReady(_):
 				// There is currently no method by which songs become not-ready. But,
@@ -384,7 +384,7 @@ extension APIRouteCollection {
 			}
 		case .fezUnreadMsg:
 			try await req.redis.markSeamailRead(type: type, in: .lfgMessages, userID: user.userID)
-		case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting, .privateEventStarting:
+		case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting, .personalEventStarting:
 			return  // Can't be cleared
 		case .microKaraokeSongReady:
 			try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)			
