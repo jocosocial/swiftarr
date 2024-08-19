@@ -12,7 +12,7 @@ struct PhotostreamController: APIRouteCollection {
 		tokenAuthGroup.get("", use: photostreamHandler)
 		tokenAuthGroup.get("placenames", use: getPlacenames)
 		tokenAuthGroup.post("upload", use: photostreamUploadHandler)
-		tokenAuthGroup.post("report", streamPhotoIDParam, use: photostreamReportHandler)
+		tokenAuthGroup.post(streamPhotoIDParam, "report", use: photostreamReportHandler)
 
 		let modRoutes = app.tokenRoutes(feature: .photostream, minAccess: .moderator, path: "api", "v3", "mod", "photostream")
 		modRoutes.get(streamPhotoIDParam, use: getPhotoModerationData)		
@@ -114,7 +114,7 @@ struct PhotostreamController: APIRouteCollection {
 		return response
 	}
 	
-	/// `POST /api/v3/photostream/report/:photoID`
+	/// `POST /api/v3/photostream/:photoID/report`
 	///
 	/// Create a `Report` regarding the specified `StreamPhoto`.
 	///
