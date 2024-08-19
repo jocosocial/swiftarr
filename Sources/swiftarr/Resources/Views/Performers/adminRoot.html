@@ -1,0 +1,41 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0">
+    		<div class="row justify-content-between align-items-center my-1">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Manage Performers</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<ul class="list-group">
+				<li class="list-group-item active">
+					<b>Official Performers</b>
+				</li>
+				<a class="list-group-item list-group-item-action" href="/admin/performer/add">
+					<b>Add Performer</b>: Manually add an Official Performer using a web form
+				</a>
+				<a class="list-group-item list-group-item-action" href="">
+					<b>Bulk Add Performers</b>: Parse bunch of performers from a file - NOT CURRENTLY IMPLEMENTED
+				</a>
+				<a class="list-group-item list-group-item-action" href="/admin/performer/link">
+					<b>Bulk Link Performers to Events</b>: Parse a file that associates performers with their events
+				</a>
+				<a class="list-group-item list-group-item-action" href="/performers">
+					<b>View Performers</b>: See all official performers
+				</a>
+			</ul>
+			<ul class="list-group mt-2">
+				<li class="list-group-item active">
+					<b>Shadow Event Organizers</b>
+				</li>
+				<a class="list-group-item list-group-item-action" href="/performers/shadow">
+					<b>View Performers</b>: See all known Shadow Event Organizers
+				</a>
+			</ul>
+		</div>
+	#endexport
+#endextend

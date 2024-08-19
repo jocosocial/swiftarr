@@ -285,8 +285,48 @@ function updateInputFieldCharCounts(inputElement) {
 
 // Updates a photo card when its file input field changes (mostly, shows the photo selected).
 for (let input of document.querySelectorAll('.image-upload-input')) {
-	updatePhotoCardState(input.closest('.card'));
+	let card = input.closest('.card');
+	updatePhotoCardState(card);
 	input.addEventListener("change", function () { updatePhotoCardState(event.target.closest('.card')); })
+	card.addEventListener('dragover', (event) => {
+		card.classList.add('bg-secondary');
+		event.preventDefault();
+		event.stopPropagation();
+	});
+	card.addEventListener('dragleave', (event) => {
+		card.classList.remove('bg-secondary');
+		event.preventDefault();
+		event.stopPropagation();
+	});
+	card.addEventListener('drop', (event) => {
+		event.preventDefault();		
+		card.classList.remove('bg-secondary');
+		if (event.dataTransfer.files.length == 1) {
+			let file = event.dataTransfer.files[0];
+			if (['image/jpeg', 'image/png'].includes(file.type)) {
+				let fileInputElem = card.querySelector('.image-upload-input');
+				let imgElem = card.querySelector('img.img-for-upload');
+
+				const reader = new FileReader();
+				reader.onloadend = function(event) {
+					imgElem.src = event.target.result;
+				}
+				reader.readAsDataURL(event.dataTransfer.files[0]);
+				fileInputElem.files = event.dataTransfer.files;
+				updatePhotoCardState(card);
+			}
+		}
+		else if (event.dataTransfer.getData('URL')) {
+			let imgElem = card.querySelector('img');
+			let urlInputElem = form.querySelector('.photo-upload-url');
+			let imageURL = event.dataTransfer.getData('URL');
+			if (urlInputElem != null && imageURL != null) {
+				imgElem.src = imageURL;
+				urlInputElem.value = imageURL;
+				updatePhotoCardState(card);
+			}
+		}
+	});
 }
 function updatePhotoCardState(cardElement) {
 	let imgElem = cardElement.querySelector('img');
@@ -347,8 +387,8 @@ function removeUploadImage() {
 		updatePhotoCardState(cardElement);
 		cardElement = nextCard;
 	}
-	cardElement.querySelector('.image-upload-input').value = null
-	cardElement.querySelector('input[type="hidden"]').value = "";
+	cardElement.querySelector('.image-upload-input').value = null;
+	cardElement.querySelectorAll('input[type="hidden"]').forEach((elem) => { elem.value = ""; });
 	updatePhotoCardState(cardElement);
 }
 
@@ -430,7 +470,7 @@ async function submitAJAXForm(formElement, event) {
 // MARK: - Schedule Page Handlers
 
 // Apply the locally saved event type and following filters to the list of events.
-if ((new URL(document.location)).searchParams.get('cruiseday') != null) {
+if (new URL(document.location).pathname == "/events") {
 	let onlyFollowing = false;
 	if (localStorage.getItem('eventFollowingFilterState') == 'true') {
 		document.getElementById("eventFollowingFilter").classList.add('active');

@@ -159,3 +159,20 @@ duration-select:focus {
 .modal-backdrop.show {
   opacity: .85;
 }
+
+@media (max-width: 425px) {
+  .performer-img {
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+}
+@media (min-width: 425px) {
+  .performer-img {
+    max-width: 400px;
+    min-width: 400px;
+    height: auto;
+    object-fit: cover;
+  }
+}

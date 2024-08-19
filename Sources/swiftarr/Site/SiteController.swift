@@ -36,6 +36,7 @@ struct TrunkContext: Encodable {
 	var userIsShutternautManager: Bool
 	var minAccessLevel: String?
 	var preregistrationMode: Bool				// TRUE if we're in preregistration; only allow limited features.
+	var pageIsForDisabledFeature: SwiftarrFeature?	// Middleware marked this request disabled for normal users but we're showing it to THO/admin
 
 	var username: String
 	var userID: UUID
@@ -66,6 +67,7 @@ struct TrunkContext: Encodable {
 			username = ""
 			userID = UUID()
 		}
+		pageIsForDisabledFeature = req.storage.get(FeatureDisableOverrideStorageKey.self)
 		let minAccess = Settings.shared.minAccessLevel
 		minAccessLevel = minAccess == .banned || Settings.shared.enablePreregistration ? nil : minAccess.visibleName()
 		preregistrationMode = Settings.shared.enablePreregistration && userAccessLevel < minAccess
@@ -636,6 +638,7 @@ extension SiteControllerUtils {
 	var streamPhotoParam: PathComponent { PathComponent(":stream_photo_id") }
 	var usernameParam: PathComponent { PathComponent(":user_name") }
 	var scheduleLogIDParam: PathComponent { PathComponent(":schedule_log_id") }
+	var performerIDParam: PathComponent { PathComponent(":performer_id") }
 
 	@discardableResult func apiQuery<EncodableContent: Encodable>(
 		_ req: Request,

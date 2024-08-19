@@ -160,3 +160,9 @@ New Micro Karaoke feature. API changes include:
 * `BoardgameData` has new fields: gameTypes, categories, and mechanics.
 * `BoardgameResponseData` now uses a standard paginator instead of top-level total, start, and limit fields.
 * `/api/v3/boardgames/expansions/:boardgameID` now returns a `BoardgameResponseData` instead of an array of `BoardgameData`
+
+## Aug 19, 2024
+* Bunch of new APIs in the new PerformerController, along with associated DTOs. All additive.
+* `EventData` now has a list of the Performers that will be at the event.
+* New App feature for Performer methods.
+

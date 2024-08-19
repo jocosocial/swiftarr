@@ -1,0 +1,33 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+    		<div class="row mb-1 align-items-center">
+    			<div class="col">
+    				<b>#(titleString)</b>
+				</div>
+			</div>
+			<div class="row mb-1">
+				#if(count(performers.performers) == 0):
+					<div class="col">
+						<span class="text-center"><h6>No performers match the filters</h6>
+					</div>
+				#else:
+					#for(performer in performers.performers):
+						<div class="card p-0 m-2" style="width: 180px">
+							<a href="/performer/#(performer.id)" class="text-decoration-none">
+								#if(performer.photo != nil && performer.photo != ""):
+									<img src="/api/v3/image/thumb/#(performer.photo)" class="card-img-top">
+								#else:
+									<img src="/img/NoAvatarUser.png" class="card-img-top">
+								#endif
+								<div class="card-body text-center">
+									#(performer.name)
+								</div>
+							</a>
+						</div>
+					#endfor
+				#endif
+			</div>
+		</div>
+    #endexport
+#endextend

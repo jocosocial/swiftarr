@@ -351,12 +351,15 @@ public struct EventData: Content {
 	var forum: UUID?
 	/// Whether user has favorited event.
 	var isFavorite: Bool
+	/// The performers who will be at the event. 
+	var performers: [PerformerHeaderData]
 }
 
 extension EventData {
 	/// Makes an eventData.
 	///
 	/// The startTime, endTime, and timeZone are the corrected Date values for the event, given the time zone the ship was/will be in at the event start time.
+	/// The Performers field will be filled in if Performers are eager loaded using `.with(\.$performers)` or similar. Else it's [].
 	init(_ event: Event, isFavorite: Bool = false) throws {
 		let timeZoneChanges = Settings.shared.timeZoneChanges
 		eventID = try event.requireID()
@@ -372,6 +375,7 @@ extension EventData {
 		lastUpdateTime = event.updatedAt ?? Date()
 		forum = event.$forum.id
 		self.isFavorite = isFavorite
+		self.performers = event.$performers.value != nil ? try event.performers.map { try PerformerHeaderData($0) } : []
 	}
 }
 
@@ -1122,6 +1126,171 @@ public struct Paginator: Content {
 	var start: Int
 	/// The number of results requested. The collection array could be smaller than this number.
 	var limit: Int
+}
+
+/// Returns info about a single Performer. This header information is similar to the UserHeader structure, containing just enough
+/// info to build a title card for a performer. 
+/// 
+/// This structure is also used to break the recusion cycle where a PerformerData contains a list of Events, and the 
+/// Events contain lists of the Performers that will be there. In this case, the Event has an array of PerformerHeaderData instead of PerformerData.
+///
+/// Incorporated into `PerformerData`
+/// Incorporated into `EventData`
+public struct PerformerHeaderData: Content {
+	/// Database ID of hte performer. Used to get full performer info via `/api/v3/performer/<id>`
+	var id: UUID?
+	/// Name of the performer
+	var name: String
+	/// Photo ID, accessible through `/api/v3/image/[full|thumb]/<photo>` methods in the `ImageController`.
+	var photo: String?
+}
+
+extension PerformerHeaderData {
+	init(_ performer: Performer) throws {
+		id = try performer.requireID()
+		name = performer.name
+		photo = performer.photo
+	}
+	
+	init() {
+		id = nil
+		name = ""
+		photo = nil
+	}
+}
+
+/// Returns info about a single perfomer. Most fields are optional, and the array fields may be empty, although they shouldn't be under normal conditions.
+/// 
+/// Returned by: `GET /api/v3/performer/self`
+/// Returned by: `GET /api/v3/performer/:performer_id`
+public struct PerformerData: Content {
+	/// ID, name, photo -- used to create a title card
+	var header: PerformerHeaderData
+	/// For Shadow Event Organizers, the Performer links to their User, but don't use the user's pronoun field when referring to them as a Performer.
+	var pronouns: String?
+	/// Bio may contain Markdown.
+	var bio: String?
+	/// Bandname, NGO, university, Podcast name, etc. Should only be filled if the org is relevant to the performer's event.
+	var organization: String?
+	/// Should only be non-nil if it's a title that's relevant to the performer's event. Hopefully won't contain 'Mr./Mrs."
+	var title: String?
+	/// Should be a fully-qualified URL.
+	var website: String?
+	/// Should be a fully-qualified URL.
+	var facebookURL: String?
+	/// Should be a fully-qualified URL.
+	var xURL: String?
+	/// Should be a fully-qualified URL.
+	var instagramURL: String?
+	/// Should be a fully-qualified URL.
+	var youtubeURL: String?
+	/// Full 4-digit years, ascending order-- like this: [2011, 2012, 2022]
+	var yearsAttended: [Int]
+	/// TRUE if the performer is on JoCo's list of featured guests. FALSE if this is a shadow event organizer.
+	var isOfficialPerformer: Bool
+	/// The events this performer is going to be performing at.
+	var events: [EventData]
+	/// The user who  created this Performer. Only applies to Shadow Event organizers, and is only returned if the requester is a Moderator or higher.
+	/// Although we track the User who created a Performer model for their shadow event for moderation purposes, the User behind the Performer 
+	/// shouldn't be shown to everyone.
+	var user: UserHeader?
+}
+
+extension PerformerData {
+	init(_ performer: Performer, favoriteEventIDs: Set<UUID>) throws {
+		header = try .init(performer)
+		pronouns = performer.pronouns
+		bio = performer.bio
+		organization = performer.organization
+		title = performer.title
+		website = performer.website
+		facebookURL = performer.facebookURL
+		xURL = performer.xURL
+		instagramURL = performer.instagramURL
+		youtubeURL = performer.youtubeURL
+		isOfficialPerformer = performer.officialPerformer
+		self.events = try performer.events.map { try EventData($0, isFavorite: favoriteEventIDs.contains($0.requireID())) }
+		self.yearsAttended = performer.yearsAttended
+	}
+	
+	// Empty performerData for users that don't have a Performer object
+	init() {
+		header = .init()
+		isOfficialPerformer = false
+		events = []
+		yearsAttended = []
+	}
+}
+
+/// Wraps up a list of performers with pagination info.
+/// 
+/// Returned by:`GET /api/v3/performer/official`
+/// Returned by:`GET /api/v3/performer/shadow`
+public struct PerformerResponseData: Content {
+	/// The requested performers
+	var performers: [PerformerHeaderData]
+	/// Pagination info.
+	var paginator: Paginator
+}
+
+/// Used to create and update Performer models. 
+/// 
+/// Used by: `POST /api/v3/performer/forEvent/:event_id`
+/// Used by: `POST /api/v3/performer/official/add`
+public struct PerformerUploadData: Content {
+	/// If this is an existing performer that is being updated. Not required for shadow event organizers; we can find them by userID.
+	var performerID: UUID?
+	/// The name of the performer. Required.
+	var name: String
+	var pronouns: String?
+	/// Bio can contain Markdown.
+	var bio: String?
+	/// New photo data if we're updating it, or the name of an existing photo on the server.
+	var photo: ImageUploadData
+	/// TRUE if this is an official performer, FALSE if it's a shadow event organizer. Note that this struct can't link a Performer with a User, so can't be
+	/// used by admin/mods to create Shadow Event Organizers. The idea is that they should create their records themselves, but mods may have to edit them. 
+	var isOfficialPerformer: Bool
+	var organization: String?
+	var title: String?
+	var yearsAttended: [Int]
+	/// Social media URLs. Should be actual URLs we put into an HREF.
+	var website: String?
+	/// Social media URLs. Should be actual URLs we put into an HREF.
+	var facebookURL: String?
+	/// Social media URLs. Should be actual URLs we put into an HREF.
+	var xURL: String?
+	/// Social media URLs. Should be actual URLs we put into an HREF.
+	var instagramURL: String?
+	/// Social media URLs. Should be actual URLs we put into an HREF.
+	var youtubeURL: String?
+	/// UIDs of events where this performer is scheduled to appear.
+	var eventUIDs: [String]
+}
+
+extension PerformerUploadData {
+	/// Used to add Performer data to a UserSaveRestoreData for user archiving
+	init(_ performer: Performer) throws {
+		performerID = try performer.requireID()
+		name = performer.name
+		pronouns = performer.pronouns
+		bio = performer.bio
+		photo = ImageUploadData(filename: performer.photo)
+		isOfficialPerformer = performer.officialPerformer
+		organization = performer.organization
+		title = performer.title
+		yearsAttended = performer.yearsAttended
+		website = performer.website
+		facebookURL = performer.facebookURL
+		xURL = performer.xURL
+		instagramURL = performer.instagramURL
+		youtubeURL = performer.youtubeURL
+		if performer.$events.value != nil {
+			eventUIDs = performer.events.map { $0.uid }
+		}
+		else {
+			eventUIDs = []
+		}
+	}
 }
 
 /// Returns info about a single Photo from the Photostream.

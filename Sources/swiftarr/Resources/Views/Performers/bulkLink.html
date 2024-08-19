@@ -1,0 +1,41 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+			<div class="row">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="swiftarr-breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="swiftarr-breadcrumb-item"><a href="/admin/performer/root">Manage Performers</a></li>
+							<li class="swiftarr-breadcrumb-item active" aria-current="page">Bulk Link Performers To Events</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<ul class="list-group mt-3">
+				<li class="list-group-item active">
+					<b>Upload Schedule Excel Document</b>
+				</li>
+				<li class="list-group-item bg-transparent">
+					Uploads an Excel spreadsheet with info on which performers are performing in which events. This document comes from THO. After tapping 'Upload' you'll be taken to a page that previews
+					what changes the import will have on the database. 
+				</li>
+				<li class="list-group-item bg-transparent mb-3">				
+					<form class="ajax" action="/admin/performer/link/upload" enctype="multipart/form-data" method="POST" data-successurl="/admin/performer/link/verify" id="userfileuploadform">
+						<div class="container-fluid">
+							<div class="row mb-2"> 
+								<input type="file" accept=".xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" name="performerlinks" required>
+							</div>
+							<div class="alert alert-danger mt-3 d-none" role="alert"></div>
+							<div class="row mb-2">
+								<div class="col col-auto gx-0">
+									<button type="submit" class="btn btn-primary">Upload<span class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span></button>
+								</div>
+							</div>
+						</div>
+					</form>
+				</li>
+			</ul>
+    	</div>
+	#endexport
+#endextend

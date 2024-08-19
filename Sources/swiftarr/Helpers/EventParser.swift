@@ -261,7 +261,8 @@ final class EventParser {
 					eventType: updated.eventType.rawValue,
 					lastUpdateTime: updated.updatedAt ?? Date(),
 					forum: nil,
-					isFavorite: false
+					isFavorite: false,
+					performers: []
 				)
 				responseData.createdEvents.append(eventData)
 			}
@@ -284,7 +285,8 @@ final class EventParser {
 					eventType: updated.eventType.rawValue,
 					lastUpdateTime: updated.updatedAt ?? Date(),
 					forum: nil,
-					isFavorite: false
+					isFavorite: false,
+					performers: []
 				)
 				if existing.startTime != updated.startTime || existing.endTime != updated.endTime {
 					responseData.timeChangeEvents.append(eventData)

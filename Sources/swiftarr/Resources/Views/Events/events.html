@@ -116,60 +116,7 @@
 			</li>
 		#else:
 			#for(event in events):
-				<li class="list-group-item bg-transparent collapse show has-action-bar"
-						data-bs-toggle="true"
-						data-eventid="#(event.eventID)"
-						data-eventfavorite=#if(event.isFavorite == true):"true"#else:"false"#endif
-						data-eventcategory="#(event.eventType)"
-						data-cruiseday="#cruiseDayIndex(event.startTime)"
-						data-starttime="#(event.startTime)"
-						data-endtime="#(event.endTime)">
-					<div class="container-fluid">
-						<div class="row">
-							<div class="col">
-								<span class="event-favorite-icon #if(!event.isFavorite):d-none#endif">⭐</span>
-								<b>#(event.title)</b>
-							</div>
-						</div>
-						<div class="row">
-							<div class="col-sm">
-								<span class="text-secondary"><i>#eventTime(event.startTime, event.endTime)</i></span>
-							</div>
-							<div class="col-sm text-sm-end">
-								#(event.location)
-							</div>
-						</div>
-						<div class="row collapse justify-content-end #if(count(events) == 1):show#endif" data-label="actionbar">
-							<div class="col-12">
-								#(event.description)
-							</div>
-							<div class="col col-auto btn-group btn-group-sm mt-1" role="group" aria-label="Event actions">
-								#if(event.forum):
-									<a class="btn btn-outline-primary" href="/forum/#(event.forum)">Forum</a>
-								#endif
-								<a class="btn btn-outline-primary" href="/events/#(event.eventID)/calendarevent.ics">Add to Calendar</a>
-								#if(trunk.userIsLoggedIn):
-									<input type="checkbox" class="btn-check" autocomplete="off" data-action="follow"
-											data-actionpath="/events/#(event.eventID)/favorite"
-											data-istoggle="true"
-											data-errordiv="#(event.eventID)_errorDisplay"
-											id="#(event.eventID)_follow"
-											#if(event.isFavorite):checked#endif>
-									<label class="btn btn-outline-primary" for="#(event.eventID)_follow">
-										Follow
-										<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-										<span class="visually-hidden">Loading...</span>
-									</label>
-								#endif
-							</div>
-						</div>
-						<div class="row">
-							<div class="col text-end text-danger d-none" id="#(event.eventID)_errorDisplay">
-								Could not follow/unfollow event: <span class="errortext"></span>
-							</div>
-						</div>
-					</div>
-				</li>
+				#extend("/Events/event")
 			#endfor
 		#endif
 		</ul>

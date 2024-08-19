@@ -16,7 +16,8 @@ let package = Package(
 		.package(url: "https://github.com/vapor/queues-redis-driver.git", from: "1.1.1"),
 		.package(url: "https://github.com/swift-server/swift-prometheus.git", from: "2.0.0-alpha"),
 		.package(url: "https://github.com/johnsundell/ink.git", from: "0.6.0"),
-		.package(url: "https://github.com/weichsel/ZIPFoundation.git", .upToNextMajor(from: "0.9.0"))
+		.package(url: "https://github.com/weichsel/ZIPFoundation.git", .upToNextMajor(from: "0.9.0")),
+		.package(url: "https://github.com/challfry/CoreXLSX.git", .upToNextMinor(from: "0.14.1")),
 	],
 	targets: [
 		.systemLibrary(name: "gd", pkgConfig: "gdlib", providers: [.apt(["libgd-dev"]), .brew(["gd"]), .yum(["gd-devel"])]),
@@ -35,6 +36,7 @@ let package = Package(
 				.product(name: "QueuesRedisDriver", package: "queues-redis-driver"),
 				.product(name: "Prometheus", package: "swift-prometheus"),
 				.product(name: "Ink", package: "ink"),
+				.product(name: "CoreXLSX", package: "CoreXLSX"),
 				"gd",
 				"jpeg",
 				"gdOverrides",
@@ -60,7 +62,17 @@ let package = Package(
 
 var swiftSettings: [SwiftSetting] { [
 	.enableUpcomingFeature("DisableOutwardActorInference"),
+//	.enableUpcomingFeature("BareSlashRegexLiterals"),
 //	.enableExperimentalFeature("StrictConcurrency"),
 //	.unsafeFlags(["-Xfrontend", "-strict-concurrency=complete"])
 //	.unsafeFlags(["-Xfrontend", "-warn-concurrency"])
 ] }
+
+/// Because I have discovered and forgotten this 3 times now, and because it's difficult to find the answer as it's Google-obscured:
+///
+/// To make changes to a package and test them in Swiftarr, checkout the package locally and replace the `.package(url:...)` line with `.package(path: "<filepath>")`.
+/// Accessing the package this way also makes it not process any version restrictions.
+/// The path is rooted at the Package.swift's directory, may include `../..` and can probably include absolute paths.
+/// 
+/// I'm calling this solution 'google-obscured' because there's tons of info out there on how to edit a package that's part of a `.xcodeproj` project file, and the method to do that
+/// is very different than how to do it with a `Package.swift` project.

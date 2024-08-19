@@ -1,0 +1,202 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+    		<div class="row align-items-center justify-content-between mb-2">
+    			<div class="col col-12">
+					<nav aria-label="breadcrumb">
+						<span class="swiftarr-breadcrumb-item"><a href="/events">Events</a></span>
+						<span class="swiftarr-breadcrumb-item active" aria-current="page">Add/Edit Event Organizer</span>
+					</nav>
+				</div>
+			</div>
+			<p>This form is for the <b>organizer</b> of this event. If you want to <i>attend</i> this event this form is not for you.</p>
+			<p>This self-service form allows you, the organizer of a Shadow Event, to create a Bio page for yourself, attached to the event you'll
+			be running. This Bio page is not publicly linked to your Twitarr user. The intent of this feature is to let people
+			thinking of attending your session know a bit about you.</p>
+			#if(deleteAction && alreadyAttached):
+				<p>You <b>already</b> have a profile set up and attached to this event. You can edit the profile fields and re-submit to update,
+				and will stay listed as an organizer for:</p>
+			#elseif(deleteAction):
+				<p>You <b>already</b> have a profile set up and attached to another event. Submitting this form will list you as an organizer
+				of this additional event:</p>
+			#else:
+				<p>The event you'll be running:</p>
+			#endif
+			<ul class="list-group">
+				<li class="list-group-item">
+					<div class="container-fluid">
+						<div class="row">
+							<div class="col">
+								<b>#(event.title)</b>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-sm">
+								<span class="text-secondary"><i>#eventTime(event.startTime, event.endTime)</i></span>
+							</div>
+							<div class="col-sm text-sm-end">
+								#(event.location)
+							</div>
+						</div>
+						<div class="row justify-content-end" data-label="actionbar">
+							<div class="col-12">
+								#(event.description)
+							</div>
+						</div>
+					</div>
+				</li>
+			</ul>
+			<div class="text-center">
+				<hr>
+				<h3 class="mt-2">The Unofficial Form</h3>
+				<h3>for Shadow Event Organizers</h3>
+				<h3>to Post Their Bio</h3>
+				<hr>
+			</div>
+			<p>
+				The information below will appear on your Twitarr Shadow Event Organizer page, and the name you enter here will appear in
+				the Event card for your event in Twitarr's schedule.
+			</p>
+
+			<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST" data-successurl="/events">
+				#if(performer.header.id != nil):
+					<input type="hidden" name="performerID" id="performerID" value="#(performer.header.id)">
+				#endif
+				<input type="hidden" name="eventUID" id="eventUID" value="#(event.uid)">
+				<div class="row mt-4">
+    				<div class="col">
+						<label for="name" class="form-label">Your Name</label>
+						<input type="text" class="form-control" id="name" name="name" aria-describedby="nameHelp" value="#(performer.header.name)">
+					</div>
+				</div>
+				<div class="row mt-4">
+    				<div class="col">
+						<label for="name" class="form-label">Your Pronouns</label>
+						<input type="text" class="form-control" id="pronouns" name="pronouns" aria-describedby="pronounsHelp" value="#(performer.pronouns)">
+    					<div id="pronounsHelp" class="form-text">
+						</div>
+					</div>
+				</div>
+				
+				<div class="row mt-4">
+    				<div class="col col-12">
+						<label for="photo" class="form-label">Head Shot Photo</label>
+					</div>
+					<div class="col">
+						<div class="card" style="width: 312px;">
+							<div class="m-1 border img-for-upload-container">
+								<div class="ratio ratio-1x1">
+									<img src="data:," width=300 height=300 class="img-for-upload" alt="">
+								</div>
+							</div>
+							<p class="text-center no-image-marker"><i>no photo selected</i></p>
+							<div class="container-fluid p-1">
+								<div class="row">
+									<div class="col">
+										<label class="btn btn-primary col-12 form-label">
+											<input class="image-upload-input d-none" type="file" accept="image/png, image/jpeg" name="photo" aria-describedby="photoHelp">
+											Choose Photo
+										</label>
+										<input type="hidden" value="#(performer.header.photo)" name="serverPhoto">
+										<input type="hidden" id="photo-upload-url" name="photoURL" class="photo-upload-url">
+									</div>
+								</div>
+								<div class="row justify-content-between m-0">
+									<div class="col col-auto p-0 m-0">
+										<button type="button" class="btn btn-primary btn-sm twitarr-image-remove">Remove</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+    				<div class="col">
+						<div id="photoHelp" class="form-text">
+							Drag and drop your head shot photo into the image area, or tap "Choose Photo". The photo is optional, but if you add a photo, please make it a photo
+							of you, head and shoulders, centered in the frame. 
+						</div>
+					</div>
+				</div>
+						
+				<div class="row mt-4">
+    				<div class="col">
+						<label for="org" class="form-label">Organization</label>
+						<input type="text" class="form-control" id="org" name="org" value="#(performer.organization)" aria-describedby="orgHelp">
+    					<div id="orgHelp" class="form-text">
+    						Optional name of a company, NGO, band, or professional association you're a part of, 
+							IF such membership is relevant to the event you're running.
+						</div>
+					</div>
+				</div>
+				<div class="row mt-4">
+    				<div class="col">
+						<label for="title" class="form-label">Title</label>
+						<input type="text" class="form-control" id="title" value="#(performer.title)" aria-describedby="titleHelp">
+    					<div id="titleHelp" class="form-text">
+    						If you have a title that's relevant to your event, you can enter it here. Or, you can leave it blank.
+						</div>
+					</div>
+				</div>
+				<div class="row mt-4">
+    				<div class="col">
+						<label for="bio" class="form-label">Personal Bio</label>
+						<textarea class="form-control" id="bio"
+								maxlength="2000" 
+								data-lengthlabel="bioLimitsLabel" 
+								rows="4" 
+								placeholder="Enter your Bio here" 
+								name="bio"
+								aria-describedby="bioHelp"
+						>#(performer.bio)</textarea>
+					</div>
+				</div>
+				<div class="row justify-content-end">
+					<div class="col col-auto">
+						<div class="input-group-text input-group-sm py-0" id="bioLimitsLabel"></div>
+					</div>
+				</div>
+				<div id="bioHelp" class="row form-text">
+					<div class="col">
+						This is where you can write about who you are, and why people should come see your events. You don't
+						need to describe the events themselves here; the Event Description has that info.
+					</div>
+				</div>
+				<div class="row mt-4 align-items-center">
+					<div class="col">
+						<small>Please remember to abide by the <a href="/codeOfConduct">Code&nbsp;of&nbsp;Conduct</a></small>
+					</div>
+					<div class="col col-auto">
+						<button type="submit" class="btn btn-primary">Submit<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+					</div>
+				</div>
+				<div class="alert alert-danger mt-3 d-none" role="alert"></div>				
+			</form>
+			<div class="row mt-4 mb-2">
+				<div class="col">
+					If you're running multiple events: fill in your information and submit, then find the other events you're running and
+					tap "Set Organizer" again, re-submitting this form with no changes. This will attach your bio to each event you're running.
+					Note that you can't have different bios for different events. 
+				</div>
+			</div>
+			
+			#if(deleteAction):
+				<hr>
+				<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST" data-successurl="/events">
+					<div class="row mt-2 justify-content-end">
+						<div class="col col-12">
+							If you've decided you don't want an event organizer page after all, tap "Delete Profile" to remove it. If you've accidentially
+							attached to the wrong event, you'll have to delete your profile and re-create it (sorry!).
+						</div>
+						<div class="col col-auto mt-2">
+							<button type="submit" class="btn btn-primary">Delete Profile<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+						</div>
+						<div class="alert alert-danger mt-3 d-none" role="alert"></div>				
+					</div>
+				</form>   
+			#endif
+		</div>
+		
+	#endexport
+#endextend
+

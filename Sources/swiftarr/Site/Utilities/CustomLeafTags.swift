@@ -637,3 +637,23 @@ struct DinnerTeamTag: LeafTag {
 		return LeafData.string(dinnerTeam.label)
 	}
 }
+
+// Similar to the built-in `isEmpty` Leaf tag, except it returns LeafData(false) if its argument is LeafData(nil).
+// isEmpty() throws an error if presented with nil, and is not a great choice for optional strings.
+// Note that we can't distinguish between a value that was nil in the context before it got serialized and a variable name
+// that wasn't ever in the context (like a typo).
+struct NotEmptyTag: LeafTag {
+    func render(_ ctx: LeafContext) throws -> LeafData {
+		try ctx.requireParameterCount(1)
+		guard let leafData = ctx.parameters.first else {
+            throw "Couldn't extract first parameter to NotEmpty tag"
+		}
+		if leafData.isNil {
+			return .bool(false)
+		}
+    	guard let str = leafData.string else {
+            throw "unable to check for empty value unexpected data"
+        }
+        return .bool(!str.isEmpty)
+    }
+}

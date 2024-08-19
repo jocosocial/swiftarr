@@ -71,7 +71,12 @@ struct SiteMinUserAccessLevelMiddleware: AsyncMiddleware {
 				throw Abort(.forbidden, reason: "Access is restricted to \(requireAccessLevel.visibleName()) or higher.")
 			}
 			if requireAuth, !user.accessLevel.hasAccess(Settings.shared.minAccessLevel) {
-				if !Settings.shared.enablePreregistration || request.route?.usedForPreregistration() != true {
+				if Settings.shared.enablePreregistration {
+					if request.route?.usedForPreregistration() != true {
+						throw Abort(.forbidden, reason: "Thanks for creating an account! Parts of Twitarr aren't available until we're on the ship as we're currently busy \(pirateErrorExplanation()).")
+					}
+				}
+				else {
 					throw Abort(.forbidden, reason: "Twitarr is down for maintenance; we're busy \(pirateErrorExplanation()).")
 				}
 			}

@@ -55,7 +55,7 @@ final class Event: Model, Searchable {
 	@Siblings(through: EventFavorite.self, from: \.$event, to: \.$user) var favorites: [User]
 
 	/// The organizers or performers for the event
-	@Siblings(through: EventPerformer.self, from: \.$event, to: \.$performer) var events: [Performer]
+	@Siblings(through: EventPerformer.self, from: \.$event, to: \.$performer) var performers: [Performer]
 	
 	// MARK: Initialization
 

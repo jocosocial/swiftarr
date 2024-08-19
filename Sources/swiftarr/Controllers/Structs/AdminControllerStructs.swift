@@ -31,11 +31,27 @@ extension AnnouncementCreateData: RCFValidatable {
 /// where there's one important error buried in a thousand 'duplicate name and regcode' errors.
 public struct BulkUserUpdateVerificationData: Content {
 	/// If TRUE, this structure is returned as the result of the 'apply' method, and the values in this struct reflect changes actually made to the db.
-	/// If FALSE, this structure shows the result of the validation pass and no users were actually imported.
+	/// If FALSE, this structure shows the result of the validation pass and no database changes were saved.
 	var changesApplied: Bool
-	/// Number of entries with the same reg code and same username as an existing entry. Doesn't check the other fields in the user object.
-	/// These cases are almost certainly true duplicates--either a previous bulk import, or the same user managed to create accounts on both servers.
-	var duplicateCount: Int		
+
+	public struct BulkUserUpdateCounts: Content {
+		/// Number of  records found in the file
+		var totalRecordsProcessed: Int
+		/// The number of records that were successfully imported.
+		var importedCount: Int
+		/// Number of records that we didn't import because it appars the record is already in the DB.
+		/// For Users, this means the same reg code and same username. Doesn't check the other fields in the user object.
+		/// For Performers, this means a Performer record with the same name.
+		/// These cases are almost certainly true duplicates--either a previous bulk import, or the same user managed to create accounts on both servers.
+		var duplicateCount: Int
+		/// Number of records that we couldn't import due to errors. 
+		var errorCount: Int
+	}
+	/// Counts for User import. 
+	var userCounts: BulkUserUpdateCounts
+	/// Counts for Performer import. Includes both official and shadow performers.
+	var performerCounts: BulkUserUpdateCounts
+
 	/// Cases where the server has a registered user with the same regcode as the update file, but the usernames differ.
 	/// This may mean the user preregistered and then (somehow) registered on-boat with a different username before the bulk import happened.
 	var regCodeConflicts: [String]		
@@ -45,10 +61,6 @@ public struct BulkUserUpdateVerificationData: Content {
 	var usernameConflicts: [String]
 	/// Cases where the import threw an error.
 	var errorNotImported: [String]
-	/// The number of user accounts that were successfully imported.
-	var importedUserCount: Int
-	/// Number of User records processed
-	var totalRecordsProcessed: Int
 	/// Errors that occurred while processing non-critical user data. These errors did not prevent import, but some data tied to the user (like favorite events/songs/boardgames) may not have imported.
 	var otherErrors: [String]
 }
@@ -56,12 +68,11 @@ public struct BulkUserUpdateVerificationData: Content {
 extension BulkUserUpdateVerificationData {
 	init(forVerification: Bool) {
 		changesApplied = !forVerification
-		duplicateCount = 0
+		userCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
+		performerCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
 		regCodeConflicts = []
 		usernameConflicts = []
 		errorNotImported = []
-		importedUserCount = 0
-		totalRecordsProcessed = 0
 		otherErrors = []
 	}
 }
@@ -133,6 +144,30 @@ extension EventUpdateLogData {
 	}
 }
 
+/// Used to report  what the results of applying an update to the Event-Performer pivots is going to do. The uploaded source information
+/// is an Excel spreadsheet containing all the published events, with information on which official performers (if any) will be performing at each event.
+/// 
+/// When uploading a new performer links spreadsheet, it's important that both Events and Performers are fully updated first. This operation doesn't create
+/// performers or events, just links them with a pivot.
+///
+/// Returned  by: `POST /api/v3/admin/schedule/verify`
+public struct EventPerformerValidationData: Content {
+	/// The number of performers in the database
+	var oldPerformerCount: Int
+	/// The number of performers found in the Excel spreadsheet.
+	var newPerformerCount: Int
+	/// The number of performers in the spreadsheet that aren't in the db.
+	var missingPerformerCount: Int
+	/// The number of performers in the db but not in the spreadsheet
+	var noEventsPerformerCount: Int
+	/// The number of Events in the spreadsheet that list official performers and were matched with db events.
+	var eventsWithPerformerCount: Int
+	/// Number of events in spreadsheet that we couldn't match with any database event.
+	var unmatchedEventCount: Int
+	/// Errors detected while processing. Most errors won't prevent the update (although "Couldn't Open Worksheet" will).
+	var errors: [String]
+}
+
 /// Returns the registration code associated with a user. Not all users have registration codes; e.g. asking for the reg code for 'admin' will return an error.
 public struct RegistrationCodeUserData: Content {
 	// User accounts associated with the reg code. First item in the array is the primary account.
@@ -166,6 +201,14 @@ public struct RegistrationCodeStatsData: Content {
 	/// This exists so that if admins create new reg codes for people who lost theirs, we can track it.
 	/// There isn't yet any API for admins to do this; the number will be 0.
 	var adminCodes: Int
+}
+
+/// The Bulk User Download file is a serialization of this object, plus a bunch of image files, all zipped up.
+public struct SaveRestoreData: Content {
+	/// Array of users to save and restore. 
+	var users: [UserSaveRestoreData]
+	/// Array of official performers to save and restore.
+	var performers: [PerformerUploadData]
 }
 
 /// Used to enable/disable features. A featurePair with name: "kraken" and feature: "schedule" indicates the Schedule feature of the Kraken app.
@@ -319,9 +362,12 @@ struct UserSaveRestoreData: Content {
 	var username: String
 	var displayName: String?
 	var realName: String?
-	var password: String					// BCrypt hashed.
-	var recoveryKey: String					// BCrypt hashed.
-	var verification: String				// Registration code - 6 letters, lowercased
+	// BCrypt hashed.
+	var password: String					
+	// BCrypt hashed.
+	var recoveryKey: String					
+	// Registration code - 6 letters, lowercased
+	var verification: String				
 	var accessLevel: UserAccessLevel
 	var userImage: String?
 	var about: String?
@@ -333,12 +379,15 @@ struct UserSaveRestoreData: Content {
 	var dinnerTeam: DinnerTeam?
 	var parentUsername: String?
 	var roles: [UserRoleType]
-	var favoriteEvents: [String]		// Event UIDs, the thing in the ICS file spec--NOT database IDs!
+	/// Event UIDs, the thing in the ICS file spec--NOT database IDs!
+	var favoriteEvents: [String]
+	/// For shadow event organizers, their associated Performer data (which contains the event UIDs for the events 'they're running).
+	var performer: PerformerUploadData?
 	// karaoke, game favorites?
 }
 
 extension UserSaveRestoreData {
-	// For this to work: Must use ".with(\.$roles).with(\.$favoriteEvents)" in query
+	/// For this to work: Must use `.with(\.$roles).with(\.$favoriteEvents).with(\.$performer).with(\.$performer.events)` in query
 	init?(user: User) {
 		guard var regCode = user.verification else {
 			return nil
@@ -367,6 +416,9 @@ extension UserSaveRestoreData {
 		roomNumber = user.roomNumber
 		dinnerTeam = user.dinnerTeam
 		favoriteEvents = user.favoriteEvents.map { $0.uid }
+		if let perf = user.performer {
+			performer = try? PerformerUploadData(perf)
+		}
 	}
 }
 
