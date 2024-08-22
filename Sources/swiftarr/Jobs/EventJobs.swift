@@ -154,9 +154,42 @@ public struct UserEventNotificationJob: AsyncScheduledJob {
 		}
 	}
 
+	func processPersonalEvents(_ context: QueueContext) async throws {
+		guard Settings.shared.upcomingEventNotificationSetting != .disabled else {
+			context.logger.info("Upcoming event notifications have been disabled.")
+			return
+		}
+
+		let filterDate = Settings.shared.getScheduleReferenceDate(Settings.shared.upcomingEventNotificationSetting)
+		let portCalendar = Settings.shared.getPortCalendar()
+		let filterStartTime = portCalendar.date(
+			byAdding: .second,
+			value: Int(Settings.shared.upcomingEventNotificationSeconds),
+			to: filterDate
+		)!
+
+		let upcomingEvents: [PersonalEvent] = try await PersonalEvent.query(on: context.application.db)
+			.filter(\.$startTime == filterStartTime)
+			.all()
+
+		for event in upcomingEvents {
+			let eventID = try event.requireID()
+			let infoStr = "Reminder: \(event.title) is starting Soon™."
+			var notifyUsers: [UUID] = [event.$owner.id]
+			notifyUsers.append(contentsOf: event.participantArray)
+			context.application.websocketStorage.forwardToSockets(
+				app: context.application,
+				users: notifyUsers,
+				type: .personalEventStarting(eventID),
+				info: infoStr
+			)
+		}
+	}
+
 	public func run(context: QueueContext) async throws {
 		context.logger.info("Running UserEventNotificationJob")
 		try await processEvents(context)
-		try await processFezzes(context)
+		try await processFezzes(context) 
+		try await processPersonalEvents(context)
 	}
 }
