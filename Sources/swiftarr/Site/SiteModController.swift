@@ -56,7 +56,7 @@ struct SiteModController: SiteControllerUtils {
 		modRoutes.get("moderate", "userprofile", userIDParam, use: moderateUserProfileContentPageHandler).destination("the moderation page for this user profile")
 		modRoutes.get("moderate", "user", userIDParam, use: moderateUserContentPageHandler).destination("the moderation page for this user")
 		modRoutes.get("moderate", "photostream", streamPhotoParam, use: moderatePhotostreamPhotoPageHandler).destination("the moderation page for the photostream")
-		
+		modRoutes.get("moderate", "personalevent", personalEventIDParam, use: moderatePersonalEventPageHandler).destination("the moderation page for this personalevent")
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let modPrivateRoutes = getPrivateRoutes(app).grouped(SiteRequireModeratorMiddleware())
@@ -309,7 +309,7 @@ struct SiteModController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Missing search parameter.")
 		}
 		let response = try await apiQuery(req, endpoint: "/mod/forumpost/\(postID)")
-		let modData = try response.content.decode(ForumPostModerationData.self)
+		let modData: ForumPostModerationData = try response.content.decode(ForumPostModerationData.self)
 		struct ReportContext: Encodable {
 			var trunk: TrunkContext
 			var modData: ForumPostModerationData
@@ -819,6 +819,36 @@ struct SiteModController: SiteControllerUtils {
 		}
 		let response = try await apiQuery(req, endpoint: "/mod/user/\(userID)/tempquarantine/0", method: .POST)
 		return response.status
+	}
+
+	// MARK: PersonalEvent Moderation
+
+	/// `GET /moderate/personalevent/:eventID`
+	///
+	/// Shows the moderate page for PersonalEvents.
+	func moderatePersonalEventPageHandler(_ req: Request) async throws -> View {
+		guard let eventID = req.parameters.get(personalEventIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing personalevent_id parameter.")
+		}
+		let response = try await apiQuery(req, endpoint: "/mod/personalevent/\(eventID)")
+		let modData = try response.content.decode(PersonalEventModerationData.self)
+		struct ReportContext: Encodable {
+			var trunk: TrunkContext
+			var modData: PersonalEventModerationData
+			// Needed for Events/personalEvent templating
+			var event: PersonalEventData
+			var firstReport: ReportModerationData?
+
+			init(_ req: Request, modData: PersonalEventModerationData) throws {
+				self.modData = modData
+				print(modData)
+				trunk = .init(req, title: "Personal Event Moderation", tab: .moderator)
+				self.event = modData.personalEvent
+				firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
+			}
+		}
+		let ctx = try ReportContext(req, modData: modData)
+		return try await req.view.render("moderation/personalEvent", ctx)
 	}
 
 }

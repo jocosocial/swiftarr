@@ -364,6 +364,24 @@ public struct UserModerationData: Content {
 	var reports: [ReportModerationData]
 }
 
+/// Used to return data a moderator needs to moderate a PersonalEvent.
+///
+/// Returned by:
+/// * `GET /api/v3/mod/personalevent/id`
+///
+/// See `ModerationController.personalEventModerationHandler(_:)`
+public struct PersonalEventModerationData: Content {
+	/// The event in question
+	var personalEvent: PersonalEventData
+	/// TRUE if the event has been soft-deleted (A soft-deleted event appears deleted, doesn't appear in the list,
+	// but can still be viewed by moderators when accessed via a report or a moderationAction).
+	var isDeleted: Bool
+	/// The moderation status of this event. Whether it has been locked or quarantined.
+	var moderationStatus: ContentModerationStatus
+	/// User reports against this post.
+	var reports: [ReportModerationData]
+}
+
 extension UserModerationData {
 	init(user: User, subAccounts: [User], reports: [ReportModerationData]) throws {
 		header = try UserHeader(user: user)

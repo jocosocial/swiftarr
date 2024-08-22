@@ -58,6 +58,8 @@ struct ModerationController: APIRouteCollection {
 		moderatorAuthGroup.post("microkaraoke", "snippet", mkSnippetIDParam, "delete", use: deleteSnippet)
 		moderatorAuthGroup.delete("microkaraoke", "snippet", mkSnippetIDParam, use: deleteSnippet)
 		moderatorAuthGroup.post("microkaraoke", "approve", mkSongIDParam, use: approveSong)
+
+		moderatorAuthGroup.get("personalevent", personalEventIDParam, use: personalEventModerationHandler)
 	}
 
 	// MARK: - tokenAuthGroup Handlers (logged in)
@@ -870,5 +872,32 @@ struct ModerationController: APIRouteCollection {
 		try await addNotifications(users: singers, type: .microKaraokeSongReady(songID), info: infoStr, on: req)
 
 		return .ok
+	}
+
+	// MARK: PersonalEvent
+	func personalEventModerationHandler(_ req: Request) async throws -> PersonalEventModerationData {
+		guard let paramVal = req.parameters.get(personalEventIDParam.paramString), let eventID: UUID = UUID(paramVal) else {
+			throw Abort(.badRequest, reason: "Request parameter \(personalEventIDParam.paramString) is missing.")
+		}
+		guard let personalEvent = try await PersonalEvent.query(on: req.db).filter(\._$id == eventID).withDeleted().first() else {
+			throw Abort(.notFound, reason: "no value found for identifier '\(paramVal)'")
+		}
+		let reports = try await Report.query(on: req.db)
+			.filter(\.$reportType == .personalEvent)
+			.filter(\.$reportedID == paramVal)
+			.sort(\.$createdAt, .descending).all()
+
+		let ownerHeader = try req.userCache.getHeader(personalEvent.$owner.id)
+		let participantHeaders = try personalEvent.participantArray.map { try req.userCache.getHeader($0) }
+		let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
+		let personalEventData = try PersonalEventData(personalEvent, ownerHeader: ownerHeader, participantHeaders: participantHeaders)
+
+		let modData = PersonalEventModerationData(
+			personalEvent: personalEventData,
+			isDeleted: personalEvent.deletedAt != nil,
+			moderationStatus: personalEvent.moderationStatus,
+			reports: reportData
+		)
+		return modData
 	}
 }

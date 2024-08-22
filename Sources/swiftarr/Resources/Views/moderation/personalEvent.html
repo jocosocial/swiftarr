@@ -1,0 +1,71 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 mt-2">
+    		<div class="row align-items-end">
+    			<div class="col col-auto">
+			    	<h6><b>Moderate Personal Event #(modData.personalEvent.personalEventID)</b></h6>
+				</div>
+			</div>
+			<div class="row mb-3">
+				<div class="col" data-reportabletype="personalevent" data-reportableid="#(modData.personalEvent.personalEventID)">
+					#if(!modData.isDeleted):
+						<a class="btn btn-outline-primary btn-sm" href="/personalevent/edit/#(modData.personalEvent.personalEventID)">Edit</a>
+						<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
+						<span class="dropdown">
+							<button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+								Set State
+							</button>
+							<ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+								<li><button class="dropdown-item" type="button" data-action="setModState" data-newstate="normal">Normal</button></li>
+								<li><button class="dropdown-item disabled" type="button">Auto Quarantined</button></li>
+								<li><button class="dropdown-item" type="button" data-action="setModState" data-newstate="quarantined">Quarantined</button></li>
+								<li><button class="dropdown-item" type="button" data-action="setModState" data-newstate="reviewed">Moderator Reviewed (looks good as is)</button></li>
+								<li><button class="dropdown-item" type="button" data-action="setModState" data-newstate="locked">Locked</button></li>
+							</ul>
+						</span>
+						Current State: #(modData.moderationStatus)			
+					#endif
+				</div>
+			</div>
+			<div class="alert alert-danger mt-3 d-none" role="alert" id="ModerateContentErrorAlert">
+			</div>				
+    		<div class="row">
+    			<div class="col col-auto">
+					<a class="btn btn-outline-primary btn-sm" href="/moderate/user/#(modData.personalEvent.owner.userID)">Mod Owning User</a>
+				</div>
+			</div>
+			<div class="row">
+    			#if(modData.isDeleted):
+					<h6><b>Personal Event has been Deleted.<br>Prior to delete, it looked like this:</b></h6>
+    			#else:
+					<h6><b>As it currently exists:</b></h6>
+				#endif
+			</div>
+			<div class="row">
+    			<div class="col">
+					<ul class="container-md mx-0 px-0 list-group">
+						#extend("Events/personalEvent")
+					</ul>
+				</div>
+			</div>
+			#if(count(modData.reports) == 0):
+				<h6><b>No reports on this personal event.</b></h6>
+			#else:				
+				<div class="row mt-3">
+					<h6><b>#count(modData.reports) reports on this personal event:</b></h6>
+				</div>
+				<div class="row mb-3">
+					<div class="col">
+						<button type="button" class="btn btn-primary btn-sm" data-action="handleReports" data-reportid="#(firstReport.id)">Start Handling All</button>
+						<button type="button" class="btn btn-primary btn-sm" data-action="closeReports" data-reportid="#(firstReport.id)">Close All</button>
+					</div>
+				</div>
+				<div class="list-group">
+					#for(report in modData.reports):
+						#extend("moderation/reportListItem")
+					#endfor
+				</div>
+			#endif
+		</div>
+    #endexport
+#endextend

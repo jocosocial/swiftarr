@@ -1,0 +1,31 @@
+<li class="list-group-item bg-transparent show has-action-bar"
+        data-bs-toggle="true"
+        data-eventid="#(event.personalEventID)"
+        data-cruiseday="#cruiseDayIndex(event.startTime)"
+        data-starttime="#(event.startTime)"
+        data-endtime="#(event.endTime)">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col">
+                <b>#(event.title)</b>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm">
+                <span class="text-secondary"><i>#eventTime(event.startTime, event.endTime)</i></span>
+            </div>
+            <div class="col-sm text-sm-end">
+                #(event.location)
+            </div>
+        </div>
+        <div class="row justify-content-end collapse" data-label="actionbar">
+            <div class="col-12">
+                #(event.description)
+            </div>
+            <div class="col col-auto btn-group btn-group-sm mt-1" role="group" aria-label="Event actions">
+                <a class="btn btn-outline-primary" href="/personalevent/#(event.personalEventID)">Edit</a>
+                <a class="btn btn-outline-primary" href="/personalevent/#(event.personalEventID)/calendarevent.ics">Add to Calendar</a>
+            </div>
+        </div>
+    </div>
+</li>
