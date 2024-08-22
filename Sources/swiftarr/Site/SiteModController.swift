@@ -841,7 +841,6 @@ struct SiteModController: SiteControllerUtils {
 
 			init(_ req: Request, modData: PersonalEventModerationData) throws {
 				self.modData = modData
-				print(modData)
 				trunk = .init(req, title: "Personal Event Moderation", tab: .moderator)
 				self.event = modData.personalEvent
 				firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
