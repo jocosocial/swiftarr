@@ -78,6 +78,7 @@ struct SiteModController: SiteControllerUtils {
 		modPrivateRoutes.post("microkaraoke", "song", mkSongIDParam, "approve", use: setMKSongApprovalState)
 		modPrivateRoutes.post("microkaraoke", "snippet", mkSnippetIDParam, "delete", use: deleteMKSnippet)
 		modPrivateRoutes.delete("microkaraoke", "snippet", mkSnippetIDParam, use: deleteMKSnippet)
+		modPrivateRoutes.post("moderate", "personalevent", personalEventIDParam, "members", userIDParam, "remove", use: personalEventMemberRemoveHandler)
 
 		modPrivateRoutes.post("reports", reportIDParam, "handle", use: beginProcessingReportsPostHandler)
 		modPrivateRoutes.post("reports", reportIDParam, "close", use: closeReportsPostHandler)
@@ -835,19 +836,30 @@ struct SiteModController: SiteControllerUtils {
 		struct ReportContext: Encodable {
 			var trunk: TrunkContext
 			var modData: PersonalEventModerationData
-			// Needed for Events/personalEvent templating
-			var event: PersonalEventData
 			var firstReport: ReportModerationData?
 
 			init(_ req: Request, modData: PersonalEventModerationData) throws {
 				self.modData = modData
 				trunk = .init(req, title: "Personal Event Moderation", tab: .moderator)
-				self.event = modData.personalEvent
 				firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 			}
 		}
 		let ctx = try ReportContext(req, modData: modData)
 		return try await req.view.render("moderation/personalEvent", ctx)
+	}
+
+	/// `POST /moderate/personalevent/:eventID/members/:userID/remove`
+	///
+	/// Remove a user from the PersonalEvent
+	func personalEventMemberRemoveHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let eventID = req.parameters.get(personalEventIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing eventID parameter.")
+		}
+		guard let userID = req.parameters.get(userIDParam.paramString) else {
+			throw Abort(.badRequest, reason: "Missing userID parameter.")
+		}
+		let response = try await apiQuery(req, endpoint: "/personalevents/\(eventID)/user/\(userID)/remove", method: .POST)
+		return response.status
 	}
 
 }
