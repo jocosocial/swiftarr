@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 	<meta charset="utf-8">
-	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; connect-src *; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'">
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; connect-src *; img-src 'self' jococruise.com data: blob:; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link href="/css/bootstrap.css" rel="stylesheet">
 	<link href="/css/swiftarr.css" rel="stylesheet">
@@ -70,6 +70,13 @@
     	<div class="container-md ms-0 mt-2">
 			<div class="alert alert-warning mt-3" role="alert">
 				Twitarr is in maintenance mode: Only #(trunk.minAccessLevel) users and above may log in.
+			</div>
+		</div>
+	#endif
+	#if(trunk.pageIsForDisabledFeature != nil):
+    	<div class="container-md ms-0 mt-2">
+			<div class="alert alert-warning" role="alert">
+				Only THO and admin can see this page; '#(trunk.pageIsForDisabledFeature)' feature disable is set.
 			</div>
 		</div>
 	#endif

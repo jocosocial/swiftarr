@@ -28,19 +28,54 @@
 			
 			<table class="table table-bordered">
 				<thead>
+					<tr class="table-secondary">
+						<th scope="col">User Import</th>
+						<th scope="col">#</th>
+					</tr>
 				</thead>
 				<tbody>
 					<tr>
 						<th scope="row">Total Records Processed</th>
-						<td>#(diff.totalRecordsProcessed)</td>
+						<td>#(diff.userCounts.totalRecordsProcessed)</td>
 					</tr>
 					<tr>
 						<th scope="row">Records Imported</th>
-						<td>#(diff.importedUserCount)</td>
+						<td>#(diff.userCounts.importedCount)</td>
 					</tr>
 					<tr>
 						<th scope="row">Duplicates Found</th>
-						<td>#(diff.duplicateCount)</td>
+						<td>#(diff.userCounts.duplicateCount)</td>
+					</tr>
+					<tr>
+						<th scope="row">Errors</th>
+						<td>#(diff.userCounts.errorCount)</td>
+					</tr>
+				</tbody>
+			</table>
+			
+			<table class="table table-bordered">
+				<thead>
+					<tr class="table-secondary">
+						<th scope="col">Performer Import</th>
+						<th scope="col">#</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<th scope="row">Total Records Processed</th>
+						<td>#(diff.performerCounts.totalRecordsProcessed)</td>
+					</tr>
+					<tr>
+						<th scope="row">Records Imported</th>
+						<td>#(diff.performerCounts.importedCount)</td>
+					</tr>
+					<tr>
+						<th scope="row">Duplicates Found</th>
+						<td>#(diff.performerCounts.duplicateCount)</td>
+					</tr>
+					<tr>
+						<th scope="row">Errors</th>
+						<td>#(diff.performerCounts.errorCount)</td>
 					</tr>
 				</tbody>
 			</table>

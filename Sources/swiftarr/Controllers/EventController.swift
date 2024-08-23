@@ -2,6 +2,7 @@ import Crypto
 import Fluent
 import FluentSQL
 import Vapor
+import CoreXLSX
 
 /// The collection of `/api/v3/events/*` route endpoints and handler functions related
 /// to the event schedule.
@@ -17,7 +18,7 @@ struct EventController: APIRouteCollection {
 		// Flexible access endpoints that behave differently for logged-in users
 		let optionalAuthGroup = eventRoutes.flexRoutes(feature: .schedule)
 		optionalAuthGroup.get(use: eventsHandler).setUsedForPreregistration()
-		optionalAuthGroup.get(eventIDParam, use: singleEventHandler)
+		optionalAuthGroup.get(eventIDParam, use: singleEventHandler).setUsedForPreregistration()
 
 		// endpoints available only when logged in
 		let tokenAuthGroup = eventRoutes.tokenRoutes(feature: .schedule)
@@ -62,6 +63,9 @@ struct EventController: APIRouteCollection {
 		}
 		let options = try req.query.decode(QueryOptions.self)
 		let query = Event.query(on: req.db).sort(\.$startTime, .ascending)
+		if !Settings.shared.disabledFeatures.isFeatureDisabled(.performers) {
+			query.with(\.$performers)
+		}
 		if var search = options.search {
 			// postgres "_" and "%" are wildcards, so escape for literals
 			search = search.replacingOccurrences(of: "_", with: "\\_")
@@ -121,12 +125,7 @@ struct EventController: APIRouteCollection {
 			query.filter(\.$startTime >= start).filter(\.$startTime < end)
 		}
 		let events = try await query.all()
-		var favoriteEventIDs = [UUID]()
-		if let user = req.auth.get(UserCacheData.self) {
-			let eventIDs = try events.map { try $0.requireID() }
-			favoriteEventIDs = try await EventFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
-				.filter(\.$event.$id ~~ eventIDs).all().map { $0.$event.id }
-		}
+		let favoriteEventIDs = try await getFavorites(in: req, from: events)
 		let result = try events.map { try EventData($0, isFavorite: favoriteEventIDs.contains($0.requireID())) }
 		return result
 	}
@@ -151,10 +150,13 @@ struct EventController: APIRouteCollection {
 		guard let event = event else {
 			throw Abort(.badRequest, reason: "No event with this UID or database ID found.")
 		}
+		if !Settings.shared.disabledFeatures.isFeatureDisabled(.performers) {
+			let _ = try await event.$performers.get(on: req.db)
+		}
+		
 		var isFavorite = false
 		if let user = req.auth.get(UserCacheData.self) {
-			isFavorite =
-				try await EventFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
+			isFavorite = try await EventFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
 				.filter(\.$event.$id == event.requireID()).first() != nil
 		}
 		return try EventData(event, isFavorite: isFavorite)
@@ -219,7 +221,17 @@ struct EventController: APIRouteCollection {
 			.filter(EventFavorite.self, \.$user.$id == user.userID).sort(\.$startTime, .ascending).all()
 		return try events.map { try EventData($0, isFavorite: true) }
 	}
-
+	
 	// MARK: Utilities
 
+	func getFavorites(in req: Request, from events: [Event]? = nil) async throws -> Set<UUID> {
+		guard let cacheUser = req.auth.get (UserCacheData.self) else {
+			return Set()
+		}
+		let query = EventFavorite.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
+		if let events = events {
+			try query.filter(\.$event.$id ~~ events.map { try $0.requireID() })
+		}
+		return try await Set(query.all().map { $0.$event.id })
+	}
 }

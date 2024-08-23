@@ -15,49 +15,43 @@
 					</div>
 				</div>
 			</div>
-		</div>
 			
 		#if(trunk.userIsLoggedIn):
-			<div class="container-fluid mt-3">
-				#if(redirectURL):
-					<div class="row">
-						<div class="col col-auto">
-							<p>This button should take you to the page you were trying to see before we made you create an account. Thanks for joining!</p>
-						</div>
+			#if(redirectURL):
+				<div class="row mt-3">
+					<div class="col col-auto">
+						<p>This button should take you to the page you were trying to see before we made you create an account. Thanks for joining!</p>
 					</div>
-					<div class="row">
-						<div class="col">
-							<a href="#(redirectURL)" class="btn btn-primary btn-lg" role="button">Finally!</a>
-						</div>
-					</div>
-				#else:
-					<div class="row">
-						<div class="col">
-							<p>Thanks for joining! You're all logged in with your new account. Hit this button when you're ready to continue.</p>
-						</div>
-					</div>
-					<div class="row">
-						<div class="col col-auto">
-							<a href="/" class="btn btn-primary btn-lg" role="button">I'm ready</a>
-						</div>
-					</div>
-				#endif
-			</div>
-		#else:
-			<div class="container-fluid mt-3">
+				</div>
 				<div class="row">
-					<p>We've created your account, but you still need to log in. Tap the button below when you're ready to continue.</p>
+					<div class="col">
+						<a href="#(redirectURL)" class="btn btn-primary btn-lg" role="button">Finally!</a>
+					</div>
+				</div>
+			#else:
+				<div class="row mt-3">
+					<div class="col">
+						<p>Thanks for joining! You're all logged in with your new account. Hit this button when you're ready to continue.</p>
+					</div>
 				</div>
 				<div class="row">
 					<div class="col col-auto">
-						<a href="/login" class="btn btn-primary btn-lg" role="button">I'm ready</a>
+						<a href="/" class="btn btn-primary btn-lg" role="button">I'm ready</a>
 					</div>
+				</div>
+			#endif
+		#else:
+			<div class="row mt-3">
+				<p>We've created your account, but you still need to log in. Tap the button below when you're ready to continue.</p>
+			</div>
+			<div class="row">
+				<div class="col col-auto">
+					<a href="/login" class="btn btn-primary btn-lg" role="button">I'm ready</a>
 				</div>
 			</div>
 		#endif
-		<div class="container-fluid mt-3">
-			<div class="row nav-item">
-				<a class="nav-link" href="/codeOfConduct">I want to read the Code of Conduct and Twit-arr Rules!</a>
+			<div class="row mt-3">
+				<a href="/codeOfConduct">I want to read the Code of Conduct and Twit-arr Rules!</a>
 			</div>
 		</div>
     #endexport

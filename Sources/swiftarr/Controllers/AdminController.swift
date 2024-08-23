@@ -699,8 +699,14 @@ struct AdminController: APIRouteCollection {
 				.filter(RegistrationCode.self, \RegistrationCode.$isDiscordUser == false)
 				.with(\.$favoriteEvents)
 				.with(\.$roles)
+				.with(\.$performer) { performer in
+					performer.with(\.$events)
+				}
 				.all()
-		let dto = users.compactMap { UserSaveRestoreData(user: $0) }
+		let userData = users.compactMap { UserSaveRestoreData(user: $0) }
+		let performers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).with(\.$events).all()
+		let performerData = try performers.map { try PerformerUploadData($0) }
+		let dto = SaveRestoreData(users: userData, performers: performerData)
 		let data = try JSONEncoder().encode(dto)
 		let userfile = sourceDirectoryURL.appendingPathComponent("userfile.json", isDirectory: true)
 		try data.write(to: userfile, options: .atomic)
@@ -708,7 +714,8 @@ struct AdminController: APIRouteCollection {
 		// Copy user avatar images into the '/images' dir inside our temp dir.
 		let destImageDir = sourceDirectoryURL.appendingPathComponent("userImages", isDirectory: true)
 		try FileManager.default.createDirectory(at: destImageDir, withIntermediateDirectories: true)
-		let imageNames = users.compactMap { $0.userImage }
+		let imageNames = users.compactMap { $0.userImage } + users.compactMap { $0.performer?.photo } +
+				performerData.compactMap { $0.photo.filename }
 		for imageName in imageNames {
 			do {
 				let imgSource = Settings.shared.userImagesRootPath.appendingPathComponent(ImageSizeGroup.full.rawValue)
@@ -794,13 +801,16 @@ struct AdminController: APIRouteCollection {
 		}
 		let filepath = try uploadUserDirPath().appendingPathComponent("Twitarr_userfile/userfile.json", isDirectory: false)
 		let buffer = try await req.fileio.collectFile(at: filepath.path)
-		let importUserList = try JSONDecoder().decode([UserSaveRestoreData].self, from: buffer)
+		let importData = try JSONDecoder().decode(SaveRestoreData.self, from: buffer)
 		var verification = BulkUserUpdateVerificationData(forVerification: verifyOnly)
-		for newUser in importUserList where newUser.parentUsername == nil {
+		for newUser in importData.users where newUser.parentUsername == nil {
 			await importUser(req, userToImport: newUser, verifyOnly: verifyOnly, verification: &verification)
 		}
-		for newUser in importUserList where newUser.parentUsername != nil {
+		for newUser in importData.users where newUser.parentUsername != nil {
 			await importUser(req, userToImport: newUser, verifyOnly: verifyOnly, verification: &verification)
+		}
+		for performer in importData.performers {
+			await importPerformer(req, performerData: performer, verifyOnly: verifyOnly, verification: &verification)
 		}
 		return verification
 	}
@@ -909,43 +919,136 @@ struct AdminController: APIRouteCollection {
 				}
 			}
 			switch importResult {
-				case .duplicate: verification.duplicateCount += 1
+				case .duplicate:
+					verification.userCounts.duplicateCount += 1
 				case .usernameConflict(let name): verification.usernameConflicts.append("User \(name) already exists; tied to a different reg code")
+					verification.userCounts.errorCount += 1
 				case .regCodeConflict(let errorstring): verification.regCodeConflicts.append(errorstring)
+					verification.userCounts.errorCount += 1
 				case .noRegCodeFound(let name): verification.errorNotImported.append("While importing \(name): Reg code doesn't match any code in db")
+					verification.userCounts.errorCount += 1
 				case .errorNotImported(let err): verification.errorNotImported.append(err.localizedDescription)
-				case .imported(let userID): 
-					verification.importedUserCount += 1
-					importedUserID = userID
+					verification.userCounts.errorCount += 1
+				case .imported(let userID): importedUserID = userID
+					verification.userCounts.importedCount += 1
 			}
 		}
 		catch {
 			verification.errorNotImported.append("During db transaction for user \(userToImport.username): \(error.localizedDescription)")
+			verification.userCounts.errorCount += 1
 		}
-		verification.totalRecordsProcessed += 1
+		verification.userCounts.totalRecordsProcessed += 1
 		
 		// Now do other importing actions related to this user; stuff that shouldn't fail the user import transaction if it doesn't work
-		if !verifyOnly, let newUserID = importedUserID {
+		if let newUserID = importedUserID {
 			do {
-				try await req.userCache.updateUser(newUserID)
-				guard let addedUser = try await User.find(newUserID, on: req.db) else {
-					throw Abort(.internalServerError, reason: "User not found in User table")
-				}
-				if let err = imageImportError {
-					verification.otherErrors.append(err)
+				// Import the user's Performer; attach the Performer to shadow events they're running
+				if let performerData = userToImport.performer {
+					await importPerformer(req, performerData: performerData, verifyOnly: verifyOnly, userID: newUserID, verification: &verification)
 				}
 
-				let matchedEvents = try await Event.query(on: req.db).filter(\.$uid ~~ userToImport.favoriteEvents).all()
-				for event in matchedEvents {
-					try await event.$favorites.attach(addedUser, on: req.db)
-				}
-				_ = try await storeNextFollowedEvent(userID: newUserID, on: req)
+				if !verifyOnly {
+					// Add the user to the userCache
+					try await req.userCache.updateUser(newUserID)
+					guard let addedUser = try await User.find(newUserID, on: req.db) else {
+						throw Abort(.internalServerError, reason: "User not found in User table")
+					}
+					if let err = imageImportError {
+						verification.otherErrors.append(err)
+					}
+					// Import the user's favorited events
+					let matchedEvents = try await Event.query(on: req.db).filter(\.$uid ~~ userToImport.favoriteEvents).all()
+					for event in matchedEvents {
+						try await event.$favorites.attach(addedUser, on: req.db)
+					}
+					_ = try await storeNextFollowedEvent(userID: newUserID, on: req)
+				}				
 			}
 			catch {
 				verification.otherErrors.append(error.localizedDescription)
 			}
 		}
-	} 
+	}
+	
+	// Imports a single performer into the Performer table. Works with both official and non-official (shadow) performers.
+	// For a shadow performer, you must set the userID of the Twitarr user that 'owns' the performer object.
+	// If `verifyOnly` is set, no db changes occur, but `verification` gets filled in with any import errors.
+	func importPerformer(_ req: Request, performerData: PerformerUploadData, verifyOnly: Bool, userID: UUID? = nil,
+			verification: inout BulkUserUpdateVerificationData) async {
+		// Copy the performer's image first;
+		var copiedUserImage: String?
+		do {
+			if let image = performerData.photo.filename {
+				let archiveSource = try uploadUserDirPath().appendingPathComponent("Twitarr_userfile/userImages", isDirectory: true)
+						.appendingPathComponent(image)
+				let serverImageDest = Settings.shared.userImagesRootPath.appendingPathComponent(ImageSizeGroup.full.rawValue)
+						.appendingPathComponent(String(image.prefix(2)))
+						.appendingPathComponent(image)
+				if !FileManager.default.fileExists(atPath: serverImageDest.path) {
+					throw Abort(.badRequest, reason: "Source image file not found")
+				}
+				if !verifyOnly, !FileManager.default.fileExists(atPath: serverImageDest.path) {
+					try FileManager.default.copyItem(at: archiveSource, to: serverImageDest)
+				}
+				copiedUserImage = image
+			}
+		}
+		catch {
+			verification.otherErrors.append("Couldn't copy photo for Performer named \(performerData.name): \(error.localizedDescription)")
+		}
+		
+		verification.performerCounts.totalRecordsProcessed += 1
+		do {
+			if performerData.isOfficialPerformer, userID != nil {
+				throw ImportError("Official performers cannot be attached to a user.")
+			}
+			else if !performerData.isOfficialPerformer, userID == nil {
+				throw ImportError("Shadow event performers must have a user attached.")
+			}
+			
+			if let foundPerformer = try await Performer.query(on: req.db).filter(\.$name == performerData.name).first() {
+				if foundPerformer.officialPerformer != performerData.isOfficialPerformer {
+					throw ImportError("Found Performer in db with same name as import record, but officialPerformer bool doesn't match.")
+				}
+				if let userID = userID, foundPerformer.$user.id != userID {
+					throw ImportError("Performer already exists and is associated with a different user.")
+				}
+				verification.performerCounts.duplicateCount += 1
+				return
+			}
+			else if let userID = userID, let foundSameUser = try await Performer.query(on: req.db).filter(\.$user.$id == userID).first() {
+				throw ImportError("Associated user \"\(foundSameUser.name)\" already has a performer record, with a different name")
+			}
+			var performer = Performer()
+			try await PerformerController().buildPerformerFromUploadData(performer: &performer, uploadData: performerData, on: req)
+			performer.$user.id = userID
+			performer.$photo.value = copiedUserImage
+			if !verifyOnly {
+				try await performer.save(on: req.db)			// Updates or creates
+			}
+			for eventUID in performerData.eventUIDs {
+				guard let event = try await Event.query(on: req.db).filter(\.$uid == eventUID).first() else {
+					verification.otherErrors.append("Couldn't find Event that Performer \"\(performerData.name)\" is performing in: UID = \(eventUID)")
+					continue
+				}
+				if !verifyOnly {
+					let attachedEvent = try await EventPerformer.query(on: req.db)
+							.filter(\.$performer.$id == performer.requireID()).filter(\.$event.$id == event.requireID()).first()
+					if attachedEvent == nil {
+						let newEventPerformer = EventPerformer()
+						newEventPerformer.$performer.id = try performer.requireID()
+						newEventPerformer.$event.id = try event.requireID()
+						try await newEventPerformer.save(on: req.db)
+					}
+				}
+			}
+			verification.performerCounts.importedCount += 1
+		}
+		catch {
+			verification.otherErrors.append("Error when importing Performer \"\(performerData.name)\": \(error.localizedDescription)")
+			verification.performerCounts.errorCount += 1
+		}
+	}
 
 	// Gets the path where the uploaded schedule is kept. Only one schedule file can be in the hopper at a time.
 	// This fn ensures intermediate directories are created.
@@ -969,4 +1072,15 @@ struct AdminController: APIRouteCollection {
 		let filePath = try uploadUserDirPath().appendingPathComponent("Twitarr_userfile.zip")
 		return filePath
 	}
+
+	// An error type for the admin-level bulk importers to use. Really it just wraps a string; its purpose is to enable
+	// localizedError to work correclty.
+	struct ImportError: LocalizedError {
+		var str: String
+		public var errorDescription: String? { return str }
+		init(_ string: String) {
+			str = string
+		}
+	}
 }
+

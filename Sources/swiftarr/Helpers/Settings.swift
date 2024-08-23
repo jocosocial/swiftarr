@@ -359,4 +359,21 @@ struct DisabledFeaturesGroup: Codable, RESPValueConvertible {
 		}
 		return result
 	}
+	
+	// Returns TRUE if:
+	// 		- The given feature is disabled for the given app (if an app is provided)
+	//		- The given feature is disabled for all apps
+	//		- All features are disabled for the given app (if an app is provided)
+	//		- All features are disabled for all apps
+	// Note: Althogh this fn shows how to do it, the server shouldn't be evaluating individual app disables 
+	// other than the built-in swiftarr web UI. Clients should be doing that themselves with the info the server provides.
+	func isFeatureDisabled(_ feature: SwiftarrFeature, inApp: SwiftarrClientApp? = nil) -> Bool {
+		if let allApps = value[.all], allApps.contains(feature) || allApps.contains(.all) {
+			return true
+		}
+		if let app = inApp, let appDisables = value[app], appDisables.contains(feature) || appDisables.contains(.all) {
+			return true
+		}
+		return false
+	}
 }

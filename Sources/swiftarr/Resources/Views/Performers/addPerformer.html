@@ -1,0 +1,214 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+    		<div class="row align-items-center justify-content-between mb-2">
+    			<div class="col col-12">
+					<nav aria-label="breadcrumb">
+						<span class="swiftarr-breadcrumb-item"><a href="/admin">Admin</a></span>
+						<span class="swiftarr-breadcrumb-item"><a href="/admin/performer/root">Manage Performers</a></span>
+						#if(performer.isOfficialPerformer):
+							<span class="swiftarr-breadcrumb-item active" aria-current="page">Add/Edit Official Performer</span>
+						#else:
+							<span class="swiftarr-breadcrumb-item active" aria-current="page">Edit Shadow Performer</span>
+						#endif
+					</nav>
+				</div>
+			</div>
+			#if(performer.isOfficialPerformer):
+				<p>This form is for TwitarrTeam and above to manually add a bio page for an official performer. This form does not attach
+					the performer to any events (that step is done by bulk import of a Sched spreadsheet).</p>
+			#else:
+				<p>This form is for TwitarrTeam and above to edit the bio page for an shadow event organizer. This form does not attach
+					the performer to any events (Users need to do that themselves).</p>
+			#endif
+
+			<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST" data-successurl="/admin/performer/root">
+				<input type="hidden" name="performerID" id="performerID" value="#(performer.header.id)">
+				<input type="hidden" name="isOfficialPerformer" id="isOfficialPerformer" value="#(performer.isOfficialPerformer)">
+				<div class="row mt-4">
+    				<div class="col">
+						<label for="name" class="form-label">Performer's' Name (required)</label>
+						<input type="text" class="form-control" id="name" name="name" aria-describedby="nameHelp" value="#(performer.header.name)">
+    					<div id="nameHelp" class="form-text">
+    						Be sure the name is entered correctly; it's how we find performers when bulk importing the data on which
+    						performers are at which events.
+						</div>
+					</div>
+				</div>
+				<div class="row mt-4">
+    				<div class="col">
+						<label for="name" class="form-label">Performer's' Pronouns</label>
+						<input type="text" class="form-control" id="pronouns" name="pronouns" aria-describedby="pronounsHelp" value="#(performer.pronouns)">
+    					<div id="pronounsHelp" class="form-text">
+						</div>
+					</div>
+				</div>
+				
+				<div class="row mt-4">
+    				<div class="col col-12">
+						<label for="photo" class="form-label">Head Shot Photo</label>
+					</div>
+					<div class="col">
+						<div class="card" style="width: 312px;">
+							<div class="m-1 border img-for-upload-container">
+								<div class="ratio ratio-1x1">
+									<img src="data:," width=300 height=300 class="img-for-upload" alt="">
+								</div>
+							</div>
+							<p class="text-center no-image-marker"><i>no photo selected</i></p>
+							<div class="container-fluid p-1">
+								<div class="row">
+									<div class="col">
+										<label class="btn btn-primary col-12 form-label">
+											<input class="image-upload-input d-none" type="file" accept="image/png, image/jpeg" name="photo" aria-describedby="photoHelp">
+											Choose Photo
+										</label>
+										<input type="hidden" value="#(performer.header.photo)" name="serverPhoto">
+										<input type="hidden" id="photo-upload-url" name="photoURL" class="photo-upload-url">
+									</div>
+								</div>
+								<div class="row justify-content-between m-0">
+									<div class="col col-auto p-0 m-0">
+										<button type="button" class="btn btn-primary btn-sm twitarr-image-remove">Remove</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<div class="row">
+    				<div class="col">
+						<div id="photoHelp" class="form-text">
+							Drag and drop the performer's' head shot photo into the image area, or tap "Choose Photo". 
+						</div>
+					</div>
+				</div>
+						
+				<div class="row mt-4">
+    				<div class="col">
+						<label for="org" class="form-label">Organization</label>
+						<input type="text" class="form-control" id="org" name="org" value="#(performer.organization)" aria-describedby="orgHelp">
+    					<div id="orgHelp" class="form-text">
+    						
+						</div>
+					</div>
+				</div>
+				<div class="row mt-4">
+    				<div class="col">
+						<label for="title" class="form-label">Title</label>
+						<input type="text" class="form-control" id="title" name="title" value="#(performer.title)" aria-describedby="titleHelp">
+    					<div id="titleHelp" class="form-text">
+						
+						</div>
+					</div>
+				</div>
+				<div class="row mt-4">
+    				<div class="col">
+						<label for="website" class="form-label">Website</label>
+						<input type="text" class="form-control" id="website" name="website" value="#(performer.website)" aria-describedby="websiteHelp">
+    					<div id="websiteHelp" class="form-text">
+							An optional fully-qualified URL to the performer's personal website. Please use the social media link fields instead
+							if the 'site' is actually a Facebook page or similar.
+						</div>
+					</div>
+				</div>
+				<div class="row mt-4">
+    				<div class="col">
+						<label for="facebookURL" class="form-label">Facebook</label>
+						<input type="text" class="form-control" id="facebookURL" name="facebookURL" value="#(performer.facebookURL)" aria-describedby="facebookHelp">
+    					<div id="facebookHelp" class="form-text">
+    						The social media links should also be fully-qualified URLs.
+						</div>
+					</div>
+				</div>
+				<div class="row mt-4">
+    				<div class="col">
+						<label for="xURL" class="form-label">X URL</label>
+						<input type="text" class="form-control" id="xURL" name="xURL" value="#(performer.xURL)" aria-describedby="xHelp">
+    					<div id="xHelp" class="form-text">
+    						In the before times it used to be called Twitter, and then Twitarr was created as a play on words on it and ... Nevermind.
+						</div>
+					</div>
+				</div>
+				<div class="row mt-4">
+    				<div class="col">
+						<label for="instagramURL" class="form-label">Instagram</label>
+						<input type="text" class="form-control" id="instagramURL" name="instagramURL" value="#(performer.instagramURL)" aria-describedby="instagramHelp">
+    					<div id="instagramHelp" class="form-text">
+						</div>
+					</div>
+				</div>
+				<div class="row mt-4">
+    				<div class="col">
+						<label for="youtubeURL" class="form-label">YouTube</label>
+						<input type="text" class="form-control" id="youtubeURL" name="youtubeURL" value="#(performer.youtubeURL)" aria-describedby="youtubeHelp">
+    					<div id="youtubeHelp" class="form-text">
+						</div>
+					</div>
+				</div>
+				<div class="row mt-4">
+    				<div class="col">
+						<label for="bio" class="form-label">Personal Bio</label>
+						<textarea class="form-control" id="bio"
+								maxlength="20000" 
+								data-lengthlabel="bioLimitsLabel" 
+								rows="4" 
+								placeholder="Enter your Bio here" 
+								name="bio"
+								aria-describedby="bioHelp"
+						>#(performer.bio)</textarea>
+					</div>
+				</div>
+				<div class="row justify-content-end">
+					<div class="col col-auto">
+						<div class="input-group-text input-group-sm py-0" id="bioLimitsLabel"></div>
+					</div>
+				</div>
+				<div id="bioHelp" class="row form-text">
+					<div class="col">
+						You may use Markdown in this field.
+					</div>
+				</div>
+				
+				<div class="row mt-4">
+    				<div class="col">
+						<label for="yearsAttended" class="form-label">Years Attended</label>
+						<input type="text" class="form-control" id="yearsAttended" name="yearsAttended"
+								value="#for(year in attendedYears):#(year)#if(!isLast):, #endif#endfor" aria-describedby="yearsAttendedHelp">
+    					<div id="yearsAttendedHelp" class="form-text">
+    						Enter a comma-separated list of 4-digit years. They don't need to be in order. The current/next cruise year should
+    						always be in the list.
+						</div>
+					</div>
+				</div>
+				
+				<div class="row mt-4 align-items-center">
+					<div class="col">
+						<small>Please remember to abide by the <a href="/codeOfConduct">Code&nbsp;of&nbsp;Conduct</a></small>
+					</div>
+					<div class="col col-auto">
+						<button type="submit" class="btn btn-primary">Submit<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+					</div>
+				</div>
+				<div class="alert alert-danger mt-3 d-none" role="alert"></div>				
+			</form>
+			
+			#if(deleteAction):
+				<hr>
+				<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST" data-successurl="/events">
+					<div class="row mt-2 justify-content-end">
+						<div class="col col-12">
+							Tapping Delete Profile will remove this performer's bio record, and all their pivots to Event records.
+						</div>
+						<div class="col col-auto mt-2">
+							<button type="submit" class="btn btn-primary">Delete Profile<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+						</div>
+						<div class="alert alert-danger mt-3 d-none" role="alert"></div>				
+					</div>
+				</form>   
+			#endif
+		</div>
+		
+	#endexport
+#endextend

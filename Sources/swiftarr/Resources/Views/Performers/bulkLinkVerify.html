@@ -1,0 +1,65 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+			<div class="row">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item"><a href="/admin/performer/root">Performers</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Verify Performer/Event Links</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			
+			<table class="table">
+				<tbody>
+					<tr>
+						<th scope="row">Current DB Performer Count</th>
+						<td>#(diff.oldPerformerCount)</td>
+					</tr>
+					<tr>
+						<th scope="row">Spreadsheet Performer Count</th>
+						<td>#(diff.newPerformerCount)</td>
+					</tr>
+					<tr>
+						<th scope="row">Missing Performer Count (in SS, not in DB)</th>
+						<td>#(diff.missingPerformerCount)</td>
+					</tr>
+					<tr>
+						<th scope="row">No Events Performer Count (in DB, not in SS)</th>
+						<td>#(diff.noEventsPerformerCount)</td>
+					</tr>
+					<tr>
+						<th scope="row">Events With Performers Count</th>
+						<td>#(diff.eventsWithPerformerCount)</td>
+					</tr>
+					<tr>
+						<th scope="row">Unmatched Event Count (In SS, no DB match)</th>
+						<td>#(diff.unmatchedEventCount)</td>
+					</tr>
+				</tbody>
+			</table>
+			
+			<ul class="list-group mb-4">
+				<li class="list-group-item active">Errors</li>
+				#for(error in diff.errors):
+					<li class="list-group-item">
+						#(error)
+					</li>
+				#endfor
+			</ul>
+						
+			<form class="ajax" action="/admin/performer/link/apply" enctype="multipart/form-data" method="POST" data-successurl="/admin/performer/root" id="messagePostForm">
+				<div class="alert alert-danger mt-3 d-none" role="alert">
+				</div>				
+				<div class="row mb-2">
+					<div class="col col-auto">
+						<button type="submit" class="btn btn-primary">Apply Update<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+					</div>
+				</div>
+			</form>			
+    	</div>
+	#endexport
+#endextend

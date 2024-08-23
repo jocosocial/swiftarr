@@ -87,6 +87,7 @@ extension APIRouteCollection {
 	var filenameParam: PathComponent { PathComponent(":filename") }
 	var imageFilenameParam: PathComponent { PathComponent(":image_filename") }
 	var streamPhotoIDParam: PathComponent { PathComponent(":stream_photoID") }
+	var performerIDParam: PathComponent { PathComponent(":performer_id") }
 	var personalEventIDParam: PathComponent { PathComponent(":personal_event_id") }
 
 	/// Transforms a string that might represent a date (either a `Double` or an ISO 8601

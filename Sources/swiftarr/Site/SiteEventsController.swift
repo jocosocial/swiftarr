@@ -159,7 +159,7 @@ struct SiteEventsController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/events", query: components.queryItems, passThroughQuery: false)
 		let events: [EventData] = try response.content.decode([EventData].self)
 		let eventContext = EventPageContext(req, events: events, dayOfCruise: dayOfCruise, filterString: filterString, query: queryStruct)
-		return try await req.view.render("events", eventContext)
+		return try await req.view.render("Events/events", eventContext)
 	}
 
 	// `GET /events/:event_id`

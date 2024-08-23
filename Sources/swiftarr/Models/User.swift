@@ -134,6 +134,9 @@ final class User: Model {
 	/// The login token associated with this user, if they're logged in. If logged in from multiple devices, all devices share
 	/// the login token.
 	@OptionalChild(for: \.$user) var token: Token?
+	
+	/// For Shadow Event Organizers who create Performer profiles for their shadow event.
+	@OptionalChild(for: \.$user) var performer: Performer?
 
 	/// The child `UserRole`s this user has. Roles generally give a user the ability to perform new actions or view more information.
 	@Children(for: \.$user) var roles: [UserRole]
