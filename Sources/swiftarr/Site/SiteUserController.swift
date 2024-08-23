@@ -236,6 +236,8 @@ struct SiteUserController: SiteControllerUtils {
 	}
 
 	/// `GET /favorites`
+	/// 
+	/// Show all of the users favorite users.
 	func favoritesPageHandler(_ req: Request) async throws -> View {
 		async let favoritesResponse = try apiQuery(req, endpoint: "/users/favorites")
 		let favoriteUsers = try await favoritesResponse.content.decode([UserHeader].self)

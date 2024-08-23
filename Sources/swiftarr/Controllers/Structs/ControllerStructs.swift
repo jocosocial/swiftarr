@@ -2371,12 +2371,5 @@ extension PersonalEventContentData: RCFValidatable {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
 		tester.validate(title.count >= 2, forKey: .title, or: "title field has a 2 character minimum")
 		tester.validate(title.count <= 100, forKey: .title, or: "title field has a 100 character limit")
-		// tester.validate(
-		// @TODO ok to be nil
-		// 	description.count <= 2048,
-		// 	forKey: .description,
-		// 	or: "description field length of \(description.count) is over the 2048 character limit"
-		// )
-		// TODO: validations for startTime and endTime
 	}
 }

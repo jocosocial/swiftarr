@@ -875,6 +875,10 @@ struct ModerationController: APIRouteCollection {
 	}
 
 	// MARK: PersonalEvent
+
+	/// `GET /api/v3/mod/personalevent/:eventID`
+	///
+	/// Return moderation data for a PersonalEvent.
 	func personalEventModerationHandler(_ req: Request) async throws -> PersonalEventModerationData {
 		guard let paramVal = req.parameters.get(personalEventIDParam.paramString), let eventID: UUID = UUID(paramVal) else {
 			throw Abort(.badRequest, reason: "Request parameter \(personalEventIDParam.paramString) is missing.")

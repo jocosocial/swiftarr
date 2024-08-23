@@ -42,14 +42,9 @@ struct PersonalEventController: APIRouteCollection {
 	///
 	/// **URL Query Parameters:**
 	/// - ?cruiseday=INT    Embarkation day is day 1, value should be less than or equal to `Settings.shared.cruiseLengthInDays`, which will be 8 for the 2022 cruise.
-	/// - ?date=DATE        Returns events occurring on the given day. Empty list if there are no cruise events on that day.
-	/// - ?time=DATE        Returns events whose startTime is earlier (or equal) to DATE and endTime is later than DATE. Note that this will often include 'all day' events.
 	/// - ?search=STRING    Returns events whose title or description contain the given string.
 	/// - ?owned=BOOLEAN    Returns events only that the user has created. Mutually exclusive with joined.
 	/// - ?joined=BOOLEAN   Returns events only that the user has joined. Mutually exclusive with owned.
-	///
-	/// The day and date parameters actually return events from 3AM local time on the given day until 3AM the next day--some events start after midnight and tend to get lost by those
-	/// looking at daily schedules.
 	///
 	/// - Returns: An array of `PersonalEeventData` containing the `PersonalEvent`s.
 	func personalEventsHandler(_ req: Request) async throws -> [PersonalEventData] {
@@ -129,9 +124,6 @@ struct PersonalEventController: APIRouteCollection {
 		try await personalEvent.save(on: req.db)
 		let personalEventData = try buildPersonalEventData(personalEvent, on: req)
 
-		// @TODO generate socket notifications for participants
-		// @TODO add next private event to UND
-
 		// Return with 201 status
 		let response = Response(status: .created)
 		try response.content.encode(personalEventData)
@@ -188,10 +180,6 @@ struct PersonalEventController: APIRouteCollection {
 		personalEvent.participantArray = data.participants
 		try await personalEvent.save(on: req.db)
 
-		// @TODO generate socket notifications for participants
-		// @TODO add next private event to UND
-		// @TODO generate notifications for newly added participants
-
 		return try buildPersonalEventData(personalEvent, on: req)
 
 	}
@@ -209,7 +197,6 @@ struct PersonalEventController: APIRouteCollection {
 		let personalEvent = try await PersonalEvent.findFromParameter(personalEventIDParam, on: req)
 		try cacheUser.guardCanModifyContent(personalEvent)
 		try await personalEvent.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
-		// @TODO add next private event to UND
 		try await personalEvent.delete(on: req.db)
 		return .noContent
 	}
