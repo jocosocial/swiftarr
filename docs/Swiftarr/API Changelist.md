@@ -162,4 +162,4 @@ New Micro Karaoke feature. API changes include:
 * `/api/v3/boardgames/expansions/:boardgameID` now returns a `BoardgameResponseData` instead of an array of `BoardgameData`
 
 ## Aug 22, 2024
-* Add `PersonalEvent` and associated endpoints
+* Add `PersonalEvent` feature and API endpoints, notification and report types.
