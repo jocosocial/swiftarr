@@ -169,3 +169,4 @@ New Micro Karaoke feature. API changes include:
 ## Aug 22, 2024
 * Add `PersonalEvent` feature.
 * API endpoints, notification and report types, DTO.
+* Add `isFavorite` to `ProfilePublicData`
