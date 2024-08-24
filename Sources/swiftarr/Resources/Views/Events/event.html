@@ -47,11 +47,15 @@
 				#endif
 			</div>
 			<div class="col col-auto btn-group btn-group-sm mt-1" role="group" aria-label="Event actions">
-				#if(trunk.preregistrationMode && event.eventType == "Shadow Event" && trunk.userIsLoggedIn):
-					<a class="btn btn-outline-primary" href="/performer/shadow/addtoevent/#(event.eventID)">Set Organizer</a>
-				#endif
-				#if(event.forum):
-					<a class="btn btn-outline-primary" href="/forum/#(event.forum)">Forum</a>
+				#if(trunk.userIsLoggedIn):
+					#if(event.eventType == "Shadow Event"):
+						#if(trunk.preregistrationMode || contains(trunk.userRoles, "performerselfeditor")):
+							<a class="btn btn-outline-primary" href="/performer/shadow/addtoevent/#(event.eventID)">Set Organizer</a>
+						#endif
+					#endif
+					#if(event.forum):
+						<a class="btn btn-outline-primary" href="/forum/#(event.forum)">Forum</a>
+					#endif
 				#endif
 				<a class="btn btn-outline-primary" href="/events/#(event.eventID)/calendarevent.ics">Add to Calendar</a>
 				#if(trunk.userIsLoggedIn):

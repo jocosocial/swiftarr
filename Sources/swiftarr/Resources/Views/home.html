@@ -1,7 +1,7 @@
 #extend("trunk"):
     #export("body"):
 		<div class="container-md ms-0 mt-2 mb-5">
-			#if(!trunk.preregistrationMode):
+			#if(!trunk.preregistrationApplies):
 				<div class="card mb-2">	
 					#if(dailyTheme.image):
 						<img class="card-img" src="/api/v3/image/full/#(dailyTheme.image)" alt="Daily Theme Image">
@@ -29,6 +29,18 @@
 						#endif
 					#endif
 				</div>
+				#if(trunk.preregistrationMode):
+					<div class="card mb-2">	
+						<div class="card-header bg-primary">
+							<span class="text-white">
+								<b>Twitarr Pre-Registration Active</b>
+							</span>
+						</div>
+						<div class="card-body bg-light">
+							Pre-registration mode is active. Regular users see a card here explaining how they can create accounts but not use all features.
+						</div>
+					</div>
+				#endif
 			#else:
 				<div class="card mb-2">	
 					<div class="card-header bg-primary">
@@ -61,7 +73,7 @@
 				#endfor
 			#endif
 						
-			#if(!trunk.preregistrationMode):
+			#if(!trunk.preregistrationApplies):
 				#if(trunk.alertCounts.newTwarrtMentionCount > 0 || trunk.alertCounts.newForumMentionCount > 0):
 					<h6><b>Notifications</b></h6>
 				#endif
@@ -166,81 +178,81 @@
 				#endif
 			#endif
 
-			#if(trunk.userIsLoggedIn):
-				#if(!trunk.preregistrationMode):
+			<div class="row mt-2">
+				<div class="col">
+					<h4><b>Onboard Activities:</b></h4>
+				</div>
+			</div>
+			<div class="row mb-2">
+				<div class="col">
+					<ul class="list-group">
+						<li class="list-group-item"><a href="/performers">Performers</a></li>
+						<li class="list-group-item"><a href="/performers/shadow">Shadow Event Organizers</a></li>
+						<li class="list-group-item"><a href="/map">Ship Map</a></li>
+						<li class="list-group-item"><a href="/boardgames">Board Games</a></li>
+						<li class="list-group-item"><a href="/karaoke">Karaoke</a></li>
+						#if(trunk.userIsLoggedIn && !trunk.preregistrationApplies):
+							<li class="list-group-item"><a href="/directory">Find Twitarr Users</a></li>
+						#endif
+						<li class="list-group-item"><a href="/time">Time Zone Check</a></li>
+					</ul>
+				</div>
+			</div>
+				
+			#if(trunk.userIsLoggedIn && !trunk.preregistrationApplies):
+				#if(contains(trunk.userRoles, "shutternautmanager") || trunk.userIsMod || trunk.userIsTwitarrTeam):
 					<div class="row mt-2">
 						<div class="col">
-							<h4><b>Onboard Activities:</b></h4>
+							<h4><b>Site Management:</b></h4>
 						</div>
 					</div>
 					<div class="row mb-2">
 						<div class="col">
 							<ul class="list-group">
-								<li class="list-group-item"><a href="/performers">Performers</a></li>
-								<li class="list-group-item"><a href="/performers/shadow">Shadow Event Organizers</a></li>
-								<li class="list-group-item"><a href="/map">Ship Map</a></li>
-								<li class="list-group-item"><a href="/boardgames">Board Games</a></li>
-								<li class="list-group-item"><a href="/karaoke">Karaoke</a></li>
-								#if(trunk.userIsLoggedIn):
-									<li class="list-group-item"><a href="/directory">Find Twitarr Users</a></li>
+								#if(contains(trunk.userRoles, "shutternautmanager")):
+									<li class="list-group-item"><a href="/userrole/shutternaut/manage">Manage Shutternauts</a></li>
 								#endif
-								<li class="list-group-item"><a href="/time">Time Zone Check</a></li>
+								#if(trunk.userIsMod):
+									<li class="list-group-item align-items-center">
+										<a href="/moderator">Moderator Pages</a>
+										#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):
+											<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount) Msgs</i></span>
+										#elseif(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount == 1):
+											<span class="text-muted"><i>1 Msg</i></span>
+										#endif
+										#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 0 && trunk.alertCounts.moderatorData.openReportCount > 0):
+											<span class="text-muted"><i>,&nbsp;</i></span>
+										#endif
+										#if(trunk.alertCounts.moderatorData.openReportCount > 1):
+											<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.openReportCount) Reports</i></span>
+										#elseif(trunk.alertCounts.moderatorData.openReportCount == 1):
+											<span class="text-muted"><i>1 Report</i></span>
+										#endif
+										#if(trunk.alertCounts.moderatorData.newModeratorForumMentionCount > 1):
+											<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newModeratorForumMentionCount) Mentions</i></span>
+										#elseif(trunk.alertCounts.moderatorData.newModeratorForumMentionCount == 1):
+											<span class="text-muted"><i>1 Mention</i></span>
+										#endif
+									</li>
+								#endif
+								#if(trunk.userIsTwitarrTeam):
+									<li class="list-group-item align-items-center">
+										<a class="nav-link#" href="/admin">Admin Pages</a>
+										#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0):
+											<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newTTSeamailMessageCount) Msg#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):s#endif</i></span>
+										#endif
+										#if(trunk.alertCounts.moderatorData.newTTForumMentionCount > 0):
+											<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newTTForumMentionCount) Mention#if(trunk.alertCounts.moderatorData.newTTForumMentionCount > 1):s#endif</i></span>
+										#endif
+									</li>
+								#endif
 							</ul>
 						</div>
 					</div>
-				
-					#if(trunk.userIsMod || trunk.userIsShutternautManager || trunk.userIsTwitarrTeam):
-						<div class="row mt-2">
-							<div class="col">
-								<h4><b>Site Management:</b></h4>
-							</div>
-						</div>
-						<div class="row mb-2">
-							<div class="col">
-								<ul class="list-group">
-									#if(trunk.userIsShutternautManager):
-										<li class="list-group-item"><a href="/userrole/shutternaut/manage">Manage Shutternauts</a></li>
-									#endif
-									#if(trunk.userIsMod):
-										<li class="list-group-item align-items-center">
-											<a href="/moderator">Moderator Pages</a>
-											#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):
-												<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount) Msgs</i></span>
-											#elseif(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount == 1):
-												<span class="text-muted"><i>1 Msg</i></span>
-											#endif
-											#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 0 && trunk.alertCounts.moderatorData.openReportCount > 0):
-												<span class="text-muted"><i>,&nbsp;</i></span>
-											#endif
-											#if(trunk.alertCounts.moderatorData.openReportCount > 1):
-												<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.openReportCount) Reports</i></span>
-											#elseif(trunk.alertCounts.moderatorData.openReportCount == 1):
-												<span class="text-muted"><i>1 Report</i></span>
-											#endif
-											#if(trunk.alertCounts.moderatorData.newModeratorForumMentionCount > 1):
-												<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newModeratorForumMentionCount) Mentions</i></span>
-											#elseif(trunk.alertCounts.moderatorData.newModeratorForumMentionCount == 1):
-												<span class="text-muted"><i>1 Mention</i></span>
-											#endif
-										</li>
-									#endif
-									#if(trunk.userIsTwitarrTeam):
-										<li class="list-group-item align-items-center">
-											<a class="nav-link#" href="/admin">Admin Pages</a>
-											#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0):
-												<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newTTSeamailMessageCount) Msg#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):s#endif</i></span>
-											#endif
-											#if(trunk.alertCounts.moderatorData.newTTForumMentionCount > 0):
-												<span class="text-muted"><i>#(trunk.alertCounts.moderatorData.newTTForumMentionCount) Mention#if(trunk.alertCounts.moderatorData.newTTForumMentionCount > 1):s#endif</i></span>
-											#endif
-										</li>
-									#endif
-								</ul>
-							</div>
-						</div>
-					#endif
 				#endif
-				
+			#endif
+			
+			#if(trunk.userIsLoggedIn):	
 				<div class="row mt-2">
 					<div class="col">
 						<h4><b>Account Management:</b></h4>
@@ -249,7 +261,6 @@
 				<div class="row mb-2">
 					<div class="col">
 						<ul class="list-group">
-						#if(trunk.userIsLoggedIn):
 							<li class="list-group-item"><a href="/profile">View your User Profile</a></li>
 							#if(!trunk.preregistrationMode):
 								<li class="list-group-item"><a href="/blocks">Manage Muted and Blocked Users</a></li>
@@ -259,31 +270,27 @@
 								<li class="list-group-item"><a href="/resetPassword">Change your Password</a></li>
 							#endif
 							<li class="list-group-item"><a href="/logout">Logout #(trunk.username)</a></li>
-						#else:
-							<li class="list-group-item"><a href="/login">Login</a></li>
-						#endif
 						</ul>
 					</div>
 				</div>
-				<div class="row mt-2">
-					<div class="col">
-						<h4><b>Documentation:</b></h4>
-					</div>
-				</div>
 			#else:
-				<div class="row my-2">
-					<div class="col">
-						<b>You are currently logged out</b><br>
+				<ul class="list-group my-2">
+					<li class="list-group-item active">
+						<b>You are currently logged out</b>
+					</li>
+					<li class="list-group-item">
 						<p>Use the links below to log in or create an account.</p><p>While logged out, Tweets, Forums, Seamail, and Looking For Group will not be available.</p>
-					</div>
-				</div>
-				<div class="row mb-2">
-					<div class="col">
 						<a class="btn btn-outline-primary" href="/login">Login</a>
 						<a class="btn btn-outline-primary" href="/conductAgree">Create Account</a>
-					</div>
-				</div>
+					</li>
+				</ul>
 			#endif
+			
+			<div class="row mt-2">
+				<div class="col">
+					<h4><b>Documentation:</b></h4>
+				</div>
+			</div>
 			<div class="row mt-2">
 				<div class="col">
 					<ul class="list-group">

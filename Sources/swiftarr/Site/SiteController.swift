@@ -33,9 +33,10 @@ struct TrunkContext: Encodable {
 	var userIsMod: Bool
 	var userIsTwitarrTeam: Bool
 	var userIsTHO: Bool
-	var userIsShutternautManager: Bool
-	var minAccessLevel: String?
-	var preregistrationMode: Bool				// TRUE if we're in preregistration; only allow limited features.
+	var userRoles: [String]						// Use "contains(trunk.userRoles, "shutternautmanager")" or similar to check
+	var minAccessLevel: String?					// Minimum access required to view Twitarr pages; Value from Settings.
+	var preregistrationMode: Bool				// Mirrors the value in Settings. 
+	var preregistrationApplies: Bool			// TRUE if the current user is subject to Pre-Reg restrictions.
 	var pageIsForDisabledFeature: SwiftarrFeature?	// Middleware marked this request disabled for normal users but we're showing it to THO/admin
 
 	var username: String
@@ -54,23 +55,24 @@ struct TrunkContext: Encodable {
 			userIsMod = userAccessLevel.hasAccess(.moderator)
 			userIsTwitarrTeam = userAccessLevel.hasAccess(.twitarrteam)
 			userIsTHO = userAccessLevel.hasAccess(.tho)
-			userIsShutternautManager = user.userRoles.contains(.shutternautmanager)
 			username = user.username
 			userID = user.userID
+			userRoles = user.userRoles.map { $0.rawValue }
 		}
 		else {
 			userIsLoggedIn = false
 			userIsMod = false
 			userIsTwitarrTeam = false
 			userIsTHO = false
-			userIsShutternautManager = false
 			username = ""
 			userID = UUID()
+			userRoles = []
 		}
-		pageIsForDisabledFeature = req.storage.get(FeatureDisableOverrideStorageKey.self)
 		let minAccess = Settings.shared.minAccessLevel
 		minAccessLevel = minAccess == .banned || Settings.shared.enablePreregistration ? nil : minAccess.visibleName()
-		preregistrationMode = Settings.shared.enablePreregistration && userAccessLevel < minAccess
+		preregistrationMode = Settings.shared.enablePreregistration
+		preregistrationApplies = Settings.shared.enablePreregistration && userAccessLevel < minAccess
+		pageIsForDisabledFeature = req.storage.get(FeatureDisableOverrideStorageKey.self)
 		eventStartingSoon = false
 		if req.route != nil, let alertsStr = req.session.data["alertCounts"],
 			let alertData = alertsStr.data(using: .utf8)
