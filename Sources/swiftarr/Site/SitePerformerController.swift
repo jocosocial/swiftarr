@@ -60,7 +60,7 @@ fileprivate struct AddPerformerFormContent: Codable {
 struct SitePerformerController: SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws {
 	
-		let globalRoutes = getGlobalRoutes(app, feature: .performers)
+		let globalRoutes = getOpenRoutes(app, feature: .performers)
 		globalRoutes.get("performers", use: officialPerformersPageHandler).setUsedForPreregistration()
 		globalRoutes.get("performer", performerIDParam, use: performerPageHandler).setUsedForPreregistration()
 		globalRoutes.get("performers", "shadow", use: shadowPerformersPageHandler).setUsedForPreregistration()

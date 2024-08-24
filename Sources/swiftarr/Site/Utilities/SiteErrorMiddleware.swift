@@ -113,7 +113,7 @@ public final class SiteErrorMiddleware: AsyncMiddleware {
 		case let resp as ErrorResponse:
 			// A call that returns an ErrorResponse on failure could get parsed and then thrown by a higher level API call
 			reason = resp.reason
-			status = .badRequest
+			status = HTTPResponseStatus(statusCode: Int(resp.status))
 			fieldErrors = resp.fieldErrors
 		default:
 			// if not release mode, and error is debuggable, provide debug info

@@ -103,7 +103,6 @@ struct PerformerController: APIRouteCollection {
 	///
 	/// Returns the Performer data for the given performer ID. Performer ID is separate from userID,
 	func getPerformer(_ req: Request) async throws -> PerformerData {
-		let currentUser = try req.auth.require(UserCacheData.self)
 		guard let performerID = req.parameters.get(performerIDParam.paramString, as: UUID.self) else {
 			throw Abort(.badRequest, reason: "Request parameter identifying Performer is missing.")
 		}
@@ -113,7 +112,8 @@ struct PerformerController: APIRouteCollection {
 		}
 		let favorites = try await getFavorites(in: req, from: performer.events)
 		var result = try PerformerData(performer, favoriteEventIDs: favorites)
-		if currentUser.accessLevel.hasAccess(.moderator), let userID = performer.$user.id {
+		// Mods and above can identify the Twitarr user who made the Performer.
+		if let currentUser = req.auth.get(UserCacheData.self), currentUser.accessLevel.hasAccess(.moderator), let userID = performer.$user.id {
 			result.user = try req.userCache.getHeader(userID)
 		}
 		return result
@@ -138,6 +138,18 @@ struct PerformerController: APIRouteCollection {
 	/// - Returns: HTTP status.
 	func addSelfPerformerForEvent(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
+		guard let userReg = try await RegistrationCode.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first() else {
+			throw Abort(.badRequest, reason: "No registration code found for this user. Only users created with registration codes may make Performer profiles.")
+		}
+		// Discord-linked accounts *can* create Performer profiles, they just won't get transferred to the boat. Anyone with a Discord-linked account
+		// should eventually get a JoCo reg code to use for their 'real' account. If someone wants to try making a Performer profile early, they
+		// can get the UserRole, and we'll remind them it's just for testing.
+		guard !userReg.isDiscordUser || cacheUser.userRoles.contains(.performerselfeditor) else {
+			throw Abort(.badRequest, reason: "This account is linked to a Discord user and won't be transferred to the ship when we sail. You should get a registration code from JoCo that will work.")
+		}
+		guard Settings.shared.enablePreregistration || cacheUser.userRoles.contains(.performerselfeditor) else {
+			throw Abort(.forbidden, reason: "Editing your Performer profile is limited to pre-registration; see the Help Desk if you need to change something.")
+		}
 		guard let eventID = req.parameters.get(eventIDParam.paramString, as: UUID.self) else {
 			throw Abort(.badRequest, reason: "Request parameter identifying Event is missing.")
 		}
@@ -183,10 +195,15 @@ struct PerformerController: APIRouteCollection {
 		guard let performer = try await Performer.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first() else {
 			throw Abort(.badRequest, reason: "User does not have a performer profile.")
 		}
+		guard Settings.shared.enablePreregistration || cacheUser.userRoles.contains(.performerselfeditor) else {
+			throw Abort(.forbidden, reason: "Editing your Performer profile is limited to pre-registration; see the Help Desk if you need to change something.")
+		}
 		try await EventPerformer.query(on: req.db).filter(\.$performer.$id == performer.requireID()).delete()
 		try await performer.delete(on: req.db)
 		return .ok
 	}
+	
+// MARK: TwitarrTeam methods
 	
 	/// `POST /api/v3/admin/performer/upsert`
 	///
