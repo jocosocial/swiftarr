@@ -754,5 +754,6 @@ struct SwiftarrConfigurator {
 	// These should be stored in Sources/swiftarr/Commands.
 	func configureCommands(_ app: Application) {
 		app.asyncCommands.use(GenerateScheduleCommand(), as: "generate-schedule")
+		app.asyncCommands.use(PruneEventForumsCommand(), as: "prune-event-forums")
 	}
 }
