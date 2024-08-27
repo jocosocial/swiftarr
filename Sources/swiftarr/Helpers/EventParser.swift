@@ -352,26 +352,6 @@ final class EventParser {
 								)
 								try await newPost.save(on: database)
 							}
-							// PhotoStream
-							// This clears the event tag for any photo stream posts.
-							// While this is not reversable and some metadata is lost,
-							// at least the content is preserved for future viewing.
-							let streamPhotos = try await StreamPhoto.query(on: database)
-								// .join(parent: \.$atEvent, method: .left)
-								// .with(\.$atEvent)
-            					// .filter(Event.self, \.$id == existingEvent.requireID())
-								.filter(\.$atEvent.$id == existingEvent.requireID())
-								.all()
-							try await database.transaction { db in 
-								await withThrowingTaskGroup(of: Void.self) { group in
-									for photo in streamPhotos {
-										group.addTask {
-											photo.$atEvent.id = nil
-											try await photo.save(on: database)
-										}
-									}
-								}
-							}
 						}
 					}
 				}
