@@ -2,6 +2,19 @@ import Fluent
 import Foundation
 import Vapor
 
+/// Prune Old Event Forums
+/// 
+/// In long-lived Swiftarr instances such as the Beta, we typically do not reset
+/// the database between sailings. As we accumulate years of events, the amount
+/// of forums starts to grow unweildy. The old events are marked as deleted and
+/// removed from the schedule, but the forums remain. This backend command is
+/// intended to be executed by an operator in one of these long-lived environments
+/// to soft-delete all forums that are linked to soft-deleted events.
+/// 
+/// The effects of this command can be reversed by importing the deleted schedule
+/// again which will restore the events and their associated forums (thanks, 
+/// soft-delete).
+///
 struct PruneEventForumsCommand: AsyncCommand {
 	struct Signature: CommandSignature {}
 
@@ -9,7 +22,7 @@ struct PruneEventForumsCommand: AsyncCommand {
 		"""
 		Delete forum threads for events from past schedules. For example, if your server was
 		started with a schedule from 2023 and you imported 2024, you would continue to see forum
-		threads for the 2023 events in the relevant forum categories.
+		threads for the 2023 events in the relevant forum categories until running this command.
 		"""
 	}
 
