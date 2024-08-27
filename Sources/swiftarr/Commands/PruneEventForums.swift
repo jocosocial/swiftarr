@@ -16,7 +16,8 @@ struct PruneEventForumsCommand: AsyncCommand {
 	func run(using context: CommandContext, signature: Signature) async throws {
 		context.application.logger.info("Pruning deleted event forums")
         try await findEvents(on: context.application)
-        // @TODO update category counts
+        try await updateCategoryCounts(on: context.application)
+        context.application.logger.info("Complete!")
 	}
 
 	private func findEvents(on app: Application) async throws {
@@ -49,6 +50,10 @@ struct PruneEventForumsCommand: AsyncCommand {
         try await app.db.transaction { database in 
             await withThrowingTaskGroup(of: Void.self) { group in
                 for forum in deletedEventForums {
+                    guard forum.deletedAt == nil else {
+                        app.logger.info("Skipping previously deleted forum: \(forum.title)")
+                        continue
+                    }
                     group.addTask {
                         app.logger.info("Deleting forum: \(forum.title)")
                         try await forum.delete(on: database)
@@ -57,4 +62,22 @@ struct PruneEventForumsCommand: AsyncCommand {
             }
         }
 	}
+
+    private func updateCategoryCounts(on app: Application) async throws {
+        let categories = try await Category.query(on: app.db)
+            .filter(\.$isEventCategory == true)
+            .with(\.$forums)
+            .all()
+
+        await withThrowingTaskGroup(of: Void.self) { group in
+            categories.forEach { category in
+                group.addTask {
+                    let newCount = Int32(category.forums.count)
+                    app.logger.info("Adjusting count for category \(category.title): \(category.forumCount) -> \(newCount)")
+                    category.forumCount = newCount;
+                    try await category.save(on: app.db)
+                }
+            }
+        }
+    }
 }
