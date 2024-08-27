@@ -1320,7 +1320,12 @@ extension PhotostreamImageData {
 		if let event = streamPhoto.atEvent {
 			self.event = try EventData(event)
 		}
-		self.location = streamPhoto.boatLocation?.rawValue
+		else if let location = streamPhoto.boatLocation?.rawValue {
+			self.location = location
+		}
+		else {
+			self.location = PhotoStreamBoatLocation.onBoat.rawValue
+		}
 	}
 }
 
