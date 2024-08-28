@@ -198,7 +198,7 @@ extension ModeratorActionLogData {
 
 /// Used to return data on a collection of moderator action events.
 public struct ModeratorActionLogResponseData: Content {
-	/// Instances of moderators using their super-cow powers. 
+	/// Instances of moderators using their super-cow powers.
 	var actions: [ModeratorActionLogData]
 	/// Pagination data
 	var paginator: Paginator

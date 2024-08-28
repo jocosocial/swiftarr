@@ -4,12 +4,11 @@ import Leaf
 import LeafKit
 import Metrics
 import Prometheus
-import Redis
-import QueuesRedisDriver
 import Queues
+import QueuesRedisDriver
+import Redis
 import Vapor
 import gd
-
 
 /// # Launching Swiftarr
 ///
@@ -37,7 +36,6 @@ import gd
 ///
 /// * SWIFTARR_USER_IMAGES:  Root directory for storing user-uploaded images. These images are referenced by filename in the db.
 /// * SWIFTARR_EXTERNAL_URL: Externally-visible URL to get to the server. The server uses this to create URLs pointing to itself.
-
 
 // The configurator object doesn't persist; it'll be destroyed soon after configure() ends.
 struct SwiftarrConfigurator {
@@ -76,7 +74,7 @@ struct SwiftarrConfigurator {
 		try routes(app)
 		try configureMigrations(app)
 	}
-	
+
 	// Called after the lifecycle `didBoot` handlers run and databases are available.
 	func postBootConfigure() async throws {
 		try configureAPIURL(app)
@@ -109,26 +107,33 @@ struct SwiftarrConfigurator {
 			resourcesURL = Bundle.main.bundleURL.appendingPathComponent("swiftarr_swiftarr.resources")
 		}
 		else if let xcodeLinkedLocation = Bundle.main.resourceURL?.appendingPathComponent("swiftarr_swiftarr.bundle"),
-				let bundle = Bundle.init(url: xcodeLinkedLocation), let loc = bundle.resourceURL,
-				FileManager.default.fileExists(atPath: loc.appendingPathComponent("seeds").path) {
+			let bundle = Bundle.init(url: xcodeLinkedLocation), let loc = bundle.resourceURL,
+			FileManager.default.fileExists(atPath: loc.appendingPathComponent("seeds").path)
+		{
 			// Xcode build toolchain uses this case
 			resourcesURL = loc
 		}
 		else if let cliLinkedLocation = Bundle.main.resourceURL?.appendingPathComponent("swiftarr_swiftarr.bundle"),
-				let bundle = Bundle.init(url: cliLinkedLocation),
-				FileManager.default.fileExists(atPath: bundle.bundleURL.appendingPathComponent("seeds").path) {
+			let bundle = Bundle.init(url: cliLinkedLocation),
+			FileManager.default.fileExists(atPath: bundle.bundleURL.appendingPathComponent("seeds").path)
+		{
 			// Command line toolchain (`swift build`) uses this case
 			resourcesURL = bundle.bundleURL
 		}
-		else if let fwLinkedLocation = Bundle(for: Settings.self).resourceURL?.appendingPathComponent("swiftarr_swiftarr.bundle" ),
-				let bundle = Bundle.init(url: fwLinkedLocation), let loc = bundle.resourceURL {
+		else if let fwLinkedLocation = Bundle(for: Settings.self).resourceURL?
+			.appendingPathComponent("swiftarr_swiftarr.bundle"),
+			let bundle = Bundle.init(url: fwLinkedLocation), let loc = bundle.resourceURL
+		{
 			resourcesURL = loc
 		}
 		else if let bundle = Bundle.init(url: Bundle.main.bundleURL.appendingPathComponent("swiftarr_swiftarr.bundle")),
-			let loc = bundle.resourceURL {
+			let loc = bundle.resourceURL
+		{
 			resourcesURL = loc
 		}
-		else if Bundle(for: Settings.self).url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css") != nil {
+		else if Bundle(for: Settings.self)
+			.url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css") != nil
+		{
 			resourcesURL = Bundle(for: Settings.self).resourceURL ?? Bundle(for: Settings.self).bundleURL
 		}
 		else {
@@ -151,10 +156,17 @@ struct SwiftarrConfigurator {
 		let envFilePath = configDirectory.appendingPathComponent("\(app.environment.name).env")
 		if FileManager.default.fileExists(atPath: envFilePath.path) {
 			configLog.notice("Loading environment configuration from \(envFilePath.path)")
-			DotEnvFile.load(path: envFilePath.path, on: .shared(app.eventLoopGroup), fileio: app.fileio, logger: app.logger)
+			DotEnvFile.load(
+				path: envFilePath.path,
+				on: .shared(app.eventLoopGroup),
+				fileio: app.fileio,
+				logger: app.logger
+			)
 		}
 		else {
-			configLog.warning("No config file detected for environment '\(app.environment.name)'. Defaulting to shell environment and code defaults.")
+			configLog.warning(
+				"No config file detected for environment '\(app.environment.name)'. Defaulting to shell environment and code defaults."
+			)
 		}
 		configLog.notice("Starting up in \"\(app.environment.name)\" mode.")
 	}
@@ -215,7 +227,8 @@ struct SwiftarrConfigurator {
 		// [".gif", ".bmp",		 ".png", ".jpg", ".tif", ".webp"] outputs
 
 		// Set the app's views dir, which is where all the Leaf template files are.
-		app.directory.viewsDirectory = Settings.shared.staticFilesRootPath.appendingPathComponent("Resources/Views").path
+		app.directory.viewsDirectory =
+			Settings.shared.staticFilesRootPath.appendingPathComponent("Resources/Views").path
 		// Also set the resources dir, although I don't think it's used anywhere.
 		app.directory.resourcesDirectory = Settings.shared.staticFilesRootPath.appendingPathComponent("Resources").path
 
@@ -236,7 +249,8 @@ struct SwiftarrConfigurator {
 				likelyExecutablePath = URL(fileURLWithPath: appPath).deletingLastPathComponent().path
 			}
 
-			Settings.shared.userImagesRootPath = URL(fileURLWithPath: likelyExecutablePath).appendingPathComponent("images")
+			Settings.shared.userImagesRootPath = URL(fileURLWithPath: likelyExecutablePath)
+				.appendingPathComponent("images")
 		}
 		configLog.notice("Set userImages path to \(Settings.shared.userImagesRootPath.path).")
 
@@ -275,8 +289,14 @@ struct SwiftarrConfigurator {
 		if let databaseURL = Environment.get("DATABASE_URL") {
 			postgresConfig = try SQLPostgresConfiguration(url: databaseURL)
 			postgresConfig.coreConfiguration.tls = connectionConfig
-			app.databases.use(.postgres(configuration: postgresConfig, maxConnectionsPerEventLoop: 1,
-					connectionPoolTimeout: databaseTimeout), as: .psql)
+			app.databases.use(
+				.postgres(
+					configuration: postgresConfig,
+					maxConnectionsPerEventLoop: 1,
+					connectionPoolTimeout: databaseTimeout
+				),
+				as: .psql
+			)
 		}
 		else {
 			// Gather the DB access info with hostname+user+pw, apply defaults if env vars not present.
@@ -293,11 +313,23 @@ struct SwiftarrConfigurator {
 				postgresDB = Environment.get("DATABASE_DB") ?? "swiftarr"
 				postgresPort = 5432
 			}
-			postgresConfig = SQLPostgresConfiguration(hostname: postgresHostname, port: postgresPort, username: postgresUser,
-					password: postgresPassword, database: postgresDB, tls: connectionConfig)
+			postgresConfig = SQLPostgresConfiguration(
+				hostname: postgresHostname,
+				port: postgresPort,
+				username: postgresUser,
+				password: postgresPassword,
+				database: postgresDB,
+				tls: connectionConfig
+			)
 		}
-		app.databases.use(.postgres(configuration: postgresConfig, maxConnectionsPerEventLoop: 1,
-				connectionPoolTimeout: databaseTimeout), as: .psql)
+		app.databases.use(
+			.postgres(
+				configuration: postgresConfig,
+				maxConnectionsPerEventLoop: 1,
+				connectionPoolTimeout: databaseTimeout
+			),
+			as: .psql
+		)
 
 		// Configure Redis connection
 		// Vapor's Redis package may not yet support TLS database connections so we support going both ways.
@@ -390,9 +422,11 @@ struct SwiftarrConfigurator {
 			Settings.shared.canonicalHostnames.append(app.http.server.configuration.hostname)
 		}
 		configLog.debug("Setting canonical hostnames: \(Settings.shared.canonicalHostnames)")
-		
+
 		// canonicalServerURLComponents is used when the server needs to build an externally-visible URL pointing to itself.
-		if let canonicalServerURL: String = Environment.get("SWIFTARR_EXTERNAL_URL"), let components = URLComponents(string: canonicalServerURL) {
+		if let canonicalServerURL: String = Environment.get("SWIFTARR_EXTERNAL_URL"),
+			let components = URLComponents(string: canonicalServerURL)
+		{
 			Settings.shared.canonicalServerURLComponents = components
 		}
 		else if let components = URLComponents(string: "http://\(primaryHostAndPort)") {
@@ -511,7 +545,8 @@ struct SwiftarrConfigurator {
 	}
 
 	func configureQueues(_ app: Application) throws {
-		guard app.environment.commandInput.arguments.isEmpty || app.environment.commandInput.arguments.first == "serve" else {
+		guard app.environment.commandInput.arguments.isEmpty || app.environment.commandInput.arguments.first == "serve"
+		else {
 			return
 		}
 		guard let config = app.redis.configuration else {
@@ -708,16 +743,20 @@ struct SwiftarrConfigurator {
 		// the app runs in. If that script breaks or didn't run, this will hopefully catch it and tell admins what's wrong.
 		// "vapor run", similarly, creates a ".build" dir and runs apps (deep) inside there.
 		var cssFileFound = false
-		let swiftarrCSSURL = Settings.shared.staticFilesRootPath.appendingPathComponent("Resources/Assets/css/swiftarr.css")
+		let swiftarrCSSURL = Settings.shared.staticFilesRootPath.appendingPathComponent(
+			"Resources/Assets/css/swiftarr.css"
+		)
 		var isDir: ObjCBool = false
 		if FileManager.default.fileExists(atPath: swiftarrCSSURL.path, isDirectory: &isDir), !isDir.boolValue {
 			cssFileFound = true
 		}
 		if !cssFileFound {
-			configLog.critical("""
-					Resource files not found during launchtime sanity check. This usually means the Resources directory 
-					isn't getting copied into the App directory in /DerivedData.")
-					""")
+			configLog.critical(
+				"""
+				Resource files not found during launchtime sanity check. This usually means the Resources directory 
+				isn't getting copied into the App directory in /DerivedData.")
+				"""
+			)
 		}
 
 		// FileMiddleware checks eTags and will respond with NotModified, but doesn't set cache-control,

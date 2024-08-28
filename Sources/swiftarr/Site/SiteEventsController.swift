@@ -205,7 +205,8 @@ struct SiteEventsController: SiteControllerUtils {
 	// `GET /events/personal/:personal_event_id/calendarevent.ics`
 	//
 	// Returns a .ics file containing info on the given event; suitable for opening in calendaring apps.
-	func personalEventDownloadICSHandler(_ req: Request) async throws -> Response {
+	func personalEventDownloadICSHandler
+(_ req: Request) async throws -> Response {
 		guard let eventID = req.parameters.get(personalEventIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing event ID parameter.")
 		}

@@ -33,11 +33,11 @@ struct TrunkContext: Encodable {
 	var userIsMod: Bool
 	var userIsTwitarrTeam: Bool
 	var userIsTHO: Bool
-	var userRoles: [String]						// Use "contains(trunk.userRoles, "shutternautmanager")" or similar to check
-	var minAccessLevel: String?					// Minimum access required to view Twitarr pages; Value from Settings.
-	var preregistrationMode: Bool				// Mirrors the value in Settings. 
-	var preregistrationApplies: Bool			// TRUE if the current user is subject to Pre-Reg restrictions.
-	var pageIsForDisabledFeature: SwiftarrFeature?	// Middleware marked this request disabled for normal users but we're showing it to THO/admin
+	var userRoles: [String]  // Use "contains(trunk.userRoles, "shutternautmanager")" or similar to check
+	var minAccessLevel: String?  // Minimum access required to view Twitarr pages; Value from Settings.
+	var preregistrationMode: Bool  // Mirrors the value in Settings.
+	var preregistrationApplies: Bool  // TRUE if the current user is subject to Pre-Reg restrictions.
+	var pageIsForDisabledFeature: SwiftarrFeature?  // Middleware marked this request disabled for normal users but we're showing it to THO/admin
 
 	var username: String
 	var userID: UUID
@@ -48,7 +48,7 @@ struct TrunkContext: Encodable {
 	var newForumAlertwords: Bool
 
 	init(_ req: Request, title: String, tab: Tab) {
-		var userAccessLevel: UserAccessLevel = .banned		// Not logged in is equivalent to can't log in, for our purposes here
+		var userAccessLevel: UserAccessLevel = .banned  // Not logged in is equivalent to can't log in, for our purposes here
 		if let user = req.auth.get(UserCacheData.self) {
 			userAccessLevel = UserAccessLevel(rawValue: req.session.data["accessLevel"] ?? "banned") ?? .banned
 			userIsLoggedIn = true
@@ -82,8 +82,10 @@ struct TrunkContext: Encodable {
 
 			// If we have a nextEventTime, and that event starts within the configured notification time bounds,
 			// mark that we have an event starting soon.
-			if let nextEventInterval = alerts?.nextFollowedEventTime?.timeIntervalSince(Settings.shared.getDateInCruiseWeek()),
-				(Settings.shared.upcomingEventPastSeconds...Settings.shared.upcomingEventNotificationSeconds).contains(nextEventInterval)
+			if let nextEventInterval = alerts?.nextFollowedEventTime?
+				.timeIntervalSince(Settings.shared.getDateInCruiseWeek()),
+				(Settings.shared.upcomingEventPastSeconds...Settings.shared.upcomingEventNotificationSeconds)
+					.contains(nextEventInterval)
 			{
 				eventStartingSoon = true
 			}
@@ -395,7 +397,7 @@ struct ReportPageContext: Encodable {
 		reportFormAction = "/profile/report/\(userID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/user/\(userID)"
 	}
-	
+
 	// For reporting a photostream photo
 	init(_ req: Request, photostreamID: Int) throws {
 		trunk = .init(req, title: "Report Photostream Photo", tab: .none)
@@ -426,7 +428,7 @@ struct SiteController: SiteControllerUtils {
 		async let photostreamResponse = try apiQuery(req, endpoint: "/photostream")
 		let announcements = (try? await announcementResponse.content.decode([AnnouncementData].self)) ?? []
 		let themes = (try? await themeResponse.content.decode([DailyThemeData].self)) ?? []
-		
+
 		var photostream: PhotostreamListData?
 		var photostreamError: ErrorResponse?
 		do {
@@ -484,8 +486,13 @@ struct SiteController: SiteControllerUtils {
 			var photostreamError: String?
 			var showPhotostream: Bool
 
-			init(_ req: Request, theme: DailyThemeData, announcements: [AnnouncementData], photostream: PhotostreamListData?,
-					photostreamError: ErrorResponse?) throws {
+			init(
+				_ req: Request,
+				theme: DailyThemeData,
+				announcements: [AnnouncementData],
+				photostream: PhotostreamListData?,
+				photostreamError: ErrorResponse?
+			) throws {
 				trunk = .init(req, title: "Twitarr", tab: .home)
 				self.announcements = announcements
 				self.dailyTheme = theme
@@ -493,7 +500,7 @@ struct SiteController: SiteControllerUtils {
 				threeGroup = []
 				if let photos = photostream?.photos {
 					for index in stride(from: 0, to: photos.count, by: 2) {
-						var newArray = [PhotostreamImageData]() 
+						var newArray = [PhotostreamImageData]()
 						newArray.append(photos[index])
 						if index + 1 < photos.count {
 							newArray.append(photos[index + 1])
@@ -501,7 +508,7 @@ struct SiteController: SiteControllerUtils {
 						twoGroup.append(newArray)
 					}
 					for index in stride(from: 0, to: photos.count, by: 3) {
-						var newArray = [PhotostreamImageData]() 
+						var newArray = [PhotostreamImageData]()
 						newArray.append(photos[index])
 						if index + 1 < photos.count {
 							newArray.append(photos[index + 1])
@@ -514,10 +521,17 @@ struct SiteController: SiteControllerUtils {
 				}
 				self.photostreamError = photostreamError?.reason ?? "No Photostream Photos yet."
 				let features = Settings.shared.disabledFeatures.value
-				showPhotostream = !((features[.all] ?? Set()).union(features[.swiftarr] ?? Set()).contains(.photostream))
+				showPhotostream =
+					!((features[.all] ?? Set()).union(features[.swiftarr] ?? Set()).contains(.photostream))
 			}
 		}
-		let ctx = try HomePageContext(req, theme: dailyTheme, announcements: announcements, photostream: photostream, photostreamError: photostreamError)
+		let ctx = try HomePageContext(
+			req,
+			theme: dailyTheme,
+			announcements: announcements,
+			photostream: photostream,
+			photostreamError: photostreamError
+		)
 		return try await req.view.render("home", ctx)
 	}
 
@@ -743,15 +757,20 @@ extension SiteControllerUtils {
 	// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
 	// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
 	// redirect-chained through /login and back.
-	func getGlobalRoutes(_ app: Application, feature: SwiftarrFeature? = nil, minAccess: UserAccessLevel = .banned, path: PathComponent...) -> RoutesBuilder {
+	func getGlobalRoutes(
+		_ app: Application,
+		feature: SwiftarrFeature? = nil,
+		minAccess: UserAccessLevel = .banned,
+		path: PathComponent...
+	) -> RoutesBuilder {
 		var builder = app.grouped([
-				app.sessions.middleware,
-				SiteErrorMiddleware(environment: app.environment),
-				UserCacheData.SessionAuth(),
-				Token.authenticator(),  // For apps that want to sometimes open web pages
-				NotificationsMiddleware(),
-//				UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated.")),
-				SiteMinUserAccessLevelMiddleware(requireAuth: true, requireAccessLevel: minAccess),
+			app.sessions.middleware,
+			SiteErrorMiddleware(environment: app.environment),
+			UserCacheData.SessionAuth(),
+			Token.authenticator(),  // For apps that want to sometimes open web pages
+			NotificationsMiddleware(),
+			//				UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated.")),
+			SiteMinUserAccessLevelMiddleware(requireAuth: true, requireAccessLevel: minAccess),
 		])
 		if let feature = feature {
 			builder = builder.grouped(DisabledSiteSectionMiddleware(feature: feature))
@@ -764,18 +783,28 @@ extension SiteControllerUtils {
 	// Private site routes should not allow token auth. Token auth is for apps that want to open a webpage with their
 	// token. They can initiate a web flow with a token, get a session back, and use that to complete the flow. However,
 	// we don't want apps to be able to jump to private web pages.
-	func getPrivateRoutes(_ app: Application, feature: SwiftarrFeature? = nil, minAccess: UserAccessLevel = .banned, path: PathComponent...,
-			overrideMinUserAccessLevel: Bool = false) -> RoutesBuilder {
-		var builder = app.grouped(path).grouped([
+	func getPrivateRoutes(
+		_ app: Application,
+		feature: SwiftarrFeature? = nil,
+		minAccess: UserAccessLevel = .banned,
+		path: PathComponent...,
+		overrideMinUserAccessLevel: Bool = false
+	) -> RoutesBuilder {
+		var builder = app.grouped(path)
+			.grouped([
 				app.sessions.middleware,
 				SiteErrorMiddleware(environment: app.environment),
-				UserCacheData.SessionAuth()
-		])
+				UserCacheData.SessionAuth(),
+			])
 		if overrideMinUserAccessLevel {
-			builder = builder.grouped(UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated.")))
+			builder = builder.grouped(
+				UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated."))
+			)
 		}
 		else {
-			builder = builder.grouped(SiteMinUserAccessLevelMiddleware(requireAuth: true, requireAccessLevel: minAccess))
+			builder = builder.grouped(
+				SiteMinUserAccessLevelMiddleware(requireAuth: true, requireAccessLevel: minAccess)
+			)
 		}
 		if let feature = feature {
 			builder = builder.grouped(DisabledSiteSectionMiddleware(feature: feature))

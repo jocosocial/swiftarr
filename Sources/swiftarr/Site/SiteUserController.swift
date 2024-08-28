@@ -77,8 +77,10 @@ struct SiteUserController: SiteControllerUtils {
 		// redirect-chained through /login and back.
 		let globalRoutes = getGlobalRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .users))
 		globalRoutes.get("user", userIDParam, use: userProfilePageHandler).destination("the user profile for this user")
-		globalRoutes.get("username", ":username", use: usernameProfilePageHandler).destination("the user profile for this user")
-		globalRoutes.get("profile", ":username", use: usernameProfilePageHandler).destination("the user profile for this user")
+		globalRoutes.get("username", ":username", use: usernameProfilePageHandler)
+			.destination("the user profile for this user")
+		globalRoutes.get("profile", ":username", use: usernameProfilePageHandler)
+			.destination("the user profile for this user")
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .users))
@@ -236,7 +238,7 @@ struct SiteUserController: SiteControllerUtils {
 	}
 
 	/// `GET /favorites`
-	/// 
+	///
 	/// Show all of the users favorite users.
 	func favoritesPageHandler(_ req: Request) async throws -> View {
 		async let favoritesResponse = try apiQuery(req, endpoint: "/users/favorites")

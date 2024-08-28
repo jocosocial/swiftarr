@@ -189,7 +189,7 @@ public struct UserEventNotificationJob: AsyncScheduledJob {
 	public func run(context: QueueContext) async throws {
 		context.logger.info("Running UserEventNotificationJob")
 		try await processEvents(context)
-		try await processFezzes(context) 
+		try await processFezzes(context)
 		try await processPersonalEvents(context)
 	}
 }

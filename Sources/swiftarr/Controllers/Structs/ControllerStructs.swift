@@ -81,7 +81,7 @@ public struct BoardgameRecommendationData: Content {
 public struct BoardgameResponseData: Content {
 	/// Array of boardgames.
 	var gameArray: [BoardgameData]
-	/// Total games in result set, and the start and limit into the found set. 
+	/// Total games in result set, and the start and limit into the found set.
 	var paginator: Paginator
 }
 
@@ -351,7 +351,7 @@ public struct EventData: Content {
 	var forum: UUID?
 	/// Whether user has favorited event.
 	var isFavorite: Bool
-	/// The performers who will be at the event. 
+	/// The performers who will be at the event.
 	var performers: [PerformerHeaderData]
 }
 
@@ -532,7 +532,8 @@ extension FezData {
 			fez.startTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.startTime)
 		self.endTime = fez.endTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.endTime)
 		self.timeZone = self.startTime == nil ? nil : Settings.shared.timeZoneChanges.abbrevAtTime(self.startTime)
-		self.timeZoneID = self.startTime == nil ? nil : Settings.shared.timeZoneChanges.tzAtTime(self.startTime).identifier
+		self.timeZoneID =
+			self.startTime == nil ? nil : Settings.shared.timeZoneChanges.tzAtTime(self.startTime).identifier
 		self.location =
 			fez.moderationStatus.showsContent() ? fez.location : "Fez Location field is under moderator review"
 		self.lastModificationTime = fez.updatedAt ?? Date()
@@ -962,7 +963,6 @@ extension MicroKaraokeSnippetModeration {
 	}
 }
 
-
 /// When a user starts the Micro Karaoke flow to sing and record part of a song, the server reserves a song slot for that user and returns into
 /// about their reservation, including the lyrics they should sing, what song it's part of, and URLs for the vocal and no-vocal song clipe.
 ///
@@ -1032,11 +1032,14 @@ public struct MicroKaraokeSongManifest: Content {
 extension MicroKaraokeSongManifest {
 	init(from snippets: [MKSnippet], song: MKSong, info: SongInfoJSON, karaokeMusicTrack: URL) throws {
 		guard let first = snippets.first else {
-			throw Abort(.internalServerError, reason: "No song clips found for supposedly completed micro karaoke song.")
+			throw Abort(
+				.internalServerError,
+				reason: "No song clips found for supposedly completed micro karaoke song."
+			)
 		}
 		songID = first.$song.id
 		portraitMode = song.isPortrait
-		snippetVideoURLs = try snippets.map { 
+		snippetVideoURLs = try snippets.map {
 			guard let mediaURL = $0.mediaURL, let url = URL(string: mediaURL) else {
 				throw Abort(.internalServerError, reason: "Could not make URL out of video clip file.")
 			}
@@ -1046,7 +1049,6 @@ extension MicroKaraokeSongManifest {
 		self.snippetDurations = info.durations
 	}
 }
-
 
 /// Used to create a `UserNote` when viewing a user's profile. Also used to create a Karaoke song log entry.
 ///
@@ -1129,9 +1131,9 @@ public struct Paginator: Content {
 }
 
 /// Returns info about a single Performer. This header information is similar to the UserHeader structure, containing just enough
-/// info to build a title card for a performer. 
-/// 
-/// This structure is also used to break the recusion cycle where a PerformerData contains a list of Events, and the 
+/// info to build a title card for a performer.
+///
+/// This structure is also used to break the recusion cycle where a PerformerData contains a list of Events, and the
 /// Events contain lists of the Performers that will be there. In this case, the Event has an array of PerformerHeaderData instead of PerformerData.
 ///
 /// Incorporated into `PerformerData`
@@ -1151,7 +1153,7 @@ extension PerformerHeaderData {
 		name = performer.name
 		photo = performer.photo
 	}
-	
+
 	init() {
 		id = nil
 		name = ""
@@ -1160,7 +1162,7 @@ extension PerformerHeaderData {
 }
 
 /// Returns info about a single perfomer. Most fields are optional, and the array fields may be empty, although they shouldn't be under normal conditions.
-/// 
+///
 /// Returned by: `GET /api/v3/performer/self`
 /// Returned by: `GET /api/v3/performer/:performer_id`
 public struct PerformerData: Content {
@@ -1191,7 +1193,7 @@ public struct PerformerData: Content {
 	/// The events this performer is going to be performing at.
 	var events: [EventData]
 	/// The user who  created this Performer. Only applies to Shadow Event organizers, and is only returned if the requester is a Moderator or higher.
-	/// Although we track the User who created a Performer model for their shadow event for moderation purposes, the User behind the Performer 
+	/// Although we track the User who created a Performer model for their shadow event for moderation purposes, the User behind the Performer
 	/// shouldn't be shown to everyone.
 	var user: UserHeader?
 }
@@ -1209,10 +1211,12 @@ extension PerformerData {
 		instagramURL = performer.instagramURL
 		youtubeURL = performer.youtubeURL
 		isOfficialPerformer = performer.officialPerformer
-		self.events = try performer.events.map { try EventData($0, isFavorite: favoriteEventIDs.contains($0.requireID())) }
+		self.events = try performer.events.map {
+			try EventData($0, isFavorite: favoriteEventIDs.contains($0.requireID()))
+		}
 		self.yearsAttended = performer.yearsAttended
 	}
-	
+
 	// Empty performerData for users that don't have a Performer object
 	init() {
 		header = .init()
@@ -1223,7 +1227,7 @@ extension PerformerData {
 }
 
 /// Wraps up a list of performers with pagination info.
-/// 
+///
 /// Returned by:`GET /api/v3/performer/official`
 /// Returned by:`GET /api/v3/performer/shadow`
 public struct PerformerResponseData: Content {
@@ -1233,8 +1237,8 @@ public struct PerformerResponseData: Content {
 	var paginator: Paginator
 }
 
-/// Used to create and update Performer models. 
-/// 
+/// Used to create and update Performer models.
+///
 /// Used by: `POST /api/v3/performer/forEvent/:event_id`
 /// Used by: `POST /api/v3/performer/official/add`
 public struct PerformerUploadData: Content {
@@ -1248,7 +1252,7 @@ public struct PerformerUploadData: Content {
 	/// New photo data if we're updating it, or the name of an existing photo on the server.
 	var photo: ImageUploadData
 	/// TRUE if this is an official performer, FALSE if it's a shadow event organizer. Note that this struct can't link a Performer with a User, so can't be
-	/// used by admin/mods to create Shadow Event Organizers. The idea is that they should create their records themselves, but mods may have to edit them. 
+	/// used by admin/mods to create Shadow Event Organizers. The idea is that they should create their records themselves, but mods may have to edit them.
 	var isOfficialPerformer: Bool
 	var organization: String?
 	var title: String?
@@ -1328,13 +1332,13 @@ extension PhotostreamImageData {
 /// However: `/api/v3/photostream` returns one of thse objects even for non-mod users--it just returns 30 photos and sets `paginator.total` to 30.
 ///
 /// Returned by: `GET /api/v3/photostream`
-struct PhotostreamListData : Content {
+struct PhotostreamListData: Content {
 	var photos: [PhotostreamImageData]
 	var paginator: Paginator
 }
 
 /// Returns information on available tags to use when tagging a photo to be uploaded to the photostream. A photo may be tagged with an event or with a generic
-/// ship location. Calling `api/v3/photostream/placenames` fills the `events` parameter with information about events that are currently happening. When 
+/// ship location. Calling `api/v3/photostream/placenames` fills the `events` parameter with information about events that are currently happening. When
 /// a photo is uploaded, its tag is validated, and validation will fail if the tagged event has ended.
 ///
 /// Returned by: `GET /api/v3/photostream`
@@ -1344,7 +1348,7 @@ struct PhotostreamLocationData: Content {
 }
 
 /// Uploads a photo to the photostream. Either the eventID or the locationName must be set.
-/// 
+///
 /// Sent in request body to: `POST /api/v3/photostream/upload`.
 struct PhotostreamUploadData: Content {
 	/// The image data.
@@ -1913,7 +1917,7 @@ public struct UserNotificationData: Content {
 	var serverTime: String
 	/// Server Time Zone offset, in seconds from UTC. One hour before UTC is -3600. EST  timezone is -18000.
 	var serverTimeOffset: Int
-	/// The geopolitical region identifier that identifies the time zone -- e.g. "America/Los Angeles" 
+	/// The geopolitical region identifier that identifies the time zone -- e.g. "America/Los Angeles"
 	var serverTimeZoneID: String
 	/// Human-readable time zone name, like "EDT"
 	var serverTimeZone: String
@@ -1953,7 +1957,7 @@ public struct UserNotificationData: Content {
 	/// The event ID of the the next future event the user has followed. This event's start time should always be == nextFollowedEventTime.
 	/// If the user has favorited multiple events that start at the same time, this will be random among them.
 	var nextFollowedEventID: UUID?
-	
+
 	/// The number of Micro Karaoke songs the user has contributed to and can now view.
 	var microKaraokeFinishedSongCount: Int
 

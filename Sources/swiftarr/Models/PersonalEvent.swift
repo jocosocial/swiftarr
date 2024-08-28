@@ -6,74 +6,74 @@ import Vapor
 final class PersonalEvent: Model, Searchable {
 	static let schema = "personal_event"
 
-    // MARK: Properties
+	// MARK: Properties
 
 	/// The event's ID.
 	@ID(key: .id) var id: UUID?
- 
-    /// The title of the event.
+
+	/// The title of the event.
 	@Field(key: "title") var title: String
- 
-    /// A description of the event.
+
+	/// A description of the event.
 	@Field(key: "description") var description: String?
- 
-    /// The start time of the event.
+
+	/// The start time of the event.
 	@Field(key: "start_time") var startTime: Date
- 
-    /// The end time of the event.
+
+	/// The end time of the event.
 	@Field(key: "end_time") var endTime: Date
 
-    /// The location of the event.
+	/// The location of the event.
 	@Field(key: "location") var location: String?
 
-    /// An ordered list of participants in the event. Newly joined members are
-    // appended to the array, meaning this array stays sorted by join time.
+	/// An ordered list of participants in the event. Newly joined members are
+	// appended to the array, meaning this array stays sorted by join time.
 	@Field(key: "participant_array") var participantArray: [UUID]
 
-    /// Moderators can set several statuses on fezPosts that modify editability and visibility.
+	/// Moderators can set several statuses on fezPosts that modify editability and visibility.
 	@Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
 
-    /// Timestamp of the model's creation, set automatically.
+	/// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
 
-    /// Timestamp of the model's last update, set automatically.
+	/// Timestamp of the model's last update, set automatically.
 	@Timestamp(key: "updated_at", on: .update) var updatedAt: Date?
 
-    /// Timestamp of the model's soft-deletion, set automatically.
+	/// Timestamp of the model's soft-deletion, set automatically.
 	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
 
-    // MARK: Relations
+	// MARK: Relations
 
-    /// The `User` that created this `PersonalEvent`.
+	/// The `User` that created this `PersonalEvent`.
 	@Parent(key: "owner") var owner: User
- 
-    // MARK: Initialization
+
+	// MARK: Initialization
 	// Used by Fluent
 	init() {}
 
-    /// Initializes a new `PersonalEvent`.
+	/// Initializes a new `PersonalEvent`.
 	///
 	/// - Parameters:
 	///   - title: The title of the event.
 	///   - description: A description of the event.
-    ///   - startTime: The start time of the event.
+	///   - startTime: The start time of the event.
 	///   - endTime: The end time of the event.
 	///   - location: The location of the event.
 	///   - owner: The ID of the owning user.
 	init(
 		title: String,
 		description: String?,
-        startTime: Date,
+		startTime: Date,
 		endTime: Date,
 		location: String?,
-        owner: UUID
+		owner: UUID
 	) {
 		self.startTime = startTime
 		self.endTime = endTime
 		self.title = title
 		self.description = description
 		self.location = location
-        self.$owner.id = owner
+		self.$owner.id = owner
 		self.moderationStatus = .normal
 		self.participantArray = []
 	}
@@ -84,7 +84,7 @@ final class PersonalEvent: Model, Searchable {
 		self.title = data.title
 		self.description = data.description
 		self.location = data.location
-        self.$owner.id = cacheOwner.userID
+		self.$owner.id = cacheOwner.userID
 		self.moderationStatus = .normal
 		self.participantArray = data.participants
 	}
@@ -92,7 +92,7 @@ final class PersonalEvent: Model, Searchable {
 
 // PersonalEvents can be reported.
 extension PersonalEvent: Reportable {
-    /// The report type for `PersonalEvent` reports.
+	/// The report type for `PersonalEvent` reports.
 	var reportType: ReportType { .personalEvent }
 	/// Standardizes how to get the author ID of a Reportable object.
 	var authorUUID: UUID { $owner.id }
@@ -102,14 +102,14 @@ extension PersonalEvent: Reportable {
 }
 
 struct CreatePersonalEventSchema: AsyncMigration {
-    static let schema = "personal_event"
+	static let schema = "personal_event"
 	func prepare(on database: Database) async throws {
 		let modStatusEnum = try await database.enum("moderation_status").read()
 		try await database.schema(CreatePersonalEventSchema.schema)
 			.id()
 			.field("title", .string, .required)
 			.field("description", .string)
-            .field("start_time", .datetime, .required)
+			.field("start_time", .datetime, .required)
 			.field("end_time", .datetime, .required)
 			.field("location", .string)
 			.field("mod_status", modStatusEnum, .required)

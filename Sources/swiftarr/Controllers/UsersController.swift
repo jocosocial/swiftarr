@@ -134,7 +134,8 @@ struct UsersController: APIRouteCollection {
 			throw Abort(.notFound, reason: "profile is not available")
 		}
 		// If the requester has favorited this user.
-		let isFavorite = try await UserFavorite.query(on: req.db)
+		let isFavorite =
+			try await UserFavorite.query(on: req.db)
 			.filter(\.$user.$id == requester.userID)
 			.filter(\.$favorite.$id == profiledUser.requireID()).first() != nil
 		// Profile hidden if user quarantined and requester not mod, or if requester is banned.
@@ -170,7 +171,7 @@ struct UsersController: APIRouteCollection {
 	///   username harvesting.
 	///
 	/// For bulk `.userSearch` data retrieval, see the `ClientController` endpoints.
-	/// 
+	///
 	/// **URL Query Parameters:**
 	/// - ?favorers=BOOLEAN Show only resulting users that have favorited the requesting user.
 	///
@@ -214,7 +215,8 @@ struct UsersController: APIRouteCollection {
 				.with(\.$user)
 				.all()
 			matchingUsers = favoritingUsers.map { $0.user }
-		} else {
+		}
+		else {
 			matchingUsers = try await User.query(on: req.db)
 				.filter(\.$userSearch, .custom("ILIKE"), "%\(search)%")
 				.filter(\.$id !~ requester.getBlocks())
