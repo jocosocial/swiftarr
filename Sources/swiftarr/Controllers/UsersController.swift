@@ -556,6 +556,9 @@ struct UsersController: APIRouteCollection {
 		guard let _ = try await User.find(favoriteUserID, on: req.db) else {
 			throw Abort(.notFound, reason: "no user found for identifier '\(parameter)'")
 		}
+		guard favoriteUserID != requester.userID else {
+			throw Abort(.badRequest, reason: "Cannot favorite yourself.")
+		}
 		if let _ = try await UserFavorite.query(on: req.db).filter(\.$user.$id == requester.userID)
 			.filter(\.$favorite.$id == favoriteUserID).first()
 		{

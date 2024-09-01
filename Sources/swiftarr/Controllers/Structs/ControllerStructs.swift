@@ -428,7 +428,15 @@ extension FezContentData: RCFValidatable {
 			}
 		}
 
-		// TODO: validations for startTime and endTime
+		if let startTime = startTime {
+			guard let endTime = endTime else {
+				throw Abort(.badRequest, reason: "if startTime is defined so must endTime")
+			}
+			let timeInterval = endTime.timeIntervalSince(startTime)
+			guard timeInterval <= 86400 else {
+				throw Abort(.badRequest, reason: "endTime can be no more than 24 hours after startTime")
+			}
+		}
 	}
 }
 
@@ -478,7 +486,8 @@ public struct FezData: Content, ResponseEncodable {
 	var info: String
 	/// The starting time of the fez.
 	var startTime: Date?
-	/// The ending time of the fez.
+	/// The ending time of the fez. If startTime specified, no more than 24 hours after
+	/// the startTime since per Chall that makes iCal export get weird.
 	var endTime: Date?
 	/// The 3 letter abbreviation for the active time zone at the time and place where the fez is happening.
 	var timeZone: String?
@@ -2336,7 +2345,8 @@ public struct PersonalEventData: Content {
 	var description: String?
 	/// Starting time of the personal event
 	var startTime: Date
-	/// Ending time of the personal event.
+	/// Ending time of the personal event. No more than 24 hours after
+	/// the startTime since per Chall that makes iCal export get weird.
 	var endTime: Date
 	/// The timezone that the ship is going to be in when the personal event occurs. Delivered as an abbreviation e.g. "EST".
 	var timeZone: String
@@ -2349,6 +2359,7 @@ public struct PersonalEventData: Content {
 	/// The owning user of this personal event.
 	var owner: UserHeader
 	/// Users that the owner has invited to join this personal event.
+	/// Should not contain the owner itself (see PersonalEvent.owner above)
 	var participants: [UserHeader]
 }
 
@@ -2369,6 +2380,9 @@ extension PersonalEventData {
 	}
 }
 
+/// PersonalEventContentData is used for creating and editing a PersonalEvent.
+/// Contains all of the fields that a user can modify.
+///
 public struct PersonalEventContentData: Content {
 	/// The title for the PersonalEvent.
 	var title: String
@@ -2380,7 +2394,8 @@ public struct PersonalEventContentData: Content {
 	var endTime: Date
 	/// The location for the PersonalEvent.
 	var location: String?
-	/// Users to invite to this PersonalEvent.
+	/// Users that have been invited to this PersonalEvent.
+	/// Should not contain the owner.
 	var participants: [UUID]
 }
 
@@ -2389,5 +2404,9 @@ extension PersonalEventContentData: RCFValidatable {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
 		tester.validate(title.count >= 2, forKey: .title, or: "title field has a 2 character minimum")
 		tester.validate(title.count <= 100, forKey: .title, or: "title field has a 100 character limit")
+		let timeInterval = endTime.timeIntervalSince(startTime)
+		guard timeInterval <= 86400 else {
+            throw Abort(.badRequest, reason: "endTime can be no more than 24 hours after startTime")
+        }
 	}
 }
