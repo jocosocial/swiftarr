@@ -2316,8 +2316,11 @@ public struct AlertmanagerWebhookPayload: Content {
 /// This smells roughly the same as an error fields-wise without inheriting from the error.
 ///
 public struct HealthResponse: Content {
+	/// HTTP status code.
 	var status: HTTPResponseStatus = HTTPResponseStatus.ok
+	/// Arbitrary response details.
 	var reason: String = "OK"
+	/// Is this response an error.
 	var error: Bool = false
 }
 
@@ -2325,16 +2328,27 @@ public struct HealthResponse: Content {
 ///
 /// Used to return a `PersonalEvent`'s data.
 public struct PersonalEventData: Content {
+	/// The PersonalEvent's ID. This is the Swiftarr database record for this event.
 	var personalEventID: UUID
+	/// The personal event's title.
 	var title: String
+	/// A description of the personal event.
 	var description: String?
+	/// Starting time of the personal event
 	var startTime: Date
+	/// Ending time of the personal event.
 	var endTime: Date
+	/// The timezone that the ship is going to be in when the personal event occurs. Delivered as an abbreviation e.g. "EST".
 	var timeZone: String
+	/// The timezone ID that the ship is going to be in when the personal event occurs. Example: "America/New_York".
 	var timeZoneID: String
+	/// The location of the personal event.
 	var location: String?
+	/// The last time data for this personal event was modified.
 	var lastUpdateTime: Date
+	/// The owning user of this personal event.
 	var owner: UserHeader
+	/// Users that the owner has invited to join this personal event.
 	var participants: [UserHeader]
 }
 
