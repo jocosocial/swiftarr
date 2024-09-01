@@ -112,12 +112,10 @@ struct PersonalEventController: APIRouteCollection {
 		let data: PersonalEventContentData = try ValidatingJSONDecoder()
 			.decode(PersonalEventContentData.self, fromBodyOf: req)
 
-		let favorites = try await UserFavorite.query(on: req.db).filter(\.$favorite.$id == cacheUser.userID).all()
-		let favoritesUserIDs = favorites.map({ $0.$user.id })
-		try data.participants.forEach { userID in
-			if !favoritesUserIDs.contains(userID) {
-				throw Abort(.forbidden, reason: "Cannot have a participant who has not favorited you.")
-			}
+		let favorites: [UserFavorite] = try await UserFavorite.query(on: req.db).filter(\.$favorite.$id == cacheUser.userID).all()
+		let favoritesUserIDs = Set(favorites.map({ $0.$user.id }))
+		if !favoritesUserIDs.isSuperset(of: Set(data.participants)) {
+			throw Abort(.forbidden, reason: "Cannot have a participant who has not favorited you.")
 		}
 
 		let personalEvent = PersonalEvent(data, cacheOwner: cacheUser)
@@ -163,12 +161,10 @@ struct PersonalEventController: APIRouteCollection {
 		let data: PersonalEventContentData = try ValidatingJSONDecoder()
 			.decode(PersonalEventContentData.self, fromBodyOf: req)
 
-		let favorites = try await UserFavorite.query(on: req.db).filter(\.$favorite.$id == cacheUser.userID).all()
-		let favoritesUserIDs = favorites.map { $0.$user.id }
-		try data.participants.forEach { userID in
-			if !favoritesUserIDs.contains(userID) {
-				throw Abort(.forbidden, reason: "Cannot have a participant who has not favorited you.")
-			}
+		let favorites: [UserFavorite] = try await UserFavorite.query(on: req.db).filter(\.$favorite.$id == cacheUser.userID).all()
+		let favoritesUserIDs = Set(favorites.map({ $0.$user.id }))
+		if !favoritesUserIDs.isSuperset(of: Set(data.participants)) {
+			throw Abort(.forbidden, reason: "Cannot have a participant who has not favorited you.")
 		}
 
 		personalEvent.title = data.title
