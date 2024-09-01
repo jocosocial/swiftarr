@@ -666,7 +666,6 @@ struct SwiftarrConfigurator {
 		app.migrations.add(AddFoodDrinkCategory(), to: .psql)
 		app.migrations.add(CreateMicroKaraokeUser(), to: .psql)
 		app.migrations.add(CreatePersonalEventSchema(), to: .psql)
-		app.migrations.add(CreatePersonalEventSearchIndexes(), to: .psql)
 	}
 
 	// Perform several sanity checks to verify that we can access the dbs and resource files that we need.

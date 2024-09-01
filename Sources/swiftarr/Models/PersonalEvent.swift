@@ -1,4 +1,5 @@
 import Fluent
+import FluentSQL
 import Vapor
 
 /// A `PersonalEvent` that a user has added to their calendar, and optionally invited
@@ -119,6 +120,26 @@ struct CreatePersonalEventSchema: AsyncMigration {
 			.field("updated_at", .datetime)
 			.field("deleted_at", .datetime)
 			.create()
+
+		if let sqlDatabase = database as? SQLDatabase {
+			try await sqlDatabase.raw(
+				"""
+				ALTER TABLE \(unsafeRaw: CreatePersonalEventSchema.schema)
+				ADD COLUMN IF NOT EXISTS fulltext_search tsvector
+					GENERATED ALWAYS AS (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(description, ''))) STORED;
+				"""
+			)
+			.run()
+			try await sqlDatabase.raw(
+				"""
+				CREATE INDEX IF NOT EXISTS idx_\(unsafeRaw: CreatePersonalEventSchema.schema)_search
+				ON \(ident: CreatePersonalEventSchema.schema)
+				USING GIN
+				(fulltext_search)
+				"""
+			)
+			.run()
+		}
 	}
 
 	func revert(on database: Database) async throws {
