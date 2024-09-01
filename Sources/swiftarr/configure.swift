@@ -665,6 +665,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(RenameWhereAndWhen(), to: .psql)
 		app.migrations.add(AddFoodDrinkCategory(), to: .psql)
 		app.migrations.add(CreateMicroKaraokeUser(), to: .psql)
+		app.migrations.add(StreamPhotoSchemaV2(), to: .psql)
 		app.migrations.add(CreatePersonalEventSchema(), to: .psql)
 	}
 

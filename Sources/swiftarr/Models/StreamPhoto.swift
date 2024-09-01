@@ -63,7 +63,6 @@ extension StreamPhoto: Reportable {
 	var autoQuarantineThreshold: Int { Settings.shared.postAutoQuarantineThreshold }
 }
 
-
 struct CreateStreamPhotoSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		let modStatusEnum = try await database.enum("moderation_status").read()
@@ -82,6 +81,22 @@ struct CreateStreamPhotoSchema: AsyncMigration {
 
 	func revert(on database: Database) async throws {
 		try await database.schema("streamphoto").delete()
+	}
+}
+
+// Changes atEvent to be set to null when the associated event is deleted.
+struct StreamPhotoSchemaV2: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		let modStatusEnum = try await database.enum("moderation_status").read()
+		try await database.schema("streamphoto")
+			.foreignKey("at_event", references: "event", "id", onDelete: .setNull)
+			.update()
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema("streamphoto")
+			.foreignKey("at_event", references: "event", "id", onDelete: .noAction)
+			.update()
 	}
 }
 
