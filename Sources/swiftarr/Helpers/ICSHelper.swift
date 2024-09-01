@@ -74,6 +74,13 @@ final class ICSHelper {
 			let endTime = dateFormatter.string(from: event.endTime)
 			let stampTime = dateFormatter.string(from: event.lastUpdateTime)  // DTSTAMP is when the ICS was last modified.
 			// TODO URL:https://twitarr.com/personalevents/\(event.personalEventID)
+
+			// If a user made a personal event on the pre-reg server, exported the event
+			// to their calendar app, and then re-exported once on the boat,
+			// they would get their events doubled up, unless they have the same UID.
+			// Having a separate UID field lets you retain the value if the event
+			// moves from one server to another.
+			let uid = CryptoHelper.sha256Hash(of: "\(startTime)_\(event.personalEventID.uuidString)")
 			resultICSString.append(
 				"""
 				BEGIN:VEVENT
@@ -84,7 +91,7 @@ final class ICSHelper {
 				DESCRIPTION:\(icsEscapeString(event.description ?? ""))
 				LOCATION:\(icsEscapeString(event.location ?? ""))
 				SEQUENCE:0
-				UID:\(icsEscapeString(event.personalEventID.uuidString))
+				UID:\(icsEscapeString(uid))
 				END:VEVENT
 
 				"""
