@@ -6,7 +6,7 @@
 					<nav aria-label="breadcrumb">
 						<span class="swiftarr-breadcrumb-item"><a href="/admin">Admin</a></span>
 						<span class="swiftarr-breadcrumb-item"><a href="/admin/performer/root">Manage Performers</a></span>
-						#if(performer.isOfficialPerformer):
+						#if(performer.header.isOfficialPerformer):
 							<span class="swiftarr-breadcrumb-item active" aria-current="page">Add/Edit Official Performer</span>
 						#else:
 							<span class="swiftarr-breadcrumb-item active" aria-current="page">Edit Shadow Performer</span>
@@ -14,7 +14,7 @@
 					</nav>
 				</div>
 			</div>
-			#if(performer.isOfficialPerformer):
+			#if(performer.header.isOfficialPerformer):
 				<p>This form is for TwitarrTeam and above to manually add a bio page for an official performer. This form does not attach
 					the performer to any events (that step is done by bulk import of a Sched spreadsheet).</p>
 			#else:
@@ -23,8 +23,10 @@
 			#endif
 
 			<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST" data-successurl="/admin/performer/root">
-				<input type="hidden" name="performerID" id="performerID" value="#(performer.header.id)">
-				<input type="hidden" name="isOfficialPerformer" id="isOfficialPerformer" value="#(performer.isOfficialPerformer)">
+				#if(performer.header.id != nil):
+					<input type="hidden" name="performerID" id="performerID" value="#(performer.header.id)">
+				#endif
+				<input type="hidden" name="isOfficialPerformer" id="isOfficialPerformer" value="#(performer.header.isOfficialPerformer)">
 				<div class="row mt-4">
     				<div class="col">
 						<label for="name" class="form-label">Performer's' Name (required)</label>

@@ -5,7 +5,7 @@
     			<div class="col">
 					<nav aria-label="breadcrumb">
 						<ol class="breadcrumb">
-							#if(performer.isOfficialPerformer):
+							#if(performer.header.isOfficialPerformer):
 								<li class="breadcrumb-item"><a href="/performers">Performers</a></li>
 							#else:
 								<li class="breadcrumb-item"><a href="/performers/shadow">Shadow Cruise</a></li>
@@ -24,7 +24,7 @@
     			<div class="col-12">
  					<div class="float-sm-start">
  						<figure class="figure" style="min-width: 100%;">
-							#if(performer.header.photo != null && performer.header.photo != ""):
+							#if(performer.header.photo != nil && performer.header.photo != ""):
 								<img src="/api/v3/image/full/#(performer.header.photo)" class="rounded performer-img img-sm-float me-3 mt-1" >
 							#else:
 								<img src="/img/NoAvatarUser.png" class="rounded performer-img img-sm-float me-3 mt-1">
@@ -89,11 +89,13 @@
 						<h5>Moderator Tools</h5>
 					</div>
 				</div>
-				<div class="row my-2 mb-1">
-					<div class="col-12">
-						User that created this Performer: #userByline(performer.user)
+				#if(performer.user):
+					<div class="row my-2 mb-1">
+						<div class="col-12">
+							User that created this Performer: #userByline(performer.user)
+						</div>
 					</div>
-				</div>				
+				#endif
 				<div class="row my-2 mb-1">
 					<div class="col col-auto btn-group btn-group-sm mt-3" role="group" aria-label="Performer actions">
 						<a class="btn btn-outline-primary" href="/admin/performer/add?performer=#(performer.header.id)">Edit Performer</a>

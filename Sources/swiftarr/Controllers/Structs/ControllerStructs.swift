@@ -1143,6 +1143,8 @@ public struct PerformerHeaderData: Content {
 	var name: String
 	/// Photo ID, accessible through `/api/v3/image/[full|thumb]/<photo>` methods in the `ImageController`.
 	var photo: String?
+	/// TRUE if the performer is on JoCo's list of featured guests. FALSE if this is a shadow event organizer.
+	var isOfficialPerformer: Bool
 }
 
 extension PerformerHeaderData {
@@ -1150,12 +1152,14 @@ extension PerformerHeaderData {
 		id = try performer.requireID()
 		name = performer.name
 		photo = performer.photo
+		isOfficialPerformer = performer.officialPerformer
 	}
 	
 	init() {
 		id = nil
 		name = ""
 		photo = nil
+		isOfficialPerformer = false
 	}
 }
 
@@ -1186,8 +1190,6 @@ public struct PerformerData: Content {
 	var youtubeURL: String?
 	/// Full 4-digit years, ascending order-- like this: [2011, 2012, 2022]
 	var yearsAttended: [Int]
-	/// TRUE if the performer is on JoCo's list of featured guests. FALSE if this is a shadow event organizer.
-	var isOfficialPerformer: Bool
 	/// The events this performer is going to be performing at.
 	var events: [EventData]
 	/// The user who  created this Performer. Only applies to Shadow Event organizers, and is only returned if the requester is a Moderator or higher.
@@ -1208,7 +1210,6 @@ extension PerformerData {
 		xURL = performer.xURL
 		instagramURL = performer.instagramURL
 		youtubeURL = performer.youtubeURL
-		isOfficialPerformer = performer.officialPerformer
 		self.events = try performer.events.map { try EventData($0, isFavorite: favoriteEventIDs.contains($0.requireID())) }
 		self.yearsAttended = performer.yearsAttended
 	}
@@ -1216,7 +1217,6 @@ extension PerformerData {
 	// Empty performerData for users that don't have a Performer object
 	init() {
 		header = .init()
-		isOfficialPerformer = false
 		events = []
 		yearsAttended = []
 	}

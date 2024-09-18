@@ -35,7 +35,7 @@
 					<b>With:</b>
 						#for(performer in event.performers):
 							<div class="ms-4 mb-1">
-								#if(performer.photo != null && performer.photo != ""):
+								#if(performer.photo != nil && performer.photo != ""):
 									<img style="border-radius: 10px;" width=50 height=50 src="/api/v3/image/thumb/#(performer.photo)" alt="performer photo">
 								#else:
 									<img style="border-radius: 10px;" width=50 height=50 src="/img/NoAvatarUser.png" alt="performer photo">
