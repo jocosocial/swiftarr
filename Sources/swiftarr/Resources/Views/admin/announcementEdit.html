@@ -11,6 +11,8 @@
 						</ol>
 					</nav>
 				</div>
+			</div>
+			<div class="row">
 				<div class="col col-auto">
 					<b>#if(post.isEdit):Edit#else:Create#endif Announcement</b>
 				</div>
@@ -48,18 +50,35 @@
 					</form>
 				</li>
 			</ul>
-			#if(post.isEdit):
-				<div class="row">
-					<div class="col col-12">
-						<p>Remember: Editing an announcement will not change its alert status for users--so, a user that has seen
-						the unedited announcement already won't be alerted again about the edit. This means that edits are appropiate
-						for fixing typos or changing the display-until time, but substantial changes to an announcement's meaning
-						should probably be done with a new announcement.</p>
-						<p>Editing a deleted announcement <b>will</b> undelete it, also you can edit an expired announcement and 
-						bump the display-until time to the future again and it will reappear for people.</p>
-					</div>
-				</div>
-			#endif
+			<ul class="list-group mt-3">
+				<li class="list-group-item active">
+					<b>Announcement Notes</b>
+				</li>
+				<li class="list-group-item bg-transparent">
+					If you are creating an Announcement and you want to use Markdown instead of plain text, your announcement must
+					begin with "&lt;Markdown&gt;" with no quotes but with the angle brackets.
+				</li>
+				<li class="list-group-item bg-transparent">
+					To use links in your announcement, you need to Markdown-format the links, like this: [User_Visible_Text](Actual_http_URL)
+				</li>
+				<li class="list-group-item bg-transparent">
+					<p>Remember that you can try out announcement formatting by posting in the Moderator forum before going live. When you click
+					the "Create Announcement" button, it's going to send push notifications to everyone's* phone.</p>
+					<p>If you delete the announcement and create a new one to fix a typo, please understand that this will send out <b>two</b> 
+					push notifications.</p>
+					<p>* Okay, not <i>everyone's</i> phone, but lots of phones will beep.
+				</li>
+				<li class="list-group-item bg-transparent">
+					Editing an announcement will not change its alert status for users--so, a user that has seen
+					the unedited announcement already won't be alerted again about the edit. This means that edits are appropiate
+					for fixing typos or changing the display-until time, but substantial changes to an announcement's meaning
+					should probably be done with a new announcement.
+				</li>
+				<li class="list-group-item bg-transparent">
+					Editing a deleted announcement <b>will</b> undelete it, also you can edit an expired announcement and 
+					bump the display-until time to the future again and it will reappear for people.
+				</li>
+			</ul>
     	</div>
 	#endexport
 #endextend
