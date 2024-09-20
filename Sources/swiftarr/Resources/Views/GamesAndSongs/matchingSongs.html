@@ -17,7 +17,7 @@
 				</div>								
 			</div>
 			<form class="d-flex my-1">
-				<input class="form-control" type="search" name="search" placeholder="Search Song Library" value="#(searchText)" aria-label="Search" autocapitalize="off" spellcheck="false"" required>
+				<input class="form-control" type="search" name="search" placeholder="Search Song Library" value="#(searchText)" aria-label="Search" autocapitalize="off" spellcheck="false" required>
 				<a class="btn btn-primary ms-2" href="/karaoke">Clear</a>
 				<button class="btn btn-primary ms-2" type="submit">Search</button>
 			</form>
@@ -49,7 +49,7 @@
 										</div>
 								#endfor
 								<div class="collapse" data-label="actionbar">	
-									<div class="row justify-content-end">
+									<div class="row justify-content-end mt-2">
 										<div class="col col-auto btn-group btn-group-sm">
 											#if(trunk.userIsLoggedIn):
 												<input type="checkbox" class="btn-check" autocomplete="off" data-action="favorite" 

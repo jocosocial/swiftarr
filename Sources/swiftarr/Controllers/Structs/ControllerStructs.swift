@@ -860,7 +860,7 @@ extension KaraokeSongData {
 /// Returns information about songs that have been performed in the Karaoke Lounge onboard.
 ///
 /// Returned by: `GET /api/v3/karaoke/performance`
-/// Incorporated into: `KaraokeSongData`, which itself is incorporated into `KaraokeSongResponseData
+/// Incorporated into: `KaraokeSongData`, which itself is incorporated into `KaraokeSongResponseData`
 public struct KaraokePerformedSongsData: Content {
 	/// The artist that originally performed this song.
 	var artist: String
@@ -870,6 +870,17 @@ public struct KaraokePerformedSongsData: Content {
 	var performers: String
 	/// The time the performance was logged -- this is usually the time the song was performed.
 	var time: Date
+}
+
+/// Returns information about songs that have been performed in the Karaoke Lounge onboard.
+///
+/// Returned by: `GET /api/v3/karaoke/performance`
+/// Incorporated into: `KaraokeSongData`, which itself is incorporated into `KaraokeSongResponseData
+public struct KaraokePerformedSongsResult: Content {
+	/// The returned songs data..
+	var songs: [KaraokePerformedSongsData]
+	/// Pagination info.
+	var paginator: Paginator
 }
 
 /// Used to obtain the user's current list of alert or mute keywords.
@@ -1126,6 +1137,16 @@ public struct Paginator: Content {
 	var start: Int
 	/// The number of results requested. The collection array could be smaller than this number.
 	var limit: Int
+}
+
+/// This simple generic lets us declare route result types as `Paginated<ContentType>`, where ContentType is 
+/// an array of some Content struct (probably found in this file). This simplifies writing paginated reults as we don't 
+/// need to create a separate struct just to hold the paginator, but it may make the structs more opaque, especially to
+/// those that don't know Swift. Part of the idea of this file was to make it easy for developers to understand the JSON
+/// that would be emitted by these structs.
+public struct Paginated<ResultClass>: Content where ResultClass: Content {
+	var items: [ResultClass]
+	var paginator: Paginator
 }
 
 /// Returns info about a single Performer. This header information is similar to the UserHeader structure, containing just enough

@@ -140,24 +140,36 @@ struct KaraokeController: APIRouteCollection {
 
 	/// `GET /api/v3/karaoke/performance`
 	///
-	/// Returns an array of the 10 most recent karaoke songs that have been marked as being performed.
+	/// Returns an array of karaoke songs that have been marked as being performed.
 	/// Can be called while not logged in; if logged in favorite information is returned.
 	///
-	/// Intent of this call is to let people see what's been happening recently in the karaoke lounge without making a complete index of
-	/// `who sang what song when` available.
-	///
+	/// * `?search=STRING` - Only show songs whose artist or title contains the given string.
+	///	* `?start=INT` - Offset from start of results set
+	/// * `?limit=INT` - the maximum number of songs to retrieve: 1-200, default is 50.
 	/// - Returns: An array of up to 10 `KaraokePerformedSongsData`
-	func getLatestPerformedSongs(_ req: Request) async throws -> [KaraokePerformedSongsData] {
-		let recentSongs = try await KaraokePlayedSong.query(on: req.db).sort(\.$createdAt, .descending).range(0..<10)
-			.with(\.$song).all()
-		return recentSongs.map {
-			KaraokePerformedSongsData(
-				artist: $0.song.artist,
-				songName: $0.song.title,
-				performers: $0.performers,
-				time: $0.createdAt ?? Date()
-			)
+	func getLatestPerformedSongs(_ req: Request) async throws -> KaraokePerformedSongsResult {
+		struct QueryOptions: Decodable {
+			var search: String?
+			var start: Int?
+			var limit: Int?
 		}
+		let filters = try req.query.decode(QueryOptions.self)
+		let start = filters.start ?? 0
+		let limit = (filters.limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+		let songQuery = KaraokePlayedSong.query(on: req.db)
+		if let search = filters.search {
+			songQuery.join(KaraokeSong.self, on: \KaraokePlayedSong.$song.$id == \KaraokeSong.$id).group(.or) { (or) in
+				or.fullTextFilter(KaraokeSong.self, \.$artist, search)
+				or.fullTextFilter(KaraokeSong.self, \.$title, search)
+				or.fullTextFilter(KaraokePlayedSong.self, \.$performers, search)
+			}
+		}
+		let songCount = try await songQuery.count()
+		let recentSongs = try await songQuery.sort(\.$createdAt, .descending).range(start..<(start + limit)).with(\.$song).all()
+		let results = recentSongs.map {
+			KaraokePerformedSongsData(artist: $0.song.artist, songName: $0.song.title, performers: $0.performers, time: $0.createdAt ?? Date())
+		}
+		return KaraokePerformedSongsResult(songs: results, paginator: Paginator(total: songCount, start: start, limit: limit))
 	}
 
 	/// `POST /api/v3/karaoke/:songID/favorite`
