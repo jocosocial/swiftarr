@@ -16,6 +16,7 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "pinForum":
 		case "muteSeamail":
 		case "unblock":
+		case "unfavorite":
 		case "unmute":
 		case "alertWordDelete":
 		case "muteWordDelete":
@@ -117,6 +118,7 @@ async function spinnerButtonAction() {
 					window.location.href = "/";		// Once blocked, can't see profile anymore.
 					break;
 				case "unblock": acknowledgeRemovalAction(tappedButton, "unblocked"); break;
+				case "unfavorite": acknowledgeRemovalAction(tappedButton, "unfavorited"); break;
 				case "unmute": acknowledgeRemovalAction(tappedButton, "unmuted"); break;
 				case "alertWordDelete": acknowledgeRemovalAction(tappedButton, "removed"); break;
 				case "muteWordDelete": acknowledgeRemovalAction(tappedButton, "removed"); break;

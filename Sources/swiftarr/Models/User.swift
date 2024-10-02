@@ -134,7 +134,7 @@ final class User: Model {
 	/// The login token associated with this user, if they're logged in. If logged in from multiple devices, all devices share
 	/// the login token.
 	@OptionalChild(for: \.$user) var token: Token?
-	
+
 	/// For Shadow Event Organizers who create Performer profiles for their shadow event.
 	@OptionalChild(for: \.$user) var performer: Performer?
 
@@ -236,12 +236,13 @@ final class User: Model {
 		buildUserSearchString()
 	}
 
-	func makeUserHeader() throws -> UserHeader {
-		return try UserHeader(userID: requireID(), username: username, displayName: displayName, userImage: userImage, preferredPronoun: preferredPronoun)
-	}
+	// @available(*, deprecated, message: "Unused")
+	// func makeUserHeader() throws -> UserHeader {
+	// 	return try UserHeader(userID: requireID(), username: username, displayName: displayName, userImage: userImage, preferredPronoun: preferredPronoun)
+	// }
 }
 
-/// Creates the `User` table in the database and specifies its fields. 
+/// Creates the `User` table in the database and specifies its fields.
 struct CreateUserSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		let modStatusEnum = try await database.enum("moderation_status").read()

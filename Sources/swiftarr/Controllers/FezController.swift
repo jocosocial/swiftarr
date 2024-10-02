@@ -230,7 +230,8 @@ struct FezController: APIRouteCollection {
 			query.fields(for: FezParticipant.self).fields(for: FriendlyFez.self).unique()
 		}
 		async let fezCount = try query.count()
-		async let pivots = query.copy().sort(FezParticipant.self, \.$isMuted, .descending).sort(FriendlyFez.self, \.$updatedAt, .descending).range(urlQuery.calcRange()).all()
+		async let pivots = query.copy().sort(FezParticipant.self, \.$isMuted, .descending)
+			.sort(FriendlyFez.self, \.$updatedAt, .descending).range(urlQuery.calcRange()).all()
 		let fezDataArray = try await pivots.map { pivot -> FezData in
 			let fez = try pivot.joined(FriendlyFez.self)
 			return try buildFezData(from: fez, with: pivot, for: effectiveUser, on: req)
@@ -491,7 +492,9 @@ struct FezController: APIRouteCollection {
 				}
 			}
 			else if participantUserID != cacheUser.userID {
-				if let pivot = try await getUserPivot(fez: fez, userID: participantUserID, on: req.db), pivot.isMuted == true {
+				if let pivot = try await getUserPivot(fez: fez, userID: participantUserID, on: req.db),
+					pivot.isMuted == true
+				{
 					continue
 				}
 				participantNotifyList.append(participantUserID)
@@ -621,7 +624,7 @@ struct FezController: APIRouteCollection {
 		let user = try req.auth.require(UserCacheData.self)
 		try user.guardCanCreateContent(customErrorString: "User cannot create LFGs/Seamails.")
 		// see `FezContentData.validations()`
-		let data = try ValidatingJSONDecoder().decode(FezContentData.self, fromBodyOf: req)
+		let data: FezContentData = try ValidatingJSONDecoder().decode(FezContentData.self, fromBodyOf: req)
 		var creator = user
 		if data.createdByTwitarrTeam == true {
 			guard user.accessLevel >= .twitarrteam else {
@@ -1009,8 +1012,11 @@ struct FezController: APIRouteCollection {
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
 			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
 		}
-		
-		guard let fezParticipant = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first() else {
+
+		guard
+			let fezParticipant = try await fez.$participants.$pivots.query(on: req.db)
+				.filter(\.$user.$id == effectiveUser.userID).first()
+		else {
 			throw Abort(.forbidden, reason: "user is not a member of this fez")
 		}
 
@@ -1038,8 +1044,11 @@ struct FezController: APIRouteCollection {
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
 			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
 		}
-		
-		guard let fezParticipant = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first() else {
+
+		guard
+			let fezParticipant = try await fez.$participants.$pivots.query(on: req.db)
+				.filter(\.$user.$id == effectiveUser.userID).first()
+		else {
 			throw Abort(.forbidden, reason: "user is not a member of this fez")
 		}
 
@@ -1096,7 +1105,7 @@ extension FezController {
 				participants = valids
 				waitingList = []
 			}
-			
+
 			// https://github.com/jocosocial/swiftarr/issues/240
 			// Moderators can see postCount and readCount regardless of whether they've joined
 			// or not. If they have joined, they should get their personal pivot data. If they
@@ -1170,7 +1179,8 @@ extension FezController {
 			}
 			effectiveUser = modUser
 		}
-		if effectiveUserParam.lowercased() == "twitarrteam", let ttUser = req.userCache.getUser(username: "TwitarrTeam") {
+		if effectiveUserParam.lowercased() == "twitarrteam", let ttUser = req.userCache.getUser(username: "TwitarrTeam")
+		{
 			guard user.accessLevel.hasAccess(.twitarrteam) else {
 				throw Abort(.forbidden, reason: "Only TwitarrTeam members can access TwitarrTeam seamail.")
 			}

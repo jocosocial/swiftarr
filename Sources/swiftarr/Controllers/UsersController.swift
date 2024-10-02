@@ -45,6 +45,7 @@ struct UsersController: APIRouteCollection {
 		blockableAuthGroup.get("favorites", use: favoritesHandler)
 		blockableAuthGroup.post(userIDParam, "favorite", use: favoriteAddHandler)
 		blockableAuthGroup.post(userIDParam, "unfavorite", use: favoriteRemoveHandler)
+		blockableAuthGroup.delete(userIDParam, "favorite", use: favoriteRemoveHandler)
 
 		// User Role Management for non-THO. Currently, this means the Shutternaut Manager managing the Shutternaut role
 		blockableAuthGroup.get("userrole", userRoleParam, use: getUsersWithRole)
@@ -132,11 +133,17 @@ struct UsersController: APIRouteCollection {
 		if profiledUser.accessLevel == .banned && !requester.accessLevel.hasAccess(.moderator) {
 			throw Abort(.notFound, reason: "profile is not available")
 		}
+		// If the requester has favorited this user.
+		let isFavorite =
+			try await UserFavorite.query(on: req.db)
+			.filter(\.$user.$id == requester.userID)
+			.filter(\.$favorite.$id == profiledUser.requireID()).first() != nil
 		// Profile hidden if user quarantined and requester not mod, or if requester is banned.
 		var publicProfile = try ProfilePublicData(
 			user: profiledUser,
 			note: nil,
-			requesterAccessLevel: requester.accessLevel
+			requesterAccessLevel: requester.accessLevel,
+			requesterHasFavorite: isFavorite
 		)
 		// include UserNote if any, then return
 		if let note = try await UserNote.query(on: req.db).filter(\.$author.$id == requester.userID)
@@ -165,6 +172,9 @@ struct UsersController: APIRouteCollection {
 	///
 	/// For bulk `.userSearch` data retrieval, see the `ClientController` endpoints.
 	///
+	/// **URL Query Parameters:**
+	/// - ?favorers=BOOLEAN Show only resulting users that have favorited the requesting user.
+	///
 	/// - Parameter STRING: in URL path. The search string to use. Must be at least 2 characters long.
 	/// - Throws: 403 error if the search term is not permitted.
 	/// - Returns: An array of `UserHeader` values of all matching users.
@@ -184,13 +194,36 @@ struct UsersController: APIRouteCollection {
 		guard search.count >= 2 else {
 			throw Abort(.badRequest, reason: "User search requires at least 2 valid characters in search string..")
 		}
-		// remove blocks from results
-		let matchingUsers = try await User.query(on: req.db)
-			.filter(\.$userSearch, .custom("ILIKE"), "%\(search)%")
-			.filter(\.$id !~ requester.getBlocks())
-			.sort(\.$username, .ascending)
-			.range(0..<10)
-			.all()
+
+		// Process query params
+		struct QueryOptions: Content {
+			var favorers: Bool?
+		}
+		let options: QueryOptions = try req.query.decode(QueryOptions.self)
+
+		// Return matches based on the query mode.
+		// Remove any blocks from the results.
+		var matchingUsers: [User] = []
+		if options.favorers ?? false {
+			let favoritingUsers = try await UserFavorite.query(on: req.db)
+				.join(User.self, on: \UserFavorite.$user.$id == \User.$id, method: .left)
+				.filter(\.$user.$id !~ requester.getBlocks())
+				.filter(\.$favorite.$id == requester.userID)
+				.filter(User.self, \.$userSearch, .custom("ILIKE"), "%\(search)%")
+				.sort(User.self, \.$username, .ascending)
+				.range(0..<10)
+				.with(\.$user)
+				.all()
+			matchingUsers = favoritingUsers.map { $0.user }
+		}
+		else {
+			matchingUsers = try await User.query(on: req.db)
+				.filter(\.$userSearch, .custom("ILIKE"), "%\(search)%")
+				.filter(\.$id !~ requester.getBlocks())
+				.sort(\.$username, .ascending)
+				.range(0..<10)
+				.all()
+		}
 		return try matchingUsers.map { try UserHeader(user: $0) }
 	}
 
@@ -492,6 +525,8 @@ struct UsersController: APIRouteCollection {
 		return .noContent
 	}
 
+	// MARK: Favorites
+
 	/// `GET /api/v3/users/favorites`
 	///
 	/// Returns a list of the user's currently favorited users.
@@ -521,6 +556,9 @@ struct UsersController: APIRouteCollection {
 		guard let _ = try await User.find(favoriteUserID, on: req.db) else {
 			throw Abort(.notFound, reason: "no user found for identifier '\(parameter)'")
 		}
+		guard favoriteUserID != requester.userID else {
+			throw Abort(.badRequest, reason: "Cannot favorite yourself.")
+		}
 		if let _ = try await UserFavorite.query(on: req.db).filter(\.$user.$id == requester.userID)
 			.filter(\.$favorite.$id == favoriteUserID).first()
 		{
@@ -531,6 +569,7 @@ struct UsersController: APIRouteCollection {
 	}
 
 	/// `POST /api/v3/users/:user_ID/unfavorite`
+	/// `DELETE /api/v3/users/:user_id/favorite`
 	///
 	/// Removes a favorite of the specified `User` by the current user.
 	///

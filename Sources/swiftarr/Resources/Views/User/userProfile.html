@@ -78,6 +78,17 @@
 						<a class="btn btn-sm btn-outline-primary" href="/profile/edit">Edit Profile</a>
 						<a class="btn btn-sm btn-outline-primary" href="/profile/username/edit">Edit Username</a>
 					#else:
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="favorite" 
+							data-actionpath="/user/#(profile.header.userID)/favorite"
+							data-istoggle="true"
+							id="#(profile.header.userID)_favorite"
+							data-errordiv="#(profile.header.userID)_errorDisplay"
+							#if(profile.isFavorite):checked#endif>
+						<label class="btn btn-outline-primary" for="#(profile.header.userID)_favorite">
+							Favorite
+							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+							<span class="visually-hidden">Loading...</span>
+						</label>
 						<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="\#blockModal">Block</button>
 						<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="\#muteModal">Mute</button>
 						<a class="btn btn-outline-primary" href="/profile/report/#(profile.header.userID)">Report</a>
@@ -88,6 +99,11 @@
 					#endif
 				</div>
 			</div>
+			<div class="row">
+				<div class="col text-danger d-none" id="#(profile.header.userID)_errorDisplay">
+					Could not favorite user: <span class="errortext"></span>
+				</div>
+			</div>	
 		</div>
 		<div class="modal fade" id="blockModal" tabindex="-1" aria-labelledby="blockModalTitle" aria-hidden="true">
 			<div class="modal-dialog">

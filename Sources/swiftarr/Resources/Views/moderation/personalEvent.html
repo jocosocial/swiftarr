@@ -1,0 +1,112 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 mt-2">
+    		<div class="row align-items-end">
+    			<div class="col col-auto">
+			    	<h6><b>Moderate Personal Event #(modData.personalEvent.personalEventID)</b></h6>
+				</div>
+			</div>
+			<div class="row">
+				<span>Personal Events are private to the owner and any members they added. Members can only be people that have already favorited the owner, so there is likely some pre-established relationship.</span>
+				<span>As a Moderator, you can remove a participant from the Personal Event or take action on the owner.</span>
+			</div>
+			<div class="alert alert-danger mt-3 d-none" role="alert" id="ModerateContentErrorAlert">
+			</div>				
+    		<div class="row">
+    			<div class="col col-auto">
+					<a class="btn btn-outline-primary btn-sm" href="/user/#(modData.personalEvent.owner.userID)">View Owning User</a>
+					<a class="btn btn-outline-primary btn-sm" href="/moderate/user/#(modData.personalEvent.owner.userID)">Mod Owning User</a>
+				</div>
+			</div>
+			<div class="row">
+    			#if(modData.isDeleted):
+					<h6><b>Personal Event has been Deleted.<br>Prior to delete, it looked like this:</b></h6>
+    			#else:
+					<h6><b>As it currently exists:</b></h6>
+				#endif
+			</div>
+			<div class="row">
+    			<div class="col">
+					<ul class="container-md mx-0 px-0 list-group">
+						<li class="list-group-item bg-transparent"
+								data-bs-toggle="true"
+								data-eventid="#(modData.personalEvent.personalEventID)"
+								data-cruiseday="#cruiseDayIndex(modData.personalEvent.startTime)"
+								data-starttime="#(modData.personalEvent.startTime)"
+								data-endtime="#(modData.personalEvent.endTime)">
+							<div class="container-fluid">
+								<div class="row">
+									<div class="col">
+										<b>#(modData.personalEvent.title)</b>
+									</div>
+								</div>
+								<div class="row">
+									<div class="col-sm">
+										<span class="text-secondary"><i>#eventTime(modData.personalEvent.startTime, modData.personalEvent.endTime)</i></span>
+									</div>
+									<div class="col-sm text-sm-end">
+										#(modData.personalEvent.location)
+									</div>
+								</div>
+								<div class="row justify-content-end" data-label="actionbar">
+									<div class="col-12">
+										#(modData.personalEvent.description)
+									</div>
+								</div>
+							</div>
+						</li>
+					</ul>
+				</div>
+			</div>
+			<div class="row">
+			#if(count(modData.personalEvent.participants) == 0):
+				<h6><b>No participants are currently added</b></h6>
+			#else:
+				<h6><b>Participants:</b></h6>
+				<ol class="container-md mx-0 px-0 mb-2 list-group list-group-numbered">
+					#for(user in modData.personalEvent.participants):
+						<li class="list-group-item justify-content-between align-items-baseline d-flex">
+							<div class="ms-2 me-auto">
+								#avatar(user) #userByline(user)
+							</div>
+							<div>
+								<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
+										data-actionpath="/moderate/personalevent/#(modData.personalEvent.personalEventID)/members/#(user.userID)/remove"
+										data-errordiv="#(user.userID)_participanterror"
+										id="#(user.userID)_remove">
+								<label class="btn btn-sm btn-primary" for="#(user.userID)_remove">
+									Remove
+									<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+									<span class="visually-hidden">Loading...</span>
+								</label>
+							</div>
+							<div class="text-end text-danger d-none" id="#(user.userID)_participanterror">
+								Could not remove user: <span class="errortext"></span>
+							</div>
+						</li>
+					#endfor
+				</ol>				
+			#endif
+			</div>
+			#if(count(modData.reports) == 0):
+				<h6><b>No reports on this personal event.</b></h6>
+			#else:				
+				<div class="row mt-3">
+					<h6><b>#count(modData.reports) reports on this personal event:</b></h6>
+				</div>
+				<div class="row mb-3">
+					<div class="col">
+						<button type="button" class="btn btn-primary btn-sm" data-action="handleReports" data-reportid="#(firstReport.id)">Start Handling All</button>
+						<button type="button" class="btn btn-primary btn-sm" data-action="closeReports" data-reportid="#(firstReport.id)">Close All</button>
+					</div>
+				</div>
+				<div class="list-group">
+					#for(report in modData.reports):
+						#extend("moderation/reportListItem")
+					#endfor
+				</div>
+			#endif
+		</div>
+		<script src="/js/swiftarrModeration.js"></script>
+    #endexport
+#endextend

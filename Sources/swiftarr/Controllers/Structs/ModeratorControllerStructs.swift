@@ -198,7 +198,7 @@ extension ModeratorActionLogData {
 
 /// Used to return data on a collection of moderator action events.
 public struct ModeratorActionLogResponseData: Content {
-	/// Instances of moderators using their super-cow powers. 
+	/// Instances of moderators using their super-cow powers.
 	var actions: [ModeratorActionLogData]
 	/// Pagination data
 	var paginator: Paginator
@@ -361,6 +361,24 @@ public struct UserModerationData: Content {
 	/// but cannot create content in any public area (posts, edit posts, create forums, participate in FriendlyFezzes, or edit their profile).
 	var tempQuarantineEndTime: Date?
 	/// All reports against any user account this user controls.
+	var reports: [ReportModerationData]
+}
+
+/// Used to return data a moderator needs to moderate a PersonalEvent.
+///
+/// Returned by:
+/// * `GET /api/v3/mod/personalevent/id`
+///
+/// See `ModerationController.personalEventModerationHandler(_:)`
+public struct PersonalEventModerationData: Content {
+	/// The event in question
+	var personalEvent: PersonalEventData
+	/// TRUE if the event has been soft-deleted (A soft-deleted event appears deleted, doesn't appear in the list,
+	// but can still be viewed by moderators when accessed via a report or a moderationAction).
+	var isDeleted: Bool
+	/// The moderation status of this event. Whether it has been locked or quarantined.
+	var moderationStatus: ContentModerationStatus
+	/// User reports against this post.
 	var reports: [ReportModerationData]
 }
 
