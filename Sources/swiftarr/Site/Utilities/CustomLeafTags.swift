@@ -87,9 +87,13 @@ struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 struct MarkdownTextTag: UnsafeUnescapedLeafTag {
 	func render(_ ctx: LeafContext) throws -> LeafData {
 		try ctx.requireParameterCount(1)
-		guard let string = ctx.parameters[0].string else {
+		guard var string = ctx.parameters[0].string else {
 			return LeafData.string("")
 		}
+		
+		// Sanitize any HTML entities in the source string. Although Markdown allows HTML tags to be used in a .md document,
+		// we don't want to allow that as it's a security hole. 
+		string = string.htmlEscaped()
 
 		let parser = MarkdownParser()
 		let html = parser.html(from: string)
@@ -134,7 +138,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 			let range = Range(mentionMatch.range(at: 1), in: modifiedText)!
 			let mention = String(modifiedText[range])
 			let username = String(mention.dropFirst()) // Drop the initial "@"
-			var linkStyle = ["admin", "THO", "TwitarrTeam", "moderator"].contains(username) ? "link-danger" : "link-primary"
+			let linkStyle = ["admin", "THO", "TwitarrTeam", "moderator"].contains(username) ? "link-danger" : "link-primary"
             let link = "<a class=\"\(linkStyle)\" href=\"/username/\(username)\">\(mention)</a>"
             modifiedText.replaceSubrange(range, with: link)
 		}

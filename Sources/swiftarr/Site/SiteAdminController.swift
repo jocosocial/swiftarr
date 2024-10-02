@@ -2,6 +2,39 @@ import Crypto
 import FluentSQL
 import Vapor
 
+// Used by the rollup code to map a user-readable name for each table row.
+extension ServerRollupData.CountType {
+	func name() -> String {
+		switch self {
+			case .user: return "Users"
+			case .profileEdit: return "Profile Edits"
+			case .userNote: return "User Notes"
+			case .alertword: return "Alert Words"
+			case .muteword: return "Mute Words"
+			case .photoStream: return "Photo Stream Photos"
+			case .lfg: return "LFGs"
+			case .lfgParticipant: return "LFG Participants"
+			case .lfgPost: return "LFG Posts"
+			case .seamail: return "Seamails"
+			case .seamailPost: return "Seamail Posts"
+			case .forum: return "Forum Threads"
+			case .forumPost: return "Forum Posts"
+			case .forumPostEdit: return "Forum Post Edits"
+			case .forumPostLike: return "Forum Post Likes"
+			case .karaokePlayedSong: return "Karaoke Played Songs"
+			case .microKaraokeSnippet: return "Micro Karaoke Snippets"
+			case .userFavorite: return "User Favorites"
+			case .eventFavorite: return "Event Favorites"
+			case .forumFavorite: return "Forum Favorites"
+			case .forumPostFavorite: return "Forum Post Favorites"
+			case .boardgameFavorite: return "Boardgame Favorites"
+			case .karaokeFavorite: return "Karaoke Song Favorites"
+			case .report: return "Moderation Reports"
+			case .moderationAction: return "Moderation Actions"
+		}
+	}
+}
+
 struct SiteAdminController: SiteControllerUtils {
 
 	var dailyThemeParam = PathComponent(":theme_id")
@@ -30,6 +63,7 @@ struct SiteAdminController: SiteControllerUtils {
 
 		privateTTRoutes.get("serversettings", use: settingsViewHandler)
 		privateTTRoutes.post("serversettings", use: settingsPostHandler)
+		privateTTRoutes.get("rollup", use: rollupHandler)
 
 		privateTTRoutes.get("timezonechanges", use: timeZonesViewHandler)
 		privateTTRoutes.post("serversettings", "reloadtzfile", use: settingsReloadTZFilePostHandler)
@@ -467,6 +501,25 @@ struct SiteAdminController: SiteControllerUtils {
 	func settingsReloadTZFilePostHandler(_ req: Request) async throws -> HTTPStatus {
 		try await apiQuery(req, endpoint: "/admin/timezonechanges/reloadtzdata", method: .POST)
 		return .ok
+	}
+	
+	// GET /admin/rollup
+	//
+	// Shows a table containing row counts for several database tables.
+	func rollupHandler(_ req: Request) async throws -> View {
+		let apiResponse = try await apiQuery(req, endpoint: "/admin/rollup")
+		let response = try apiResponse.content.decode(ServerRollupData.self)
+		struct TableRow: Encodable {
+			var title: String
+			var total: Int32
+		}
+		let rows = response.counts.enumerated().map { TableRow(title: ServerRollupData.CountType(rawValue: $0)?.name() ?? "unknown", total: $1) }
+		struct RollupContext: Encodable {
+			var trunk: TrunkContext
+			var tableRows: [TableRow]
+		}
+		let ctx = RollupContext(trunk: .init(req, title: "Server Counts", tab: .admin), tableRows: rows)
+		return try await req.view.render("admin/serverRollup", ctx)
 	}
 
 // MARK: - TZ, Karaoke, Games

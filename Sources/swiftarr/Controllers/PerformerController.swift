@@ -370,7 +370,8 @@ struct PerformerController: APIRouteCollection {
 		performer.sortOrder = (performer.name.split(separator: " ").last?.string ?? performer.name).uppercased()
 		performer.pronouns = uploadData.pronouns
 		performer.bio = uploadData.bio
-		performer.photo = try await processImage(data: uploadData.photo.image, usage: .userProfile, on: req) ?? uploadData.photo.filename
+		let photoFilename = uploadData.photo.filename == "" ? nil : uploadData.photo.filename
+		performer.photo = try await processImage(data: uploadData.photo.image, usage: .userProfile, on: req) ?? photoFilename
 		performer.organization = uploadData.organization
 		performer.title = uploadData.title
 		performer.yearsAttended = uploadData.yearsAttended.sorted()

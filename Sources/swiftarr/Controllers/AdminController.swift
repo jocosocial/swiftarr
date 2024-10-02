@@ -31,6 +31,7 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.get("regcodes", "discord", "allocate", searchStringParam, use: assignDiscordRegCode)
 
 		ttAuthGroup.get("serversettings", use: settingsHandler)
+		ttAuthGroup.get("rollup", use: serverRollupCounts)
 
 		// endpoints available for THO and Admin only
 		let thoAuthGroup = adminRoutes.tokenRoutes(minAccess: .tho)
@@ -245,7 +246,76 @@ struct AdminController: APIRouteCollection {
 		try await migrator.loadTZFile(on: req.db, isMigrationTime: false)
 		return .ok
 	}
+	
+	/// `GET /api/v3/admin/rollup`
+	/// 
+	///  Returns a bunch of summary data about how many rows of certain database objects we've created. Useful when we want to check
+	///  whether a certain row-creating  operation is working, whether any operation is creating way more rows than we expect, or just to guage
+	///  the popularity of various server features.
+	///  
+	///  More sophisticated servers run an operation like this on a cronjob and analyze the results each time to check that recent db activity matches expectations.
+	///  Mostly this is just a quick way for us to check usage.
+	func serverRollupCounts(_ req: Request) async throws -> ServerRollupData {
+		let counts = try await withThrowingTaskGroup(of: (countType: ServerRollupData.CountType, value: Int32).self) { group in
+			let tasks: [ServerRollupData.CountType : EventLoopFuture<Int>] = [
+					// User
+					.user :  User.query(on: req.db).count(),
+					.profileEdit: ProfileEdit.query(on: req.db).count(),
+					.userNote: UserNote.query(on: req.db).count(),
+					.alertword: AlertWord.query(on: req.db).count(),
+					.muteword: MuteWord.query(on: req.db).count(),
+					.photoStream: StreamPhoto.query(on: req.db).count(),
 
+					// LFGs and Seamails
+					.lfg: FriendlyFez.query(on: req.db).filter(\.$fezType !~ [.open, .closed]).count(),
+					.lfgParticipant: FezParticipant.query(on: req.db)
+							.join(FriendlyFez.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
+							.filter(FriendlyFez.self, \.$fezType !~ [.open, .closed]).count(),
+					.lfgPost: FezPost.query(on: req.db).join(FriendlyFez.self, on: \FezPost.$fez.$id == \FriendlyFez.$id)
+							.filter(FriendlyFez.self, \.$fezType !~ [.open, .closed]).count(),
+					.seamail: FriendlyFez.query(on: req.db).filter(\.$fezType ~~ [.open, .closed]).count(),
+					.seamailPost: FezPost.query(on: req.db).join(FriendlyFez.self, on: \FezPost.$fez.$id == \FriendlyFez.$id)
+							.filter(FriendlyFez.self, \.$fezType ~~ [.open, .closed]).count(),
+
+					// Forums
+					.forum: Forum.query(on: req.db).count(),
+					.forumPost: ForumPost.query(on: req.db).count(),
+					.forumPostEdit: ForumPostEdit.query(on: req.db).count(),
+					.forumPostLike: PostLikes.query(on: req.db).filter(\.$likeType != nil).count(),
+					
+					// Games and Karaoke
+					.karaokePlayedSong: KaraokePlayedSong.query(on: req.db).count(),
+					.microKaraokeSnippet: MKSnippet.query(on: req.db).count(),
+					
+					// Favorites
+					.userFavorite: UserFavorite.query(on: req.db).count(),
+					.eventFavorite: EventFavorite.query(on: req.db).count(),
+					.forumFavorite: ForumReaders.query(on: req.db).filter(\.$isFavorite == true).count(),
+					.forumPostFavorite: PostLikes.query(on: req.db).filter(\.$isFavorite == true).count(),
+					.boardgameFavorite: BoardgameFavorite.query(on: req.db).count(),
+					.karaokeFavorite: KaraokeFavorite.query(on: req.db).count(),
+
+					// Moderation
+					.report: Report.query(on: req.db).count(),
+					.moderationAction: ModeratorAction.query(on: req.db).count(),
+			]
+			
+			for (key, task) in tasks {
+				group.addTask {
+					return try await (key, Int32(task.get()))
+				}
+			}
+			var result = [Int32](repeating: 0, count: tasks.count)
+			for try await (key, value) in group {
+				result[key.rawValue] = Int32(value)
+			}
+			return result
+		}
+		return ServerRollupData(counts: counts)
+	}
+	
+	
+// MARK: - Reg Codes
 	/// `GET /api/v3/admin/regcodes/stats`
 	///
 	///  Returns basic info about how many regcodes have been used to create accounts, and how many there are in total.

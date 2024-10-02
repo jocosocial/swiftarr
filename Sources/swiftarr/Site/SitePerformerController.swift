@@ -211,7 +211,7 @@ struct SitePerformerController: SiteControllerUtils {
 	
 	// `GET /admin/performer/add`
 	//
-	// Adds an official performer to the performer list, or edits an existing official or shadow performer.. 
+	// Adds an official performer to the performer list, or edits an existing official or shadow performer.
 	// Only TwitarrTeam and above can access.
 	// - Parameter performer: UUID. In URL Query. Set if this is an edit of an existing performer.
 	func upsertPerformer(_ req: Request) async throws -> View {
@@ -221,7 +221,7 @@ struct SitePerformerController: SiteControllerUtils {
 		}
 		else {
 			performer = PerformerData()
-			performer?.isOfficialPerformer = true
+			performer?.header.isOfficialPerformer = true
 		}
 		struct AddPerformerPageContext: Encodable {
 			var trunk: TrunkContext

@@ -26,6 +26,8 @@ struct SiteKaraokeController: SiteControllerUtils {
 	/// **URL Query Parameters**
 	/// * `?search=STRING` - returns song library results where the artist OR song title matches the given string.
 	///   If a single letter or %23 is sent, it will return songs where the artist matches the letter, or starts with a number.
+	/// * `?searchhistory=STRING` - returns results filtered from the song history -- the list of songs that have been performed.
+	///    Search will match on Karaoke performer names in addition to the song's artist and title.
 	/// * `?favorite=TRUE` - Only return songs that have been favorited by current user.
 	///	* `?start=INT` - Offset from start of results set
 	/// * `?limit=INT` - the maximum number of songs to retrieve: 1-200, default is 50.
@@ -37,6 +39,7 @@ struct SiteKaraokeController: SiteControllerUtils {
 		let searchStr = req.query[String.self, at: "search"] ?? ""
 		let favorite = req.query[String.self, at: "favorite"] == nil ? false : true
 		if !searchStr.isEmpty || favorite {
+			// Show filtered results, either favorites or a search string.
 			var isKaraokeMgr = false
 			if let cacheUser = req.auth.get(UserCacheData.self) {
 				isKaraokeMgr = cacheUser.userRoles.contains(.karaokemanager)
@@ -52,13 +55,7 @@ struct SiteKaraokeController: SiteControllerUtils {
 				var showingFavorites: Bool
 				var favoriteBtnURL: String
 
-				init(
-					_ req: Request,
-					searchStr: String,
-					songs: KaraokeSongResponseData,
-					isMgr: Bool,
-					showingFavorites: Bool
-				) throws {
+				init(_ req: Request, searchStr: String, songs: KaraokeSongResponseData, isMgr: Bool, showingFavorites: Bool) throws {
 					trunk = .init(req, title: "Latest Karaoke Songs", tab: .karaoke)
 					self.songs = songs
 					self.searchText = searchStr
@@ -78,28 +75,31 @@ struct SiteKaraokeController: SiteControllerUtils {
 					}
 				}
 			}
-			let ctx = try SongSearchContext(
-				req,
-				searchStr: searchStr,
-				songs: matchingSongs,
-				isMgr: isKaraokeMgr,
-				showingFavorites: favorite
-			)
+			let ctx = try SongSearchContext(req, searchStr: searchStr, songs: matchingSongs, isMgr: isKaraokeMgr, showingFavorites: favorite)
 			return try await req.view.render("GamesAndSongs/matchingSongs", ctx)
 		}
 		else {
-			let response = try await apiQuery(req, endpoint: "/karaoke/latest")
-			let latestSongs = try response.content.decode([KaraokePerformedSongsData].self)
+			// Show the search bar and a list of recently sung songs.
+			var historyQuery = [URLQueryItem]()
+			if let searchStr = req.query[String.self, at: "searchhistory"] {
+				historyQuery.append(URLQueryItem(name: "search", value: searchStr))
+			}
+			let response = try await apiQuery(req, endpoint: "/karaoke/latest", query: historyQuery)
+			let latestSongs = try response.content.decode(KaraokePerformedSongsResult.self)
 			struct LatestSongsContext: Encodable {
 				var trunk: TrunkContext
 				var songs: [KaraokePerformedSongsData]
+				var paginator: PaginatorContext
 
-				init(_ req: Request, songs: [KaraokePerformedSongsData]) throws {
+				init(_ req: Request, latest: KaraokePerformedSongsResult) throws {
 					trunk = .init(req, title: "Latest Karaoke Songs", tab: .karaoke)
-					self.songs = songs
+					self.songs = latest.songs
+					paginator = .init(start: latest.paginator.start, total: latest.paginator.total, limit: latest.paginator.limit) { pageIndex in
+						"/karaoke?&start=\(pageIndex * latest.paginator.limit)&limit=\(latest.paginator.limit)"
+					}
 				}
 			}
-			let ctx = try LatestSongsContext(req, songs: latestSongs)
+			let ctx = try LatestSongsContext(req, latest: latestSongs)
 			return try await req.view.render("GamesAndSongs/latestSongs", ctx)
 		}
 	}

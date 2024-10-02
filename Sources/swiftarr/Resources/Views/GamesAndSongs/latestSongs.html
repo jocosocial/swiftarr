@@ -60,6 +60,22 @@
 							</div>
 						</li>
 					#endfor
+					#extend("paginator")
+					#if(contains(trunk.userRoles, "karaokemanager")):
+						<form>
+							<div class="d-flex my-1">
+								<input class="form-control" type="search" name="searchhistory" placeholder="Search Performance History" 
+										aria-label="Search" autocapitalize="off" required>
+								<button class="btn btn-primary ms-2" type="submit">Search&nbsp;History</button>
+							</div>
+							<div class="row">
+								<div class="col">
+									<div class="alert alert-danger mt-3 d-none" role="alert">
+									</div>	
+								</div>
+							</div>
+						</form>
+					#endif
 				#endif
 			</ul>
     	</div>

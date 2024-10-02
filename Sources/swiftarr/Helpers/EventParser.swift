@@ -321,7 +321,9 @@ final class EventParser {
 		let updateEvents = try parse(scheduleFileStr)
 		let officialCategory = try await Category.query(on: db).filter(\.$title, .custom("ILIKE"), "event%").first()
 		let shadowCategory = try await Category.query(on: db).filter(\.$title, .custom("ILIKE"), "shadow%").first()
-		let existingEvents = try await Event.query(on: db).withDeleted().with(\.$forum).all()
+		// https://github.com/vapor/fluent-kit/issues/375
+		// https://github.com/vapor/fluent-kit/pull/555
+		let existingEvents = try await Event.query(on: db).withDeleted().with(\.$forum, withDeleted: true).all()
 		try await db.transaction { database in
 			// Convert to dictionaries, keyed by uid of the events
 			let existingEventDict = Dictionary(existingEvents.map { ($0.uid, $0) }) { first, _ in first }
@@ -396,7 +398,10 @@ final class EventParser {
 					var changes: Set<EventModification> = Set()
 					if let deleteTime = existing.deletedAt, deleteTime < Date() {
 						changes.insert(.undelete)
-						existing.deletedAt = nil
+						// We can't actually do this. I thought about adding a conditional akin
+						// to "if .undelete in changes" below, but that feels unneccesary.
+						// existing.deletedAt = nil
+						try await existing.restore(on: database)
 					}
 					if existing.startTime != updated.startTime {
 						changes.insert(.startTime)
@@ -422,6 +427,10 @@ final class EventParser {
 					if !changes.isEmpty {
 						try await existing.save(on: database)
 						if let forum = existing.forum {
+							// Un-delete the forum if it was deleted
+							if (forum.deletedAt != nil) {
+								try await forum.restore(on: database)
+							}
 							// Update title of event's linked forum
 							let dateFormatter = DateFormatter()
 							dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)

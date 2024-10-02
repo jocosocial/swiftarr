@@ -870,7 +870,7 @@ extension KaraokeSongData {
 /// Returns information about songs that have been performed in the Karaoke Lounge onboard.
 ///
 /// Returned by: `GET /api/v3/karaoke/performance`
-/// Incorporated into: `KaraokeSongData`, which itself is incorporated into `KaraokeSongResponseData
+/// Incorporated into: `KaraokeSongData`, which itself is incorporated into `KaraokeSongResponseData`
 public struct KaraokePerformedSongsData: Content {
 	/// The artist that originally performed this song.
 	var artist: String
@@ -880,6 +880,17 @@ public struct KaraokePerformedSongsData: Content {
 	var performers: String
 	/// The time the performance was logged -- this is usually the time the song was performed.
 	var time: Date
+}
+
+/// Returns information about songs that have been performed in the Karaoke Lounge onboard.
+///
+/// Returned by: `GET /api/v3/karaoke/performance`
+/// Incorporated into: `KaraokeSongData`, which itself is incorporated into `KaraokeSongResponseData
+public struct KaraokePerformedSongsResult: Content {
+	/// The returned songs data..
+	var songs: [KaraokePerformedSongsData]
+	/// Pagination info.
+	var paginator: Paginator
 }
 
 /// Used to obtain the user's current list of alert or mute keywords.
@@ -1139,6 +1150,16 @@ public struct Paginator: Content {
 	var limit: Int
 }
 
+/// This simple generic lets us declare route result types as `Paginated<ContentType>`, where ContentType is 
+/// an array of some Content struct (probably found in this file). This simplifies writing paginated reults as we don't 
+/// need to create a separate struct just to hold the paginator, but it may make the structs more opaque, especially to
+/// those that don't know Swift. Part of the idea of this file was to make it easy for developers to understand the JSON
+/// that would be emitted by these structs.
+public struct Paginated<ResultClass>: Content where ResultClass: Content {
+	var items: [ResultClass]
+	var paginator: Paginator
+}
+
 /// Returns info about a single Performer. This header information is similar to the UserHeader structure, containing just enough
 /// info to build a title card for a performer.
 ///
@@ -1154,6 +1175,8 @@ public struct PerformerHeaderData: Content {
 	var name: String
 	/// Photo ID, accessible through `/api/v3/image/[full|thumb]/<photo>` methods in the `ImageController`.
 	var photo: String?
+	/// TRUE if the performer is on JoCo's list of featured guests. FALSE if this is a shadow event organizer.
+	var isOfficialPerformer: Bool
 }
 
 extension PerformerHeaderData {
@@ -1161,12 +1184,14 @@ extension PerformerHeaderData {
 		id = try performer.requireID()
 		name = performer.name
 		photo = performer.photo
+		isOfficialPerformer = performer.officialPerformer
 	}
 
 	init() {
 		id = nil
 		name = ""
 		photo = nil
+		isOfficialPerformer = false
 	}
 }
 
@@ -1197,8 +1222,6 @@ public struct PerformerData: Content {
 	var youtubeURL: String?
 	/// Full 4-digit years, ascending order-- like this: [2011, 2012, 2022]
 	var yearsAttended: [Int]
-	/// TRUE if the performer is on JoCo's list of featured guests. FALSE if this is a shadow event organizer.
-	var isOfficialPerformer: Bool
 	/// The events this performer is going to be performing at.
 	var events: [EventData]
 	/// The user who  created this Performer. Only applies to Shadow Event organizers, and is only returned if the requester is a Moderator or higher.
@@ -1219,17 +1242,13 @@ extension PerformerData {
 		xURL = performer.xURL
 		instagramURL = performer.instagramURL
 		youtubeURL = performer.youtubeURL
-		isOfficialPerformer = performer.officialPerformer
-		self.events = try performer.events.map {
-			try EventData($0, isFavorite: favoriteEventIDs.contains($0.requireID()))
-		}
+		self.events = try performer.events.map { try EventData($0, isFavorite: favoriteEventIDs.contains($0.requireID())) }
 		self.yearsAttended = performer.yearsAttended
 	}
 
 	// Empty performerData for users that don't have a Performer object
 	init() {
 		header = .init()
-		isOfficialPerformer = false
 		events = []
 		yearsAttended = []
 	}

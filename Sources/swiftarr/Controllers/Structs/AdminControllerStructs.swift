@@ -211,6 +211,58 @@ public struct SaveRestoreData: Content {
 	var performers: [PerformerUploadData]
 }
 
+/// An array of totals for various database entities. Each value in the array is essentially a `SQL SELECT COUNT() FROM <table>`,
+/// although some values apply filters to the counted rows. 
+/// 
+/// The `CountType` enum defines what each value in the counts array means, so `counts[0]` is a count of the Users in the database.
+/// 
+/// Used by: `GET /api/v3/admin/rollup`
+struct ServerRollupData: Content {
+	///  An array with `CountType.allCases.count` values.
+	var counts: [Int32]
+	
+	/// An int-valued enum that defines what each value in the counts array means. For API staibility it's best if we only add values to the 
+	/// end of the list; causing existing elements to change threir index could cause confusion.
+	enum CountType: Int, CaseIterable {
+		// User
+		case user = 0
+		case profileEdit 
+		case userNote 
+		case alertword 
+		case muteword 
+		case photoStream 
+
+		// LFGs and Seamails
+		case lfg 
+		case lfgParticipant 
+		case lfgPost
+		case seamail
+		case seamailPost 
+
+		// Forums
+		case forum 
+		case forumPost 
+		case forumPostEdit 
+		case forumPostLike 
+
+		// Games and Karaoke
+		case karaokePlayedSong 
+		case microKaraokeSnippet
+		
+		// Favorites
+		case userFavorite 
+		case eventFavorite 
+		case forumFavorite 
+		case forumPostFavorite
+		case boardgameFavorite
+		case karaokeFavorite
+		
+		// Moderation
+		case report
+		case moderationAction			// Note that 'moderationAction' includes instances of Mods using the 'Post as Moderator' option.
+	}
+}
+
 /// Used to enable/disable features. A featurePair with name: "kraken" and feature: "schedule" indicates the Schedule feature of the Kraken app.
 /// When the server indicates this app:feature pair is disabled, the client app should not show the feature to users, and should avoid calling API calls
 /// related to that feature. Either the app or feature field could be 'all'.
