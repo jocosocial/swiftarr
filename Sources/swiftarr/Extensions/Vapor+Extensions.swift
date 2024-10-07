@@ -24,17 +24,18 @@ extension Route {
     }
 }
 
+
 extension Request {
-    /// Returns a database sort direction for queries based on the Request's `order` parameter. If the `order` is not passed
+	/// Returns a database sort direction for queries based on the Request's `order` parameter. If the `order` is not passed
 	/// or invalid, we return nil so the caller can fall back to a default.
 	public func orderDirection() -> DatabaseQuery.Sort.Direction? {
 		switch query[String.self, at: "order"] {
-			case "ascending":
-				return DatabaseQuery.Sort.Direction.ascending
-			case "descending":
-				return DatabaseQuery.Sort.Direction.descending
-			default:
-				return nil
+		case "ascending":
+			return DatabaseQuery.Sort.Direction.ascending
+		case "descending":
+			return DatabaseQuery.Sort.Direction.descending
+		default:
+			return nil
 		}
 	}
 }
