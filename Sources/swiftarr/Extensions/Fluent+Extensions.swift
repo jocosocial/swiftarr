@@ -263,20 +263,6 @@ extension QueryBuilder {
 		let bindString = binds.count == 0 ? "" : binds.reduce(("Binds:\n", 1)) { ($0.0.appending("    \($0.1): \($1)\n"), $0.1 + 1) }.0
 		print("\(sqlString)\n\(bindString)")		
 	}
-
-	/// Returns a sort direction for queries based on the Request's `order` parameter. If the `order` is not passed or invalid,
-	/// it will sort by the passed-in default order direction.
-	func sortDir(_ req: Request, _ defaultOrder: DatabaseQuery.Sort.Direction) -> DatabaseQuery.Sort.Direction {
-		let order = req.query[String.self, at: "order"]
-		switch order {
-			case "ascending":
-				return DatabaseQuery.Sort.Direction.ascending
-			case "descending":
-				return DatabaseQuery.Sort.Direction.descending
-			default:
-				return defaultOrder
-		}
-	}
 	
 	/// Copied from file `PostgresConverterDelegate.swift` in package `fluent-postgres-driver` to make it available here for debugging
 	private struct PostgresConverterDelegate: SQLConverterDelegate {
