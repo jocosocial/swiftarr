@@ -136,6 +136,7 @@ struct ForumController: APIRouteCollection {
 	///
 	/// **URL Query Parameters:**
 	/// * `?sort=[create, update, title, event]` - Sort forums by `create` time, `update` time, or `title`, or the start time of their associated `Event`.
+	/// * `?order=[ascending, descending]` - Specify a sort order. Omit this parameter to use the default ordering for the category type.
 	/// Create and update return newest forums first. `event` is only valid for Event categories, is default for them, and returns forums in ascending event start time; secondary sort
 	/// is alpha on event title. `Update` is the default for non-event categories.
 	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
@@ -159,7 +160,7 @@ struct ForumController: APIRouteCollection {
 	/// - Throws: 404 error if the category ID is not valid.
 	/// - Returns: `CategoryData` containing category forums.
 	func categoryForumsHandler(_ req: Request) async throws -> CategoryData {
-		let cacheUser = try req.auth.require(UserCacheData.self)
+		let cacheUser: UserCacheData = try req.auth.require(UserCacheData.self)
 		let start = (req.query[Int.self, at: "start"] ?? 0)
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
 		let category = try await Category.findFromParameter(categoryIDParam, on: req)
@@ -198,19 +199,20 @@ struct ForumController: APIRouteCollection {
 			}
 		}
 		var dateFilterUsesUpdate = false
+		let orderDirection = req.orderDirection()
 		switch req.query[String.self, at: "sort"] {
-		case "create": _ = query.sort(\.$createdAt, .descending)
-		case "title": _ = query.sort(.custom("lower(\"forum\".\"title\")"))
+		case "create": _ = query.sort(\.$createdAt, orderDirection ?? .descending)
+		case "title": _ = query.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
 		case "update":
-			_ = query.sort(\.$lastPostTime, .descending)
+			_ = query.sort(\.$lastPostTime, orderDirection ?? .descending)
 			dateFilterUsesUpdate = true
 		default:
 			if category.isEventCategory {
 				// Sort by event start time
-				_ = query.sort(Event.self, \Event.$startTime, .ascending).sort(Event.self, \Event.$title, .ascending)
+				_ = query.sort(Event.self, \Event.$startTime, orderDirection ?? .ascending).sort(Event.self, \Event.$title, orderDirection ?? .ascending)
 			}
 			else {
-				_ = query.sort(\.$lastPostTime, .descending)
+				_ = query.sort(\.$lastPostTime, orderDirection ?? .descending)
 				dateFilterUsesUpdate = true
 			}
 		}
@@ -258,7 +260,8 @@ struct ForumController: APIRouteCollection {
 	/// 
 	/// * `?start=INT` - The index into the array of forums to start returning results. 0 for first forum.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
-	/// * `?sort=[create, update, title]` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first.
+	/// * `?sort=[create, update, title]` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first.\
+	/// * `?order=[ascending, descending]` - Specify a sort order. Omit this parameter to use the default ordering.
 	///
 	///
 	/// - Parameter searchString: In the URL path.
@@ -278,6 +281,7 @@ struct ForumController: APIRouteCollection {
 			var start: Int?
 			var limit: Int?
 			var sort: String?
+			var order: String?
 			
 			mutating func afterDecode() throws {
 				start = start ?? 0
@@ -366,11 +370,12 @@ struct ForumController: APIRouteCollection {
 		async let forumCount = try countQuery.count()
 		let start = urlQuery.start ?? 0
 		let limit = urlQuery.limit ?? 50
+		let orderDirection = req.orderDirection();
 		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
-			case "create": _ = forumQuery.sort(\.$createdAt, .descending)
-			case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"))
-			default: _ = forumQuery.sort(\.$lastPostTime, .descending)
+			case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
+			case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
+			default: _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 		}
 		async let forums = try forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser)
@@ -387,6 +392,7 @@ struct ForumController: APIRouteCollection {
 	/// **URL Query Parameters**:
 	/// * `?cat=CATEGORY_ID` - Limit returned list to forums in the given category (that were also created by the current user).
 	/// * `?sort=[create, update, title]` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first.
+	/// * `?order=[ascending, descending]` - Specify a sort order. Omit this parameter to use the default ordering.
 	/// * `?start=INT` - The index into the array of forums to start returning results. 0 for first forum.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50. Clamped to a max value set in Settings.
 	///
@@ -401,11 +407,12 @@ struct ForumController: APIRouteCollection {
 			countQuery.filter(\.$category.$id == cat)
 		}
 		async let forumCount = try countQuery.count()
+		let orderDirection = req.orderDirection();
 		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
-		case "create": _ = forumQuery.sort(\.$createdAt, .descending)
-		case "update": _ = forumQuery.sort(\.$lastPostTime, .descending)
-		default: _ = forumQuery.sort(.custom("lower(forum.title)"), .ascending)
+		case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
+		case "update": _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
+		default: _ = forumQuery.sort(.custom("lower(forum.title)"), orderDirection ?? .ascending)
 		}
 		async let forums = try forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser)
@@ -421,7 +428,8 @@ struct ForumController: APIRouteCollection {
 	///
 	/// **URL Query Parameters**:
 	/// * `?cat=CATEGORY_ID` - Only show favorites in the given category
-	/// * `?sort=STRING` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first. `update` is the default..
+	/// * `?sort=STRING` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first. `update` is the default.
+	/// * `?order=[ascending, descending]` - Specify a sort order. Omit this parameter to use the default ordering.
 	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
 	///
@@ -439,11 +447,12 @@ struct ForumController: APIRouteCollection {
 			countQuery.filter(\.$category.$id == cat)
 		}
 		async let forumCount = try countQuery.count()
+		let orderDirection = req.orderDirection()
 		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
-		case "create": _ = forumQuery.sort(\.$createdAt, .descending)
-		case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), .ascending)
-		default: _ = forumQuery.sort(\.$lastPostTime, .descending)
+		case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
+		case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
+		default: _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 		}
 		async let forums = try forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser, forceIsFavorite: true)
@@ -460,6 +469,7 @@ struct ForumController: APIRouteCollection {
 	/// **URL Query Parameters**:
 	/// * `?cat=CATEGORY_ID` - Only show favorites in the given category
 	/// * `?sort=STRING` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first. `update` is the default.
+	/// * `?order=[ascending, descending]` - Specify a sort order. Omit this parameter to use the default ordering.
 	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
 	///
@@ -477,11 +487,12 @@ struct ForumController: APIRouteCollection {
 			countQuery.filter(\.$category.$id == cat)
 		}
 		async let forumCount = try countQuery.count()
+		let orderDirection = req.orderDirection()
 		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
-		case "create": _ = forumQuery.sort(\.$createdAt, .descending)
-		case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), .ascending)
-		default: _ = forumQuery.sort(\.$lastPostTime, .descending)
+		case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
+		case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
+		default: _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 		}
 		async let forums = try forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser, forceIsMuted: true)
@@ -498,6 +509,7 @@ struct ForumController: APIRouteCollection {
 	/// **URL Query Parameters**:
 	/// * `?cat=CATEGORY_ID` - Only show favorites in the given category
 	/// * `?sort=STRING` - Sort forums by `create`, `update`, or `title`. Create and update return newest forums first. `update` is the default.
+	/// * `?order=[ascending, descending]` - Specify a sort order. Omit this parameter to use the default ordering.
 	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
 	///
@@ -529,11 +541,12 @@ struct ForumController: APIRouteCollection {
 			countQuery.filter(\.$category.$id == cat)
 		}
 		async let forumCount = try countQuery.count()
+		let orderDirection = req.orderDirection()
 		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
-		case "create": _ = forumQuery.sort(\.$createdAt, .descending)
-		case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), .ascending)
-		default: _ = forumQuery.sort(\.$lastPostTime, .descending)
+		case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
+		case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
+		default: _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 		}
 		async let forums = try forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser)
