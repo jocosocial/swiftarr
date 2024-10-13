@@ -87,7 +87,6 @@ struct CreateStreamPhotoSchema: AsyncMigration {
 // Changes atEvent to be set to null when the associated event is deleted.
 struct StreamPhotoSchemaV2: AsyncMigration {
 	func prepare(on database: Database) async throws {
-		let modStatusEnum = try await database.enum("moderation_status").read()
 		try await database.schema("streamphoto")
 			.foreignKey("at_event", references: "event", "id", onDelete: .setNull)
 			.update()

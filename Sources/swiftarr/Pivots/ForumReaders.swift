@@ -1,6 +1,5 @@
 import Fluent
 import Foundation
-import PostgresKit
 
 /// A `Pivot` holding a siblings relation between a `User` and a `Forum`.
 /// The pivot tracks how many posts the user has read in the forum.

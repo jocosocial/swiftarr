@@ -1,9 +1,6 @@
 import Fluent
 import Foundation
-import NIO
 import NIOConcurrencyHelpers
-import PostgresNIO
-import Redis
 import Vapor
 
 // With ~2000 users at an average of ~1K per UserCacheData, an in-memory cache of all users would take

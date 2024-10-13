@@ -258,7 +258,7 @@ extension QueryBuilder {
 		guard let db = self.database as? SQLDatabase else {
 			return
 		}
-        var expression = SQLQueryConverter(delegate: PostgresConverterDelegate()).convert(query)
+        let expression = SQLQueryConverter(delegate: PostgresConverterDelegate()).convert(query)
 		let (sqlString, binds) = db.serialize(expression)
 		let bindString = binds.count == 0 ? "" : binds.reduce(("Binds:\n", 1)) { ($0.0.appending("    \($0.1): \($1)\n"), $0.1 + 1) }.0
 		print("\(sqlString)\n\(bindString)")		

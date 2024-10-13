@@ -1,4 +1,3 @@
-import Crypto
 import FluentSQL
 import Foundation
 import Vapor

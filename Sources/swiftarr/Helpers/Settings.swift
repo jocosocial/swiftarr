@@ -313,16 +313,6 @@ extension Settings {
 	}
 }
 
-extension Bool: RESPValueConvertible {
-	public init?(fromRESP value: RESPValue) {
-		self = value.int != 0
-	}
-
-	public func convertedToRESPValue() -> RESPValue {
-		return RESPValue(from: self == true ? 1 : 0)
-	}
-}
-
 // To maintain thread safety, this 1-value struct needs to be immutable, so that mutating Settings.disabledFeatures
 // can only be done by swapping out this entire struct.
 struct DisabledFeaturesGroup: Codable, RESPValueConvertible {

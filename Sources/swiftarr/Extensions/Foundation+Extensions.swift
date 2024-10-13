@@ -89,6 +89,16 @@ extension JSONEncoder.DateEncodingStrategy {
 	}
 }
 
+extension Bool: RESPValueConvertible {
+	public init?(fromRESP value: RESPValue) {
+		self = value.int != 0
+	}
+
+	public func convertedToRESPValue() -> RESPValue {
+		return RESPValue(from: self == true ? 1 : 0)
+	}
+}
+
 extension UUID: RESPValueConvertible {
 	public init?(fromRESP value: RESPValue) {
 		self.init(uuidString: value.string!)
