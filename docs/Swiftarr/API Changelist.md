@@ -166,3 +166,7 @@ New Micro Karaoke feature. API changes include:
 * `EventData` now has a list of the Performers that will be at the event.
 * New App feature for Performer methods.
 
+## Aug 22, 2024
+* Add `PersonalEvent` feature.
+* API endpoints, notification and report types, DTO.
+* Add `isFavorite` to `ProfilePublicData`

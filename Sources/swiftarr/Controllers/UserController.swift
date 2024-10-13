@@ -98,7 +98,8 @@ struct UserController: APIRouteCollection {
 		tokenAuthGroup.post(userIDParam, "username", use: usernameHandler)
 		tokenAuthGroup.post("add", use: addHandler)
 
-		tokenAuthGroup.on(.POST, "image", body: .collect(maxSize: "30mb"), use: imageHandler).setUsedForPreregistration()
+		tokenAuthGroup.on(.POST, "image", body: .collect(maxSize: "30mb"), use: imageHandler)
+			.setUsedForPreregistration()
 		tokenAuthGroup.post("image", "remove", use: imageRemoveHandler).setUsedForPreregistration()
 		tokenAuthGroup.delete("image", use: imageRemoveHandler).setUsedForPreregistration()
 		tokenAuthGroup.delete(userIDParam, "image", use: imageRemoveHandler)
@@ -508,7 +509,12 @@ struct UserController: APIRouteCollection {
 	/// - Returns: `ProfilePublicData` containing the editable properties of the profile.
 	func profileHandler(_ req: Request) async throws -> ProfilePublicData {
 		let user = try await req.auth.require(UserCacheData.self).getUser(on: req.db)
-		return try ProfilePublicData(user: user, note: nil, requesterAccessLevel: user.accessLevel)
+		return try ProfilePublicData(
+			user: user,
+			note: nil,
+			requesterAccessLevel: user.accessLevel,
+			requesterHasFavorite: false
+		)
 	}
 
 	/// `POST /api/v3/user/profile`
@@ -560,7 +566,12 @@ struct UserController: APIRouteCollection {
 		try await targetUser.save(on: req.db)
 		try await req.userCache.updateUser(targetUser.requireID())
 		await targetUser.logIfModeratorAction(.edit, user: cacheUser, on: req)
-		return try ProfilePublicData(user: targetUser, note: nil, requesterAccessLevel: user.accessLevel)
+		return try ProfilePublicData(
+			user: targetUser,
+			note: nil,
+			requesterAccessLevel: user.accessLevel,
+			requesterHasFavorite: false
+		)
 	}
 
 	// MARK: - Alertwords
@@ -630,7 +641,7 @@ struct UserController: APIRouteCollection {
 				try await alertWord.delete(on: req.db)
 				try await req.redis.removeAlertword(parameter)
 			}
-			try await req.redis.removeUserAlertword(parameter, userID: user.userID);
+			try await req.redis.removeUserAlertword(parameter, userID: user.userID)
 		}
 		let keywords = pivots.map { $0.alertword.word }
 		return KeywordData(keywords: keywords.sorted())

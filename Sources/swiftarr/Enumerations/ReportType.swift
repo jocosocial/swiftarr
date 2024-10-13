@@ -21,6 +21,8 @@ public enum ReportType: String, Codable {
 	case mkSongSnippet
 	/// a `StreamPhoto`
 	case streamPhoto
+	/// a `PersonalEvent`
+	case personalEvent
 }
 
 /// Moderation status of a piece of reportable content.

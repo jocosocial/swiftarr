@@ -30,23 +30,27 @@ extension RoutesBuilder {
 			UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated.")),
 		])
 	}
-	
+
 	func flexRoutes(feature: SwiftarrFeature? = nil, path: PathComponent...) -> RoutesBuilder {
-		var builder = self.addFlexAuth().grouped(path).grouped([
+		var builder = self.addFlexAuth().grouped(path)
+			.grouped([
 				UserCacheData.TokenAuthenticator(),
 				MinUserAccessLevelMiddleware(requireAuth: false),
-				])
+			])
 		if let feature = feature {
 			builder = builder.grouped(DisabledAPISectionMiddleware(feature: feature))
 		}
 		return builder
 	}
-	
-	func tokenRoutes(feature: SwiftarrFeature? = nil, minAccess: UserAccessLevel = .banned, path: PathComponent...) -> RoutesBuilder {
-		var builder = self.grouped(path).grouped([
+
+	func tokenRoutes(feature: SwiftarrFeature? = nil, minAccess: UserAccessLevel = .banned, path: PathComponent...)
+		-> RoutesBuilder
+	{
+		var builder = self.grouped(path)
+			.grouped([
 				UserCacheData.TokenAuthenticator(),
 				MinUserAccessLevelMiddleware(requireAuth: true, requireAccessLevel: minAccess),
-				])
+			])
 		if let feature = feature {
 			builder = builder.grouped(DisabledAPISectionMiddleware(feature: feature))
 		}
@@ -87,6 +91,7 @@ extension APIRouteCollection {
 	var imageFilenameParam: PathComponent { PathComponent(":image_filename") }
 	var streamPhotoIDParam: PathComponent { PathComponent(":stream_photoID") }
 	var performerIDParam: PathComponent { PathComponent(":performer_id") }
+	var personalEventIDParam: PathComponent { PathComponent(":personal_event_id") }
 
 	/// Transforms a string that might represent a date (either a `Double` or an ISO 8601
 	/// representation) into a `Date`, if possible.
@@ -210,7 +215,7 @@ extension APIRouteCollection {
 				for userID in users {
 					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
-			case .followedEventStarting(_), .joinedLFGStarting(_):
+			case .followedEventStarting(_), .joinedLFGStarting(_), .personalEventStarting(_):
 				break
 			case .microKaraokeSongReady(_):
 				for userID in users {
@@ -220,7 +225,12 @@ extension APIRouteCollection {
 
 			if forwardToSockets {
 				// Send a message to all involved users with open websockets.
-				req.application.websocketStorage.forwardToSockets(app: req.application, users: users, type: type, info: info)
+				req.application.websocketStorage.forwardToSockets(
+					app: req.application,
+					users: users,
+					type: type,
+					info: info
+				)
 			}
 
 			let notifyUsersCopy = notifyUsers
@@ -279,22 +289,38 @@ extension APIRouteCollection {
 			case .twarrtMention(_):
 				for userID in users {
 					group.addTask {
-						try await req.redis.incrementIntInUserHash(field: type, userID: userID, incAmount: 0 - subtractCount)
+						try await req.redis.incrementIntInUserHash(
+							field: type,
+							userID: userID,
+							incAmount: 0 - subtractCount
+						)
 					}
 				}
 			case .forumMention(_), .twitarrTeamForumMention(_), .moderatorForumMention(_):
 				for userID in users {
 					group.addTask {
-						try await req.redis.incrementIntInUserHash(field: type, userID: userID, incAmount: 0 - subtractCount)
+						try await req.redis.incrementIntInUserHash(
+							field: type,
+							userID: userID,
+							incAmount: 0 - subtractCount
+						)
 					}
 				}
 			case .alertwordTwarrt(let word, _):
 				for userID in users {
-					try await req.redis.incrementAlertwordTwarrtInUserHash(word: word, userID: userID, incAmount: 0 - subtractCount)
+					try await req.redis.incrementAlertwordTwarrtInUserHash(
+						word: word,
+						userID: userID,
+						incAmount: 0 - subtractCount
+					)
 				}
 			case .alertwordPost(let word, _):
 				for userID in users {
-					try await req.redis.incrementAlertwordPostInUserHash(word: word, userID: userID, incAmount: 0 - subtractCount)
+					try await req.redis.incrementAlertwordPostInUserHash(
+						word: word,
+						userID: userID,
+						incAmount: 0 - subtractCount
+					)
 				}
 			case .seamailUnreadMsg(let msgID):
 				// For seamail msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
@@ -303,7 +329,11 @@ extension APIRouteCollection {
 					let modList = req.userCache.allUsersWithAccessLevel(.moderator).map { $0.userID }
 					for modUserID in modList {
 						group.addTask {
-							try await req.redis.deletedUnreadMessage(msgID: msgID, userID: modUserID, inbox: .moderatorSeamail)
+							try await req.redis.deletedUnreadMessage(
+								msgID: msgID,
+								userID: modUserID,
+								inbox: .moderatorSeamail
+							)
 						}
 					}
 				}
@@ -311,7 +341,11 @@ extension APIRouteCollection {
 					let ttList = req.userCache.allUsersWithAccessLevel(.twitarrteam).map { $0.userID }
 					for ttUserID in ttList {
 						group.addTask {
-							try await req.redis.deletedUnreadMessage(msgID: msgID, userID: ttUserID, inbox: .twitarrTeamSeamail)
+							try await req.redis.deletedUnreadMessage(
+								msgID: msgID,
+								userID: ttUserID,
+								inbox: .twitarrTeamSeamail
+							)
 						}
 					}
 				}
@@ -328,13 +362,18 @@ extension APIRouteCollection {
 						try await req.redis.deletedUnreadMessage(msgID: msgID, userID: userID, inbox: .lfgMessages)
 					}
 				}
-			case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting:
+			case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting,
+				.personalEventStarting:
 				break
 			case .microKaraokeSongReady(_):
 				// There is currently no method by which songs become not-ready. But,
 				for userID in users {
 					group.addTask {
-						try await req.redis.incrementIntInUserHash(field: type, userID: userID, incAmount: 0 - subtractCount)
+						try await req.redis.incrementIntInUserHash(
+							field: type,
+							userID: userID,
+							incAmount: 0 - subtractCount
+						)
 					}
 				}
 			}
@@ -383,10 +422,11 @@ extension APIRouteCollection {
 			}
 		case .fezUnreadMsg:
 			try await req.redis.markSeamailRead(type: type, in: .lfgMessages, userID: user.userID)
-		case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting:
+		case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting,
+			.personalEventStarting:
 			return  // Can't be cleared
 		case .microKaraokeSongReady:
-			try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)			
+			try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)
 		}
 		try await req.redis.addUsersWithStateChange([user.userID])
 	}

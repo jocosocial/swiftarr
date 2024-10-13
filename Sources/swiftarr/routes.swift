@@ -27,6 +27,7 @@ public func routes(_ app: Application) throws {
 		MicroKaraokeController(),
 		PhotostreamController(),
 		PerformerController(),
+		PersonalEventController(),
 	]
 	try apiControllers.forEach { try $0.registerRoutes(app) }
 

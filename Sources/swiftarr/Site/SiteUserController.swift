@@ -76,8 +76,10 @@ struct SiteUserController: SiteControllerUtils {
 		// redirect-chained through /login and back.
 		let globalRoutes = getGlobalRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .users))
 		globalRoutes.get("user", userIDParam, use: userProfilePageHandler).destination("the user profile for this user")
-		globalRoutes.get("username", ":username", use: usernameProfilePageHandler).destination("the user profile for this user")
-		globalRoutes.get("profile", ":username", use: usernameProfilePageHandler).destination("the user profile for this user")
+		globalRoutes.get("username", ":username", use: usernameProfilePageHandler)
+			.destination("the user profile for this user")
+		globalRoutes.get("profile", ":username", use: usernameProfilePageHandler)
+			.destination("the user profile for this user")
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .users))
@@ -100,6 +102,9 @@ struct SiteUserController: SiteControllerUtils {
 		privateRoutes.post("user", userIDParam, "unblock", use: unblockUserPostHandler)
 		privateRoutes.post("user", userIDParam, "mute", use: muteUserPostHandler)
 		privateRoutes.post("user", userIDParam, "unmute", use: unmuteUserPostHandler)
+		privateRoutes.post("user", userIDParam, "favorite", use: favoriteUserHandler)
+		privateRoutes.delete("user", userIDParam, "favorite", use: unfavoriteUserHandler)
+		privateRoutes.post("user", userIDParam, "unfavorite", use: unfavoriteUserHandler)
 
 		privateRoutes.get("blocks", use: blocksPageHandler)
 		privateRoutes.get("alertwords", use: alertMuteWordsPageHandler)
@@ -108,6 +113,7 @@ struct SiteUserController: SiteControllerUtils {
 		privateRoutes.post("alertword", alertWordParam, "remove", use: removeAlertwordPostHandler)
 		privateRoutes.post("muteword", "add", use: addMutewordPostHandler)
 		privateRoutes.post("muteword", muteWordParam, "remove", use: removeMutewordPostHandler)
+		privateRoutes.get("favorites", use: favoritesPageHandler)
 
 		// User Role Management, which for now means Shutternaut management
 		// These paths may well change to take the role as a parameter and become generic Role mgmt methods.
@@ -230,6 +236,27 @@ struct SiteUserController: SiteControllerUtils {
 		return try await req.view.render("User/userBlocks", ctx)
 	}
 
+	/// `GET /favorites`
+	///
+	/// Show all of the users favorite users.
+	func favoritesPageHandler(_ req: Request) async throws -> View {
+		async let favoritesResponse = try apiQuery(req, endpoint: "/users/favorites")
+		let favoriteUsers = try await favoritesResponse.content.decode([UserHeader].self)
+
+		struct FavoritesContext: Encodable {
+			var trunk: TrunkContext
+			var favorites: [UserHeader]
+
+			init(_ req: Request, favorites: [UserHeader]) throws {
+				trunk = .init(req, title: "Favorite Users", tab: .none)
+				self.favorites = favorites
+			}
+		}
+
+		let ctx = try FavoritesContext(req, favorites: favoriteUsers)
+		return try await req.view.render("User/userFavorites", ctx)
+	}
+
 	// POST /user/:user_ID/block
 	//
 	// Applies a block against the given user ID.
@@ -271,6 +298,28 @@ struct SiteUserController: SiteControllerUtils {
 			throw "Invalid username parameter"
 		}
 		try await apiQuery(req, endpoint: "/users/\(userID)/unmute", method: .POST)
+		return .ok
+	}
+
+	// POST /user/:user_ID/favorite
+	//
+	// Mutes the given user ID.
+	func favoriteUserHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let userID = req.parameters.get(userIDParam.paramString) else {
+			throw "Invalid username parameter"
+		}
+		try await apiQuery(req, endpoint: "/users/\(userID)/favorite", method: .POST)
+		return .created
+	}
+
+	// DELETE /user/:user_ID/favorite
+	//
+	// Unmutes the given user ID.
+	func unfavoriteUserHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let userID = req.parameters.get(userIDParam.paramString) else {
+			throw "Invalid username parameter"
+		}
+		try await apiQuery(req, endpoint: "/users/\(userID)/favorite", method: .DELETE)
 		return .ok
 	}
 

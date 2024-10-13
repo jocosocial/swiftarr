@@ -29,10 +29,22 @@ struct ModerationController: APIRouteCollection {
 		moderatorAuthGroup.get("moderationlog", use: moderatorActionLogHandler)
 
 		moderatorAuthGroup.get("twarrt", twarrtIDParam, use: twarrtModerationHandler)
-		moderatorAuthGroup.post("twarrt", twarrtIDParam, "setstate", modStateParam, use: twarrtSetModerationStateHandler)
+		moderatorAuthGroup.post(
+			"twarrt",
+			twarrtIDParam,
+			"setstate",
+			modStateParam,
+			use: twarrtSetModerationStateHandler
+		)
 
 		moderatorAuthGroup.get("forumpost", postIDParam, use: forumPostModerationHandler)
-		moderatorAuthGroup.post("forumpost", postIDParam, "setstate", modStateParam, use: forumPostSetModerationStateHandler)
+		moderatorAuthGroup.post(
+			"forumpost",
+			postIDParam,
+			"setstate",
+			modStateParam,
+			use: forumPostSetModerationStateHandler
+		)
 
 		moderatorAuthGroup.get("forum", forumIDParam, use: forumModerationHandler)
 		moderatorAuthGroup.post("forum", forumIDParam, "setstate", modStateParam, use: forumSetModerationStateHandler)
@@ -42,21 +54,41 @@ struct ModerationController: APIRouteCollection {
 		moderatorAuthGroup.post("fez", fezIDParam, "setstate", modStateParam, use: fezSetModerationStateHandler)
 
 		moderatorAuthGroup.get("fezpost", fezPostIDParam, use: fezPostModerationHandler)
-		moderatorAuthGroup.post("fezpost", fezPostIDParam, "setstate", modStateParam, use: fezPostSetModerationStateHandler)
+		moderatorAuthGroup.post(
+			"fezpost",
+			fezPostIDParam,
+			"setstate",
+			modStateParam,
+			use: fezPostSetModerationStateHandler
+		)
 
 		moderatorAuthGroup.get("profile", userIDParam, use: profileModerationHandler)
-		moderatorAuthGroup.post("profile", userIDParam, "setstate", modStateParam, use: profileSetModerationStateHandler)
+		moderatorAuthGroup.post(
+			"profile",
+			userIDParam,
+			"setstate",
+			modStateParam,
+			use: profileSetModerationStateHandler
+		)
 
 		moderatorAuthGroup.get("user", userIDParam, use: userModerationHandler)
 		moderatorAuthGroup.post("user", userIDParam, "setaccesslevel", accessLevelParam, use: userSetAccessLevelHandler)
-		moderatorAuthGroup.post("user", userIDParam, "tempquarantine", ":quarantine_length", use: applyUserTempQuarantine)
-		
+		moderatorAuthGroup.post(
+			"user",
+			userIDParam,
+			"tempquarantine",
+			":quarantine_length",
+			use: applyUserTempQuarantine
+		)
+
 		moderatorAuthGroup.get("microkaraoke", "songlist", use: getFullSongList)
 		moderatorAuthGroup.get("microkaraoke", "song", mkSongIDParam, use: getSongInfo)
 		moderatorAuthGroup.get("microkaraoke", "snippets", mkSongIDParam, use: getSnippetsForModeration)
 		moderatorAuthGroup.post("microkaraoke", "snippet", mkSnippetIDParam, "delete", use: deleteSnippet)
 		moderatorAuthGroup.delete("microkaraoke", "snippet", mkSnippetIDParam, use: deleteSnippet)
 		moderatorAuthGroup.post("microkaraoke", "approve", mkSongIDParam, use: approveSong)
+
+		moderatorAuthGroup.get("personalevent", personalEventIDParam, use: personalEventModerationHandler)
 	}
 
 	// MARK: - tokenAuthGroup Handlers (logged in)
@@ -157,7 +189,8 @@ struct ModerationController: APIRouteCollection {
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...200)
 		let query = ModeratorAction.query(on: req.db)
 		async let totalActionCount = try query.count()
-		async let result = try query.copy().range(start..<(start + limit)).sort(\.$createdAt, .descending).all().map { try ModeratorActionLogData(action: $0, on: req) }
+		async let result = try query.copy().range(start..<(start + limit)).sort(\.$createdAt, .descending).all()
+			.map { try ModeratorActionLogData(action: $0, on: req) }
 		let response = try await ModeratorActionLogResponseData(
 			actions: result,
 			paginator: Paginator(total: totalActionCount, start: start, limit: limit)
@@ -477,7 +510,9 @@ struct ModerationController: APIRouteCollection {
 		guard let postIDString = req.parameters.get(fezPostIDParam.paramString), let postID = Int(postIDString) else {
 			throw Abort(.badRequest, reason: "Request parameter \(fezPostIDParam.paramString) is missing.")
 		}
-		guard let lfgPost = try await FezPost.query(on: req.db).with(\.$fez).filter(\.$id == postID).withDeleted().first() else {
+		guard
+			let lfgPost = try await FezPost.query(on: req.db).with(\.$fez).filter(\.$id == postID).withDeleted().first()
+		else {
 			throw Abort(.notFound, reason: "no LFG Post found for identifier '\(postID)'")
 		}
 		let reports = try await Report.query(on: req.db)
@@ -671,9 +706,9 @@ struct ModerationController: APIRouteCollection {
 					throw Abort(
 						.badRequest,
 						reason: """
-														Target user has \(allAccounts.count) accounts and their account \"\(account.username)\" \
-														has elevated access (Moderator or higher). You need to demote their access first.
-														"""
+							Target user has \(allAccounts.count) accounts and their account \"\(account.username)\" \
+							has elevated access (Moderator or higher). You need to demote their access first.
+							"""
 					)
 				}
 			}
@@ -744,7 +779,7 @@ struct ModerationController: APIRouteCollection {
 		return .ok
 	}
 
-// MARK: Micro Karaoke Moderation
+	// MARK: Micro Karaoke Moderation
 	/// `GET /api/v3/mod/microkaraoke/songlist`
 	///
 	///  Gets info on all the songs that are in Micro Karaoke, including ones being built.
@@ -785,11 +820,11 @@ struct ModerationController: APIRouteCollection {
 
 	/// `GET /api/v3/mod/microkaraoke/snippets/:song_id`
 	///
-	///  
+	///
 	///
 	/// - Parameter song_id: The song to get a manifest for.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `MicroKaraokeSongManifest` 
+	/// - Returns: `MicroKaraokeSongManifest`
 	func getSnippetsForModeration(_ req: Request) async throws -> [MicroKaraokeSnippetModeration] {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		guard cacheUser.accessLevel.hasAccess(.moderator) else {
@@ -801,14 +836,15 @@ struct ModerationController: APIRouteCollection {
 		guard let _ = try await MKSong.find(songID, on: req.db) else {
 			throw Abort(.badRequest, reason: "Could not find a song with this song ID.")
 		}
-		let songSnippets = try await MKSnippet.query(on: req.db).filter(\.$song.$id == songID).sort(\.$songSnippetIndex).all()
-		let result = try songSnippets.map { 
+		let songSnippets = try await MKSnippet.query(on: req.db).filter(\.$song.$id == songID).sort(\.$songSnippetIndex)
+			.all()
+		let result = try songSnippets.map {
 			let author = try req.userCache.getHeader($0.$author.id)
 			return try MicroKaraokeSnippetModeration(from: $0, by: author)
 		}
 		return result
 	}
-	
+
 	/// `POST /api/v3/mod/microkaraoke/snippet/:snippet_id/delete`
 	/// `DELETE /api/v3/mod/microkaraoke/snippet/:snippet_id/`
 	///
@@ -816,7 +852,7 @@ struct ModerationController: APIRouteCollection {
 	///
 	/// - Parameter snippet_id: The snippet ID to delete. NOT the snippet index--the index just tells you where the snippet gets inserted into its song.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `MicroKaraokeSongManifest` 
+	/// - Returns: `MicroKaraokeSongManifest`
 	func deleteSnippet(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		guard cacheUser.accessLevel.hasAccess(.moderator) else {
@@ -834,16 +870,16 @@ struct ModerationController: APIRouteCollection {
 		}
 		return .ok
 	}
-	
+
 	/// `POST /api/v3/mod/microkaraoke/approve/:song_id`
 	///
 	///  Approve a song for release. Once approved, notifications are sent out to each user that sung a clip in the song.
 	///  For this reason, there is not currently an 'unapprove' action, as re-approving would currently re-send all the notifications.
-	///  If an approved song contains an objectionable clip, use the mod tools to delete the clip. 
+	///  If an approved song contains an objectionable clip, use the mod tools to delete the clip.
 	///
-	/// - Parameter song_id: The song ID to approve. 
+	/// - Parameter song_id: The song ID to approve.
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: HTTP Status` 
+	/// - Returns: HTTP Status`
 	func approveSong(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		guard cacheUser.accessLevel.hasAccess(.moderator) else {
@@ -861,13 +897,53 @@ struct ModerationController: APIRouteCollection {
 		song.modApproved = true
 		try await song.save(on: req.db)
 		try await song.logIfModeratorAction(.markReviewed, moderatorID: cacheUser.userID, on: req)
-		
+
 		// Notify song participants that their song is ready for viewing
 		let snippets = try await MKSnippet.query(on: req.db).filter(\.$song.$id == songID).all()
 		let singers = Array(Set(snippets.map { $0.$author.id }))
-		let infoStr = "A Micro Karaoke song you contributed to is ready for viewing. Go watch the video for song #\(songID)."
+		let infoStr =
+			"A Micro Karaoke song you contributed to is ready for viewing. Go watch the video for song #\(songID)."
 		try await addNotifications(users: singers, type: .microKaraokeSongReady(songID), info: infoStr, on: req)
 
 		return .ok
+	}
+
+	// MARK: PersonalEvent
+
+	/// `GET /api/v3/mod/personalevent/:eventID`
+	///
+	/// Return moderation data for a PersonalEvent.
+	func personalEventModerationHandler(_ req: Request) async throws -> PersonalEventModerationData {
+		guard let paramVal = req.parameters.get(personalEventIDParam.paramString), let eventID: UUID = UUID(paramVal)
+		else {
+			throw Abort(.badRequest, reason: "Request parameter \(personalEventIDParam.paramString) is missing.")
+		}
+		guard
+			let personalEvent = try await PersonalEvent.query(on: req.db).filter(\._$id == eventID).withDeleted()
+				.first()
+		else {
+			throw Abort(.notFound, reason: "no value found for identifier '\(paramVal)'")
+		}
+		let reports = try await Report.query(on: req.db)
+			.filter(\.$reportType == .personalEvent)
+			.filter(\.$reportedID == paramVal)
+			.sort(\.$createdAt, .descending).all()
+
+		let ownerHeader = try req.userCache.getHeader(personalEvent.$owner.id)
+		let participantHeaders = try personalEvent.participantArray.map { try req.userCache.getHeader($0) }
+		let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
+		let personalEventData = try PersonalEventData(
+			personalEvent,
+			ownerHeader: ownerHeader,
+			participantHeaders: participantHeaders
+		)
+
+		let modData = PersonalEventModerationData(
+			personalEvent: personalEventData,
+			isDeleted: personalEvent.deletedAt != nil,
+			moderationStatus: personalEvent.moderationStatus,
+			reports: reportData
+		)
+		return modData
 	}
 }

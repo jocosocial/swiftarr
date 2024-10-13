@@ -105,6 +105,8 @@ struct SocketNotificationData: Content {
 		case joinedLFGStarting
 		/// A Micro Karaoke song the user contributed to is ready for viewing. .
 		case microKaraokeSongReady
+		/// A Personal Event the user has created or was added to is about to start.
+		case personalEventStarting
 	}
 	/// The type of event that happened. See `SocketNotificationData.NotificationTypeData` for values.
 	var type: NotificationTypeData
@@ -136,6 +138,7 @@ extension SocketNotificationData {
 		case .nextJoinedLFGTime: self.type = .joinedLFGStarting
 		case .joinedLFGStarting: self.type = .joinedLFGStarting
 		case .microKaraokeSongReady: self.type = .microKaraokeSongReady
+		case .personalEventStarting: self.type = .personalEventStarting
 		}
 		self.info = info
 		self.contentID = id

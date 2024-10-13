@@ -81,7 +81,7 @@ public struct BoardgameRecommendationData: Content {
 public struct BoardgameResponseData: Content {
 	/// Array of boardgames.
 	var gameArray: [BoardgameData]
-	/// Total games in result set, and the start and limit into the found set. 
+	/// Total games in result set, and the start and limit into the found set.
 	var paginator: Paginator
 }
 
@@ -351,7 +351,7 @@ public struct EventData: Content {
 	var forum: UUID?
 	/// Whether user has favorited event.
 	var isFavorite: Bool
-	/// The performers who will be at the event. 
+	/// The performers who will be at the event.
 	var performers: [PerformerHeaderData]
 }
 
@@ -428,7 +428,15 @@ extension FezContentData: RCFValidatable {
 			}
 		}
 
-		// TODO: validations for startTime and endTime
+		if let startTime = startTime {
+			guard let endTime = endTime else {
+				throw Abort(.badRequest, reason: "if startTime is defined so must endTime")
+			}
+			let timeInterval = endTime.timeIntervalSince(startTime)
+			guard timeInterval <= 86400 else {
+				throw Abort(.badRequest, reason: "endTime can be no more than 24 hours after startTime")
+			}
+		}
 	}
 }
 
@@ -478,7 +486,8 @@ public struct FezData: Content, ResponseEncodable {
 	var info: String
 	/// The starting time of the fez.
 	var startTime: Date?
-	/// The ending time of the fez.
+	/// The ending time of the fez. If startTime specified, no more than 24 hours after
+	/// the startTime since per Chall that makes iCal export get weird.
 	var endTime: Date?
 	/// The 3 letter abbreviation for the active time zone at the time and place where the fez is happening.
 	var timeZone: String?
@@ -532,7 +541,8 @@ extension FezData {
 			fez.startTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.startTime)
 		self.endTime = fez.endTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.endTime)
 		self.timeZone = self.startTime == nil ? nil : Settings.shared.timeZoneChanges.abbrevAtTime(self.startTime)
-		self.timeZoneID = self.startTime == nil ? nil : Settings.shared.timeZoneChanges.tzAtTime(self.startTime).identifier
+		self.timeZoneID =
+			self.startTime == nil ? nil : Settings.shared.timeZoneChanges.tzAtTime(self.startTime).identifier
 		self.location =
 			fez.moderationStatus.showsContent() ? fez.location : "Fez Location field is under moderator review"
 		self.lastModificationTime = fez.updatedAt ?? Date()
@@ -973,7 +983,6 @@ extension MicroKaraokeSnippetModeration {
 	}
 }
 
-
 /// When a user starts the Micro Karaoke flow to sing and record part of a song, the server reserves a song slot for that user and returns into
 /// about their reservation, including the lyrics they should sing, what song it's part of, and URLs for the vocal and no-vocal song clipe.
 ///
@@ -1043,11 +1052,14 @@ public struct MicroKaraokeSongManifest: Content {
 extension MicroKaraokeSongManifest {
 	init(from snippets: [MKSnippet], song: MKSong, info: SongInfoJSON, karaokeMusicTrack: URL) throws {
 		guard let first = snippets.first else {
-			throw Abort(.internalServerError, reason: "No song clips found for supposedly completed micro karaoke song.")
+			throw Abort(
+				.internalServerError,
+				reason: "No song clips found for supposedly completed micro karaoke song."
+			)
 		}
 		songID = first.$song.id
 		portraitMode = song.isPortrait
-		snippetVideoURLs = try snippets.map { 
+		snippetVideoURLs = try snippets.map {
 			guard let mediaURL = $0.mediaURL, let url = URL(string: mediaURL) else {
 				throw Abort(.internalServerError, reason: "Could not make URL out of video clip file.")
 			}
@@ -1057,7 +1069,6 @@ extension MicroKaraokeSongManifest {
 		self.snippetDurations = info.durations
 	}
 }
-
 
 /// Used to create a `UserNote` when viewing a user's profile. Also used to create a Karaoke song log entry.
 ///
@@ -1150,9 +1161,9 @@ public struct Paginated<ResultClass>: Content where ResultClass: Content {
 }
 
 /// Returns info about a single Performer. This header information is similar to the UserHeader structure, containing just enough
-/// info to build a title card for a performer. 
-/// 
-/// This structure is also used to break the recusion cycle where a PerformerData contains a list of Events, and the 
+/// info to build a title card for a performer.
+///
+/// This structure is also used to break the recusion cycle where a PerformerData contains a list of Events, and the
 /// Events contain lists of the Performers that will be there. In this case, the Event has an array of PerformerHeaderData instead of PerformerData.
 ///
 /// Incorporated into `PerformerData`
@@ -1175,7 +1186,7 @@ extension PerformerHeaderData {
 		photo = performer.photo
 		isOfficialPerformer = performer.officialPerformer
 	}
-	
+
 	init() {
 		id = nil
 		name = ""
@@ -1185,7 +1196,7 @@ extension PerformerHeaderData {
 }
 
 /// Returns info about a single perfomer. Most fields are optional, and the array fields may be empty, although they shouldn't be under normal conditions.
-/// 
+///
 /// Returned by: `GET /api/v3/performer/self`
 /// Returned by: `GET /api/v3/performer/:performer_id`
 public struct PerformerData: Content {
@@ -1214,7 +1225,7 @@ public struct PerformerData: Content {
 	/// The events this performer is going to be performing at.
 	var events: [EventData]
 	/// The user who  created this Performer. Only applies to Shadow Event organizers, and is only returned if the requester is a Moderator or higher.
-	/// Although we track the User who created a Performer model for their shadow event for moderation purposes, the User behind the Performer 
+	/// Although we track the User who created a Performer model for their shadow event for moderation purposes, the User behind the Performer
 	/// shouldn't be shown to everyone.
 	var user: UserHeader?
 }
@@ -1234,7 +1245,7 @@ extension PerformerData {
 		self.events = try performer.events.map { try EventData($0, isFavorite: favoriteEventIDs.contains($0.requireID())) }
 		self.yearsAttended = performer.yearsAttended
 	}
-	
+
 	// Empty performerData for users that don't have a Performer object
 	init() {
 		header = .init()
@@ -1244,7 +1255,7 @@ extension PerformerData {
 }
 
 /// Wraps up a list of performers with pagination info.
-/// 
+///
 /// Returned by:`GET /api/v3/performer/official`
 /// Returned by:`GET /api/v3/performer/shadow`
 public struct PerformerResponseData: Content {
@@ -1254,8 +1265,8 @@ public struct PerformerResponseData: Content {
 	var paginator: Paginator
 }
 
-/// Used to create and update Performer models. 
-/// 
+/// Used to create and update Performer models.
+///
 /// Used by: `POST /api/v3/performer/forEvent/:event_id`
 /// Used by: `POST /api/v3/performer/official/add`
 public struct PerformerUploadData: Content {
@@ -1269,7 +1280,7 @@ public struct PerformerUploadData: Content {
 	/// New photo data if we're updating it, or the name of an existing photo on the server.
 	var photo: ImageUploadData
 	/// TRUE if this is an official performer, FALSE if it's a shadow event organizer. Note that this struct can't link a Performer with a User, so can't be
-	/// used by admin/mods to create Shadow Event Organizers. The idea is that they should create their records themselves, but mods may have to edit them. 
+	/// used by admin/mods to create Shadow Event Organizers. The idea is that they should create their records themselves, but mods may have to edit them.
 	var isOfficialPerformer: Bool
 	var organization: String?
 	var title: String?
@@ -1354,13 +1365,13 @@ extension PhotostreamImageData {
 /// However: `/api/v3/photostream` returns one of thse objects even for non-mod users--it just returns 30 photos and sets `paginator.total` to 30.
 ///
 /// Returned by: `GET /api/v3/photostream`
-struct PhotostreamListData : Content {
+struct PhotostreamListData: Content {
 	var photos: [PhotostreamImageData]
 	var paginator: Paginator
 }
 
 /// Returns information on available tags to use when tagging a photo to be uploaded to the photostream. A photo may be tagged with an event or with a generic
-/// ship location. Calling `api/v3/photostream/placenames` fills the `events` parameter with information about events that are currently happening. When 
+/// ship location. Calling `api/v3/photostream/placenames` fills the `events` parameter with information about events that are currently happening. When
 /// a photo is uploaded, its tag is validated, and validation will fail if the tagged event has ended.
 ///
 /// Returned by: `GET /api/v3/photostream`
@@ -1370,7 +1381,7 @@ struct PhotostreamLocationData: Content {
 }
 
 /// Uploads a photo to the photostream. Either the eventID or the locationName must be set.
-/// 
+///
 /// Sent in request body to: `POST /api/v3/photostream/upload`.
 struct PhotostreamUploadData: Content {
 	/// The image data.
@@ -1594,11 +1605,14 @@ public struct ProfilePublicData: Content {
 	var dinnerTeam: DinnerTeam?
 	/// A UserNote owned by the visiting user, about the profile's user (see `UserNote`).
 	var note: String?
+	/// Whether the requesting user has favorited this user.
+	var isFavorite: Bool
 }
 
 extension ProfilePublicData {
-	init(user: User, note: String?, requesterAccessLevel: UserAccessLevel) throws {
+	init(user: User, note: String?, requesterAccessLevel: UserAccessLevel, requesterHasFavorite: Bool) throws {
 		self.header = try UserHeader(user: user)
+		self.isFavorite = requesterHasFavorite
 		if !user.moderationStatus.showsContent() && !requesterAccessLevel.hasAccess(.moderator) {
 			self.header.displayName = nil
 			self.header.userImage = nil
@@ -1936,7 +1950,7 @@ public struct UserNotificationData: Content {
 	var serverTime: String
 	/// Server Time Zone offset, in seconds from UTC. One hour before UTC is -3600. EST  timezone is -18000.
 	var serverTimeOffset: Int
-	/// The geopolitical region identifier that identifies the time zone -- e.g. "America/Los Angeles" 
+	/// The geopolitical region identifier that identifies the time zone -- e.g. "America/Los Angeles"
 	var serverTimeZoneID: String
 	/// Human-readable time zone name, like "EDT"
 	var serverTimeZone: String
@@ -1976,7 +1990,7 @@ public struct UserNotificationData: Content {
 	/// The event ID of the the next future event the user has followed. This event's start time should always be == nextFollowedEventTime.
 	/// If the user has favorited multiple events that start at the same time, this will be random among them.
 	var nextFollowedEventID: UUID?
-	
+
 	/// The number of Micro Karaoke songs the user has contributed to and can now view.
 	var microKaraokeFinishedSongCount: Int
 
@@ -2335,7 +2349,88 @@ public struct AlertmanagerWebhookPayload: Content {
 /// This smells roughly the same as an error fields-wise without inheriting from the error.
 ///
 public struct HealthResponse: Content {
+	/// HTTP status code.
 	var status: HTTPResponseStatus = HTTPResponseStatus.ok
+	/// Arbitrary response details.
 	var reason: String = "OK"
+	/// Is this response an error.
 	var error: Bool = false
+}
+
+// MARK: Personal Events
+///
+/// Used to return a `PersonalEvent`'s data.
+public struct PersonalEventData: Content {
+	/// The PersonalEvent's ID. This is the Swiftarr database record for this event.
+	var personalEventID: UUID
+	/// The personal event's title.
+	var title: String
+	/// A description of the personal event.
+	var description: String?
+	/// Starting time of the personal event
+	var startTime: Date
+	/// Ending time of the personal event. No more than 24 hours after
+	/// the startTime since per Chall that makes iCal export get weird.
+	var endTime: Date
+	/// The timezone that the ship is going to be in when the personal event occurs. Delivered as an abbreviation e.g. "EST".
+	var timeZone: String
+	/// The timezone ID that the ship is going to be in when the personal event occurs. Example: "America/New_York".
+	var timeZoneID: String
+	/// The location of the personal event.
+	var location: String?
+	/// The last time data for this personal event was modified.
+	var lastUpdateTime: Date
+	/// The owning user of this personal event.
+	var owner: UserHeader
+	/// Users that the owner has invited to join this personal event.
+	/// Should not contain the owner itself (see PersonalEvent.owner above)
+	var participants: [UserHeader]
+}
+
+extension PersonalEventData {
+	init(_ personalEvent: PersonalEvent, ownerHeader: UserHeader, participantHeaders: [UserHeader]) throws {
+		let timeZoneChanges = Settings.shared.timeZoneChanges
+		self.personalEventID = try personalEvent.requireID()
+		self.title = personalEvent.title
+		self.description = personalEvent.description
+		self.startTime = timeZoneChanges.portTimeToDisplayTime(personalEvent.startTime)
+		self.endTime = timeZoneChanges.portTimeToDisplayTime(personalEvent.endTime)
+		self.timeZone = timeZoneChanges.abbrevAtTime(self.startTime)
+		self.timeZoneID = timeZoneChanges.tzAtTime(self.startTime).identifier
+		self.location = personalEvent.location
+		self.lastUpdateTime = personalEvent.updatedAt ?? Date()
+		self.owner = ownerHeader
+		self.participants = participantHeaders
+	}
+}
+
+/// PersonalEventContentData is used for creating and editing a PersonalEvent.
+/// Contains all of the fields that a user can modify.
+///
+public struct PersonalEventContentData: Content {
+	/// The title for the PersonalEvent.
+	var title: String
+	/// A description of the PersonalEvent.
+	var description: String?
+	/// The starting time for the PersonalEvent.
+	var startTime: Date
+	/// The ending time for the PersonalEvent.
+	var endTime: Date
+	/// The location for the PersonalEvent.
+	var location: String?
+	/// Users that have been invited to this PersonalEvent.
+	/// Should not contain the owner.
+	var participants: [UUID]
+}
+
+extension PersonalEventContentData: RCFValidatable {
+	func runValidations(using decoder: ValidatingDecoder) throws {
+		let tester = try decoder.validator(keyedBy: CodingKeys.self)
+		tester.validate(title.count >= 2, forKey: .title, or: "title field has a 2 character minimum")
+		tester.validate(title.count <= 100, forKey: .title, or: "title field has a 100 character limit")
+		let timeInterval = endTime.timeIntervalSince(startTime)
+		guard timeInterval <= 86400 else {
+            throw Abort(.badRequest, reason: "endTime can be no more than 24 hours after startTime")
+        }
+	}
 }
