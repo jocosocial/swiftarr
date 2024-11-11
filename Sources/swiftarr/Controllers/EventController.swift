@@ -86,39 +86,50 @@ struct EventController: APIRouteCollection {
 		// Events are stored as 'floating' times in the portTimeZone. So, filtering against dates calculated in portTimeZone
 		// should do the right thing, even when the dates are then adjusted to the current TZ for delivery.
 		let portCalendar = Settings.shared.getPortCalendar()
-		// For the purpose of events, 'days' start and end at 3 AM in the Port timezone.
-		let cruiseStartDate =
-			portCalendar.date(byAdding: .hour, value: 3, to: Settings.shared.cruiseStartDate())
-			?? Settings.shared.cruiseStartDate()
+		// For the purpose of events, 'days' start at midnight and end at 3 AM the next day in the Port timezone.
+		let cruiseStartDate = Settings.shared.cruiseStartDate()
 		var searchStartTime: Date?
 		var searchEndTime: Date?
+		let addDayPlusThreeHours = DateComponents(day: 1, hour: 3)
 		if let day = options.day {
 			var cruiseDayIndex: Int
+			let embarkDayOfWeek = (Settings.shared.cruiseStartDayOfWeek - 1)
 			switch day.prefix(3).lowercased() {
-			case "sat": cruiseDayIndex = Date() < cruiseStartDate ? 0 : 7
-			case "1sa": cruiseDayIndex = 0
-			case "2sa": cruiseDayIndex = 7
-			case "sun": cruiseDayIndex = 1
-			case "mon": cruiseDayIndex = 2
-			case "tue": cruiseDayIndex = 3
-			case "wed": cruiseDayIndex = 4
-			case "thu": cruiseDayIndex = 5
-			case "fri": cruiseDayIndex = 6
+			case "sun": cruiseDayIndex = (7 - embarkDayOfWeek) % 7
+			case "mon": cruiseDayIndex = (8 - embarkDayOfWeek) % 7
+			case "tue": cruiseDayIndex = (9 - embarkDayOfWeek) % 7
+			case "wed": cruiseDayIndex = (10 - embarkDayOfWeek) % 7
+			case "thu": cruiseDayIndex = (11 - embarkDayOfWeek) % 7
+			case "fri": cruiseDayIndex = (12 - embarkDayOfWeek) % 7
+			case "sat": cruiseDayIndex = (13 - embarkDayOfWeek) % 7
+			case "1sa": cruiseDayIndex = (13 - embarkDayOfWeek) % 7
+			case "2sa": cruiseDayIndex = ((13 - embarkDayOfWeek) % 7) + 7
+			case "1su": cruiseDayIndex = ((7 - embarkDayOfWeek) % 7)
+			case "2su": cruiseDayIndex = ((7 - embarkDayOfWeek) % 7) + 7
 			default: cruiseDayIndex = 0
 			}
 			searchStartTime = portCalendar.date(byAdding: .day, value: cruiseDayIndex, to: cruiseStartDate)
-			searchEndTime = portCalendar.date(byAdding: .day, value: cruiseDayIndex + 1, to: cruiseStartDate)
+			if let searchStartTime {
+				searchEndTime = portCalendar.date(byAdding: addDayPlusThreeHours, to: searchStartTime)
+			}
 		}
 		else if let cruiseday = options.cruiseday {
 			searchStartTime = portCalendar.date(byAdding: .day, value: cruiseday - 1, to: cruiseStartDate)
-			searchEndTime = portCalendar.date(byAdding: .day, value: cruiseday, to: cruiseStartDate)
+			if let searchStartTime {
+				searchEndTime = portCalendar.date(byAdding: addDayPlusThreeHours, to: searchStartTime)
+			}
 		}
 		else if let date = options.date {
-			searchStartTime = portCalendar.date(byAdding: .hour, value: 3, to: portCalendar.startOfDay(for: date))
-			searchEndTime = portCalendar.date(byAdding: .day, value: 1, to: searchStartTime ?? cruiseStartDate)
+			// Get a date that's the midnight just before the given date, in the ship's port timezone
+			searchStartTime = Settings.shared.timeZoneChanges.displayTimeToPortTime(searchStartTime)
+			searchStartTime = portCalendar.startOfDay(for: date)
+			if let searchStartTime {
+				searchEndTime = portCalendar.date(byAdding: addDayPlusThreeHours, to: searchStartTime)
+			}
 		}
 		else if let time = options.time {
-			query.filter(\.$startTime <= time).filter(\.$endTime > time)
+			let portTime = Settings.shared.timeZoneChanges.displayTimeToPortTime(time)
+			query.filter(\.$startTime <= portTime).filter(\.$endTime > portTime)
 		}
 		if let start = searchStartTime, let end = searchEndTime {
 			query.filter(\.$startTime >= start).filter(\.$startTime < end)
