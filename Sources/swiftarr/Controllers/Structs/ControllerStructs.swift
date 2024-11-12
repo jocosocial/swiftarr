@@ -411,6 +411,22 @@ public struct FezContentData: Content {
 	var createdByTwitarrTeam: Bool?
 }
 
+extension FezContentData {
+	init(privateEvent: PersonalEventContentData) {
+		self.title = privateEvent.title
+		self.info = privateEvent.description ?? ""
+		self.location = privateEvent.location
+		self.startTime = privateEvent.startTime
+		self.endTime = privateEvent.endTime
+		self.fezType = .privateEvent
+		self.initialUsers = privateEvent.participants
+		self.minCapacity = 0
+		self.maxCapacity = 0
+		self.createdByModerator = false
+		self.createdByTwitarrTeam = false
+	}
+}
+
 extension FezContentData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
@@ -537,14 +553,11 @@ extension FezData {
 		self.fezType = fez.fezType
 		self.title = fez.moderationStatus.showsContent() ? fez.title : "Fez Title is under moderator review"
 		self.info = fez.moderationStatus.showsContent() ? fez.info : "Fez Information field is under moderator review"
-		self.startTime =
-			fez.startTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.startTime)
+		self.startTime = fez.startTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.startTime)
 		self.endTime = fez.endTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.endTime)
 		self.timeZone = self.startTime == nil ? nil : Settings.shared.timeZoneChanges.abbrevAtTime(self.startTime)
-		self.timeZoneID =
-			self.startTime == nil ? nil : Settings.shared.timeZoneChanges.tzAtTime(self.startTime).identifier
-		self.location =
-			fez.moderationStatus.showsContent() ? fez.location : "Fez Location field is under moderator review"
+		self.timeZoneID = self.startTime == nil ? nil : Settings.shared.timeZoneChanges.tzAtTime(self.startTime).identifier
+		self.location = fez.moderationStatus.showsContent() ? fez.location : "Fez Location field is under moderator review"
 		self.lastModificationTime = fez.updatedAt ?? Date()
 		self.participantCount = fez.participantArray.count
 		self.minParticipants = fez.minCapacity
@@ -2388,7 +2401,7 @@ public struct PersonalEventData: Content {
 }
 
 extension PersonalEventData {
-	init(_ personalEvent: PersonalEvent, ownerHeader: UserHeader, participantHeaders: [UserHeader]) throws {
+	init(_ personalEvent: FriendlyFez, ownerHeader: UserHeader, participantHeaders: [UserHeader]) throws {
 		let timeZoneChanges = Settings.shared.timeZoneChanges
 		self.personalEventID = try personalEvent.requireID()
 		self.title = personalEvent.title
@@ -2402,6 +2415,25 @@ extension PersonalEventData {
 		self.owner = ownerHeader
 		self.participants = participantHeaders
 	}
+	
+	init(_ lfg: FezData, request: Request) throws {
+		guard let startTime = lfg.startTime, let endTime = lfg.endTime else { 
+			throw Abort(.internalServerError, reason: "Personal Event must have start and end time")	
+		}
+		let timeZoneChanges = Settings.shared.timeZoneChanges
+		self.personalEventID = lfg.fezID
+		self.title = lfg.title
+		self.description = lfg.info
+		self.startTime = startTime
+		self.endTime = endTime
+		self.timeZone = timeZoneChanges.abbrevAtTime(self.startTime)
+		self.timeZoneID = timeZoneChanges.tzAtTime(self.startTime).identifier
+		self.location = lfg.location
+		self.lastUpdateTime = lfg.lastModificationTime
+		self.owner = lfg.owner
+		self.participants = lfg.members?.participants.filter { $0.userID != lfg.owner.userID } ?? []
+	}
+
 }
 
 /// PersonalEventContentData is used for creating and editing a PersonalEvent.

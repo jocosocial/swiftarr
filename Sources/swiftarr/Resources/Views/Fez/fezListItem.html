@@ -4,7 +4,9 @@
 			#if(fez.cancelled):<span class="text-danger"><b>Cancelled</b></span>#endif <b>#(fez.title)</b>
 		</div>
 		<div class="col col-auto">
-			<span class="text-muted">#fezTime(fez.startTime, fez.endTime)</span>
+			#if(fez.startTime != nil && fez.endTime != nil):
+				<span class="text-muted">#fezTime(fez.startTime, fez.endTime)</span>
+			#endif
 		</div>
 	</div>
 

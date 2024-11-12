@@ -21,6 +21,9 @@ final class FezParticipant: Model {
 	/// Otherwise this field should be NIL or FALSE.
 	@Field(key: "mute") var isMuted: Bool?
 
+	/// Timestamp of the model's soft-deletion, set automatically.
+	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
+
 	// MARK: Relationships
 	/// The associated `User` who is a member of the fez..
 	@Parent(key: "user") var user: User
@@ -74,6 +77,20 @@ struct UpdateFezParticipantSchema: AsyncMigration {
 	func revert(on database: Database) async throws {
 		try await database.schema("fez+participants")
 			.deleteField("mute")
+			.update()
+	}
+}
+
+struct AddDeletedTimestampToFezParticipantSchema: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("fez+participants")
+			.field("deleted_at", .datetime)
+			.update()
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema("fez+participants")
+			.deleteField("deleted_at")
 			.update()
 	}
 }

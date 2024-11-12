@@ -84,7 +84,7 @@ struct FezCreateUpdatePageContext: Encodable {
 // Leaf context used in the Find, Joined and Owned Fez pages
 struct FezListPageContext: Encodable {
 	enum FezTab: String, Codable {
-		case faq, find, joined, owned
+		case faq, find, joined, owned, former
 	}
 	
 	struct QueryParams: Content {
@@ -119,6 +119,9 @@ struct FezListPageContext: Encodable {
 			case .owned: 
 				title = "LFG Owned Groups"
 				paginationPath = "/lfg/owned"
+			case .former:
+				title = "Former Groups"
+				paginationPath = "/lfg/former"
 		}
 		trunk = .init(req, title: title, tab: .lfg)
 		let limit = fezList.paginator.limit
@@ -180,6 +183,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		privateRoutes.post("report", fezIDParam, use: fezReportPostHandler)
 		privateRoutes.get("post", "report", postIDParam, use: fezPostReportPageHandler)
 		privateRoutes.post("post", "report", postIDParam, use: fezPostReportPostHandler)
+		privateRoutes.get("former", use: showFormerLFGsHandler)
 
 		privateRoutes.webSocket(fezIDParam, "socket", shouldUpgrade: shouldCreateFezSocket, onUpgrade: createFezSocket)
 
@@ -547,6 +551,13 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		let postStruct = try req.content.decode(ReportData.self)
 		try await apiQuery(req, endpoint: "/fez/post/\(postID)/report", method: .POST, encodeContent: postStruct)
 		return .created
+	}
+
+	func showFormerLFGsHandler(_ req: Request) async throws -> View {
+		let response = try await apiQuery(req, endpoint: "/fez/former")
+		let fezList = try response.content.decode(FezListData.self)
+		let ctx = try FezListPageContext(req, fezList: fezList, tab: .former)
+		return try await req.view.render("Fez/fezFormer", ctx)
 	}
 
 	// POST /lfg/:fez_ID/delete

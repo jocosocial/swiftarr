@@ -914,29 +914,21 @@ struct ModerationController: APIRouteCollection {
 	///
 	/// Return moderation data for a PersonalEvent.
 	func personalEventModerationHandler(_ req: Request) async throws -> PersonalEventModerationData {
-		guard let paramVal = req.parameters.get(personalEventIDParam.paramString), let eventID: UUID = UUID(paramVal)
-		else {
+		guard let eventID = req.parameters.get(personalEventIDParam.paramString, as: UUID.self) else {
 			throw Abort(.badRequest, reason: "Request parameter \(personalEventIDParam.paramString) is missing.")
 		}
-		guard
-			let personalEvent = try await PersonalEvent.query(on: req.db).filter(\._$id == eventID).withDeleted()
-				.first()
-		else {
-			throw Abort(.notFound, reason: "no value found for identifier '\(paramVal)'")
+		guard let personalEvent = try await FriendlyFez.query(on: req.db).filter(\._$id == eventID).withDeleted().first() else {
+			throw Abort(.notFound, reason: "no value found for identifier '\(eventID.uuidString)'")
 		}
 		let reports = try await Report.query(on: req.db)
 			.filter(\.$reportType == .personalEvent)
-			.filter(\.$reportedID == paramVal)
+			.filter(\.$reportedID == eventID.uuidString)
 			.sort(\.$createdAt, .descending).all()
 
 		let ownerHeader = try req.userCache.getHeader(personalEvent.$owner.id)
 		let participantHeaders = try personalEvent.participantArray.map { try req.userCache.getHeader($0) }
 		let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
-		let personalEventData = try PersonalEventData(
-			personalEvent,
-			ownerHeader: ownerHeader,
-			participantHeaders: participantHeaders
-		)
+		let personalEventData = try PersonalEventData(personalEvent, ownerHeader: ownerHeader, participantHeaders: participantHeaders)
 
 		let modData = PersonalEventModerationData(
 			personalEvent: personalEventData,

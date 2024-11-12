@@ -667,6 +667,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateMicroKaraokeUser(), to: .psql)
 		app.migrations.add(StreamPhotoSchemaV2(), to: .psql)
 		app.migrations.add(CreatePersonalEventSchema(), to: .psql)
+		app.migrations.add(AddDeletedTimestampToFezParticipantSchema(), to: .psql)
 	}
 
 	// Perform several sanity checks to verify that we can access the dbs and resource files that we need.
