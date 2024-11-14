@@ -52,6 +52,7 @@ public func routes(_ app: Application) throws {
 		SiteAdminController(),
 		SitePhotostreamController(),
 		SitePerformerController(),
+		SiteDayPlannerController(),
 	]
 	try siteControllers.forEach { try $0.registerRoutes(app) }
 }

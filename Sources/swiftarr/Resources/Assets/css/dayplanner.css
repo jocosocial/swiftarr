@@ -1,0 +1,39 @@
+.dayplanner {
+	width: 100%;
+	margin-bottom: 1rem;
+	vertical-align: top;
+	background-color: #DDDDDD;
+/*    border-collapse: collapse; */
+}
+
+table.dayplanner th {
+	width: 55px;
+}
+
+table.dayplanner tr {
+	height: 30px;
+}
+
+table.dayplanner td {
+/*	box-sizing: border-box; */
+/*	background-color: transparent; */
+	
+}
+
+.hourline {
+	border-top: 1px solid white;
+}
+
+.eventItem {
+	background-color: #0000FF;
+	border-radius: 16px;
+}
+
+.lfgItem {
+	background-color: #00AA00;
+	border-radius: 16px;
+}
+
+.noItem {
+	background-color: #DDDDDD;
+}

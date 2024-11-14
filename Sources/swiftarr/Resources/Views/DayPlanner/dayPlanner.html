@@ -1,0 +1,26 @@
+#extend("trunk"):
+    #export("body"):
+	<link href="/css/dayplanner.css" rel="stylesheet">
+	<div class="container-fluid">
+		<table class="dayplanner">
+			<thead>
+				<tr>
+					<th scope="col" colspan="12">Saturday March 9</th>
+				</tr>
+			</thead>
+			<tbody>
+				#for(marker in hours):
+					<tr class="hourline">
+						<th scope="row" rowspan="2">#(marker.hour)<br>#(marker.timezone)</th>
+						<td class="eventItem" rowspan="2">HI</td>
+						<td class="noItem" rowspan="1"></td>
+					</tr>
+					<tr>
+						<td class="lfgItem" rowspan="1">HIC</td>
+					</tr>
+				#endfor
+			</tbody>
+		</table>
+	</div>
+	#endexport
+#endextend
