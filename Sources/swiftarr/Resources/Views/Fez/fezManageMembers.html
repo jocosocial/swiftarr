@@ -7,6 +7,9 @@
 					#if(fez.fezType == "open"):
 						<li class="breadcrumb-item"><a href="/seamail">Seamail</a></li>
 						<li class="breadcrumb-item"><a href="/seamail/#(fez.fezID)">#(fez.title)</a></li>
+					#elseif(isPrivateEvent):
+						<li class="breadcrumb-item"><a href="/dayplanner">Private Event</a></li>
+						<li class="breadcrumb-item"><a href="/privateevent/#(fez.fezID)">#(fez.title)</a></li>
 					#else:
 						<li class="breadcrumb-item"><a href="/lfg">LFG</a></li>
 						<li class="breadcrumb-item"><a href="/lfg/#(fez.fezID)">#(fez.title)</a></li>

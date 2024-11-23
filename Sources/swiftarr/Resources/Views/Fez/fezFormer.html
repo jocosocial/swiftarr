@@ -4,7 +4,7 @@
 			#extend("Fez/fezNavbar")
 			#extend("paginator")
 			<div class="list-group">
-				<div class="row">
+				<div class="row mb-2">
 					<div class="col">
 						<li class="list-group-item">This page shows Seamails, LFGs and Personal Events that you were previously a member of, but have since left or been removed from.</li>
 					</div>
@@ -17,55 +17,15 @@
 					</div>
 				#else:
 					#for(fez in fezList.fezzes):
-						<li class="list-group-item">		
-							<div class="row">
-								<div class="col">
-									#if(fez.cancelled):<span class="text-danger"><b>Cancelled</b></span>#endif <b>#(fez.title)</b>
-								</div>
-								<div class="col col-auto">
-									#if(fez.startTime != nil && fez.endTime != nil):
-										<span class="text-muted">#fezTime(fez.startTime, fez.endTime)</span>
-									#endif
-								</div>
+						#extend("Fez/fezListItem")
+						<div class="row mt-0 mb-2 justify-content-end row-cols-auto" data-label="actionbar">
+							<div class="col col-auto btn-group btn-group-sm" role="group" aria-label="Actions">
+								#if(fez.fezType == "activity" || fez.fezType == "dining" || fez.fezType == "gaming" || fez.fezType == "meetup" || fez.fezType == "music" || fez.fezType == "other" || fez.fezType == "shore"):
+									<a class="btn btn-outline-primary" href="/lfg/report/#(fez.fezID)">Join</a>
+								#endif
+								<a class="btn btn-outline-primary" href="/lfg/report/#(fez.fezID)">Report</a>
 							</div>
-
-							<div class="row">
-								<div class="col">
-									by: #userByline(fez.owner, "nolink")
-								</div>
-								<div class="col col-auto">
-									#if(fez.maxParticipants == 0):
-										#(fez.participantCount) attendee#if(fez.participantCount != 1):s#endif
-									#elseif(fez.participantCount > fez.maxParticipants):
-										Full; #(fez.participantCount - fez.maxParticipants) waitlisted
-									#else:
-										#(fez.participantCount)/#(fez.maxParticipants) attendees
-									#endif
-								</div>
-							</div>
-
-							<div class="row">
-								<div class="col">
-									#(fez.fezType)
-								</div>
-								<div class="col col-auto">
-									#(fez.location)
-								</div>
-							</div>
-							<div class="row">
-								<div class="col">
-									#formatPostText(fez.info)
-								</div>
-							</div>
-							<div class="row mt-1 justify-content-end row-cols-auto" data-label="actionbar">
-								<div class="col col-auto btn-group btn-group-sm" role="group" aria-label="Actions">
-									#if(fez.fezType == "activity" || fez.fezType == "dining" || fez.fezType == "gaming" || fez.fezType == "meetup" || fez.fezType == "music" || fez.fezType == "other" || fez.fezType == "shore"):
-										<a class="btn btn-outline-primary" href="/lfg/report/#(fez.fezID)">Join</a>
-									#endif
-									<a class="btn btn-outline-primary" href="/lfg/report/#(fez.fezID)">Report</a>
-								</div>
-							</div>
-						</li>
+						</div>
 					#endfor
 				#endif
 			</div>

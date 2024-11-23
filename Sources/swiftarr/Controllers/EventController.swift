@@ -132,7 +132,7 @@ struct EventController: APIRouteCollection {
 			query.filter(\.$startTime <= portTime).filter(\.$endTime > portTime)
 		}
 		if let start = searchStartTime, let end = searchEndTime {
-			query.filter(\.$startTime >= start).filter(\.$startTime < end)
+			query.filter(\.$endTime > start).filter(\.$startTime < end)
 		}
 		let events = try await query.all()
 		let favoriteEventIDs = try await getFavorites(in: req, from: events)

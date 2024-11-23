@@ -186,6 +186,9 @@
 			<div class="row mb-2">
 				<div class="col">
 					<ul class="list-group">
+						#if(trunk.userIsLoggedIn && !trunk.preregistrationApplies):
+							<li class="list-group-item"><a href="/dayplanner">Day Planner</a></li>
+						#endif
 						<li class="list-group-item"><a href="/performers">Performers</a></li>
 						<li class="list-group-item"><a href="/performers/shadow">Shadow Event Organizers</a></li>
 						<li class="list-group-item"><a href="/map">Ship Map</a></li>

@@ -37,12 +37,20 @@ public enum FezType: String, CaseIterable, Codable {
 		FezType.lfgTypes.contains(self)
 	}
 	
-	/// Types that are Semails.
+	/// Types that are Seamails.
 	static var seamailTypes: [FezType] {
 		[.open, .closed]
 	}
 	var isSeamailType: Bool {
 		FezType.lfgTypes.contains(self)
+	}
+	
+	/// Types that are Private Events.
+	static var privateEventTypes: [FezType] {
+		[.privateEvent, .personalEvent]
+	}
+	var isPrivateEventType: Bool {
+		FezType.privateEventTypes.contains(self)
 	}
 	
 	/// `.label` returns consumer-friendly case names.
@@ -62,7 +70,7 @@ public enum FezType: String, CaseIterable, Codable {
 		}
 	}
 
-	/// For use by the UI layer. Returns whether this fez should be labeled as a Seamail chat or as a LFG or some sort.
+	/// For use by the UI layer. Returns whether this fez should be labeled as a Seamail chat or as an LFG or a Private Event.
 	var lfgLabel: String {
 		switch self {
 		case .closed, .open: return "Seamail"
@@ -78,6 +86,12 @@ public enum FezType: String, CaseIterable, Codable {
 		let lcString = str.lowercased()
 		if lcString == "private" {
 			return .closed
+		}
+		else if lcString == "privateevent" {
+			return .privateEvent
+		}
+		else if lcString == "personalevent" {
+			return .personalEvent
 		}
 		if let result = FezType(rawValue: lcString) {
 			return result

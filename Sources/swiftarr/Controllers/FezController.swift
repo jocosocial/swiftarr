@@ -14,21 +14,30 @@ struct FezController: APIRouteCollection {
 	struct FezURLQueryStruct: Content {
 		var type: [String] = []
 		var excludetype: [String] = []
+		var lfgtypes: Bool?
 		var onlynew: Bool?
 		var start: Int?
 		var limit: Int?
-		var cruiseDay: Int?
+		var cruiseday: Int?
 		var search: String?
 		var hidePast: Bool?
 		var matchID: UUID?
 
 		func getTypes() throws -> [FezType]? {
-			let includeTypes = try type.map { try FezType.fromAPIString($0) }
+			var includeTypes = try type.map { try FezType.fromAPIString($0) }
+			if lfgtypes == true { 
+				includeTypes.append(contentsOf: FezType.lfgTypes) 
+			}
+			includeTypes = Array(Set(includeTypes))
 			return includeTypes.count > 0 ? includeTypes : nil
 		}
 
 		func getExcludeTypes() throws -> [FezType]? {
-			let excludeTypes = try excludetype.map { try FezType.fromAPIString($0) }
+			var excludeTypes = try excludetype.map { try FezType.fromAPIString($0) }
+			if lfgtypes == false { 
+				excludeTypes.append(contentsOf: FezType.lfgTypes) 
+			}
+			excludeTypes = Array(Set(excludeTypes))
 			return excludeTypes.count > 0 ? excludeTypes : nil
 		}
 
@@ -172,6 +181,7 @@ struct FezController: APIRouteCollection {
 	/// - `?search=STRING` - Only show fezzes whose title, info, or any post contains the given string.
 	/// - `?hidepast=BOOLEAN` - Hide fezzes that started more than one hour in the past. For this endpoint, this defaults to FALSE.
 	/// - `?matchID=UUID` - Returns a single LFG with the given ID.
+	/// - `?lfgtypes=BOOLEAN` - Shorthand to include/exliude all the LFG types (Activity, Gaming, Dining, etc.) Acts the same as using multiple `type=` or `exludetype=` params.
 	///
 	/// Moderators and above can use the `foruser` query parameter to access pseudo-accounts:
 	///
@@ -202,6 +212,7 @@ struct FezController: APIRouteCollection {
 	/// * `?start=INT` - The offset to the first result to return in the filtered + sorted array of results.
 	/// * `?limit=INT` - The maximum number of fezzes to return; defaults to 50.
 	/// - `?hidepast=BOOLEAN` - Hide fezzes that started more than one hour in the past. For this endpoint, this defaults to FALSE.
+	/// - `?lfgtypes=BOOLEAN` - Shorthand to include/exliude all the LFG types (Activity, Gaming, Dining, etc.) Acts the same as using multiple `type=` or `exludetype=` params.
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: An array of `FezData` containing all the fezzes created by the user.
@@ -302,7 +313,8 @@ struct FezController: APIRouteCollection {
 	/// * `?start=INT` - The offset to the first post to return in the array of posts.
 	/// * `?limit=INT` - The maximum number of posts to return; defaults to 50.
 	///
-	/// Retrieve information about fezzes the user was previously a member of, but no longer. 
+	/// Retrieve information about (open) Seamails, Private Events, and LFGs  the user was previously a member of, but no longer.  Won't return info on 
+	/// closed Seamails or Personal Events as their member lists cannot change.
 	func formerlyJoinedFezHandler(_ req: Request) async throws -> FezListData {
 		let urlQuery = try req.query.decode(FezURLQueryStruct.self)
 		let cacheUser = try req.auth.require(UserCacheData.self)
@@ -345,9 +357,9 @@ struct FezController: APIRouteCollection {
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
 		switch fez.fezType {
 			case .closed: throw Abort(.badRequest, reason: "Cannot add members to a closed chat")
-			case .open: throw Abort(.badRequest, reason: "Cannot add youself to a Seamail chat. Ask the chat creator to add you.")
+			case .open: throw Abort(.badRequest, reason: "Cannot add yourself to a Seamail chat. Ask the chat creator to add you.")
 			case .personalEvent: throw Abort(.badRequest, reason: "Cannot add members to a personal event")
-			case .privateEvent: throw Abort(.badRequest, reason: "Cannot add youself to a Private Event. Ask the chat creator to add you.")
+			case .privateEvent: throw Abort(.badRequest, reason: "Cannot add yourself to a Private Event. Ask the event creator to add you.")
 			default: break
 		}
 		guard !fez.participantArray.contains(cacheUser.userID) else {
@@ -360,7 +372,7 @@ struct FezController: APIRouteCollection {
 		// add user to both the participantArray and attach a pivot for them.
 		fez.participantArray.append(cacheUser.userID)
 		try await fez.save(on: req.db)
-		let newParticipant = try FezParticipant(cacheUser.userID, fez)
+		let newParticipant = try await getUserPivotForAdd(lfg: fez, userID: cacheUser.userID, on: req.db)
 		newParticipant.readCount = 0
 		let blocksAndMutes = cacheUser.getBlocks().union(cacheUser.getMutes())
 		newParticipant.hiddenCount = try await fez.$fezPosts.query(on: req.db).filter(\.$author.$id ~~ blocksAndMutes)
@@ -463,15 +475,13 @@ struct FezController: APIRouteCollection {
 			if participantCacheUser.getBlocks().contains(effectiveAuthor.userID)
 				|| participantCacheUser.getMutes().contains(effectiveAuthor.userID)
 			{
-				if let pivot = try await getUserPivot(fez: fez, userID: participantUserID, on: req.db) {
+				if let pivot = try await getUserPivot(lfg: fez, userID: participantUserID, on: req.db) {
 					pivot.hiddenCount += 1
 					try await pivot.save(on: req.db)
 				}
 			}
 			else if participantUserID != cacheUser.userID {
-				if let pivot = try await getUserPivot(fez: fez, userID: participantUserID, on: req.db),
-					pivot.isMuted == true
-				{
+				if let pivot = try await getUserPivot(lfg: fez, userID: participantUserID, on: req.db), pivot.isMuted == true {
 					continue
 				}
 				participantNotifyList.append(participantUserID)
@@ -486,7 +496,7 @@ struct FezController: APIRouteCollection {
 		try forwardPostToSockets(fez, post, on: req)
 		// A user posting is assumed to have read all prev posts. (even if this proves untrue, we should increment
 		// readCount as they've read the post they just wrote!)
-		if let pivot = try await getUserPivot(fez: fez, userID: cacheUser.userID, on: req.db) {
+		if let pivot = try await getUserPivot(lfg: fez, userID: cacheUser.userID, on: req.db) {
 			pivot.readCount = fez.postCount - pivot.hiddenCount
 			try await pivot.save(on: req.db)
 		}
@@ -662,6 +672,7 @@ struct FezController: APIRouteCollection {
 	/// `POST /api/v3/fez/ID/update`
 	///
 	/// Update the specified FriendlyFez with the supplied data. Updating a cancelled fez will un-cancel it.
+	/// Does not process the initialUsers field; use the user add/remove routes to change the participants.
 	///
 	/// - Note: All fields in the supplied `FezContentData` must be filled, just as if the fez
 	///   were being created from scratch. If there is demand, using a set of more efficient
@@ -676,42 +687,6 @@ struct FezController: APIRouteCollection {
 		// see FezContentData.validations()
 		let data = try ValidatingJSONDecoder().decode(FezContentData.self, fromBodyOf: req)
 		return try await updateAppointment(req, data: data)
-	}
-
-	func updateAppointment(_ req: Request, data: FezContentData) async throws -> FezData {
-		let cacheUser = try req.auth.require(UserCacheData.self)
-		// get fez
-		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
-		try cacheUser.guardCanModifyContent(fez, customErrorString: "User cannot modify LFG")
-		guard !fez.fezType.isSeamailType else {
-			throw Abort(.forbidden, reason: "Cannot edit info on Seamail chats")
-		}
-		guard data.fezType == fez.fezType || (fez.fezType.isLFGType && data.fezType.isLFGType) else {
-			throw Abort(.forbidden, reason: "Cannot change the type of a \(fez.fezType.lfgLabel) to \(data.fezType.label)")
-		}
-		if data.fezType == .personalEvent && !data.initialUsers.isEmpty {
-			throw Abort(.forbidden, reason: "Personal Events cannot have other users.")
-		}
-		if data.title != fez.title || data.location != fez.location || data.info != fez.info {
-			let fezEdit = try FriendlyFezEdit(fez: fez, editorID: cacheUser.userID)
-			try await fez.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: req)
-			try await fezEdit.save(on: req.db)
-		}
-		fez.fezType = data.fezType
-		fez.title = data.title
-		fez.info = data.info
-		fez.startTime = Settings.shared.timeZoneChanges.serverTimeToPortTime(data.startTime)
-		fez.endTime = Settings.shared.timeZoneChanges.serverTimeToPortTime(data.endTime)
-		fez.location = data.location
-		fez.minCapacity = data.minCapacity
-		fez.maxCapacity = data.maxCapacity
-		fez.cancelled = false
-		try await fez.save(on: req.db)
-		for fezParticipant in fez.participantArray {
-			_ = try await storeNextJoinedLFG(userID: fezParticipant, on: req)
-		}
-		let pivot = try await getUserPivot(fez: fez, userID: cacheUser.userID, on: req.db)
-		return try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
 	}
 
 	/// `POST /api/v3/fez/ID/user/ID/add`
@@ -751,14 +726,13 @@ struct FezController: APIRouteCollection {
 		let blocksAndMutes = cacheUser.getBlocks().union(cacheUser.getMutes())
 		let hiddenPostCount = try await fez.$fezPosts.query(on: req.db).filter(\.$author.$id ~~ blocksAndMutes).count()
 		try await fez.save(on: req.db)
-		let newParticipant = try FezParticipant(userID, fez)
+		let newParticipant = try await getUserPivotForAdd(lfg: fez, userID: cacheUser.userID, on: req.db)
 		newParticipant.readCount = 0
 		newParticipant.hiddenCount = hiddenPostCount
 		try await newParticipant.save(on: req.db)
 		try forwardMembershipChangeToSockets(fez, participantID: userID, joined: true, on: req)
 		let effectiveUser = getEffectiveUser(user: requester, req: req, fez: fez)
-		let pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID)
-			.first()
+		let pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first()
 		_ = try await storeNextJoinedLFG(userID: userID, on: req)
 		return try buildFezData(from: fez, with: pivot, for: requester, on: req)
 	}
@@ -1010,12 +984,10 @@ extension FezController {
 
 		if let dayFilter = req.query[Int.self, at: "cruiseday"] {
 			let portCalendar = Settings.shared.getPortCalendar()
-			let threeAMCutoff =
-				portCalendar.date(byAdding: .hour, value: 3, to: Settings.shared.cruiseStartDate())
-				?? Settings.shared.cruiseStartDate()
-			let dayStart = portCalendar.date(byAdding: .day, value: dayFilter, to: threeAMCutoff) ?? threeAMCutoff
-			let dayEnd = portCalendar.date(byAdding: .day, value: 1, to: dayStart) ?? Date()
-			query.filter(FriendlyFez.self, \.$startTime >= dayStart).filter(FriendlyFez.self, \.$startTime < dayEnd)
+			if let dayStart = portCalendar.date(byAdding: .day, value: dayFilter - 1, to: Settings.shared.cruiseStartDate()),
+					let dayEnd = portCalendar.date(byAdding: DateComponents(day: 1, hour: 3), to: dayStart) {
+				query.filter(FriendlyFez.self, \.$endTime >= dayStart).filter(FriendlyFez.self, \.$startTime < dayEnd)
+			}
 		}
 
 		if urlQuery.hidePast ?? false {
@@ -1113,6 +1085,44 @@ extension FezController {
 		let fezData = try buildFezData(from: fez, with: creatorPivot, posts: [], for: user, on: req)
 		return fezData
 	}
+	
+	// Thie is the bulk of updateHandler, which the creator of a LFG uses to update the LFG's details.
+	func updateAppointment(_ req: Request, data: FezContentData) async throws -> FezData {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		// get fez
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		try cacheUser.guardCanModifyContent(fez, customErrorString: "User cannot modify LFG")
+		guard !fez.fezType.isSeamailType else {
+			throw Abort(.forbidden, reason: "Cannot edit info on Seamail chats")
+		}
+		guard data.fezType == fez.fezType || (fez.fezType.isLFGType && data.fezType.isLFGType) else {
+			throw Abort(.forbidden, reason: "Cannot change the type of a \(fez.fezType.lfgLabel) to \(data.fezType.label)")
+		}
+		if data.fezType == .personalEvent && !data.initialUsers.isEmpty {
+			throw Abort(.forbidden, reason: "Personal Events cannot have other users.")
+		}
+		if data.title != fez.title || data.location != fez.location || data.info != fez.info {
+			let fezEdit = try FriendlyFezEdit(fez: fez, editorID: cacheUser.userID)
+			try await fez.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: req)
+			try await fezEdit.save(on: req.db)
+		}
+		fez.fezType = data.fezType
+		fez.title = data.title
+		fez.info = data.info
+		fez.startTime = Settings.shared.timeZoneChanges.serverTimeToPortTime(data.startTime)
+		fez.endTime = Settings.shared.timeZoneChanges.serverTimeToPortTime(data.endTime)
+		fez.location = data.location
+		fez.minCapacity = data.minCapacity
+		fez.maxCapacity = data.maxCapacity
+		fez.cancelled = false
+		try await fez.save(on: req.db)
+		for fezParticipant in fez.participantArray {
+			_ = try await storeNextJoinedLFG(userID: fezParticipant, on: req)
+		}
+		let pivot = try await getUserPivot(lfg: fez, userID: cacheUser.userID, on: req.db)
+		return try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
+	}
+
 	// MembersOnlyData is only filled in if:
 	//	* The user is a member of the fez (pivot is not nil) OR
 	//  * The user is a moderator and the fez is not private
@@ -1157,6 +1167,13 @@ extension FezController {
 			let postCount = fez.postCount - (pivot?.hiddenCount ?? 0)
 			fezData.members = FezData.MembersOnlyData(participants: participants, waitingList: waitingList, postCount: postCount,
 					readCount: pivot?.readCount ?? postCount, posts: posts, isMuted: pivot?.isMuted ?? false)
+		} else if fez.fezType.isPrivateEventType {
+			// We need to let non-members see private events they're not currently a member of (so they can report them), but
+			// they should only see a minimum amount of info on the event they're not in.
+			fezData.info = ""
+			fezData.startTime = nil
+			fezData.endTime = nil
+			fezData.location = nil
 		}
 		return fezData
 	}
@@ -1194,8 +1211,16 @@ extension FezController {
 		return (postDatas, paginator)
 	}
 
-	func getUserPivot(fez: FriendlyFez, userID: UUID, on db: Database) async throws -> FezParticipant? {
-		return try await fez.$participants.$pivots.query(on: db).filter(\.$user.$id == userID).first()
+	// Finds the FezParticipant for the given fez and user.
+	func getUserPivot(lfg: FriendlyFez, userID: UUID, on db: Database) async throws -> FezParticipant? {
+		return try await lfg.$participants.$pivots.query(on: db).filter(\.$user.$id == userID).first()
+	}
+	
+	// Finds or creates a FezParticipant. FezParticipants are soft-deleted and uniqued on user+fez, so we need to check for an existing
+	// (soft-deleted) pivot before re-adding a user to an lfg.
+	func getUserPivotForAdd(lfg: FriendlyFez, userID: UUID, on db: Database) async throws -> FezParticipant {
+		return try await lfg.$participants.$pivots.query(on: db).filter(\.$user.$id == userID).withDeleted().first() ?? 
+				FezParticipant(userID, lfg)
 	}
 
 	func userCanViewMemberData(user: UserCacheData, fez: FriendlyFez) -> Bool {

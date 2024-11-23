@@ -17,10 +17,12 @@ struct CreateFezPostFormContent: Codable {
 struct FezCreateUpdatePageContext: Encodable {
 	var trunk: TrunkContext
 	var fez: FezData?
+	var isPrivateEvent: Bool = false
 	var pageTitle: String
 	var fezTitle: String = ""
 	var fezLocation: String = ""
 	var fezType: String = ""
+	var groupLabel: String = ""		// Seamail, LFG, Private Event
 	var startTime: Date?
 	var minutes: Int = 0
 	var minPeople: Int = 0
@@ -28,15 +30,30 @@ struct FezCreateUpdatePageContext: Encodable {
 	var info: String = ""
 	var formAction: String
 	var submitButtonTitle: String = "Create"
+	var leafPath: String
 
-	init(_ req: Request, fezToUpdate: FezData? = nil) throws {
+	init(_ req: Request, fezToUpdate: FezData? = nil, isPrivateEvent: Bool = false) throws {
+		self.isPrivateEvent = isPrivateEvent
 		if let fez = fezToUpdate {
-			trunk = .init(req, title: "Update Looking For Group", tab: .lfg)
+			// Override the parameter, as an existing LFG has its type set and can't change.
+			self.isPrivateEvent = fez.fezType.isPrivateEventType
+			if self.isPrivateEvent {
+				trunk = .init(req, title: "Update Private Event", tab: .home)
+				pageTitle = "Update Private Event"
+				formAction = "/privateevent/\(fez.fezID)/update"
+				leafPath = "PrivateEvent/privateEventCreate"
+			}
+			else {
+				trunk = .init(req, title: "Update Looking For Group", tab: .lfg)
+				pageTitle = "Update Looking For Group"
+				formAction = "/lfg/\(fez.fezID)/update"
+				leafPath = "Fez/fezCreate"
+			}
 			self.fez = fezToUpdate
-			pageTitle = "Update Looking For Group"
 			fezTitle = fez.title
 			fezLocation = fez.location ?? ""
 			fezType = fez.fezType.rawValue
+			groupLabel = fez.fezType.lfgLabel
 			startTime = fez.startTime
 			if let start = fez.startTime, let end = fez.endTime {
 				minutes = Int(end.timeIntervalSince(start) / 60 + 0.01)  // should be 30, 60, 90, etc.
@@ -44,15 +61,23 @@ struct FezCreateUpdatePageContext: Encodable {
 			minPeople = fez.minParticipants
 			maxPeople = fez.maxParticipants
 			info = fez.info
-			formAction = "/lfg/\(fez.fezID)/update"
 			submitButtonTitle = "Update"
 		}
 		else {
-			trunk = .init(req, title: "New Looking For Group", tab: .lfg)
-			pageTitle = "Create a New LFG"
-			formAction = "/lfg/create"
-			minPeople = 2
-			maxPeople = 2
+			if self.isPrivateEvent {
+				trunk = .init(req, title: "New Private Event", tab: .home)
+				pageTitle = "Create a New Private Event"
+				formAction = "/privateevent/create"
+				leafPath = "PrivateEvent/privateEventCreate"
+			}
+			else {
+				trunk = .init(req, title: "New Looking For Group", tab: .lfg)
+				pageTitle = "Create a New LFG"
+				formAction = "/lfg/create"
+				minPeople = 2
+				maxPeople = 2
+				leafPath = "Fez/fezCreate"
+			}
 		}
 	}
 
@@ -78,6 +103,7 @@ struct FezCreateUpdatePageContext: Encodable {
 		}
 		formAction = "/lfg/create"
 		submitButtonTitle = "Create"
+		leafPath = "Fez/fezCreate"
 	}
 }
 
@@ -225,7 +251,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	//
 	// Shows the Joined Fezzes page.
 	func joinedFezPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/fez/joined?excludetype=closed&excludetype=open")
+		let response = try await apiQuery(req, endpoint: "/fez/joined", query: [URLQueryItem(name: "lfgtypes", value: "true")])
 		let fezList = try response.content.decode(FezListData.self)
 		let ctx = try FezListPageContext(req, fezList: fezList, tab: .joined)
 		return try await req.view.render("Fez/fezJoined", ctx)
@@ -235,7 +261,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	//
 	// Shows the Owned Fezzes page. These are the Fezzes a user has created.
 	func ownedFezPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/fez/owner?excludetype=closed&excludetype=open")
+		let response = try await apiQuery(req, endpoint: "/fez/owner", query: [URLQueryItem(name: "lfgtypes", value: "true")])
 		let fezList = try response.content.decode(FezListData.self)
 		let ctx = try FezListPageContext(req, fezList: fezList, tab: .owned)
 		return try await req.view.render("Fez/fezOwned", ctx)
@@ -246,7 +272,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	// Shows the Create New Friendly Fez page
 	func fezCreatePageHandler(_ req: Request) async throws -> View {
 		let ctx = try FezCreateUpdatePageContext(req)
-		return try await req.view.render("Fez/fezCreate", ctx)
+		return try await req.view.render(ctx.leafPath, ctx)
 	}
 
 	// GET `/lfg/ID/update`
@@ -260,7 +286,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/fez/\(fezID)")
 		let fez = try response.content.decode(FezData.self)
 		let ctx = try FezCreateUpdatePageContext(req, fezToUpdate: fez)
-		return try await req.view.render("Fez/fezCreate", ctx)
+		return try await req.view.render(ctx.leafPath, ctx)
 	}
 
 	// POST /lfg/create
@@ -315,6 +341,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		struct FezPageContext: Encodable {
 			var trunk: TrunkContext
 			var fez: FezData
+			var typeName: String
 			var userID: UUID
 			var userIsMember: Bool  // TRUE if user is member
 			var showModButton: Bool
@@ -323,11 +350,14 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			var newPosts: [SocketFezPostData]  // Posts user hasn't read.
 			var post: MessagePostContext  // New post area
 			var paginator: PaginatorContext  // For > 50 posts in thread.
+			var breadcrumbLink: String		
 
 			init(_ req: Request, fez: FezData) throws {
 				let cacheUser = try req.auth.require(UserCacheData.self)
 				trunk = .init(req, title: "\(fez.title) | LFG", tab: .lfg)
 				self.fez = fez
+				self.typeName = fez.fezType.lfgLabel
+				self.breadcrumbLink = fez.fezType.isPrivateEventType ? "/dayplanner" : "/lfg"
 				self.userID = cacheUser.userID
 				userIsMember = false
 				showModButton = trunk.userIsMod && ![.closed, .open].contains(fez.fezType)
@@ -511,10 +541,12 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	//
 	// Shows the page for reporting on a fezzes' content. This reports on the Fez itself, not individual posts.
 	func fezReportPageHandler(_ req: Request) async throws -> View {
-		guard let fezID = req.parameters.get(fezIDParam.paramString) else {
+		guard let lfgID = req.parameters.get(fezIDParam.paramString) else {
 			throw Abort(.badRequest, reason: "Missing fez_id")
 		}
-		let ctx = try ReportPageContext(req, fezID: fezID)
+		let response = try await apiQuery(req, endpoint: "/fez/\(lfgID)")
+		let lfg = try response.content.decode(FezData.self)
+		let ctx = try ReportPageContext(req, fezID: lfgID, type: lfg.fezType)
 		return try await req.view.render("reportCreate", ctx)
 	}
 

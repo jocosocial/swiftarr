@@ -184,8 +184,7 @@ struct SiteSeamailController: SiteControllerUtils {
 		guard formContent.postText.count > 0 else {
 			throw Abort(.badRequest, reason: "First message cannot be empty.")
 		}
-		let lines = formContent.postText.replacingOccurrences(of: "\r\n", with: "\r").components(separatedBy: .newlines)
-			.count
+		let lines = formContent.postText.replacingOccurrences(of: "\r\n", with: "\r").components(separatedBy: .newlines).count
 		guard lines <= 25 else {
 			throw Abort(.badRequest, reason: "Messages are limited to 25 lines of text.")
 		}
@@ -406,8 +405,14 @@ private func titleAndTab(for req: Request) -> (String, TrunkContext.Tab) {
 		title = "Moderator Seamail"
 		tab = .moderator
 	default:
-		title = "Seamail"
-		tab = .seamail
+		if req.url.path.contains("/privateevent") {
+			title = "Private Events"
+			tab = .home
+		}
+		else {
+			title = "Seamail"
+			tab = .seamail
+		}
 	}
 	return (title, tab)
 }
