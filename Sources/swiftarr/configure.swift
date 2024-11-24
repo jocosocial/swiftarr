@@ -541,6 +541,7 @@ struct SwiftarrConfigurator {
 		app.leaf.tags["localTime"] = LocalTimeTag()
 		app.leaf.tags["markdownTextTag"] = MarkdownTextTag()
 		app.leaf.tags["dinnerTeamTag"] = DinnerTeamTag()
+		app.leaf.tags["lfgLabel"] = LFGLabelTag()
 		app.leaf.tags["notEmpty"] = NotEmptyTag()
 	}
 

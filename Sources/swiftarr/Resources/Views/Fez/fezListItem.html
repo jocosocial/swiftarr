@@ -30,12 +30,12 @@
 			#endif
 		</div>
 		<div class="row">
-			<div class="col">
-				#(fez.fezType)
+			<div class="col text-muted">
+				#lfgLabel(fez.fezType)
 			</div>
 			#if(fez.members):
 				<div class="col col-auto">
-					<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) posts</span>
+					<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) post#if(fez.members.postCount != 1):s#endif</span>
 					#if(fez.members.readCount < fez.members.postCount):
 						<span class="badge rounded-pill #if(fez.members.isMuted):bg-light text-dark#else:bg-danger#endif">#(fez.members.postCount - fez.members.readCount) new</span>
 					#endif
@@ -68,8 +68,8 @@
 		#endif
 
 		<div class="row justify-content-between">
-			<div class="col col-auto text-break">
-				#(fez.fezType)
+			<div class="col col-auto text-break text-muted">
+				#lfgLabel(fez.fezType)
 			</div>
 			#if(fez.members):
 				<div class="col text-end">
@@ -77,10 +77,10 @@
 				</div>
 			#endif
 		</div>
-		<div class="row">
+		<div class="row justify-content-end">
 			#if(fez.members && fez.fezType != "personalEvent"):
 				<div class="col col-auto">
-					<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) posts</span>
+					<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) post#if(fez.members.postCount != 1):s#endif</span>
 					#if(fez.members.readCount < fez.members.postCount):
 						<span class="badge rounded-pill bg-danger">#(fez.members.postCount - fez.members.readCount) new</span>
 					#endif
@@ -130,8 +130,8 @@
 		</div>
 
 		<div class="row">
-			<div class="col">
-				#(fez.fezType)
+			<div class="col text-muted">
+				#lfgLabel(fez.fezType)
 			</div>
 			#if(fez.members):
 				<div class="col col-auto">

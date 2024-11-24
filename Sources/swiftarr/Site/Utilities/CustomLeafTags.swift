@@ -44,6 +44,8 @@ import Vapor
 //	}
 //}
 
+// MARK: - Tags for Styling Posts, Announcements, Daily Themes
+
 /// Runs the element sanitizer on the given string, and then converts Jocomoji (specific string tags with the form :tag:)
 /// into inline images. Generally, use this tag for user text that isn't posts.
 ///
@@ -327,6 +329,8 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 	}
 }
 
+// MARK: - Tags for Displaying Dates
+
 /// Turns a Date string into a relative date string. Argument is a ISO8601 formatted Date, or what JSON encoding
 /// does to Date values. Output is a string giving a relative time in the past (from now) indicating the approximate time of the Date.
 ///
@@ -526,6 +530,8 @@ struct CruiseDayIndexTag: LeafTag {
 	}
 }
 
+// MARK: - Tags for Styling Users 
+
 /// Inserts an <img> tag for the given user's avatar image. Presents a default image if the user doesn't have an image.
 /// Note: If we implement identicons at the API level, users will always have images, and the 'generic user' image here is just a fallback.
 ///
@@ -610,6 +616,23 @@ struct UserBylineTag: UnsafeUnescapedLeafTag {
 			}
 			return LeafData.string("<a class=\"\(styling)\" href=\"/user/\(userID)\">@\(username)</a>")
 		}
+	}
+}
+
+// MARK: - Other Tags
+
+/// Gets the user-formatted label string for the given tyhpe of LFG. 
+///
+/// Usage: #lfgLabel(String)
+struct LFGLabelTag: LeafTag {
+	func render(_ ctx: LeafContext) throws -> LeafData {
+		guard ctx.parameters.count == 1, let value = ctx.parameters[0].string else {
+			throw "Leaf: LFGLabelTag tag unable to get string value."
+		}
+		guard let type = FezType(rawValue: value) else {
+			return ""
+		}
+		return LeafData.string(type.label)
 	}
 }
 
