@@ -243,7 +243,7 @@ struct SitePrivateEventController: SiteControllerUtils {
 				let avds = generateAVDs(events: events, lfgs: lfgs, dayStart: dayStart, dayEnd: dayEnd)
 				rows = generateTableRows(forCruiseDay: cruiseDay, avds: avds)
 				// for testing the red horizontal rule 'Current Time' indicator
-				if true {
+				if false {
 					dayStart = Calendar.current.startOfDay(for: Date())
 					dayEnd = Calendar.current.startOfDay(for: Date().addingTimeInterval(27 * 60 * 60))
 				}

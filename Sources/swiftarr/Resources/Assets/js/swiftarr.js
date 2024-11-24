@@ -756,8 +756,8 @@ window.addEventListener('DOMContentLoaded', function () {
 
 // MARK: - Day Planner 
 let table = document.querySelector('[data-daystart]');
-let dayStart = new Date(table.getAttribute('data-daystart') * 1000);
-let dayEnd = new Date(table.getAttribute('data-dayend') * 1000);
+let dayStart = table == null ? null : new Date(table.getAttribute('data-daystart') * 1000);
+let dayEnd =  table == null ? null : new Date(table.getAttribute('data-dayend') * 1000);
 if (dayStart != null && dayEnd != null) {
 	updateTimeHorizRule(true);
 	let timerFn = setInterval(updateTimeHorizRule, 60000, false);
