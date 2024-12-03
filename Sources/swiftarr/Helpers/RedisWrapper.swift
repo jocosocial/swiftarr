@@ -230,40 +230,80 @@ extension Request.Redis {
 		case moderatorSeamail
 		case twitarrTeamSeamail
 		case lfgMessages
-	}
-
-	func unreadMailRedisKey(_ userID: UUID, inbox: MailInbox) -> RedisKey {
-		switch inbox {
-		case .seamail: return RedisKey("UnreadSeamails-\(userID)")
-		case .moderatorSeamail: return RedisKey("UnreadModSeamails-\(userID)")
-		case .twitarrTeamSeamail: return RedisKey("UnreadTTSeamails-\(userID)")
-		case .lfgMessages: return RedisKey("UnreadFezzes-\(userID)")
+		case privateEvent
+		
+		// Does not attempt to match moderator or TwitarrTeam mailboxes. Generally in a group chat you need to notify
+		// on the seamail/lfg/pe mailbox for the user themselves and also (if they're a mod/TT) on the mod/TT inbox.
+		static func mailboxForChatType(type: FezType) -> MailInbox {
+			if type.isLFGType { 
+				return .lfgMessages 
+			}
+			else if type.isPrivateEventType {
+				return .privateEvent
+			}
+			return .seamail
+		}
+		
+		func unreadMailRedisKey(_ userID: UUID) -> RedisKey {
+			switch self {
+			case .seamail: return RedisKey("UnreadSeamails-\(userID)")
+			case .moderatorSeamail: return RedisKey("UnreadModSeamails-\(userID)")
+			case .twitarrTeamSeamail: return RedisKey("UnreadTTSeamails-\(userID)")
+			case .lfgMessages: return RedisKey("UnreadLFGs-\(userID)")
+			case .privateEvent: return RedisKey("UnreadPersonalEvents-\(userID)")
+			}
 		}
 	}
 
-	func getSeamailUnreadCounts(userID: UUID, inbox: MailInbox) async throws -> Int {
-		let seamailHash = try await hvals(in: unreadMailRedisKey(userID, inbox: inbox), as: Int.self).get()
-		let unreadSeamailCount = seamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
-		return unreadSeamailCount
+
+	// This returns a tuple where the first Int is the number of chats the user has been added to but not yet viewed,
+	// and the second Int is number of chats with unread messages (not the total number of unread messages).
+	func getChatUnreadCounts(userID: UUID, inbox: MailInbox) async throws -> (Int, Int) {
+		let hash = try await hvals(in: inbox.unreadMailRedisKey(userID), as: Int.self).get()
+		let counts = hash.reduce((0, 0)) {
+			if let hashVal = $1 {
+				if  hashVal > 9000 { 
+					return ($0.0 + 1, $0.1)
+				}
+				return ($0.0, $0.1 + 1)
+			}
+			return $0
+		}
+		return counts
 	}
 
-	func markSeamailRead(type: NotificationType, in inbox: MailInbox, userID: UUID) async throws {
-		_ = try await hset(type.redisFieldName(), to: 0, in: unreadMailRedisKey(userID, inbox: inbox)).get()
+	// `type` must be a Chat notification type. Marks the given chat as fully read.
+	func markChatRead(type: NotificationType, in inbox: MailInbox? = nil, userID: UUID) async throws {
+		switch type {
+		case .chatUnreadMsg(_, let chatType), .addedToChat(_, let chatType):
+			let actualInbox = (inbox ?? MailInbox.mailboxForChatType(type: chatType))
+//			_ = try await hset(type.redisFieldName(), to: 0, in: actualInbox.unreadMailRedisKey(userID)).get()
+			_ = try await hdel(type.redisFieldName(), from: actualInbox.unreadMailRedisKey(userID)).get()
+		default: break
+		}
+	}
+
+	// Call this when a user is added to a chat. In the key "Unread<mailboxname>-<userID>", sets the value
+	// of hash "<chatID>" to 10000. When new messages happen in the chat, the value gets incremented by 1;
+	// the 'new user' value is large so that we can easily discern chats the user was added to (and has not yet read),
+	// while also not reporting both that the user was added and that they have new messages (for the same chat).
+	func userAddedToChat(chatID: UUID, userID: UUID, inbox: MailInbox) async throws {
+		_ = try await hset(chatID.uuidString, to: 10000, in: inbox.unreadMailRedisKey(userID)).get()
 	}
 
 	// Call this when a message is added to a LFG or seamail
-	func newUnreadMessage(msgID: UUID, userID: UUID, inbox: MailInbox) async throws {
-		_ = try await hincrby(1, field: msgID.uuidString, in: unreadMailRedisKey(userID, inbox: inbox)).get()
+	func newUnreadMessage(chatID: UUID, userID: UUID, inbox: MailInbox) async throws {
+		_ = try await hincrby(1, field: chatID.uuidString, in: inbox.unreadMailRedisKey(userID)).get()
 	}
 
-	// Call this when a message in a LFG or seamail is deleted
+	// Call this when a message in a LFG or seamail is deleted. 
 	func deletedUnreadMessage(msgID: UUID, userID: UUID, inbox: MailInbox) async throws {
-		_ = try await hincrby(-1, field: msgID.uuidString, in: unreadMailRedisKey(userID, inbox: inbox)).get()
+		_ = try await hincrby(-1, field: msgID.uuidString, in: inbox.unreadMailRedisKey(userID)).get()
 	}
 
 	// Call this when a LFG is deleted. Currently Seamail threads can't be deleted.
 	func markLFGDeleted(msgID: UUID, userID: UUID) async throws {
-		_ = try await hdel(msgID.uuidString, from: unreadMailRedisKey(userID, inbox: .lfgMessages)).get()
+		_ = try await hdel(msgID.uuidString, from: MailInbox.lfgMessages.unreadMailRedisKey(userID)).get()
 	}
 
 	// MARK: Blocks

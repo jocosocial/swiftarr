@@ -75,12 +75,37 @@ struct SocketFezMemberChangeData: Content {
 /// The string will be of the form, "User @authorName wrote a forum post that mentioned you."
 struct SocketNotificationData: Content {
 	enum NotificationTypeData: Content {
+// Notifies Everyone
 		/// A server-wide announcement has just been added.
 		case announcement
-		/// A participant in a Fez the user is a member of has posted a new message.
+		
+// Added to Chat - only fires when someone else adds you to their chat
+// Note: I'm specifically not making notificaitons for "Removed From Chat" because: it can feel mean to receive that notification, and
+// there's nowhere for the notification to take the user. 
+		///  Only for 'open' seamails. The owner of the chata has added this user.
+		case addedToSeamail
+		/// The creator of the LFG has added this user.
+		case addedToLFG
+		/// The creator of the event has added this user.
+		case addedToPrivateEvent
+		
+// New Chat Messages
+		/// A participant in a Chat the user is a member of has posted a new message.
 		case fezUnreadMsg
 		/// A participant in a Seamail thread the user is a member of has posted a new message.
 		case seamailUnreadMsg
+		/// An invitee to a Private Event has posted a new chat message in the event's chat.
+		case privateEventUnreadMsg
+
+// Starting Soon
+		/// An event the user is following is about to start.
+		case followedEventStarting
+		/// An LFG the user has joined is about to start.
+		case joinedLFGStarting
+		/// A Personal Event the user has created or was added to is about to start.
+		case personalEventStarting
+
+// @mentions and Alertwords
 		/// A user has posted a Twarrt that contains a word this user has set as an alertword.
 		case alertwordTwarrt
 		/// A user has posted a Forum Post that contains a word this user has set as an alertword.
@@ -89,24 +114,25 @@ struct SocketNotificationData: Content {
 		case twarrtMention
 		/// A user has posted a Forum Post that @mentions this user.
 		case forumMention
-		/// An event the user is following is about to start.
-		case followedEventStarting
-		/// Someone is trying to call this user via KrakenTalk.
+		
+// Phonecalls
+		/// Someone is trying to call this user via KrakenTalk.'
 		case incomingPhoneCall
 		/// The callee answered the call, possibly on another device.
 		case phoneCallAnswered
 		/// Caller hung up while phone was rining, or other party ended the call in progress, or callee declined
 		case phoneCallEnded
+		
+// Micro Karaoke
+		/// A Micro Karaoke song the user contributed to is ready for viewing. .
+		case microKaraokeSongReady
+
+// Mod Stuff
 		/// A new or edited forum post that now @mentions @moderator.
 		case moderatorForumMention
 		/// A new or edited forum post that now @mentions @twitarrteam.
 		case twitarrTeamForumMention
-		/// An LFG the user has joined is about to start.
-		case joinedLFGStarting
-		/// A Micro Karaoke song the user contributed to is ready for viewing. .
-		case microKaraokeSongReady
-		/// A Personal Event the user has created or was added to is about to start.
-		case personalEventStarting
+		
 	}
 	/// The type of event that happened. See `SocketNotificationData.NotificationTypeData` for values.
 	var type: NotificationTypeData
@@ -124,21 +150,32 @@ extension SocketNotificationData {
 	init(_ type: NotificationType, info: String, id: String) {
 		switch type {
 		case .announcement: self.type = .announcement
-		case .fezUnreadMsg: self.type = .fezUnreadMsg
-		case .seamailUnreadMsg: self.type = .seamailUnreadMsg
+		
+		case .addedToChat(_, let chatType) where chatType.isSeamailType: self.type = .addedToSeamail
+		case .addedToChat(_, let chatType) where chatType.isLFGType: self.type = .addedToLFG
+		case .addedToChat(_, let chatType) where chatType.isPrivateEventType: self.type = .addedToPrivateEvent
+		case .addedToChat: self.type = .addedToSeamail
+		
+		case .chatUnreadMsg(_, let chatType) where chatType.isSeamailType: self.type = .seamailUnreadMsg
+		case .chatUnreadMsg(_, let chatType) where chatType.isLFGType: self.type = .fezUnreadMsg
+		case .chatUnreadMsg(_, let chatType) where chatType.isPrivateEventType: self.type = .privateEventUnreadMsg
+		case .chatUnreadMsg: self.type = .addedToSeamail
+		
+		// nextFollowedEventTime and nextJoinedLFGTime are not a socket event, so is this OK?
+		case .nextFollowedEventTime: self.type = .followedEventStarting
+		case .followedEventStarting: self.type = .followedEventStarting
+		case .nextJoinedLFGTime: self.type = .joinedLFGStarting
+		case .joinedLFGStarting: self.type = .joinedLFGStarting
+		case .personalEventStarting: self.type = .personalEventStarting
+
 		case .alertwordTwarrt: self.type = .alertwordTwarrt
 		case .alertwordPost: self.type = .alertwordPost
 		case .twarrtMention: self.type = .twarrtMention
 		case .forumMention: self.type = .forumMention
 		case .moderatorForumMention: self.type = .moderatorForumMention
 		case .twitarrTeamForumMention: self.type = .twitarrTeamForumMention
-		// nextFollowedEventTime and nextJoinedLFGTime are not a socket event, so is this OK?
-		case .nextFollowedEventTime: self.type = .followedEventStarting
-		case .followedEventStarting: self.type = .followedEventStarting
-		case .nextJoinedLFGTime: self.type = .joinedLFGStarting
-		case .joinedLFGStarting: self.type = .joinedLFGStarting
+	
 		case .microKaraokeSongReady: self.type = .microKaraokeSongReady
-		case .personalEventStarting: self.type = .personalEventStarting
 		}
 		self.info = info
 		self.contentID = id

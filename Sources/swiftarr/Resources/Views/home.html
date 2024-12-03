@@ -74,14 +74,51 @@
 			#endif
 						
 			#if(!trunk.preregistrationApplies):
-				#if(trunk.alertCounts.newTwarrtMentionCount > 0 || trunk.alertCounts.newForumMentionCount > 0):
-					<h6><b>Notifications</b></h6>
-				#endif
-				<div class="list-group">
-				#if(trunk.alertCounts.newForumMentionCount > 0):
-					<a class="list-group-item list-group-item-action" href="/forumpost/mentions">
-						You have #(trunk.alertCounts.newForumMentionCount) new forum @mentions
-					</a>
+				#if(trunk.alertCounts.newTwarrtMentionCount > 0 || trunk.alertCounts.newForumMentionCount > 0 || trunk.alertCounts.addedToSeamailCount > 0 || trunk.alertCounts.newSeamailMessageCount > 0 || trunk.alertCounts.addedToLFGCount > 0 || trunk.alertCounts.newFezMessageCount > 0 || trunk.alertCounts.addedToPrivateEventCount > 0 || trunk.alertCounts.newPrivateEventMessageCount > 0):
+					<ul class="list-group mb-2">
+						<li class="list-group-item active"><b>Notifications</b></li>
+						#if(trunk.alertCounts.newForumMentionCount > 0):
+							<a class="list-group-item list-group-item-action" href="/forumpost/mentions">
+								You have #(trunk.alertCounts.newForumMentionCount) new forum @mention#if(trunk.alertCounts.newForumMentionCount != 1):s#endif
+							</a>
+						#endif
+						#if(trunk.alertCounts.addedToSeamailCount > 0 || trunk.alertCounts.newSeamailMessageCount > 0):
+							<a class="list-group-item list-group-item-action" href="/seamail">
+								#if(trunk.alertCounts.addedToSeamailCount > 0 && trunk.alertCounts.newSeamailMessageCount > 0):
+									You've been added to #(trunk.alertCounts.addedToSeamailCount) new Seamail#if(trunk.alertCounts.addedToSeamailCount != 1):s#endif,
+									and #(trunk.alertCounts.newSeamailMessageCount) Seamail chat#if(trunk.alertCounts.newSeamailMessageCount != 1):s have#else: has#endif new messages
+								#elseif(trunk.alertCounts.addedToSeamailCount > 0):
+									You've been added to #(trunk.alertCounts.addedToSeamailCount) new Seamail#if(trunk.alertCounts.addedToSeamailCount != 1):s#endif
+								#else:
+									#(trunk.alertCounts.newSeamailMessageCount) Seamail chat#if(trunk.alertCounts.newSeamailMessageCount != 1):s have#else: has#endif new messages
+								#endif
+							</a>
+						#endif
+						#if(trunk.alertCounts.addedToLFGCount > 0 || trunk.alertCounts.newFezMessageCount > 0):
+							<a class="list-group-item list-group-item-action" href="/lfg/joined">
+								#if(trunk.alertCounts.addedToLFGCount > 0 && trunk.alertCounts.newFezMessageCount > 0):
+									You've been added to #(trunk.alertCounts.addedToLFGCount) new LFG#if(trunk.alertCounts.addedToLFGCount != 1):s#endif,
+									and #(trunk.alertCounts.newFezMessageCount) LFG chat#if(trunk.alertCounts.newFezMessageCount != 1):s have#else: has#endif new messages
+								#elseif(trunk.alertCounts.addedToLFGCount > 0):
+									You've been added to #(trunk.alertCounts.addedToLFGCount) new LFG#if(trunk.alertCounts.addedToLFGCount != 1):s#endif
+								#else:
+									#(trunk.alertCounts.newFezMessageCount) LFG chat#if(trunk.alertCounts.newFezMessageCount != 1):s have#else: has#endif new messages
+								#endif
+							</a>
+						#endif
+						#if(trunk.alertCounts.addedToPrivateEventCount > 0 || trunk.alertCounts.newPrivateEventMessageCount > 0):
+							<a class="list-group-item list-group-item-action" href="/privateevent/list">
+								#if(trunk.alertCounts.addedToPrivateEventCount > 0 && trunk.alertCounts.newPrivateEventMessageCount > 0):
+									You've been added to #(trunk.alertCounts.addedToPrivateEventCount) new Private Event#if(trunk.alertCounts.addedToPrivateEventCount != 1):s#endif,
+									and #(trunk.alertCounts.newPrivateEventMessageCount) Private Event chat#if(trunk.alertCounts.newPrivateEventMessageCount != 1):s have#else: has#endif new messages
+								#elseif(trunk.alertCounts.addedToPrivateEventCount > 0):
+									You've been added to #(trunk.alertCounts.addedToPrivateEventCount) new Private Event#if(trunk.alertCounts.addedToPrivateEventCount != 1):s#endif
+								#else:
+									#(trunk.alertCounts.newPrivateEventMessageCount) Private Event chat#if(trunk.alertCounts.newPrivateEventMessageCount != 1):s have#else: has#endif new messages
+								#endif
+							</a>
+						#endif
+					</ul>
 				#endif
 				
 				#if(trunk.userIsLoggedIn && showPhotostream):

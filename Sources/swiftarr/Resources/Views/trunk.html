@@ -22,7 +22,9 @@
 					<div class="col-auto px-0">
 						<a class="nav-item nav-link link-light px-1
 								#if(trunk.tab == "home"): active#endif
-								#if(trunk.alertCounts.newAnnouncementCount > 0):border-bottom border-danger#endif"
+								#if(trunk.alertCounts.newAnnouncementCount > 0 || trunk.alertCounts.newPrivateEventMessageCount):
+									border-bottom border-danger
+								#endif"
 								href="/">
 							Today
 						</a>

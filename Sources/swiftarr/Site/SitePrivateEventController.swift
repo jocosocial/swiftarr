@@ -371,7 +371,6 @@ struct SitePrivateEventController: SiteControllerUtils {
 	// POST /privateevent/ID/update
 	// Handles the POST from either the Create Or Update Private Event page
 	func peCreateOrUpdatePostHandler(_ req: Request) async throws -> HTTPStatus {
-		let user = try req.auth.require(UserCacheData.self)
 		let postStruct = try req.content.decode(CreatePrivateEventPostFormContent.self)
 		let fezType: FezType = postStruct.inviteOthers == "on" ? .privateEvent : .personalEvent
 		guard postStruct.subject.count > 0 else {
@@ -385,6 +384,8 @@ struct SitePrivateEventController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Couldn't parse start time")
 		}
 		let endTime = startTime.addingTimeInterval(TimeInterval(postStruct.duration) * 60.0)
+		var participants = postStruct.participants.split(separator: ",").compactMap { UUID(uuidString: String($0)) }
+		participants = Array(Set(participants))
 		var fezContentData = FezContentData(
 			fezType: fezType,
 			title: postStruct.subject,
@@ -394,7 +395,7 @@ struct SitePrivateEventController: SiteControllerUtils {
 			location: postStruct.location,
 			minCapacity: 0,
 			maxCapacity: 0,
-			initialUsers: []
+			initialUsers: participants
 		)
 		var path = "/fez/create"
 		if let updatingFezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() {

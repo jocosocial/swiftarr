@@ -155,16 +155,6 @@ extension FriendlyFez: Reportable {
 	var autoQuarantineThreshold: Int { Int.max }
 }
 
-extension FriendlyFez {
-	func notificationType() throws -> NotificationType {
-		if [.closed, .open].contains(fezType) {
-			return try .seamailUnreadMsg(requireID())
-		}
-		return try .fezUnreadMsg(requireID())
-	}
-}
-
-
 struct CreateFriendlyFezSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		let modStatusEnum = try await database.enum("moderation_status").read()

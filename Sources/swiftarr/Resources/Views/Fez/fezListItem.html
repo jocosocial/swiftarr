@@ -77,8 +77,11 @@
 				</div>
 			#endif
 		</div>
-		<div class="row justify-content-end">
+		<div class="row justify-content-between">
 			#if(fez.members && fez.fezType != "personalEvent"):
+				<div class="col col-auto">
+					<span title="#localTime(fez.lastModificationTime)" class="text-muted">#relativeTime(fez.lastModificationTime)</span>
+				</div>
 				<div class="col col-auto">
 					<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) post#if(fez.members.postCount != 1):s#endif</span>
 					#if(fez.members.readCount < fez.members.postCount):

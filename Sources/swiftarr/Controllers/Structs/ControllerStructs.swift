@@ -403,7 +403,7 @@ public struct FezContentData: Content {
 	var minCapacity: Int
 	/// The maximum number of users for the fez.
 	var maxCapacity: Int
-	/// Users to add to the fez upon creation. The creator is always added as the first user.
+	/// Users to add to the fez upon creation. The creator is always added as the first user. Ignored on update.
 	var initialUsers: [UUID]
 	/// If TRUE, the Fez will be created by user @moderator instead of the current user. Current user must be a mod.
 	var createdByModerator: Bool?
@@ -1991,11 +1991,23 @@ public struct UserNotificationData: Content {
 	var forumMentionCount: Int
 	/// Number of forum post @mentions the user has not read. 0 if not logged in.
 	var newForumMentionCount: Int
+	
+	/// The number of Seamail chats the user's been added to but not yet viewed. Does not include Seamails the user creates. Chats counted here will continue
+	/// to be counted here and not in `newSeamailMessageCount` even if there are also new messages--until the user views the chat and clears the notification.
+	var addedToSeamailCount: Int
+	/// The number of LFGs the user's been added to but not yet viewed. Doesn't include LFGs the user created nor ones they Joined by their own action. 
+	/// If a chat the user was added to (but hasn't yet viewed) gets new messages, that chat is counted in this total and not in `newFezMessageCount`.
+	var addedToLFGCount: Int
+	/// The number of Private Events the user's been added to but not yet viewed. Doesn't include PEs the user created. 
+	/// If a chat the user was added to (but hasn't yet viewed) gets new messages, that chat is counted in this total and not in `newPrivateEventMessageCount`.
+	var addedToPrivateEventCount: Int
 
 	/// Count of # of Seamail threads with new messages. NOT total # of new messages-a single seamail thread with 10 new messages counts as 1. 0 if not logged in.
 	var newSeamailMessageCount: Int
-	/// Count of # of Fezzes with new messages. 0 if not logged in.
+	/// Count of # of LFGs with new messages. 0 if not logged in.
 	var newFezMessageCount: Int
+	/// Count of # of Private Events with new messages. 0 if not logged in.
+	var newPrivateEventMessageCount: Int
 
 	/// The start time of the earliest event that the user has followed with a start time > now. nil if not logged in or no matching event.
 	var nextFollowedEventTime: Date?
@@ -2045,8 +2057,9 @@ public struct UserNotificationData: Content {
 
 extension UserNotificationData {
 	init(
-		newFezCount: Int,
-		newSeamailCount: Int,
+		seamailCounts: (Int, Int), 
+		lfgCounts: (Int, Int), 
+		privateEventCounts: (Int, Int),
 		activeAnnouncementIDs: [Int],
 		newAnnouncementCount: Int,
 		nextEventTime: Date?,
@@ -2067,8 +2080,12 @@ extension UserNotificationData {
 		self.newTwarrtMentionCount = 0
 		self.forumMentionCount = 0
 		self.newForumMentionCount = 0
-		self.newSeamailMessageCount = newSeamailCount
-		self.newFezMessageCount = newFezCount
+		self.addedToSeamailCount = seamailCounts.0
+		self.addedToLFGCount = lfgCounts.0
+		self.addedToPrivateEventCount = privateEventCounts.0
+		self.newSeamailMessageCount = seamailCounts.1
+		self.newFezMessageCount = lfgCounts.1
+		self.newPrivateEventMessageCount = privateEventCounts.1
 		self.nextFollowedEventTime = nextEventTime
 		self.nextFollowedEventID = nextEvent
 		self.microKaraokeFinishedSongCount = microKaraokeFinishedSongCount
@@ -2090,9 +2107,13 @@ extension UserNotificationData {
 		self.twarrtMentionCount = 0
 		self.newTwarrtMentionCount = 0
 		self.forumMentionCount = 0
+		self.addedToSeamailCount = 0
+		self.addedToLFGCount = 0
+		self.addedToPrivateEventCount = 0
 		self.newForumMentionCount = 0
 		self.newSeamailMessageCount = 0
 		self.newFezMessageCount = 0
+		self.newPrivateEventMessageCount = 0
 		self.nextFollowedEventTime = nil
 		self.microKaraokeFinishedSongCount = 0
 		self.alertWords = []

@@ -76,7 +76,7 @@ struct PersonalEventController: APIRouteCollection {
 	func personalEventCreateHandler(_ req: Request) async throws -> Response {
 		let requestContent = try ValidatingJSONDecoder().decode(PersonalEventContentData.self, fromBodyOf: req)
 		let inputData = FezContentData(privateEvent: requestContent)
-		let processedData = try await FezController().createAppointment(req, data: inputData)
+		let processedData = try await FezController().createChat(req, data: inputData)
 		let personalEventData = try PersonalEventData(processedData, request: req)
 
 		// Return with 201 status
@@ -108,7 +108,7 @@ struct PersonalEventController: APIRouteCollection {
 	func personalEventUpdateHandler(_ req: Request) async throws -> PersonalEventData {
 		let requestContent = try ValidatingJSONDecoder().decode(PersonalEventContentData.self, fromBodyOf: req)
 		let inputData = FezContentData(privateEvent: requestContent)
-		let processedData = try await FezController().updateAppointment(req, data: inputData)
+		let processedData = try await FezController().updateChat(req, data: inputData)
 		let personalEventData = try PersonalEventData(processedData, request: req)
 		return personalEventData
 	}

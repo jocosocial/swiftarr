@@ -55,6 +55,6 @@ extension FezProtocol {
 
 		// Generate appropriate notifications.
 		let infoStr = "@\(fromUserID) wrote, \"\(post.text)\""
-		try await addNotifications(users: initialUsers, type: fez.notificationType(), info: infoStr, on: req)
+		try await addNotifications(users: initialUsers, type: .chatUnreadMsg(fez.requireID(), fez.fezType), info: infoStr, on: req)
 	}
 }

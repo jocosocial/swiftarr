@@ -296,13 +296,13 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		let postStruct = try req.content.decode(CreateFezPostFormContent.self)
 		var fezType: FezType
 		switch postStruct.eventtype {
-		case "activity": fezType = .activity
-		case "dining": fezType = .dining
-		case "gaming": fezType = .gaming
-		case "meetup": fezType = .meetup
-		case "music": fezType = .music
-		case "ashore": fezType = .shore
-		default: fezType = .other
+			case "activity": fezType = .activity
+			case "dining": fezType = .dining
+			case "gaming": fezType = .gaming
+			case "meetup": fezType = .meetup
+			case "music": fezType = .music
+			case "ashore": fezType = .shore
+			default: fezType = .other
 		}
 		guard let startTime = dateFromW3DatetimeString(postStruct.starttime) else {
 			throw Abort(.badRequest, reason: "Couldn't parse start time")

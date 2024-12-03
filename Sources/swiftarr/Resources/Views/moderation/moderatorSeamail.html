@@ -19,37 +19,7 @@
 					</div>
 				#else:
 					#for(fez in fezzes):
-						<a href="/seamail/#(fez.fezID)" class="list-group-item list-group-item-action">		
-							<div class="row">
-								<div class="col">
-									#(fez.title)
-								</div>
-								<div class="col col-auto">
-									<span title="#localTime(fez.lastModificationTime)" class="text-muted">#relativeTime(fez.lastModificationTime)</span>
-								</div>
-							</div>
-							<div class="row">
-								#for(participant in fez.members.participants):
-									#if(participant.userID != trunk.userID):
-										<div class="col col-auto border">
-											#avatar(participant)
-											<span>#(participant.username)</span>
-										</div>	
-									#endif			
-								#endfor
-							</div>
-							<div class="row">
-								<div class="col">
-									<span title="#localTime(fez.lastModificationTime)" class="text-muted">#relativeTime(fez.lastModificationTime)</span>
-								</div>
-								<div class="col col-auto">
-									<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) posts</span>
-									#if(fez.members.readCount < fez.members.postCount):
-										<span class="badge rounded-pill bg-danger">#(fez.members.postCount - fez.members.readCount) new</span>
-									#endif
-								</div>
-							</div>
-						</a>
+						#extend("Fez/fezListItem")
 					#endfor
 				#endif
 			</div>

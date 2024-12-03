@@ -87,8 +87,9 @@ struct AlertController: APIRouteCollection {
 		}
 		// Get the number of fezzes with unread messages
 		async let userHash = try req.redis.getUserHash(userID: user.userID)
-		async let unreadSeamailCount = try req.redis.getSeamailUnreadCounts(userID: user.userID, inbox: .seamail)
-		async let unreadLFGCount = try req.redis.getSeamailUnreadCounts(userID: user.userID, inbox: .lfgMessages)
+		async let seamailCounts = try req.redis.getChatUnreadCounts(userID: user.userID, inbox: .seamail)
+		async let lfgCounts = try req.redis.getChatUnreadCounts(userID: user.userID, inbox: .lfgMessages)
+		async let privateEventCounts = try req.redis.getChatUnreadCounts(userID: user.userID, inbox: .privateEvent)
 		async let actives = try getActiveAnnouncementIDs(on: req)
 		async let modData = try getModeratorNotifications(for: user, on: req)
 		let finishedSongCount = try await max(0, req.redis.getIntFromUserHash(userHash, field: .microKaraokeSongReady(0)) -
@@ -107,11 +108,12 @@ struct AlertController: APIRouteCollection {
 		var nextLFG = try await req.redis.getNextLFGFromUserHash(userHash)
 		if let validDate = nextLFG?.0, lfgDateNow > validDate {
 			// The previously cached LFG already happend; figure out what's next
-			nextLFG = try await storeNextJoinedLFG(userID: user.userID, on: req)
+			nextLFG = try await storeNextJoinedAppointment(userID: user.userID, on: req)
 		}
 		var result = try await UserNotificationData(
-			newFezCount: unreadLFGCount,
-			newSeamailCount: unreadSeamailCount,
+			seamailCounts: seamailCounts,
+			lfgCounts: lfgCounts,
+			privateEventCounts: privateEventCounts,
 			activeAnnouncementIDs: actives,
 			newAnnouncementCount: newAnnouncements,
 			nextEventTime: nextEvent?.0,

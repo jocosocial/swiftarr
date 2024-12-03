@@ -249,7 +249,11 @@ struct SiteModController: SiteControllerUtils {
 
 	// `GET /moderator/seamail`
 	func moderatorSeamailPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/fez/joined?type=closed")
+		var urlQueryAdditions: [URLQueryItem] = []
+		if req.query["foruser"] != "moderator" {
+			urlQueryAdditions.append(.init(name: "foruser", value: "moderator"))
+		}
+		let response = try await apiQuery(req, endpoint: "/fez/joined", query: urlQueryAdditions)
 		let fezList = try response.content.decode(FezListData.self)
 		// Re-sort fezzes so ones with new msgs are first. Keep most-recent-change sort within each group.
 		var newMsgFezzes: [FezData] = []

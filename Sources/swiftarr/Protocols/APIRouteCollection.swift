@@ -160,11 +160,20 @@ extension APIRouteCollection {
 	func addNotifications(users: [UUID], type: NotificationType, info: String, on req: Request) async throws {
 		try await withThrowingTaskGroup(of: Void.self) { group -> Void in
 			var forwardToSockets = true
-			var notifyUsers = users
+			// Members of `users` get push notifications
+			// `stateChangeUsers` includes users that had their notification counts change, but don't send push notifications
+			var stateChangeUsers = users
 			switch type {
 			case .announcement:
 				// Force cache of active announcementIDs to get rebuilt
 				group.addTask { try await req.redis.resetActiveAnnouncementIDs() }
+
+			case .addedToChat(let msgID, let chatType):
+				stateChangeUsers = bookkeepUserAddedToChat(req: req, msgID: msgID, chatType: chatType, users: users, group: &group)
+			
+			case .chatUnreadMsg(let msgID, let chatType):
+				stateChangeUsers = bookkeepNewChatMessage(req: req, msgID: msgID, chatType: chatType, users: users, group: &group)
+
 			case .nextFollowedEventTime(let date, let id):
 				for userID in users {
 					group.addTask {
@@ -179,22 +188,6 @@ extension APIRouteCollection {
 					}
 				}
 				forwardToSockets = false
-			case .seamailUnreadMsg(let msgID):
-				notifyUsers = handleUnreadMessage(
-					req: req,
-					msgID: msgID,
-					inbox: Request.Redis.MailInbox.seamail,
-					users: notifyUsers,
-					group: &group
-				)
-			case .fezUnreadMsg(let msgID):
-				notifyUsers = handleUnreadMessage(
-					req: req,
-					msgID: msgID,
-					inbox: Request.Redis.MailInbox.lfgMessages,
-					users: notifyUsers,
-					group: &group
-				)
 			case .alertwordTwarrt(let alertword, _):
 				for userID in users {
 					group.addTask {
@@ -225,55 +218,77 @@ extension APIRouteCollection {
 
 			if forwardToSockets {
 				// Send a message to all involved users with open websockets.
-				req.application.websocketStorage.forwardToSockets(
-					app: req.application,
-					users: users,
-					type: type,
-					info: info
-				)
+				req.application.websocketStorage.forwardToSockets(app: req.application, users: users, type: type, info: info)
 			}
 
-			let notifyUsersCopy = notifyUsers
-			group.addTask { try await req.redis.addUsersWithStateChange(notifyUsersCopy) }
+			let stateChangeUsersCopy = stateChangeUsers
+			group.addTask { try await req.redis.addUsersWithStateChange(stateChangeUsersCopy) }
 
 			// I believe this line is required to let subtasks propagate thrown errors by rethrowing.
 			for try await _ in group {}
 		}
 	}
 
-	func handleUnreadMessage(
-		req: Request,
-		msgID: UUID,
-		inbox: Request.Redis.MailInbox,
-		users: [UUID],
-		group: inout ThrowingTaskGroup<Void, Error>
-	) -> [UUID] {
-		var notifyUsers = users
+	func bookkeepUserAddedToChat(req: Request, msgID: UUID, chatType: FezType, users: [UUID],
+			group: inout ThrowingTaskGroup<Void, Error>) -> [UUID] {
+		var updateCountsUsers = users
 		// For seamail msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
-		// notify list. This is so all team members have individual read counts.
+		// update counts list. This is so all team members have individual read counts.
 		if let mod = req.userCache.getUser(username: "moderator"), users.contains(mod.userID) {
 			let modList = req.userCache.allUsersWithAccessLevel(.moderator).map { $0.userID }
-			notifyUsers.append(contentsOf: modList)
+			updateCountsUsers.append(contentsOf: modList)
 			for modUserID in modList {
 				group.addTask {
-					try await req.redis.newUnreadMessage(msgID: msgID, userID: modUserID, inbox: .moderatorSeamail)
+					try await req.redis.userAddedToChat(chatID: msgID, userID: modUserID, inbox: .moderatorSeamail)
 				}
 			}
 		}
 		if let ttUser = req.userCache.getUser(username: "TwitarrTeam"), users.contains(ttUser.userID) {
 			let ttList = req.userCache.allUsersWithAccessLevel(.twitarrteam).map { $0.userID }
-			notifyUsers.append(contentsOf: ttList)
+			updateCountsUsers.append(contentsOf: ttList)
 			for ttUserID in ttList {
 				group.addTask {
-					try await req.redis.newUnreadMessage(msgID: msgID, userID: ttUserID, inbox: .twitarrTeamSeamail)
+					try await req.redis.userAddedToChat(chatID: msgID, userID: ttUserID, inbox: .twitarrTeamSeamail)
 				}
 			}
 		}
 		// Users who aren't "moderator" and are in the thread see it as a normal thread.
+		let inbox = Request.Redis.MailInbox.mailboxForChatType(type: chatType)
 		for userID in users {
-			group.addTask { try await req.redis.newUnreadMessage(msgID: msgID, userID: userID, inbox: inbox) }
+			group.addTask { try await req.redis.userAddedToChat(chatID: msgID, userID: userID, inbox: inbox) }
 		}
-		return notifyUsers
+		return updateCountsUsers
+	}
+
+	func bookkeepNewChatMessage(req: Request, msgID: UUID, chatType: FezType, users: [UUID],
+			group: inout ThrowingTaskGroup<Void, Error>) -> [UUID] {
+		var updateCountsUsers = users
+		// For seamail msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
+		// update counts list. This is so all team members have individual read counts.
+		if let mod = req.userCache.getUser(username: "moderator"), users.contains(mod.userID) {
+			let modList = req.userCache.allUsersWithAccessLevel(.moderator).map { $0.userID }
+			updateCountsUsers.append(contentsOf: modList)
+			for modUserID in modList {
+				group.addTask {
+					try await req.redis.newUnreadMessage(chatID: msgID, userID: modUserID, inbox: .moderatorSeamail)
+				}
+			}
+		}
+		if let ttUser = req.userCache.getUser(username: "TwitarrTeam"), users.contains(ttUser.userID) {
+			let ttList = req.userCache.allUsersWithAccessLevel(.twitarrteam).map { $0.userID }
+			updateCountsUsers.append(contentsOf: ttList)
+			for ttUserID in ttList {
+				group.addTask {
+					try await req.redis.newUnreadMessage(chatID: msgID, userID: ttUserID, inbox: .twitarrTeamSeamail)
+				}
+			}
+		}
+		// Users who aren't "moderator" and are in the thread see it as a normal thread.
+		let inbox = Request.Redis.MailInbox.mailboxForChatType(type: chatType)
+		for userID in users {
+			group.addTask { try await req.redis.newUnreadMessage(chatID: msgID, userID: userID, inbox: inbox) }
+		}
+		return updateCountsUsers
 	}
 
 	// When an event happens that could reduce notification counts for someone (e.g. a user deletes a Twarrt with an @mention)
@@ -286,6 +301,41 @@ extension APIRouteCollection {
 			case .announcement:
 				// Force cache of active announcementIDs to get rebuilt
 				group.addTask { try await req.redis.resetActiveAnnouncementIDs() }
+
+			case .addedToChat(let msgID, _), .chatUnreadMsg(let msgID, _):
+				// For chat msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
+				// notify list. This is so all team members have individual read counts.
+				if let mod = req.userCache.getUser(username: "moderator"), users.contains(mod.userID) {
+					let modList = req.userCache.allUsersWithAccessLevel(.moderator).map { $0.userID }
+					for modUserID in modList {
+						group.addTask {
+							try await req.redis.deletedUnreadMessage(
+								msgID: msgID,
+								userID: modUserID,
+								inbox: .moderatorSeamail
+							)
+						}
+					}
+				}
+				if let ttUser = req.userCache.getUser(username: "TwitarrTeam"), users.contains(ttUser.userID) {
+					let ttList = req.userCache.allUsersWithAccessLevel(.twitarrteam).map { $0.userID }
+					for ttUserID in ttList {
+						group.addTask {
+							try await req.redis.deletedUnreadMessage(
+								msgID: msgID,
+								userID: ttUserID,
+								inbox: .twitarrTeamSeamail
+							)
+						}
+					}
+				}
+				// Users who aren't "moderator" and are in the thread see it as a normal thread.
+				for userID in users {
+					group.addTask {
+						try await req.redis.deletedUnreadMessage(msgID: msgID, userID: userID, inbox: .seamail)
+					}
+				}
+
 			case .twarrtMention(_):
 				for userID in users {
 					group.addTask {
@@ -322,46 +372,6 @@ extension APIRouteCollection {
 						incAmount: 0 - subtractCount
 					)
 				}
-			case .seamailUnreadMsg(let msgID):
-				// For seamail msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
-				// notify list. This is so all team members have individual read counts.
-				if let mod = req.userCache.getUser(username: "moderator"), users.contains(mod.userID) {
-					let modList = req.userCache.allUsersWithAccessLevel(.moderator).map { $0.userID }
-					for modUserID in modList {
-						group.addTask {
-							try await req.redis.deletedUnreadMessage(
-								msgID: msgID,
-								userID: modUserID,
-								inbox: .moderatorSeamail
-							)
-						}
-					}
-				}
-				if let ttUser = req.userCache.getUser(username: "TwitarrTeam"), users.contains(ttUser.userID) {
-					let ttList = req.userCache.allUsersWithAccessLevel(.twitarrteam).map { $0.userID }
-					for ttUserID in ttList {
-						group.addTask {
-							try await req.redis.deletedUnreadMessage(
-								msgID: msgID,
-								userID: ttUserID,
-								inbox: .twitarrTeamSeamail
-							)
-						}
-					}
-				}
-				// Users who aren't "moderator" and are in the thread see it as a normal thread.
-				for userID in users {
-					group.addTask {
-						try await req.redis.deletedUnreadMessage(msgID: msgID, userID: userID, inbox: .seamail)
-					}
-				}
-
-			case .fezUnreadMsg(let msgID):
-				for userID in users {
-					group.addTask {
-						try await req.redis.deletedUnreadMessage(msgID: msgID, userID: userID, inbox: .lfgMessages)
-					}
-				}
 			case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting,
 				.personalEventStarting:
 				break
@@ -389,7 +399,7 @@ extension APIRouteCollection {
 	func deleteFezNotifications(userIDs: [UUID], fez: FriendlyFez, on req: Request) async throws {
 		for userID in userIDs {
 			try await req.redis.markLFGDeleted(msgID: fez.requireID(), userID: userID)
-			_ = try await storeNextJoinedLFG(userID: userID, on: req)
+			_ = try await storeNextJoinedAppointment(userID: userID, on: req)
 		}
 	}
 
@@ -400,6 +410,17 @@ extension APIRouteCollection {
 		switch type {
 		case .announcement(let id):
 			try await req.redis.setIntInUserHash(to: id, field: type, userID: user.userID)
+		case .addedToChat, .chatUnreadMsg:
+			try await req.redis.markChatRead(type: type, userID: user.userID)
+			// It's possible this is a mod viewing mail to @moderator, not their own. We can't tell from here.
+			// But, we can just clear the modmail hash for this thread ID.
+			if user.accessLevel.hasAccess(.moderator) {
+				try await req.redis.markChatRead(type: type, in: .moderatorSeamail, userID: user.userID)
+			}
+			if user.accessLevel.hasAccess(.twitarrteam) {
+				try await req.redis.markChatRead(type: type, in: .twitarrTeamSeamail, userID: user.userID)
+			}
+
 		case .twarrtMention, .forumMention, .alertwordTwarrt, .alertwordPost:
 			try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)
 		case .moderatorForumMention:
@@ -410,18 +431,6 @@ extension APIRouteCollection {
 			if user.accessLevel.hasAccess(.twitarrteam) {
 				try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)
 			}
-		case .seamailUnreadMsg:
-			try await req.redis.markSeamailRead(type: type, in: .seamail, userID: user.userID)
-			// It's possible this is a mod viewing mail to @moderator, not their own. We can't tell from here.
-			// But, we can just clear the modmail hash for this thread ID.
-			if user.accessLevel.hasAccess(.moderator) {
-				try await req.redis.markSeamailRead(type: type, in: .moderatorSeamail, userID: user.userID)
-			}
-			if user.accessLevel.hasAccess(.twitarrteam) {
-				try await req.redis.markSeamailRead(type: type, in: .twitarrTeamSeamail, userID: user.userID)
-			}
-		case .fezUnreadMsg:
-			try await req.redis.markSeamailRead(type: type, in: .lfgMessages, userID: user.userID)
 		case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting,
 			.personalEventStarting:
 			return  // Can't be cleared
@@ -481,7 +490,7 @@ extension APIRouteCollection {
 	// Calculates the start time of the earliest future joined LFG. Caches the value in Redis for quick access.
 	// LFGs are stored in real-week time (not cruise-week time) so this doesn't need all of the date/time
 	// calculations like storeNextFollowedEvent() above.
-	func storeNextJoinedLFG(userID: UUID, on req: Request) async throws -> (Date, UUID)? {
+	func storeNextJoinedAppointment(userID: UUID, on req: Request) async throws -> (Date, UUID)? {
 		let filterDate = Date()
 		let nextJoinedLFG = try await FriendlyFez.query(on: req.db)
 			.join(FezParticipant.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
