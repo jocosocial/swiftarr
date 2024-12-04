@@ -1,10 +1,12 @@
+#comment("Context of type FezPageContext")
+
 #extend("trunk"):
     #export("body"):
     	<div class="container-md ms-0 mt-2" data-fezid="#(fez.fezID)">
     		<div class="row">
 				<nav aria-label="breadcrumb">
 				  <ol class="breadcrumb">
-					<li class="breadcrumb-item"><a href="/lfg">LFG</a></li>
+					<li class="breadcrumb-item"><a href="#(breadcrumbLink)">#(typeName)</a></li>
 					<li class="breadcrumb-item active" aria-current="page">#(fez.title)</li>
 				  </ol>
 				</nav>
@@ -13,7 +15,7 @@
 			#if(fez.cancelled):
 				<div class="row mb-3">
 					<div class="col text-danger text-center">
-						<b>This LFG has been cancelled</b>
+						<b>This #(typeName) has been cancelled</b>
 					</div>
 				</div>
 			#endif
@@ -22,31 +24,37 @@
 				<div class="col">
 					@#(fez.owner.username)
 				</div>
-				<div class="col col-auto mb-auto text-muted">
-					#fezTime(fez.startTime, fez.endTime)
-				</div>
+				#if(fez.startTime && fez.endTime):
+					<div class="col col-auto mb-auto text-muted">
+						#fezTime(fez.startTime, fez.endTime)
+					</div>
+				#endif
 			</div>
 
 			<div class="row">
-				<div class="col">
-					#if(fez.maxParticipants == 0):
-						#(fez.participantCount) attendee#if(fez.participantCount != 1):s#endif
-					#elseif(fez.participantCount > fez.maxParticipants):
-						Full; #(fez.participantCount - fez.maxParticipants) waitlisted
-					#else:
-						#(fez.participantCount)/#(fez.maxParticipants) attendees
-					#endif
-				</div>
+				#if(fez.fezType != "personalEvent"):
+					<div class="col">
+						#if(fez.maxParticipants == 0):
+							#(fez.participantCount) attendee#if(fez.participantCount != 1):s#endif
+						#elseif(fez.participantCount > fez.maxParticipants):
+							Full; #(fez.participantCount - fez.maxParticipants) waitlisted
+						#else:
+							#(fez.participantCount)/#(fez.maxParticipants) attendees
+						#endif
+					</div>
+				#endif
 				<div class="col col-auto mb-auto text-muted">
 					#(fez.location)
 				</div>
 			</div>
 
-			<div class="row">
-				<div class="col">
-					<b>Event Info:</b> #(fez.info)
+			#if(fez.info != ""):
+				<div class="row">
+					<div class="col">
+						<b>Event Info:</b> #(fez.info)
+					</div>
 				</div>
-			</div>
+			#endif
 			
 			#if(userIsMember):
 				<div class="row mt-1 justify-content-end row-cols-auto ">
@@ -55,10 +63,12 @@
 							<a class="btn btn-outline-primary" href="/moderate/lfg/#(fez.fezID)">Mod</a>
 						#endif
 						#if(fez.owner.userID == trunk.userID):
-							<a class="btn btn-outline-primary" href="/lfg/#(fez.fezID)/members">Manage Members</a>
+							#if(fez.fezType != "personalEvent"):
+								<a class="btn btn-outline-primary" href="/lfg/#(fez.fezID)/members">Manage Members</a>
+							#endif
 							<a class="btn btn-outline-primary" href="/lfg/#(fez.fezID)/update">Update</a>
 							<button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="\#cancelFezModal">Cancel</button>
-						#else:
+						#elseif(fez.fezType != "personalEvent"):
 							<a class="btn btn-outline-primary px-3" href="/lfg/report/#(fez.fezID)">Report</a>
 							<button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="\#leaveFezModal">Leave</button>
 						#endif
@@ -86,137 +96,139 @@
 
 			<div class="row">
 				<div class="col text-end text-danger d-none" id="fezActions_errorDisplay">
-					Could not join LFG: <span class="errortext"></span>
+					Could not join #(typeName): <span class="errortext"></span>
 				</div>
 			</div>	
 			
 			#if(fez.members):
-				<div class="row mt-2">
-					<b>Participants</b>
-				</div>
-				<div class="row mb-2 mx-0">
-					#for(participant in fez.members.participants):
-						<div class="col col-auto border text-nowrap">
-							#avatar(participant) #userByline(participant)
-						</div>				
-					#endfor
-				</div>
-				#if(count(fez.members.waitingList) > 0):
+				#if(fez.fezType != "personalEvent"):
 					<div class="row mt-2">
-						<b>Wait List</b>
+						<b>Participants</b>
 					</div>
 					<div class="row mb-2 mx-0">
-						#for(participant in fez.members.waitingList):
+						#for(participant in fez.members.participants):
 							<div class="col col-auto border text-nowrap">
 								#avatar(participant) #userByline(participant)
 							</div>				
 						#endfor
 					</div>
-				#endif
-				<div class="row align-items-center">
-					<div class="col">
-						<b>Posts</b>
+					#if(count(fez.members.waitingList) > 0):
+						<div class="row mt-2">
+							<b>Wait List</b>
+						</div>
+						<div class="row mb-2 mx-0">
+							#for(participant in fez.members.waitingList):
+								<div class="col col-auto border text-nowrap">
+									#avatar(participant) #userByline(participant)
+								</div>				
+							#endfor
+						</div>
+					#endif
+					<div class="row align-items-center">
+						<div class="col">
+							<b>Posts</b>
+						</div>
+						<div class="col col-auto mb-auto">
+							<span class="badge rounded-pill bg-light text-dark">
+								<span id="post-count-span">#(fez.members.postCount)</span> posts
+							</span>
+							#if(fez.members.readCount < fez.members.postCount):
+								<span class="badge rounded-pill bg-danger">#(fez.members.postCount - fez.members.readCount) new</span>
+							#endif
+						</div>
 					</div>
-					<div class="col col-auto mb-auto">
-						<span class="badge rounded-pill bg-light text-dark">
-							<span id="post-count-span">#(fez.members.postCount)</span> posts
-						</span>
-						#if(fez.members.readCount < fez.members.postCount):
-							<span class="badge rounded-pill bg-danger">#(fez.members.postCount - fez.members.readCount) new</span>
+					#extend("paginator")
+					<ul class="list-group container-md mx-0 px-0">
+						#for(fezPost in oldPosts):
+							#extend("Fez/fezPost")
+						#endfor
+						#if(showDivider):
+							<hr class="newline">
 						#endif
-					</div>
-				</div>
-				#extend("paginator")
-				<ul class="list-group container-md mx-0 px-0">
-					#for(fezPost in oldPosts):
-						#extend("Fez/fezPost")
-					#endfor
-					#if(showDivider):
-						<hr class="newline">
-					#endif
-					<span id="newposts"></span>
-					#for(fezPost in newPosts):
-						#extend("Fez/fezPost")
-					#endfor
-					
-					#if(paginator.nextPageURL == nil):
-						<div class="fez-list-end" data-url="/lfg/#(fez.fezID)/socket" id="fez-list-end"></div>
-						<script src="/js/swiftarrMessages.js"></script>
-					#endif
-				</ul>
-				#extend("paginator")
-				#if(paginator.nextPageURL == nil):
-					<ul class="container-md mt-2 mx-0 px-0 list-group">
-						<li class="list-group-item bg-transparent">				
-							<form class="ajax" action="#(post.formAction)" enctype="multipart/form-data" method="POST" data-successurl="reset">
-								<div class="row"> 
-									<div class="col">
-										<textarea class="form-control" 
-												maxlength="500" 
-												data-lengthlabel="lfgPostLimitsLabel" 
-												rows="3" 
-												data-maxlines="25" 
-												name="postText" 
-												placeholder="Send a message"></textarea>
-									</div>
-								</div>
-								<div class="row justify-content-end mb-2">
-									<div class="col col-auto">
-										<div class="input-group-text input-group-sm py-0" id="lfgPostLimitsLabel"></div>
-									</div>
-								</div>
-								<div class="alert alert-danger mt-3 #if(post.postErrorString == ""):d-none#endif" role="alert">#(post.postErrorString)</div>				
-								<div class="row mb-2 justify-content-between gx-1">
-									<div class="col col-6 col-md-4 col-lg-3">
-										<div class="card">
-											<h5 class="card-header">Photo</h5>
-											<div class="m-1 border img-for-upload-container">
-												<div class="ratio ratio-1x1">
-													<img class="img-for-upload" alt="">
-												</div>
-											</div>
-											<p class="text-center no-image-marker"><i>no photo selected</i></p>
-											<div class="container-fluid p-1">
-												<div class="row">
-													<div class="col">
-														<label class="btn btn-primary col-12 form-label">
-															<input class="image-upload-input d-none" type="file" accept="#(post.allowedImageTypes)" name="localPhoto1">
-															Choose Photo
-														</label>
-														<input type="hidden" value="" name="serverPhoto1">
-													</div>
-												</div>
-												<div class="row justify-content-between m-0">
-													<div class="col col-auto p-0 m-0">
-														<button type="button" class="btn btn-primary btn-sm twitarr-image-remove">Remove</button>
-													</div>
-												</div>
-											</div>
-										</div>
-									</div>
-									<div class="col col-6 text-end">
-										<button type="submit" class="btn btn-primary">Post<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button><br>
-										<small>Please remember to abide by the <a href="/codeOfConduct">Code of Conduct</a></small>
-									</div>
-								</div>
-								#if(trunk.userIsMod && !post.isEdit):
-									<div class="row justify-content-end mt-2">
-										<div class="col col-auto form-check">
-											<input class="form-check-input" type="checkbox" value="" name="postAsTwitarrTeam" id="flexCheckDefault">
-											<label class="form-check-label small" for="flexCheckDefault">Post as TwitarrTeam</label>
-										</div>
-										<div class="col col-auto form-check">
-											<input class="form-check-input" type="checkbox" value="" name="postAsModerator" id="flexCheckDefault">
-											<label class="form-check-label small" for="flexCheckDefault">Post as Moderator</label>
-										</div>
-									</div>
-								#endif
-							</form>
-						</li>
+						<span id="newposts"></span>
+						#for(fezPost in newPosts):
+							#extend("Fez/fezPost")
+						#endfor
+						
+						#if(paginator.nextPageURL == nil):
+							<div class="fez-list-end" data-url="/lfg/#(fez.fezID)/socket" id="fez-list-end"></div>
+							<script src="/js/swiftarrMessages.js"></script>
+						#endif
 					</ul>
-					<div class="row">
-						<div class="col text-muted fst-italic" id="socket-status"></div>
-					</div>
+					#extend("paginator")
+					#if(paginator.nextPageURL == nil):
+						<ul class="container-md mt-2 mx-0 px-0 list-group">
+							<li class="list-group-item bg-transparent">				
+								<form class="ajax" action="#(post.formAction)" enctype="multipart/form-data" method="POST" data-successurl="reset">
+									<div class="row"> 
+										<div class="col">
+											<textarea class="form-control" 
+													maxlength="500" 
+													data-lengthlabel="lfgPostLimitsLabel" 
+													rows="3" 
+													data-maxlines="25" 
+													name="postText" 
+													placeholder="Send a message"></textarea>
+										</div>
+									</div>
+									<div class="row justify-content-end mb-2">
+										<div class="col col-auto">
+											<div class="input-group-text input-group-sm py-0" id="lfgPostLimitsLabel"></div>
+										</div>
+									</div>
+									<div class="alert alert-danger mt-3 #if(post.postErrorString == ""):d-none#endif" role="alert">#(post.postErrorString)</div>				
+									<div class="row mb-2 justify-content-between gx-1">
+										<div class="col col-6 col-md-4 col-lg-3">
+											<div class="card">
+												<h5 class="card-header">Photo</h5>
+												<div class="m-1 border img-for-upload-container">
+													<div class="ratio ratio-1x1">
+														<img class="img-for-upload" alt="">
+													</div>
+												</div>
+												<p class="text-center no-image-marker"><i>no photo selected</i></p>
+												<div class="container-fluid p-1">
+													<div class="row">
+														<div class="col">
+															<label class="btn btn-primary col-12 form-label">
+																<input class="image-upload-input d-none" type="file" accept="#(post.allowedImageTypes)" name="localPhoto1">
+																Choose Photo
+															</label>
+															<input type="hidden" value="" name="serverPhoto1">
+														</div>
+													</div>
+													<div class="row justify-content-between m-0">
+														<div class="col col-auto p-0 m-0">
+															<button type="button" class="btn btn-primary btn-sm twitarr-image-remove">Remove</button>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+										<div class="col col-6 text-end">
+											<button type="submit" class="btn btn-primary">Post<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button><br>
+											<small>Please remember to abide by the <a href="/codeOfConduct">Code of Conduct</a></small>
+										</div>
+									</div>
+									#if(trunk.userIsMod && !post.isEdit):
+										<div class="row justify-content-end mt-2">
+											<div class="col col-auto form-check">
+												<input class="form-check-input" type="checkbox" value="" name="postAsTwitarrTeam" id="flexCheckDefault">
+												<label class="form-check-label small" for="flexCheckDefault">Post as TwitarrTeam</label>
+											</div>
+											<div class="col col-auto form-check">
+												<input class="form-check-input" type="checkbox" value="" name="postAsModerator" id="flexCheckDefault">
+												<label class="form-check-label small" for="flexCheckDefault">Post as Moderator</label>
+											</div>
+										</div>
+									#endif
+								</form>
+							</li>
+						</ul>
+						<div class="row">
+							<div class="col text-muted fst-italic" id="socket-status"></div>
+						</div>
+					#endif
 				#endif
 			#endif
 		</div>
@@ -225,11 +237,11 @@
 			<div class="modal-dialog">
 				<div class="modal-content">
 					<div class="modal-header">
-						<h5 class="modal-title" id="leave fez modal">Leave LFG</h5>
+						<h5 class="modal-title" id="leave fez modal">Leave #(typeName)</h5>
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 					</div>
 					<div class="modal-body">
-						Are you sure you want to leave the LFG? You'll be giving up your spot--LFGs with limited space are first-come, first-served.
+						Are you sure you want to leave the #(typeName)? You'll be giving up your spot--LFGs with limited space are first-come, first-served.
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -244,7 +256,7 @@
 						</label>
 					</div>
 					<div class="mx-3 pb-1 text-end text-danger d-none error-display" id="fezDialog_errorDisplay">
-						Error attempting to leave LFG: <span class="errortext"></span>
+						Error attempting to leave #(typeName): <span class="errortext"></span>
 					</div>
 				</div>
 			</div>
@@ -254,12 +266,12 @@
 			<div class="modal-dialog">
 				<div class="modal-content">
 					<div class="modal-header">
-						<h5 class="modal-title" id="cancel fez modal">Cancel LFG</h5>
+						<h5 class="modal-title" id="cancel fez modal">Cancel #(typeName)</h5>
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 					</div>
 					<div class="modal-body">
-						<p>Cancelling the LFG will mark the LFG as not happening and notify all participants.
-						The LFG won't be deleted; participants can still create and read posts.</p>
+						<p>Cancelling the #(typeName) will mark the #(typeName) as not happening and notify all participants.
+						The #(typeName) won't be deleted; participants can still create and read posts.</p>
 						#if(fez.members):
 							#if(count(fez.members.participants) > 1):
 								<p>If you haven't, you may want to make a post letting particpants know why the event was cancelled.</p>
@@ -267,7 +279,7 @@
 						#endif
 					</div>
 					<div class="modal-footer">
-						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">DON'T Cancel LFG</button>
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">DON'T Cancel #(typeName)</button>
 						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
 								data-actionpath="/lfg/#(fez.fezID)/cancel"
 								data-errordiv="cancelDialog_errorDisplay"
@@ -279,7 +291,7 @@
 						</label>
 					</div>
 					<div class="mx-3 pb-1 text-end text-danger d-none error-display" id="cancelDialog_errorDisplay">
-						Error attempting to cancel LFG: <span class="errortext"></span>
+						Error attempting to cancel #(typeName): <span class="errortext"></span>
 					</div>
 				</div>
 			</div>

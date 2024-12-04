@@ -89,7 +89,7 @@ extension JSONEncoder.DateEncodingStrategy {
 	}
 }
 
-extension Bool: RESPValueConvertible {
+extension Bool: @retroactive RESPValueConvertible {
 	public init?(fromRESP value: RESPValue) {
 		self = value.int != 0
 	}
@@ -99,7 +99,7 @@ extension Bool: RESPValueConvertible {
 	}
 }
 
-extension UUID: RESPValueConvertible {
+extension UUID: @retroactive RESPValueConvertible {
 	public init?(fromRESP value: RESPValue) {
 		self.init(uuidString: value.string!)
 	}

@@ -101,8 +101,9 @@ struct SiteSeamailController: SiteControllerUtils {
 	//
 	// Shows the root Seamail page, with a list of all conversations.
 	func seamailRootPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/fez/joined", query: [URLQueryItem(name: "type", value: "closed"),
-				URLQueryItem(name: "type", value: "open")], passThroughQuery: true)
+		let typeList = [URLQueryItem(name: "type", value: "closed"), URLQueryItem(name: "type", value: "open"),
+				URLQueryItem(name: "type", value: "privateEvent")]
+		let response = try await apiQuery(req, endpoint: "/fez/joined", query: typeList, passThroughQuery: true)
 		let fezList = try response.content.decode(FezListData.self)
 		// Re-sort fezzes so ones with new msgs are first. Keep most-recent-change sort within each group.
 		var newMsgFezzes: [FezData] = []
@@ -184,8 +185,7 @@ struct SiteSeamailController: SiteControllerUtils {
 		guard formContent.postText.count > 0 else {
 			throw Abort(.badRequest, reason: "First message cannot be empty.")
 		}
-		let lines = formContent.postText.replacingOccurrences(of: "\r\n", with: "\r").components(separatedBy: .newlines)
-			.count
+		let lines = formContent.postText.replacingOccurrences(of: "\r\n", with: "\r").components(separatedBy: .newlines).count
 		guard lines <= 25 else {
 			throw Abort(.badRequest, reason: "Messages are limited to 25 lines of text.")
 		}
@@ -406,8 +406,14 @@ private func titleAndTab(for req: Request) -> (String, TrunkContext.Tab) {
 		title = "Moderator Seamail"
 		tab = .moderator
 	default:
-		title = "Seamail"
-		tab = .seamail
+		if req.url.path.contains("/privateevent") {
+			title = "Private Events"
+			tab = .home
+		}
+		else {
+			title = "Seamail"
+			tab = .seamail
+		}
 	}
 	return (title, tab)
 }

@@ -15,7 +15,7 @@ final class TimeZoneChange: Model {
 	/// The TimeZoneChange's ID, provisioned automatically.
 	@ID(key: .id) var id: UUID?
 	
-	/// The generated token value.
+	/// The time, in absolute tems, when this Time Zone comes into effect. The TZ stays in effect until superceded by another TimeZoneChange; the last one is in effect forever, as far as we're concerned.
 	@Field(key: "start_time") var startTime: Date
 		
 	/// Abbreviation of the timezone, such as EST.
@@ -140,5 +140,28 @@ struct TimeZoneChangeSet : Codable {
 			return cal.date(from: dateComponents) ?? actualTime
 		}
 		return actualTime
+	}
+	
+	// When a user submits a time value for a future date, they usually enter what's effectively an HTML 'datetime-local', 
+	// (even native clients do this unless they ask for a TZ specifically). The user sees "5 PM Thursday" but the server
+	// sees a UTC Date value.
+	//
+	// Assuming the user's TZ is set correctly, the UTC date object we get is 5 PM Thursday in the *current server* TZ, not necessarily the TZ
+	// the boat will be in at that future time. So, we offset the date value to be 5 PM Thursday in the port timezone when we save it to the db,
+	// and offset it again on retrieval to be in the tz the boat will be in at the given time.
+	//
+	// Note that this SHOULD NOT BE USED for timestamping things. When saving a db record with a timestamp, that timestamp is the 
+	// absolute time 'now', and should not be modified for time zones.
+	func serverTimeToPortTime(_ time: Date?) -> Date? {
+		guard let time else { return nil }
+		let currentTime = Date()
+		if let currentRecord = changePoints.last(where: { $0.startTime <= currentTime }), 
+				let currentTZ = TimeZone(identifier: currentRecord.timeZoneID) {
+			let cal = Settings.shared.getPortCalendar()
+			var dateComponents = cal.dateComponents(in: currentTZ, from: time)
+			dateComponents.timeZone = Settings.shared.portTimeZone
+			return cal.date(from: dateComponents) ?? time
+		}
+		return time
 	}
 }

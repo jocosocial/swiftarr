@@ -1,3 +1,5 @@
+#comment("Context of type SeamailRootPageContext")
+
 #extend("trunk"):
     #export("body"):
     	<div class="container-md ms-0 mt-2">
@@ -14,7 +16,7 @@
 			    		Filter: New Msgs
 					</a>
 					#endif
-			    	<a class="btn btn-primary btn-sm" role="button" href="/seamail/create">New Seamail</a>
+			    	<a class="btn btn-primary btn-sm" role="button" href="/privateevent/create">New</a>
 				</div>
 			</div>
 			#extend("paginator")
@@ -42,8 +44,7 @@
     #export("searchform"):
 		<div class="container-fluid collapse swiftarr-searchbar#if(query.search): show#endif" id="searchBar">
 			<form class="d-flex" action="/seamail/search">
-				#if(effectiveUser != nil):<input type="hidden" name="foruser" value="#(effectiveUser)"/>#endif
-				<input class="form-control" type="search" name="search" value="#(query.search)" placeholder="Search Seamails" aria-label="Search" autocapitalize="off" required/>
+				<input class="form-control" type="search" name="search" value="#(query.search)" placeholder="Search Seamails" aria-label="Search" autocapitalize="off" required>
 				<button class="btn btn-success ms-2" type="submit">Search</button>
 			</form>
 		</div>

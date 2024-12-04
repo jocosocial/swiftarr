@@ -12,6 +12,9 @@ struct AdminController: APIRouteCollection {
 
 		// convenience route group for all /api/v3/admin endpoints
 		let adminRoutes = app.grouped("api", "v3", "admin")
+		
+		// Open routes with no auth requirements
+		adminRoutes.get("timezonechanges", use: timeZoneChangeHandler)
 
 		// endpoints available to TwitarrTeam and above
 		let ttAuthGroup = adminRoutes.tokenRoutes(minAccess: .twitarrteam)
@@ -54,7 +57,6 @@ struct AdminController: APIRouteCollection {
 		// Routes that only the Admin account can access
 		let adminAuthGroup = adminRoutes.tokenRoutes(minAccess: .admin)
 		adminAuthGroup.post("serversettings", "update", use: settingsUpdateHandler)
-		adminAuthGroup.get("timezonechanges", use: timeZoneChangeHandler)
 		adminAuthGroup.post("timezonechanges", "reloadtzdata", use: reloadTimeZoneChangeData)
 		adminAuthGroup.get("bulkuserfile", "download", use: userfileDownloadHandler)
 		adminAuthGroup.post("bulkuserfile", "upload", use: userfileUploadPostHandler)

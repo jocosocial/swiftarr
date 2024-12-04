@@ -1,50 +1,160 @@
-<a class="list-group-item list-group-item-action" href="/lfg/#(fez.fezID)">		
-	<div class="row">
-		<div class="col">
-			#if(fez.cancelled):<span class="text-danger"><b>Cancelled</b></span>#endif <b>#(fez.title)</b>
-		</div>
-		<div class="col col-auto">
-			<span class="text-muted">#fezTime(fez.startTime, fez.endTime)</span>
-		</div>
-	</div>
+#comment("Context must contain 'trunk' -- globals")
+#comment("Context must contain 'fez' of type FezData; usually done with `for(fez in list)`")
+#comment("Can show LFGs, Seamails, and Private Events in the same list")
+#comment("Usually contained in a div with class `list-group`")
 
-	<div class="row">
-		<div class="col">
-			by: #userByline(fez.owner, "nolink")
+#if(fez.fezType == "closed" || fez.fezType == "open"):
+	<a href="/seamail/#(fez.fezID)#if(effectiveUser != nil):?foruser=#(effectiveUser)#endif" class="list-group-item list-group-item-action">		
+		<div class="row">
+			<div class="col #if(fez.members && fez.members.isMuted):text-muted#endif">
+				#if(fez.members && fez.members.isMuted):🔇#endif <b>#(fez.title)</b>
+			</div>
+			<div class="col col-auto">
+				<span title="#localTime(fez.lastModificationTime)" class="text-muted">#relativeTime(fez.lastModificationTime)</span>
+			</div>
 		</div>
-		<div class="col col-auto">
-			#if(fez.maxParticipants == 0):
-				#(fez.participantCount) attendee#if(fez.participantCount != 1):s#endif
-			#elseif(fez.participantCount > fez.maxParticipants):
-				Full; #(fez.participantCount - fez.maxParticipants) waitlisted
+		<div class="row">
+			#if(fez.members):
+				#for(participant in fez.members.participants):
+					#if(participant.userID != trunk.userID):
+						<div class="col col-auto border">
+							#avatar(participant)
+							<span>#(participant.username)</span>
+						</div>	
+					#endif			
+				#endfor
 			#else:
-				#(fez.participantCount)/#(fez.maxParticipants) attendees
+				<div class="col col-auto">
+					by: #userByline(fez.owner, "nolink")
+				</div>
 			#endif
 		</div>
-	</div>
-
-	<div class="row">
-		<div class="col">
-			#(fez.fezType)
+		<div class="row">
+			<div class="col text-muted">
+				#lfgLabel(fez.fezType)
+			</div>
+			#if(fez.members):
+				<div class="col col-auto">
+					<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) post#if(fez.members.postCount != 1):s#endif</span>
+					#if(fez.members.readCount < fez.members.postCount):
+						<span class="badge rounded-pill #if(fez.members.isMuted):bg-light text-dark#else:bg-danger#endif">#(fez.members.postCount - fez.members.readCount) new</span>
+					#endif
+				</div>
+			#endif
 		</div>
-		#if(fez.members):
+	</a>
+#elseif(fez.fezType == "privateEvent" || fez.fezType == "personalEvent"):
+	<a class="list-group-item list-group-item-action" href="/privateevent/#(fez.fezID)">		
+		<div class="row">
+			<div class="col">
+				#if(fez.cancelled):<span class="text-danger"><b>Cancelled</b></span>#endif <b>#(fez.title)</b>
+			</div>
 			<div class="col col-auto">
-				<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) posts</span>
-				#if(fez.members.readCount < fez.members.postCount):
-					<span class="badge rounded-pill bg-danger">#(fez.members.postCount - fez.members.readCount) new</span>
+				#if(fez.startTime != nil && fez.endTime != nil):
+					<span class="text-muted">#fezTime(fez.startTime, fez.endTime)</span>
 				#endif
 			</div>
+		</div>
+
+		#if(fez.fezType != "personalEvent"):
+			<div class="row">
+				<div class="col">
+					by: #userByline(fez.owner, "nolink")
+				</div>
+				<div class="col col-auto">
+					#(fez.participantCount) attendee#if(fez.participantCount != 1):s#endif
+				</div>
+			</div>
 		#endif
-	</div>
-	
-	<div class="row d-none">
-		<div class="col">
-			#(fez.location)
+
+		<div class="row justify-content-between">
+			<div class="col col-auto text-break text-muted">
+				#lfgLabel(fez.fezType)
+			</div>
+			#if(fez.members):
+				<div class="col text-end">
+					#(fez.location)
+				</div>
+			#endif
 		</div>
-	</div>
-	<div class="row d-none">
-		<div class="col">
-			#formatPostText(fez.info)
+		<div class="row justify-content-between">
+			#if(fez.members && fez.fezType != "personalEvent"):
+				<div class="col col-auto">
+					<span title="#localTime(fez.lastModificationTime)" class="text-muted">#relativeTime(fez.lastModificationTime)</span>
+				</div>
+				<div class="col col-auto">
+					<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) post#if(fez.members.postCount != 1):s#endif</span>
+					#if(fez.members.readCount < fez.members.postCount):
+						<span class="badge rounded-pill bg-danger">#(fez.members.postCount - fez.members.readCount) new</span>
+					#endif
+				</div>
+			#endif
 		</div>
-	</div>
-</a>
+		
+		#if(fez.members):
+			<div class="row d-none">
+				<div class="col">
+					#(fez.location)
+				</div>
+			</div>
+			<div class="row d-none">
+				<div class="col">
+					#formatPostText(fez.info)
+				</div>
+			</div>
+		#endif
+	</a>
+#else:
+	<a class="list-group-item list-group-item-action" href="/lfg/#(fez.fezID)">		
+		<div class="row">
+			<div class="col">
+				#if(fez.cancelled):<span class="text-danger"><b>Cancelled</b></span>#endif <b>#(fez.title)</b>
+			</div>
+			<div class="col col-auto">
+				#if(fez.startTime != nil && fez.endTime != nil):
+					<span class="text-muted">#fezTime(fez.startTime, fez.endTime)</span>
+				#endif
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="col">
+				by: #userByline(fez.owner, "nolink")
+			</div>
+			<div class="col col-auto">
+				#if(fez.maxParticipants == 0):
+					#(fez.participantCount) attendee#if(fez.participantCount != 1):s#endif
+				#elseif(fez.participantCount > fez.maxParticipants):
+					Full; #(fez.participantCount - fez.maxParticipants) waitlisted
+				#else:
+					#(fez.participantCount)/#(fez.maxParticipants) attendees
+				#endif
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="col text-muted">
+				#lfgLabel(fez.fezType)
+			</div>
+			#if(fez.members):
+				<div class="col col-auto">
+					<span class="badge rounded-pill bg-light text-dark">#(fez.members.postCount) posts</span>
+					#if(fez.members.readCount < fez.members.postCount):
+						<span class="badge rounded-pill bg-danger">#(fez.members.postCount - fez.members.readCount) new</span>
+					#endif
+				</div>
+			#endif
+		</div>
+		
+		<div class="row d-none">
+			<div class="col">
+				#(fez.location)
+			</div>
+		</div>
+		<div class="row d-none">
+			<div class="col">
+				#formatPostText(fez.info)
+			</div>
+		</div>
+	</a>
+#endif

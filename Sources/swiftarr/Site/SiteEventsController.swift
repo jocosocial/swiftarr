@@ -17,6 +17,7 @@ fileprivate struct EventPageContext: Encodable {
 	var trunk: TrunkContext
 	var events: [EventData]
 	var days: [CruiseDay]
+	var currentDayName: String
 	var isBeforeCruise: Bool
 	var isAfterCruise: Bool
 	var upcomingEvent: EventData?
@@ -37,10 +38,15 @@ fileprivate struct EventPageContext: Encodable {
 
 		// Set up the day buttons, one for each day of the cruise.
 		let daynames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+		let fullDayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 		days = [CruiseDay]()
+		currentDayName = ""
 		for dayIndex in 1...Settings.shared.cruiseLengthInDays {
 			let weekday = (Settings.shared.cruiseStartDayOfWeek + dayIndex - 2) % 7
 			days.append(CruiseDay(name: daynames[weekday], index: dayIndex - 1, activeDay: dayIndex == dayOfCruise))
+			if dayIndex == dayOfCruise {
+				currentDayName = fullDayNames[weekday]
+			}
 		}
 
 		if let _ = trunk.alertCounts.nextFollowedEventTime {
@@ -51,9 +57,8 @@ fileprivate struct EventPageContext: Encodable {
 		self.filterString = filterString
 		self.useAllDays = query.search != nil
 		self.cruiseStartDate = Settings.shared.cruiseStartDate()
-		var dateComponent = DateComponents()
-		dateComponent.day = Settings.shared.cruiseLengthInDays
-		self.cruiseEndDate = Calendar.current.date(byAdding: dateComponent, to: cruiseStartDate) ?? cruiseStartDate
+		self.cruiseEndDate = Settings.shared.getPortCalendar().date(byAdding: .day, value: Settings.shared.cruiseLengthInDays,
+				to: cruiseStartDate) ?? cruiseStartDate
 
 		// Set up a special URL that will open in calendaring apps.
 		if let user = req.auth.get(UserCacheData.self),
@@ -182,7 +187,7 @@ struct SiteEventsController: SiteControllerUtils {
 
 		dayOfCruise = (7 + thisWeekday - Settings.shared.cruiseStartDayOfWeek) % 7 + 1
 		let eventContext = EventPageContext(req, events: events, dayOfCruise: dayOfCruise, filterString: filterString, query: queryStruct)
-		return try await req.view.render("events", eventContext)
+		return try await req.view.render("Events/singleEvent", eventContext)
 	}
 
 	// `GET /events/:event_id/calendarevent.ics`
@@ -204,8 +209,7 @@ struct SiteEventsController: SiteControllerUtils {
 	// `GET /events/personal/:personal_event_id/calendarevent.ics`
 	//
 	// Returns a .ics file containing info on the given event; suitable for opening in calendaring apps.
-	func personalEventDownloadICSHandler
-(_ req: Request) async throws -> Response {
+	func personalEventDownloadICSHandler(_ req: Request) async throws -> Response {
 		guard let eventID = req.parameters.get(personalEventIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw Abort(.badRequest, reason: "Missing event ID parameter.")
 		}

@@ -19,7 +19,7 @@
 				<a class="list-group-item list-group-item-action" href="/moderator/log">
 					<b>Moderator Log</b>: View log of moderation actions
 				</a>	
-				<a class="list-group-item list-group-item-action" href="/seamail?foruser=moderator">
+				<a class="list-group-item list-group-item-action" href="/moderator/seamail">
 					<b>Moderator Seamail</b>: Seamail to @moderator
 					#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 0):
 						<div><span class="text-muted border-bottom border-danger"><i>#(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount) New Message#if(trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 1):s#endif</i></span></div>

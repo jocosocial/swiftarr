@@ -541,6 +541,7 @@ struct SwiftarrConfigurator {
 		app.leaf.tags["localTime"] = LocalTimeTag()
 		app.leaf.tags["markdownTextTag"] = MarkdownTextTag()
 		app.leaf.tags["dinnerTeamTag"] = DinnerTeamTag()
+		app.leaf.tags["lfgLabel"] = LFGLabelTag()
 		app.leaf.tags["notEmpty"] = NotEmptyTag()
 	}
 
@@ -667,6 +668,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateMicroKaraokeUser(), to: .psql)
 		app.migrations.add(StreamPhotoSchemaV2(), to: .psql)
 		app.migrations.add(CreatePersonalEventSchema(), to: .psql)
+		app.migrations.add(AddDeletedTimestampToFezParticipantSchema(), to: .psql)
 	}
 
 	// Perform several sanity checks to verify that we can access the dbs and resource files that we need.

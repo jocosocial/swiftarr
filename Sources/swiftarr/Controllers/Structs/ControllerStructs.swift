@@ -403,12 +403,28 @@ public struct FezContentData: Content {
 	var minCapacity: Int
 	/// The maximum number of users for the fez.
 	var maxCapacity: Int
-	/// Users to add to the fez upon creation. The creator is always added as the first user.
+	/// Users to add to the fez upon creation. The creator is always added as the first user. Ignored on update.
 	var initialUsers: [UUID]
 	/// If TRUE, the Fez will be created by user @moderator instead of the current user. Current user must be a mod.
 	var createdByModerator: Bool?
 	/// If TRUE, the Fez will be created by user @TwitarrTeam instead of the current user. Current user must be a TT member.
 	var createdByTwitarrTeam: Bool?
+}
+
+extension FezContentData {
+	init(privateEvent: PersonalEventContentData) {
+		self.title = privateEvent.title
+		self.info = privateEvent.description ?? ""
+		self.location = privateEvent.location
+		self.startTime = privateEvent.startTime
+		self.endTime = privateEvent.endTime
+		self.fezType = .privateEvent
+		self.initialUsers = privateEvent.participants
+		self.minCapacity = 0
+		self.maxCapacity = 0
+		self.createdByModerator = false
+		self.createdByTwitarrTeam = false
+	}
 }
 
 extension FezContentData: RCFValidatable {
@@ -537,14 +553,11 @@ extension FezData {
 		self.fezType = fez.fezType
 		self.title = fez.moderationStatus.showsContent() ? fez.title : "Fez Title is under moderator review"
 		self.info = fez.moderationStatus.showsContent() ? fez.info : "Fez Information field is under moderator review"
-		self.startTime =
-			fez.startTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.startTime)
+		self.startTime = fez.startTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.startTime)
 		self.endTime = fez.endTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.endTime)
 		self.timeZone = self.startTime == nil ? nil : Settings.shared.timeZoneChanges.abbrevAtTime(self.startTime)
-		self.timeZoneID =
-			self.startTime == nil ? nil : Settings.shared.timeZoneChanges.tzAtTime(self.startTime).identifier
-		self.location =
-			fez.moderationStatus.showsContent() ? fez.location : "Fez Location field is under moderator review"
+		self.timeZoneID = self.startTime == nil ? nil : Settings.shared.timeZoneChanges.tzAtTime(self.startTime).identifier
+		self.location = fez.moderationStatus.showsContent() ? fez.location : "Fez Location field is under moderator review"
 		self.lastModificationTime = fez.updatedAt ?? Date()
 		self.participantCount = fez.participantArray.count
 		self.minParticipants = fez.minCapacity
@@ -1978,11 +1991,23 @@ public struct UserNotificationData: Content {
 	var forumMentionCount: Int
 	/// Number of forum post @mentions the user has not read. 0 if not logged in.
 	var newForumMentionCount: Int
+	
+	/// The number of Seamail chats the user's been added to but not yet viewed. Does not include Seamails the user creates. Chats counted here will continue
+	/// to be counted here and not in `newSeamailMessageCount` even if there are also new messages--until the user views the chat and clears the notification.
+	var addedToSeamailCount: Int
+	/// The number of LFGs the user's been added to but not yet viewed. Doesn't include LFGs the user created nor ones they Joined by their own action. 
+	/// If a chat the user was added to (but hasn't yet viewed) gets new messages, that chat is counted in this total and not in `newFezMessageCount`.
+	var addedToLFGCount: Int
+	/// The number of Private Events the user's been added to but not yet viewed. Doesn't include PEs the user created. 
+	/// If a chat the user was added to (but hasn't yet viewed) gets new messages, that chat is counted in this total and not in `newPrivateEventMessageCount`.
+	var addedToPrivateEventCount: Int
 
 	/// Count of # of Seamail threads with new messages. NOT total # of new messages-a single seamail thread with 10 new messages counts as 1. 0 if not logged in.
 	var newSeamailMessageCount: Int
-	/// Count of # of Fezzes with new messages. 0 if not logged in.
+	/// Count of # of LFGs with new messages. 0 if not logged in.
 	var newFezMessageCount: Int
+	/// Count of # of Private Events with new messages. 0 if not logged in.
+	var newPrivateEventMessageCount: Int
 
 	/// The start time of the earliest event that the user has followed with a start time > now. nil if not logged in or no matching event.
 	var nextFollowedEventTime: Date?
@@ -2032,8 +2057,9 @@ public struct UserNotificationData: Content {
 
 extension UserNotificationData {
 	init(
-		newFezCount: Int,
-		newSeamailCount: Int,
+		seamailCounts: (Int, Int), 
+		lfgCounts: (Int, Int), 
+		privateEventCounts: (Int, Int),
 		activeAnnouncementIDs: [Int],
 		newAnnouncementCount: Int,
 		nextEventTime: Date?,
@@ -2054,8 +2080,12 @@ extension UserNotificationData {
 		self.newTwarrtMentionCount = 0
 		self.forumMentionCount = 0
 		self.newForumMentionCount = 0
-		self.newSeamailMessageCount = newSeamailCount
-		self.newFezMessageCount = newFezCount
+		self.addedToSeamailCount = seamailCounts.0
+		self.addedToLFGCount = lfgCounts.0
+		self.addedToPrivateEventCount = privateEventCounts.0
+		self.newSeamailMessageCount = seamailCounts.1
+		self.newFezMessageCount = lfgCounts.1
+		self.newPrivateEventMessageCount = privateEventCounts.1
 		self.nextFollowedEventTime = nextEventTime
 		self.nextFollowedEventID = nextEvent
 		self.microKaraokeFinishedSongCount = microKaraokeFinishedSongCount
@@ -2077,9 +2107,13 @@ extension UserNotificationData {
 		self.twarrtMentionCount = 0
 		self.newTwarrtMentionCount = 0
 		self.forumMentionCount = 0
+		self.addedToSeamailCount = 0
+		self.addedToLFGCount = 0
+		self.addedToPrivateEventCount = 0
 		self.newForumMentionCount = 0
 		self.newSeamailMessageCount = 0
 		self.newFezMessageCount = 0
+		self.newPrivateEventMessageCount = 0
 		self.nextFollowedEventTime = nil
 		self.microKaraokeFinishedSongCount = 0
 		self.alertWords = []
@@ -2388,7 +2422,7 @@ public struct PersonalEventData: Content {
 }
 
 extension PersonalEventData {
-	init(_ personalEvent: PersonalEvent, ownerHeader: UserHeader, participantHeaders: [UserHeader]) throws {
+	init(_ personalEvent: FriendlyFez, ownerHeader: UserHeader, participantHeaders: [UserHeader]) throws {
 		let timeZoneChanges = Settings.shared.timeZoneChanges
 		self.personalEventID = try personalEvent.requireID()
 		self.title = personalEvent.title
@@ -2402,6 +2436,25 @@ extension PersonalEventData {
 		self.owner = ownerHeader
 		self.participants = participantHeaders
 	}
+	
+	init(_ lfg: FezData, request: Request) throws {
+		guard let startTime = lfg.startTime, let endTime = lfg.endTime else { 
+			throw Abort(.internalServerError, reason: "Personal Event must have start and end time")	
+		}
+		let timeZoneChanges = Settings.shared.timeZoneChanges
+		self.personalEventID = lfg.fezID
+		self.title = lfg.title
+		self.description = lfg.info
+		self.startTime = startTime
+		self.endTime = endTime
+		self.timeZone = timeZoneChanges.abbrevAtTime(self.startTime)
+		self.timeZoneID = timeZoneChanges.tzAtTime(self.startTime).identifier
+		self.location = lfg.location
+		self.lastUpdateTime = lfg.lastModificationTime
+		self.owner = lfg.owner
+		self.participants = lfg.members?.participants.filter { $0.userID != lfg.owner.userID } ?? []
+	}
+
 }
 
 /// PersonalEventContentData is used for creating and editing a PersonalEvent.

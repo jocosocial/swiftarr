@@ -753,3 +753,34 @@ window.addEventListener('DOMContentLoaded', function () {
 		document.getElementById('browserTimeDisplay').innerHTML = formatter.format(browserTime).replace(" at ", ", ")
 	}
 })
+
+// MARK: - Day Planner 
+let table = document.querySelector('[data-daystart]');
+let dayStart = table == null ? null : new Date(table.getAttribute('data-daystart') * 1000);
+let dayEnd =  table == null ? null : new Date(table.getAttribute('data-dayend') * 1000);
+if (dayStart != null && dayEnd != null) {
+	updateTimeHorizRule(true);
+	let timerFn = setInterval(updateTimeHorizRule, 60000, false);
+}
+
+function updateTimeHorizRule(isPageLoad) {
+	let timeRow = document.querySelector(".currentTimeLine");
+	let currentDate = new Date();
+	if (currentDate > dayStart && currentDate < dayEnd) {
+		timeRow.classList.remove("d-none");
+		var rowIndex = Math.floor((currentDate - dayStart) / (1000 * 30 * 60));
+		let row = table.querySelector("tbody").children[rowIndex];
+		let horizRuleOffset = row.offsetTop + row.offsetHeight * ((currentDate - dayStart) / (1000 * 30 * 60) - rowIndex) - 2;
+		timeRow.style.setProperty("top", horizRuleOffset + "px");
+		if (isPageLoad) {
+			let scrollIndex = Math.max(rowIndex - 2, 0);
+			window.scrollTo({ top: document.getElementById(`dayPlannerRow${scrollIndex}`).offsetTop, left: 0, behavior: "instant"});
+		}
+	}
+	else {
+		timeRow.classList.add("d-none");
+		if (isPageLoad) {
+			window.scrollTo({ top: document.getElementById("dayPlannerRow16").offsetTop, left: 0, behavior: "instant"});
+		}
+	}
+}

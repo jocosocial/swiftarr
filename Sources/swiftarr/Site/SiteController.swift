@@ -374,9 +374,9 @@ struct ReportPageContext: Encodable {
 	}
 
 	// For reporting a fez (The fez itself: title, info, location)
-	init(_ req: Request, fezID: String) throws {
-		trunk = .init(req, title: "Report LFG Content", tab: .lfg)
-		reportTitle = "Report LFG Content"
+	init(_ req: Request, fezID: String, type: FezType) throws {
+		trunk = .init(req, title: "Report \(type.lfgLabel) Content", tab: .lfg)
+		reportTitle = "Report \(type.lfgLabel) Content"
 		reportFormAction = "/lfg/report/\(fezID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/lfg"
 	}
@@ -756,20 +756,16 @@ extension SiteControllerUtils {
 	// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content
 	// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
 	// redirect-chained through /login and back.
-	func getGlobalRoutes(
-		_ app: Application,
-		feature: SwiftarrFeature? = nil,
-		minAccess: UserAccessLevel = .banned,
-		path: PathComponent...
-	) -> RoutesBuilder {
-		var builder = app.grouped([
-			app.sessions.middleware,
-			SiteErrorMiddleware(environment: app.environment),
-			UserCacheData.SessionAuth(),
-			Token.authenticator(),  // For apps that want to sometimes open web pages
-			NotificationsMiddleware(),
-			//				UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated.")),
-			SiteMinUserAccessLevelMiddleware(requireAuth: true, requireAccessLevel: minAccess),
+	func getGlobalRoutes(_ app: Application, feature: SwiftarrFeature? = nil, minAccess: UserAccessLevel = .banned,
+			path: PathComponent...) -> RoutesBuilder {
+		var builder = app.grouped(path).grouped([
+				app.sessions.middleware,
+				SiteErrorMiddleware(environment: app.environment),
+				UserCacheData.SessionAuth(),
+				Token.authenticator(),  // For apps that want to sometimes open web pages
+				NotificationsMiddleware(),
+//				UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated.")),
+				SiteMinUserAccessLevelMiddleware(requireAuth: true, requireAccessLevel: minAccess),
 		])
 		if let feature = feature {
 			builder = builder.grouped(DisabledSiteSectionMiddleware(feature: feature))
@@ -782,28 +778,18 @@ extension SiteControllerUtils {
 	// Private site routes should not allow token auth. Token auth is for apps that want to open a webpage with their
 	// token. They can initiate a web flow with a token, get a session back, and use that to complete the flow. However,
 	// we don't want apps to be able to jump to private web pages.
-	func getPrivateRoutes(
-		_ app: Application,
-		feature: SwiftarrFeature? = nil,
-		minAccess: UserAccessLevel = .banned,
-		path: PathComponent...,
-		overrideMinUserAccessLevel: Bool = false
-	) -> RoutesBuilder {
-		var builder = app.grouped(path)
-			.grouped([
+	func getPrivateRoutes(_ app: Application, feature: SwiftarrFeature? = nil, minAccess: UserAccessLevel = .banned,
+			path: PathComponent..., overrideMinUserAccessLevel: Bool = false) -> RoutesBuilder {
+		var builder = app.grouped(path).grouped([
 				app.sessions.middleware,
 				SiteErrorMiddleware(environment: app.environment),
 				UserCacheData.SessionAuth(),
 			])
 		if overrideMinUserAccessLevel {
-			builder = builder.grouped(
-				UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated."))
-			)
+			builder = builder.grouped(UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated.")))
 		}
 		else {
-			builder = builder.grouped(
-				SiteMinUserAccessLevelMiddleware(requireAuth: true, requireAccessLevel: minAccess)
-			)
+			builder = builder.grouped(SiteMinUserAccessLevelMiddleware(requireAuth: true, requireAccessLevel: minAccess))
 		}
 		if let feature = feature {
 			builder = builder.grouped(DisabledSiteSectionMiddleware(feature: feature))

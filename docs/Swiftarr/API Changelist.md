@@ -170,3 +170,11 @@ New Micro Karaoke feature. API changes include:
 * Add `PersonalEvent` feature.
 * API endpoints, notification and report types, DTO.
 * Add `isFavorite` to `ProfilePublicData`
+
+## Dec 3, 2024
+* UserNotificationData has new fields for `addedTo<Seamail, LFG, PrivateEvent>`. Although these are additive, since they take precedence
+over their "newMessageCount" analogues, some cases where previously clients would see a message count field increase, now they see the
+associated AddedToChat field value increase.
+* UserNotificationData has a new `PrivateEventMessageCount` field
+* SocketNotificationData has new `addedTo...` message types
+

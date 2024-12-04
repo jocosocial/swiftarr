@@ -63,7 +63,7 @@ final class FriendlyFez: Model, Searchable {
 	// fezzes should probably only be shown to participants, and be left out of searches.
 	@Field(key: "cancelled") var cancelled: Bool
 
-	/// An ordered list of participants in the fez. Newly joined members are appended to the array, meaning this array stays sorted by join time..
+	/// An ordered list of participants in the fez. Newly joined members are appended to the array, meaning this array stays sorted by join time. List includes the creator.
 	@Field(key: "participant_array") var participantArray: [UUID]
 
 	// MARK: Relationships
@@ -121,8 +121,8 @@ final class FriendlyFez: Model, Searchable {
 		self.info = info
 		self.location = location
 		self.moderationStatus = .normal
-		self.startTime = startTime
-		self.endTime = endTime
+		self.startTime = Settings.shared.timeZoneChanges.serverTimeToPortTime(startTime)
+		self.endTime = Settings.shared.timeZoneChanges.serverTimeToPortTime(endTime)
 		self.minCapacity = minCapacity
 		self.maxCapacity = maxCapacity
 		self.postCount = 0
@@ -154,16 +154,6 @@ extension FriendlyFez: Reportable {
 	/// No auto quarantine for fezzes.
 	var autoQuarantineThreshold: Int { Int.max }
 }
-
-extension FriendlyFez {
-	func notificationType() throws -> NotificationType {
-		if [.closed, .open].contains(fezType) {
-			return try .seamailUnreadMsg(requireID())
-		}
-		return try .fezUnreadMsg(requireID())
-	}
-}
-
 
 struct CreateFriendlyFezSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {

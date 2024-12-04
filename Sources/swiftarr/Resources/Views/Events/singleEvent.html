@@ -1,0 +1,22 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+    		<div class="row mb-1">
+    			<div class="col ">
+    				<b>Happening on #(currentDayName):</b>
+				</div>
+			</div>
+		</div>
+		<ul class="container-md mx-0 px-0 list-group" data-listtype="event" data-cruisestart="#(cruiseStartDate)" data-cruiseend="#(cruiseEndDate)">
+		#if(count(events) == 0):
+			<li class="list-group-item bg-transparent">
+				<span class="text-center"><h6>No matching event.</h6>
+			</li>
+		#else:
+			#for(event in events):
+				#extend("/Events/event")
+			#endfor
+		#endif
+		</ul>
+    #endexport
+#endextend

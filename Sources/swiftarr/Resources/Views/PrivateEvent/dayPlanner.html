@@ -1,0 +1,107 @@
+#extend("trunk"):
+    #export("subheader"):
+		<div class="container-fluid dayplanner-subheader">
+			<div class="row justify-content-between align-items-center dayplanner-bgcolor py-1">
+				<div class="col flex-grow-0 px-1">
+					#if(previousDayLink == nil):
+						<a class="btn btn-sm btn-primary disabled">&nbsp;&lt;&nbsp;</a>
+					#else:
+						<a class="btn btn-sm btn-primary" href="#(previousDayLink)">&nbsp;&lt;&nbsp;</a>
+					#endif
+				</div>
+				<div class="col flex-grow-1 text-center">
+					<span>#(titleText)</span>
+				</div>
+				<div class="col flex-grow-0 px-1">
+					#if(nextDayLink == nil):
+						<a class="btn btn-sm btn-primary disabled">&nbsp;&gt;&nbsp;</a>
+					#else:
+						<a class="btn btn-sm btn-primary" href="#(nextDayLink)">&nbsp;&gt;&nbsp;</a>
+					#endif
+				</div>
+			</div>
+		</div>
+    #endexport
+    #export("body"):
+	<link href="/css/dayplanner.css" rel="stylesheet">
+	<div class="container-fluid px-0">
+		<table class="dayplanner mb-2" data-daystart="#(dayStart)" data-dayend="#(dayEnd)">
+			<thead>
+				<tr>
+					<th scope="row"></th>
+					<td class="headerSizer"></td>
+					<td class="headerSizer"></td>
+					<td class="headerSizer"></td>
+					<td class="headerSizer"></td>
+					<td class="headerSizer"></td>
+					<td class="headerSizer"></td>
+					<td class="headerSizer"></td>
+					<td class="headerSizer"></td>
+					<td class="headerSizer"></td>
+					<td class="headerSizer"></td>
+					<td class="headerSizer"></td>
+					<td class="headerSizer"></td>
+				</tr>
+				<tr>
+					<td colspan="13" class="currentTimeLine"></td>
+				</tr>
+			</thead>
+			<tbody>
+				#for(row in rows):
+					#if(row.hour != nil):
+						<tr class="hourline" id="dayPlannerRow#(index)">
+							<th scope="row" class="align-top align-text-top align-self-start">#(row.hour)</th>
+					#else:
+						<tr id="dayPlannerRow#(index)">
+							<th scope="row" class="align-top align-text-top align-self-start">#(row.timezone)</th>
+					#endif
+					#for(appt in row.newAppointments):
+						<td rowspan="#(appt.rowCount)" colspan="#(appt.columnCount)" style="height: #(appt.rowCount * 25)px;">
+							#if(appt.link != nil):
+								<div style="padding-top: #(appt.topMargin)px; padding-bottom: #(appt.bottomMargin)px; min-height: 100%; height: #(appt.rowCount * 25)px;">
+									<a class="#(appt.color)" href="#(appt.link)" >
+										#(appt.title)
+									</a>
+								</div>
+							#endif
+						</td>
+					#endfor
+					</tr>
+				#endfor
+			</tbody>
+		</table>
+	</div>
+	<div class="container-fluid">
+		<div class="row justify-content-between mb-2">
+			<div class="col">
+				<a class="btn btn-primary btn-sm" href="/privateevent/list">Private Event List</a>
+			</div>
+			<div class="col col-auto">
+				<a class="btn btn-primary btn-sm" href="/privateevent/create">New Private Event</a>
+			</div>
+		</div>
+		<ul class="list-group">
+			<li class="list-group-item active">
+				<b>About Day Planner</b>
+			</li>
+			<li class="list-group-item bg-transparent">
+				This page shows you a calendar style view of events you're following, LFGs you've created or joined, and Private Events
+				you've created or been invited to. 
+			</li>
+			<li class="list-group-item bg-transparent">
+				Team Events are <span class="goldTeam">Gold</span> and <span class="redTeam">Red</span>,<br>
+				Other Schedule Events are <span class="schedule">Blue</span>,<br>
+				LFGs are <span class="lfg">green</span>,<br>
+				Private Events are <span class="personalEvent">purple</span>.
+			</li>
+			<li class="list-group-item bg-transparent">
+				Tap on an item to view more information about it.
+			</li>
+			<li class="list-group-item bg-transparent">
+				Private Events let you create a calendar item for yourself, plus you can invite others to join you. It can also create
+				a group chat for discussing your event. Everyone invited can see the event in their Day Planner.
+			</li>
+		</ul>
+	</div>
+	#endexport
+#endextend
