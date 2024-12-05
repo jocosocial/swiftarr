@@ -89,7 +89,7 @@ extension JSONEncoder.DateEncodingStrategy {
 	}
 }
 
-extension Bool: @retroactive RESPValueConvertible {
+extension Swift.Bool: RediStack.RESPValueConvertible {
 	public init?(fromRESP value: RESPValue) {
 		self = value.int != 0
 	}
@@ -99,7 +99,7 @@ extension Bool: @retroactive RESPValueConvertible {
 	}
 }
 
-extension UUID: @retroactive RESPValueConvertible {
+extension Foundation.UUID: RediStack.RESPValueConvertible {
 	public init?(fromRESP value: RESPValue) {
 		self.init(uuidString: value.string!)
 	}
