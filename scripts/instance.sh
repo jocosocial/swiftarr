@@ -24,5 +24,5 @@ GIT_ROOT=$(git rev-parse --show-toplevel)
 pushd $GIT_ROOT
 COMPOSE_PROJECT_NAME="swiftarr_instance"
 COMPOSE_FILE="scripts/docker-compose-instance.yml"
-docker-compose -p ${COMPOSE_PROJECT_NAME} -f ${COMPOSE_FILE} "$@"
+docker compose -p ${COMPOSE_PROJECT_NAME} -f ${COMPOSE_FILE} "$@"
 popd  # not really required for subshells, but good practice anyway

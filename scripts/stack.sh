@@ -53,5 +53,5 @@ fi
 envfile="./Sources/swiftarr/seeds/Private Swiftarr Config/${environment}.env"
 echo "Using env file at ${envfile}"
 
-docker-compose --project-name "${stackname}" --env-file "${envfile}" --file "${filename}" "${@}"
+docker compose --project-name "${stackname}" --env-file "${envfile}" --file "${filename}" "${@}"
 cd $CURRENT_DIR
