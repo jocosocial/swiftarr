@@ -635,6 +635,9 @@ struct SwiftarrConfigurator {
 		app.migrations.add(StreamPhotoSchemaV2(), to: .psql)
 		app.migrations.add(CreatePersonalEventSchema(), to: .psql)
 		app.migrations.add(AddDeletedTimestampToFezParticipantSchema(), to: .psql)
+		app.migrations.add(CreateHuntSchema(), to: .psql)
+		app.migrations.add(CreatePuzzleSchema(), to: .psql)
+		app.migrations.add(CreatePuzzleCallInSchema(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 
