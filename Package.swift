@@ -1,4 +1,4 @@
-// swift-tools-version:5.10
+// swift-tools-version:6.0
 import PackageDescription
 
 let package = Package(
@@ -57,11 +57,15 @@ let package = Package(
 			swiftSettings: swiftSettings
 		)
 	],
+	swiftLanguageVersions: [.v5],
 	cLanguageStandard: .c11
 )
 
 var swiftSettings: [SwiftSetting] { [
 	.enableUpcomingFeature("DisableOutwardActorInference"),
+	.enableUpcomingFeature("GlobalConcurrency"),
+	.enableUpcomingFeature("InferSendableFromCaptures"),
+	.enableUpcomingFeature("StrictConcurrency"),
 //	.enableUpcomingFeature("BareSlashRegexLiterals"),
 //	.enableExperimentalFeature("StrictConcurrency"),
 //	.unsafeFlags(["-Xfrontend", "-strict-concurrency=complete"])
