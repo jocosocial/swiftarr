@@ -639,11 +639,6 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateAdminUsers(), to: .psql)
 		app.migrations.add(CreateClientUsers(), to: .psql)
 		app.migrations.add(CreateCategories(), to: .psql)
-		//	app.migrations.add(CreateForums(), to: .psql)		// Adds some initial forum threads; not the event forum threads.
-		if app.environment == .testing || app.environment == .development {
-			app.migrations.add(CreateTestUsers(), to: .psql)
-			app.migrations.add(CreateTestData(), to: .psql)
-		}
 		app.migrations.add(PopulateForumLastPostIDMigration(), to: .psql)
 		app.migrations.add(GenerateDiscordRegistrationCodes(), to: .psql)
 
@@ -669,6 +664,12 @@ struct SwiftarrConfigurator {
 		app.migrations.add(StreamPhotoSchemaV2(), to: .psql)
 		app.migrations.add(CreatePersonalEventSchema(), to: .psql)
 		app.migrations.add(AddDeletedTimestampToFezParticipantSchema(), to: .psql)
+
+		// Add test data, if applicable.
+		if app.environment == .testing || app.environment == .development {
+			app.migrations.add(CreateTestUsers(), to: .psql)
+			app.migrations.add(CreateTestData(), to: .psql)
+		}
 	}
 
 	// Perform several sanity checks to verify that we can access the dbs and resource files that we need.
