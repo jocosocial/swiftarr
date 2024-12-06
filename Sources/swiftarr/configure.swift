@@ -632,6 +632,9 @@ struct SwiftarrConfigurator {
 		app.migrations.add(BoardgameSchemaAdditions1(), to: .psql)
 		app.migrations.add(CreatePerformerSchema(), to: .psql)
 		app.migrations.add(CreateEventPerformerSchema(), to: .psql)
+		app.migrations.add(StreamPhotoSchemaV2(), to: .psql)
+		app.migrations.add(CreatePersonalEventSchema(), to: .psql)
+		app.migrations.add(AddDeletedTimestampToFezParticipantSchema(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 
@@ -639,6 +642,11 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateAdminUsers(), to: .psql)
 		app.migrations.add(CreateClientUsers(), to: .psql)
 		app.migrations.add(CreateCategories(), to: .psql)
+		// Add test data, if applicable.
+		if app.environment == .testing || app.environment == .development {
+			app.migrations.add(CreateTestUsers(), to: .psql)
+			app.migrations.add(CreateTestData(), to: .psql)
+		}
 		app.migrations.add(PopulateForumLastPostIDMigration(), to: .psql)
 		app.migrations.add(GenerateDiscordRegistrationCodes(), to: .psql)
 
@@ -661,15 +669,14 @@ struct SwiftarrConfigurator {
 		app.migrations.add(RenameWhereAndWhen(), to: .psql)
 		app.migrations.add(AddFoodDrinkCategory(), to: .psql)
 		app.migrations.add(CreateMicroKaraokeUser(), to: .psql)
-		app.migrations.add(StreamPhotoSchemaV2(), to: .psql)
-		app.migrations.add(CreatePersonalEventSchema(), to: .psql)
-		app.migrations.add(AddDeletedTimestampToFezParticipantSchema(), to: .psql)
-
-		// Add test data, if applicable.
-		if app.environment == .testing || app.environment == .development {
-			app.migrations.add(CreateTestUsers(), to: .psql)
-			app.migrations.add(CreateTestData(), to: .psql)
-		}
+		
+		// DON'T add schema-modification migrations down here. Appending migrations that modify a table's schema at the end will
+		// break migrations that use Fluent to populate that table with data, as Fluent only models the current db schema.
+		// When resetting the db (or a new install), all the migrations run in the listed order, and the schema needs to match Fluent before
+		// using Fluent to add rows.
+		//
+		// Fluent keeps track of the class names of all the migrations that have been run, so when there's a new migration in the 
+		// middle of the list (for an existing install), Fluent figures out that just that migration needs to run.
 	}
 
 	// Perform several sanity checks to verify that we can access the dbs and resource files that we need.
