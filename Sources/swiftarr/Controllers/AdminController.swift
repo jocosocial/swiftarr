@@ -59,7 +59,7 @@ struct AdminController: APIRouteCollection {
 		adminAuthGroup.post("serversettings", "update", use: settingsUpdateHandler)
 		adminAuthGroup.post("timezonechanges", "reloadtzdata", use: reloadTimeZoneChangeData)
 		adminAuthGroup.get("bulkuserfile", "download", use: userfileDownloadHandler)
-		adminAuthGroup.post("bulkuserfile", "upload", use: userfileUploadPostHandler)
+		adminAuthGroup.on(.POST, "bulkuserfile", "upload", body: .stream,  use: userfileUploadPostHandler)
 		adminAuthGroup.get("bulkuserfile", "verify", use: userfileVerificationHandler)
 		adminAuthGroup.get("bulkuserfile", "update", "apply", use: userfileApplyHandler)
 
@@ -819,7 +819,6 @@ struct AdminController: APIRouteCollection {
 		guard Settings.shared.enablePreregistration == false else {
 			throw Abort(.badRequest, reason: "Server's 'enable pre-embark UI' setting should be OFF when uploading a userfile archive.")
 		}
-		let fileData = try req.content.decode(Data.self)
 		let destDirPath = try uploadUserDirPath()
 		try? FileManager.default.removeItem(at: destDirPath)
 		let destFilePath = try uploadUserfilePath()
@@ -830,8 +829,25 @@ struct AdminController: APIRouteCollection {
 		guard !FileManager.default.fileExists(atPath: destFilePath.path), !FileManager.default.fileExists(atPath: unzippedDirPath.path) else {
 			throw Abort(.internalServerError, reason: "Userfile upload dir not empty after emptying it--this could lead to applying a previously-uploaded userfile and not the one you tried to upload just now.")
 		}
-		try await req.fileio.writeFile(ByteBuffer(data: fileData), at: destFilePath.path)
+				
+		FileManager.default.createFile(atPath: destFilePath.path, contents: nil)
+		if let fileHandle = FileHandle(forWritingAtPath: destFilePath.path)  {
+			defer {
+				try? fileHandle.close()
+			}
+			for try await fileChunk in req.body {
+				fileHandle.seekToEndOfFile()
+				fileHandle.write(Data(buffer: fileChunk))
+			}
+		}
+		else {		
+			throw Abort(.internalServerError, reason: "Could not open file for writing Userfile zip contents.")
+		}
 		try FileManager.default.unzipItem(at: destFilePath, to: destDirPath)
+		let userfileJsonPath = try uploadUserDirPath().appendingPathComponent("Twitarr_userfile/userfile.json", isDirectory: false)
+		guard FileManager.default.fileExists(atPath: userfileJsonPath.path) else {
+			throw Abort(.badRequest, reason: "userfile.json file not found in zip file after expansion. Is this the correct user archive file?")
+		}
 		return .ok
 	}
 
@@ -869,6 +885,9 @@ struct AdminController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Server's 'enable pre-embark UI' setting must be OFF when performing bulk user import.")
 		}
 		let filepath = try uploadUserDirPath().appendingPathComponent("Twitarr_userfile/userfile.json", isDirectory: false)
+		guard FileManager.default.fileExists(atPath: filepath.path) else {
+			throw Abort(.badRequest, reason: "userfile.json file not found in zip file.")
+		}
 		let buffer = try await req.fileio.collectFile(at: filepath.path)
 		let importData = try JSONDecoder().decode(SaveRestoreData.self, from: buffer)
 		var verification = BulkUserUpdateVerificationData(forVerification: verifyOnly)

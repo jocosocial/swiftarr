@@ -423,7 +423,11 @@ async function submitAJAXForm(formElement, event) {
 	event.preventDefault();
 	try {
 		spinnerElem?.classList.remove("d-none");
-		let response = await fetch(formElement.action, { method: 'POST', body: new FormData(formElement) });
+		var uploadBody = new FormData(formElement);
+		if (formElement.classList.contains('fileupload')) {
+			uploadBody = formElement.querySelector('input[type=file]').files[0];
+		}
+		let response = await fetch(formElement.action, { method: 'POST', body: uploadBody });
 		if (response.status < 300) {
 			let successURL = formElement.dataset.successurl;
 			formElement.reset();
