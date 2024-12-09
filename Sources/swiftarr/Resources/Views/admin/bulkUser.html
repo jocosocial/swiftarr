@@ -47,7 +47,7 @@
 					The user archive file *should* be named 'Twitarr_userfile.zip'.
 				</li>
 				<li class="list-group-item bg-transparent mb-3">				
-					<form class="ajax" action="/admin/bulkuser/upload" enctype="multipart/form-data" method="POST" data-successurl="/admin/bulkuser/upload/verify" id="userfileuploadform">
+					<form class="ajax fileupload" action="/admin/bulkuser/upload" enctype="multipart/form-data" method="POST" data-successurl="/admin/bulkuser/upload/verify" id="userfileuploadform">
 						<div class="container-fluid">
 							<div class="row mb-2"> 
 								<input type="file" accept=".zip" name="userfile" required>

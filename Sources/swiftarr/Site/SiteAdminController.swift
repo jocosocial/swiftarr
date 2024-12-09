@@ -77,7 +77,7 @@ struct SiteAdminController: SiteControllerUtils {
 		
 		privateTTRoutes.get("bulkuser", use: bulkUserRootViewHandler)
 		privateTTRoutes.get("bulkuser", "download", use: bulkUserFileDownload)
-		privateTTRoutes.post("bulkuser", "upload", use: bulkUserfileUploadPostHandler)
+		privateTTRoutes.on(.POST, "bulkuser", "upload", body: .collect(maxSize: "1gb"), use: bulkUserfileUploadPostHandler)
 		privateTTRoutes.get("bulkuser", "upload", "verify", use: bulkUserVerifyViewHandler)
 		privateTTRoutes.get("bulkuser", "upload", "commit", use: bulkUserUpdateCommitHandler)
 		
@@ -750,11 +750,9 @@ struct SiteAdminController: SiteControllerUtils {
 	//
 	// Uploads a previously archived userfile. 
 	func bulkUserfileUploadPostHandler(_ req: Request) async throws -> HTTPStatus {
-		struct BulkUserUploadData: Content {
-			var userfile: Data
-		}
-		let uploadData = try req.content.decode(BulkUserUploadData.self)
-		try await apiQuery(req, endpoint: "/admin/bulkuserfile/upload", method: .POST, encodeContent: uploadData.userfile)
+		try await apiQuery(req, endpoint: "/admin/bulkuserfile/upload", method: .POST, beforeSend: { clientReq in
+			clientReq.body = req.body.data
+		})
 		return .ok
 	}
 	
