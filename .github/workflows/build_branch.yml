@@ -1,0 +1,18 @@
+name: Build Branch
+on: pull_request
+
+jobs:
+  build:
+    # if: github.repository == 'jocosocial/swiftarr'
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Checkout Swiftarr
+      uses: actions/checkout@v2
+    - name: Build Stack
+      run: scripts/stack.sh -e github build
+    - name: Run Stack
+      run: scripts/stack.sh -e github up -d
+    - name: Wait
+      run: sleep 15
+    - name: Check for Health
+      run: curl -f -s -o /dev/null http://localhost:8069/api/v3/client/health || { echo "Endpoint test failed"; exit 1; }
