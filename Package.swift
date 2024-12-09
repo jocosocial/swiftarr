@@ -62,14 +62,17 @@ let package = Package(
 )
 
 var swiftSettings: [SwiftSetting] { [
-	.enableUpcomingFeature("DisableOutwardActorInference"),
-	.enableUpcomingFeature("GlobalConcurrency"),
-	.enableUpcomingFeature("InferSendableFromCaptures"),
-	.enableUpcomingFeature("StrictConcurrency"),
-//	.enableUpcomingFeature("BareSlashRegexLiterals"),
-//	.enableExperimentalFeature("StrictConcurrency"),
-//	.unsafeFlags(["-Xfrontend", "-strict-concurrency=complete"])
-//	.unsafeFlags(["-Xfrontend", "-warn-concurrency"])
+	// These four will be necessary for Swift 6 compatibility.
+	// .enableUpcomingFeature("DisableOutwardActorInference"),
+	// .enableUpcomingFeature("GlobalConcurrency"),
+	// .enableUpcomingFeature("InferSendableFromCaptures"),
+	// .enableUpcomingFeature("StrictConcurrency"),
+	//
+	// And these are here from past experiments.
+	// .enableUpcomingFeature("BareSlashRegexLiterals"),
+	// .enableExperimentalFeature("StrictConcurrency"),
+	// .unsafeFlags(["-Xfrontend", "-strict-concurrency=complete"])
+	// .unsafeFlags(["-Xfrontend", "-warn-concurrency"])
 ] }
 
 /// Because I have discovered and forgotten this 3 times now, and because it's difficult to find the answer as it's Google-obscured:
