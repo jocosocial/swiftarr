@@ -17,5 +17,12 @@ jobs:
       run: brew install gd
     - name: Checkout Swiftarr
       uses: actions/checkout@v2
+    - name: Setup Postgres
+      run: .github/workflows/setup-runner-postgres.sh
+    - name: Install Redis
+      run: .github/workflows/setup-runner-redis.sh
     - name: Run Build
       run: swift build -c release
+    # Deploy
+    - name: Perform Database Migrations
+      run: swift run swiftarr migrate --yes
