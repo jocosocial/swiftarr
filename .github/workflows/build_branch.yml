@@ -1,0 +1,16 @@
+name: Build Branch
+on: pull_request
+
+jobs:
+  build:
+    # if: github.repository == 'jocosocial/swiftarr'
+    runs-on: macos-14
+    steps:
+    - name: Install Swift
+      uses: swift-actions/setup-swift@v2
+      with:
+        swift-version: "6.0"
+    - name: Checkout Swiftarr
+      uses: actions/checkout@v2
+    - name: Run Build
+      run: swift build -c release
