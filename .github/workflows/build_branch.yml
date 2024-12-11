@@ -1,0 +1,26 @@
+name: Build Branch
+on: 
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+    - master
+
+jobs:
+  BuildAndDeployStack:
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Checkout Swiftarr
+      uses: actions/checkout@v2
+    - name: Copy Template Config
+      run: cp "Sources/swiftarr/seeds/Private Swiftarr Config/Docker-Template.env" "Sources/swiftarr/seeds/Private Swiftarr Config/production.env"
+    - name: Hack Local Build Directory
+      run: mkdir -p .build/checkouts
+    - name: Build Production Stack
+      run: scripts/stack.sh -e production build
+    - name: Run Production Stack
+      run: scripts/stack.sh -e production up -d
+    - name: Wait For Healthy
+      run: scripts/stack.sh -e production exec web bash -c "WAIT_HOSTS=\${SWIFTARR_IP}:\${SWIFTARR_PORT} /wait"
+    - name: Test For Health
+      run: .github/workflows/check_health.sh -e production
