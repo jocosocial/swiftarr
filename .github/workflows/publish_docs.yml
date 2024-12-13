@@ -6,17 +6,19 @@ on:
     - master
 jobs:
   build:
-    if: github.repository == 'jocosocial/swiftarr'
-    runs-on: macos-13
+    # if: github.repository == 'jocosocial/swiftarr'
+    runs-on: macos-15
     steps:
     - name: Install SourceKitten
       run: brew install sourcekitten
     - name: Install Jazzy
       run: sudo gem install jazzy
-    - name: Install Swift
-      uses: swift-actions/setup-swift@v2
-      with:
-        swift-version: "5.10.0"
+    # They don't support Swift 6 yet.
+    # https://github.com/swift-actions/setup-swift/issues/683
+    # - name: Install Swift
+    #   uses: swift-actions/setup-swift@v2
+    #   with:
+    #     swift-version: "5.10.0"
     - name: Confirm Swift Version
       run: swift --version
     - name: Checkout Swiftarr
