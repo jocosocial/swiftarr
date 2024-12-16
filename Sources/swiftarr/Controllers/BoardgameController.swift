@@ -57,10 +57,10 @@ struct BoardgameController: APIRouteCollection {
 			query.join(BoardgameFavorite.self, on: \Boardgame.$id == \BoardgameFavorite.$boardgame.$id)
 				.filter(BoardgameFavorite.self, \.$user.$id == user.userID)
 		}
-		async let totalGames = query.copy().count()
-		async let games = query.sort(\.$gameName, .ascending).range(start..<(start + limit)).all()
+		let totalGames = try await query.copy().count()
+		let games = try await query.sort(\.$gameName, .ascending).range(start..<(start + limit)).all()
 		let gamesArray = try await buildBoardgameData(for: user, games: games, on: req.db)
-		return try await BoardgameResponseData(gameArray: gamesArray, paginator: Paginator(total: totalGames, start: start, limit: limit))
+		return BoardgameResponseData(gameArray: gamesArray, paginator: Paginator(total: totalGames, start: start, limit: limit))
 	}
 
 	/// `GET /api/v3/boardgames/:boardgameID

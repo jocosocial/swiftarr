@@ -2,7 +2,7 @@ import Fluent
 import Foundation
 
 /// A `Pivot` holding a sibling relation between `User` and `Event`.
-final class EventFavorite: Model {
+final class EventFavorite: Model, @unchecked Sendable {
 	static let schema = "event+favorite"
 
 	// MARK: Properties

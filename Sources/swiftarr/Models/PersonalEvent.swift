@@ -4,7 +4,7 @@ import Vapor
 
 /// A `PersonalEvent` that a user has added to their calendar, and optionally invited
 /// select users to also have in their calendars.
-final class PersonalEvent: Model, Searchable {
+final class PersonalEvent: Model, Searchable, @unchecked Sendable {
 	static let schema = "personal_event"
 
 	// MARK: Properties

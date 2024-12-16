@@ -2,7 +2,7 @@ import Fluent
 import Vapor
 
 /// A boardgame in the Games Library.
-final class Boardgame: Model, Searchable {
+final class Boardgame: Model, Searchable, @unchecked Sendable {
 	static let schema = "boardgame"
 
 	// MARK: Properties

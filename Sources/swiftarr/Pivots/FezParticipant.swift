@@ -3,7 +3,7 @@ import Foundation
 
 /// A `Pivot` holding a siblings relation between `User` and `FriendlyFez`.
 
-final class FezParticipant: Model {
+final class FezParticipant: Model, @unchecked Sendable {
 	static let schema = "fez+participants"
 
 	// MARK: Properties

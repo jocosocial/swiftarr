@@ -20,7 +20,7 @@ import Vapor
 // to prevent a race where a new user immediately makes a call which processes before the cache is updated.
 // For all other updates, it's okay if eventual consistency is okay.
 
-public struct UserCacheData: Authenticatable, SessionAuthenticatable {
+public struct UserCacheData: Authenticatable, SessionAuthenticatable, Sendable{
 	let userID: UUID
 	let username: String
 	let displayName: String?
@@ -172,8 +172,8 @@ extension UserCacheData {
 }
 
 extension Application {
-	fileprivate static var ucs: UserCacheStorage?
-	private static var ucsLock: NIOLock = NIOLock()
+	nonisolated(unsafe) fileprivate static var ucs: UserCacheStorage?
+	private static let ucsLock: NIOLock = NIOLock()
 
 	/// This is where UserCache stores its in-memory cache.
 	static var userCacheStorage: UserCacheStorage {
@@ -257,12 +257,12 @@ extension Application {
 }
 
 extension Request {
-	public var userCache: UserCache {
+	var userCache: UserCache {
 		.init(request: self)
 	}
 
 	// UserCache isn't actually the cache. It's a bunch of cache-access methods that extends a Request.
-	public struct UserCache {
+	struct UserCache {
 		let request: Request
 
 		// MARK: UserHeaders
@@ -403,8 +403,7 @@ extension Request {
 		}
 
 		public func updateUsers(_ uuids: [UUID]) async throws {
-			let cacheData = try await withThrowingTaskGroup(of: UserCacheData.self, returning: [UserCacheData].self) {
-				group in
+			let cacheData = try await withThrowingTaskGroup(of: UserCacheData.self, returning: [UserCacheData].self) { group in
 				for userID in uuids {
 					group.addTask { try await getUpdatedUserCacheData(userID) }
 				}

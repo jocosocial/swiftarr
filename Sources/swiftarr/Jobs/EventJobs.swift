@@ -4,7 +4,7 @@ import Vapor
 
 /// AsyncJobs require a payload, and apparently we can't just shove Codable at it.
 /// So this struct exists in case the job ever decides to need runtime parameters.
-public struct EmptyJobPayload: Codable {}
+public struct EmptyJobPayload: Codable, Sendable {}
 
 /// Base class for the Sched schedule update job. This is common between the AsyncScheduledJob
 /// and AsyncJob.
@@ -80,7 +80,7 @@ public struct UpdateScheduleJob: AsyncScheduledJob {
 }
 
 /// Job to update the Sched schedule on demand.
-public struct OnDemandScheduleUpdateJob: AsyncJob {
+public struct OnDemandScheduleUpdateJob: AsyncJob, Sendable {
 	public typealias Payload = EmptyJobPayload
 
 	public func dequeue(_ context: QueueContext, _ payload: EmptyJobPayload) async throws {
@@ -112,9 +112,9 @@ public struct UserEventNotificationJob: AsyncScheduledJob {
 			let eventID = try event.requireID()
 			let favoriteUserIDs = try event.favorites.map { try $0.requireID() }
 			let infoStr = "\(event.title) is starting Soon™ in \(event.location)."
-			context.application.websocketStorage.forwardToSockets(
+			await context.application.notificationSockets.forwardToSockets(
 				app: context.application,
-				users: favoriteUserIDs,
+				idList: favoriteUserIDs,
 				type: .followedEventStarting(eventID),
 				info: infoStr
 			)
@@ -145,44 +145,8 @@ public struct UserEventNotificationJob: AsyncScheduledJob {
 			if let location = fez.location {
 				infoStr += " in \(location)."
 			}
-			context.application.websocketStorage.forwardToSockets(
-				app: context.application,
-				users: fez.participantArray,
-				type: .joinedLFGStarting(fezID),
-				info: infoStr
-			)
-		}
-	}
-
-	func processPersonalEvents(_ context: QueueContext) async throws {
-		guard Settings.shared.upcomingEventNotificationSetting != .disabled else {
-			context.logger.info("Upcoming event notifications have been disabled.")
-			return
-		}
-
-		let filterDate = Settings.shared.getScheduleReferenceDate(Settings.shared.upcomingEventNotificationSetting)
-		let portCalendar = Settings.shared.getPortCalendar()
-		let filterStartTime = portCalendar.date(
-			byAdding: .second,
-			value: Int(Settings.shared.upcomingEventNotificationSeconds),
-			to: filterDate
-		)!
-
-		let upcomingEvents: [PersonalEvent] = try await PersonalEvent.query(on: context.application.db)
-			.filter(\.$startTime == filterStartTime)
-			.all()
-
-		for event in upcomingEvents {
-			let eventID = try event.requireID()
-			let infoStr = "Reminder: \(event.title) is starting Soon™."
-			var notifyUsers: [UUID] = [event.$owner.id]
-			notifyUsers.append(contentsOf: event.participantArray)
-			context.application.websocketStorage.forwardToSockets(
-				app: context.application,
-				users: notifyUsers,
-				type: .personalEventStarting(eventID),
-				info: infoStr
-			)
+			await context.application.notificationSockets.forwardToSockets(app: context.application, idList: fez.participantArray,
+					type: .joinedLFGStarting(fezID), info: infoStr)
 		}
 	}
 
@@ -190,6 +154,5 @@ public struct UserEventNotificationJob: AsyncScheduledJob {
 		context.logger.info("Running UserEventNotificationJob")
 		try await processEvents(context)
 		try await processFezzes(context)
-		try await processPersonalEvents(context)
 	}
 }

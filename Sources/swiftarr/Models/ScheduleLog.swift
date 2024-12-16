@@ -4,7 +4,7 @@ import Vapor
 /// `ScheduleLog` records changes made to the events in the schedule, both by manual schedule updates (done by uploading a .ics file) and 
 /// automatic schedule updates (where the server periodically queries Sched.com and applies changes automatically).
 ///
-final class ScheduleLog: Model {
+final class ScheduleLog: Model, @unchecked Sendable {
 	static let schema = "schedulelog"
 
 // MARK: Properties

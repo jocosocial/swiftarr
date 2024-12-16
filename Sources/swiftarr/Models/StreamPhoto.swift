@@ -6,7 +6,7 @@ import FluentSQL
 ///	- are non-editable and non-deletable by the author
 ///	- may be deleted by moderators. The 'locked' state may be applied as well, but does nothing.
 ///	
-final class StreamPhoto: Model {
+final class StreamPhoto: Model, @unchecked Sendable {
 	static let schema = "streamphoto"
 	
 	// MARK: Properties
@@ -102,7 +102,7 @@ struct StreamPhotoSchemaV2: AsyncMigration {
 
 /// Areas on the ship used for tagging PhotoStream photos. This list purposefully avoids using room names specific to the Nieuw Amsterdam
 /// (the ship we generally sail on each year), and is purposefully a bit vague. 
-public enum PhotoStreamBoatLocation: String, Content, CaseIterable {
+public enum PhotoStreamBoatLocation: String, Content, CaseIterable, Sendable {
 	case mainStage = "Main Stage"
 	case secondState = "Second Stage"
 	case mainDining = "Main Dining"

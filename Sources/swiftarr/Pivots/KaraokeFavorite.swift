@@ -2,7 +2,7 @@ import Fluent
 import Foundation
 
 /// A `Pivot` holding a sibling relation between `User` and `KaraokeSong`.
-final class KaraokeFavorite: Model {
+final class KaraokeFavorite: Model, @unchecked Sendable {
 	static let schema = "karaoke+favorite"
 
 	// MARK: Properties

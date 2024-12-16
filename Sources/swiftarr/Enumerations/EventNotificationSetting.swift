@@ -2,7 +2,7 @@ import RediStack
 
 // Different settings for event and LFG notifications. Since this is used as a StoredSettingValue
 // this enum has to be Redis-able.
-public enum EventNotificationSetting: String, Codable, RESPValueConvertible {
+enum EventNotificationSetting: String, Codable, RESPValueConvertible {
     public init?(fromRESP value: RediStack.RESPValue) {
         guard let stringValue = value.string else {
             return nil

@@ -10,7 +10,7 @@ import Vapor
 /// identifying user info in a `.token`; the association to a specific `User` is
 /// done internally on the API server through this model.
 
-final class Token: Model {
+final class Token: Model, @unchecked Sendable {
 	static let schema = "token"
 
 	// MARK: Properties
@@ -74,8 +74,8 @@ struct CreateTokenSchema: AsyncMigration {
 /// with its Token model object, and then to the User being authenticated.
 extension Token: ModelTokenAuthenticatable {
 	/// Required key for HTTP Bearer Authorization token.
-	static let valueKey = \Token.$token
-	static let userKey = \Token.$user
+	static let valueKey: KeyPath<Token, Field<String>> = \Token.$token
+	static let userKey: KeyPath<Token, Parent<User>> = \Token.$user
 
 	var isValid: Bool {
 		true

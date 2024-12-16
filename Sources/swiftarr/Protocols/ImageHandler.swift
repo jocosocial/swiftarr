@@ -26,46 +26,45 @@ enum ImageSizeGroup: String {
 	case archive = "archive"
 }
 
-extension APIRouteCollection {
+/// Returns the file system path for the given image filename. Makes sure all image directories in the path exist.
+/// 
+/// Currently, this fn returns paths in the form:
+///		<WorkingDir>/images/<full/thumb>/<xx>/<filename>.jpg
+/// where "xx" is the first 2 characters of the filename.
+func getImagePath(for image: String, format: String? = nil, usage: ImageUsage, size: ImageSizeGroup, on req: Request) throws -> URL {
+	let baseImagesDirectory = Settings.shared.userImagesRootPath
+	// Determine format extension to use. Caller can force a format with the 'format' parameter.
+	var imageFormat: String = format ?? URL(fileURLWithPath: image).pathExtension
+	if !(["bmp", "gif", "png", "tiff", "webp"].contains(imageFormat)) {
+		imageFormat = "jpg"
+	}
 
-	/// Returns the file system path for the given image filename. Makes sure all image directories in the path exist.
-	/// 
-	/// Currently, this fn returns paths in the form:
-	///		<WorkingDir>/images/<full/thumb>/<xx>/<filename>.jpg
-	/// where "xx" is the first 2 characters of the filename.
-	func getImagePath(for image: String, format: String? = nil, usage: ImageUsage, size: ImageSizeGroup, on req: Request) throws -> URL {
-		let baseImagesDirectory = Settings.shared.userImagesRootPath
-		// Determine format extension to use. Caller can force a format with the 'format' parameter.
-		var imageFormat: String = format ?? URL(fileURLWithPath: image).pathExtension
-		if !(["bmp", "gif", "png", "tiff", "webp"].contains(imageFormat)) {
-			imageFormat = "jpg"
+	// Strip extension and any other gunk off the filename. Eject if two extensions detected (.php.jpg, for example).
+	let noFiletype = URL(fileURLWithPath: image).deletingPathExtension()
+	if noFiletype.pathExtension.count > 0 {
+		throw Abort(.badRequest, reason: "Malformed image filename.")
+	}
+	let filename = noFiletype.lastPathComponent
+	
+	if let _ = UUID(filename) {
+		let subDirName = String(image.prefix(2))
+		let subDir = baseImagesDirectory.appendingPathComponent(size.rawValue)
+				.appendingPathComponent(subDirName)
+		if !FileManager().fileExists(atPath: subDir.path) {
+			try FileManager().createDirectory(atPath: subDir.path, withIntermediateDirectories: true)
 		}
-
-		// Strip extension and any other gunk off the filename. Eject if two extensions detected (.php.jpg, for example).
-		let noFiletype = URL(fileURLWithPath: image).deletingPathExtension()
-		if noFiletype.pathExtension.count > 0 {
-			throw Abort(.badRequest, reason: "Malformed image filename.")
-		}
-		let filename = noFiletype.lastPathComponent
-		
-		if let _ = UUID(filename) {
-			let subDirName = String(image.prefix(2))
-			let subDir = baseImagesDirectory.appendingPathComponent(size.rawValue)
-					.appendingPathComponent(subDirName)
-			if !FileManager().fileExists(atPath: subDir.path) {
-				try FileManager().createDirectory(atPath: subDir.path, withIntermediateDirectories: true)
-			}
-			let fileURL = subDir.appendingPathComponent(filename + "." + imageFormat)
-			return fileURL
-		}
-		let staticBase = baseImagesDirectory.appendingPathComponent("staticImages")
-		if !FileManager().fileExists(atPath: staticBase.path) {
-			try FileManager().createDirectory(atPath: staticBase.path, withIntermediateDirectories: true)
-		}
-		let fileURL = staticBase.appendingPathComponent(filename + "." + imageFormat)
+		let fileURL = subDir.appendingPathComponent(filename + "." + imageFormat)
 		return fileURL
 	}
+	let staticBase = baseImagesDirectory.appendingPathComponent("staticImages")
+	if !FileManager().fileExists(atPath: staticBase.path) {
+		try FileManager().createDirectory(atPath: staticBase.path, withIntermediateDirectories: true)
+	}
+	let fileURL = staticBase.appendingPathComponent(filename + "." + imageFormat)
+	return fileURL
+}
 	
+extension APIRouteCollection {
 	/// Takes an an array of `ImageUploadData` as input. Some of the input elements may be new image Data that needs procssing;
 	/// some of the input elements may refer to already-processed images in our image store. Once all the ImageUploadData elements are processed,
 	/// returns a `[String]` containing the filenames where al the images are stored. The use case here is for editing existing content with
@@ -193,8 +192,8 @@ extension APIRouteCollection {
 			// ensure directories exist
 			let name = UUID().uuidString
 			let outputExtension = ExportableFormat(outputType).fileExtension()
-			let fullPath = try self.getImagePath(for: name, format: outputExtension, usage: usage, size: .full, on: req)
-			let thumbPath = try self.getImagePath(for: name, format: outputExtension, usage: usage, size: .thumbnail, on: req)
+			let fullPath = try getImagePath(for: name, format: outputExtension, usage: usage, size: .full, on: req)
+			let thumbPath = try getImagePath(for: name, format: outputExtension, usage: usage, size: .thumbnail, on: req)
 			
 			// Put the orientation value into the polyAllocated field, so that our code in the customized gd_jpeg.c file
 			// can store the original image orientation back in the jpeg as exif data.
@@ -228,12 +227,12 @@ extension APIRouteCollection {
 	func archiveImage(_ image: String, on req: Request) {
 		do {
 			// remove existing full image
-			let fullURL = try self.getImagePath(for: image, usage: .twarrt , size: .full, on: req)
+			let fullURL = try getImagePath(for: image, usage: .twarrt , size: .full, on: req)
 			try FileManager().removeItem(at: fullURL)
 
 			// move thumbnail
-			let thumbnailURL = try self.getImagePath(for: image, usage: .twarrt , size: .thumbnail, on: req)
-			let archiveURL = try self.getImagePath(for: image, usage: .twarrt , size: .archive, on: req)
+			let thumbnailURL = try getImagePath(for: image, usage: .twarrt , size: .thumbnail, on: req)
+			let archiveURL = try getImagePath(for: image, usage: .twarrt , size: .archive, on: req)
 			try FileManager().moveItem(at: thumbnailURL, to: archiveURL)
 
 		} catch let error {

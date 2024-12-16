@@ -324,6 +324,7 @@ final class EventParser {
 		// https://github.com/vapor/fluent-kit/issues/375
 		// https://github.com/vapor/fluent-kit/pull/555
 		let existingEvents = try await Event.query(on: db).withDeleted().with(\.$forum, withDeleted: true).all()
+		let forumAuthorUserID = forumAuthor.userID
 		try await db.transaction { database in
 			// Convert to dictionaries, keyed by uid of the events
 			let existingEventDict = Dictionary(existingEvents.map { ($0.uid, $0) }) { first, _ in first }
@@ -340,7 +341,7 @@ final class EventParser {
 						if let existingEvent = existingEventDict[eventUID] {
 							try await existingEvent.$forum.load(on: database)
 							if let forum = existingEvent.forum {
-								let newPost = try ForumPost(forum: forum, authorID: forumAuthor.userID,
+								let newPost = try ForumPost(forum: forum, authorID: forumAuthorUserID,
 										text: """
 										Automatic Notification of Schedule Change: This event has been deleted from the \
 										schedule. Apologies to those planning on attending.
@@ -366,12 +367,12 @@ final class EventParser {
 					// makeForumPosts only concerns the "Schedule was changed" posts.
 					if let officialCategory = officialCategory, let shadowCategory = shadowCategory {
 						let forum = try SetInitialEventForums.buildEventForum(event,
-								creatorID: forumAuthor.userID, shadowCategory: shadowCategory, officialCategory: officialCategory)
+								creatorID: forumAuthorUserID, shadowCategory: shadowCategory, officialCategory: officialCategory)
 						try await forum.save(on: database)
 						// Build an initial post in the forum with information about the event, and
 						// a callout for posters to discuss the event.
 						let postText = SetInitialEventForums.buildEventPostText(event)
-						let infoPost = try ForumPost(forum: forum, authorID: forumAuthor.userID, text: postText)
+						let infoPost = try ForumPost(forum: forum, authorID: forumAuthorUserID, text: postText)
 
 						// Associate the forum with the event
 						event.$forum.id = forum.id
@@ -379,7 +380,7 @@ final class EventParser {
 						try await event.save(on: database)
 						try await infoPost.save(on: database)
 						if makeForumPosts {
-							let newPost = try ForumPost(forum: forum, authorID: forumAuthor.userID,
+							let newPost = try ForumPost(forum: forum, authorID: forumAuthorUserID,
 									text: """
 									Automatic Notification of Schedule Change: This event was just added to the \
 									schedule.
@@ -446,7 +447,7 @@ final class EventParser {
 							}
 							// Add post to forum detailing changes made to this event.
 							if makeForumPosts {
-								let newPost = try ForumPost(forum: forum, authorID: forumAuthor.userID,
+								let newPost = try ForumPost(forum: forum, authorID: forumAuthorUserID,
 										text: """
 										Automatic Notification of Schedule Change: This event has changed.
 

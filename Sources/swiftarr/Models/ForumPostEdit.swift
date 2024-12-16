@@ -9,7 +9,7 @@ import Vapor
 /// 	- See Also: [ForumPostModerationData](ForumPostModerationData) the DTO for returning data moderators need to moderate ForumPosts.
 /// 	Specifically, see the [PostEditLogData](PostEditLogData) sub-struct.
 /// 	- See Also: [CreateForumPostEditSchema](CreateForumPostEditSchema) the Migration for creating the ForumPostEdit table in the database.
-final class ForumPostEdit: Model {
+final class ForumPostEdit: Model, @unchecked Sendable {
 	static let schema = "forum_post_edit"
 
 	// MARK: Properties

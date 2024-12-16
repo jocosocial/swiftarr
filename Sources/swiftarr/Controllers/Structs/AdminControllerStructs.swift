@@ -410,31 +410,31 @@ extension TimeZoneChangeData {
 /// and match everything up as part of import.
 /// 
 /// Also: This DTO contains sensitive data and should only be used for Admin routes.
-struct UserSaveRestoreData: Content {
-	var username: String
-	var displayName: String?
-	var realName: String?
+struct UserSaveRestoreData: Content, Sendable {
+	let username: String
+	let displayName: String?
+	let realName: String?
 	// BCrypt hashed.
-	var password: String					
+	let password: String					
 	// BCrypt hashed.
-	var recoveryKey: String					
+	let recoveryKey: String					
 	// Registration code - 6 letters, lowercased
-	var verification: String				
-	var accessLevel: UserAccessLevel
-	var userImage: String?
-	var about: String?
-	var email: String?
-	var homeLocation: String?
-	var message: String?
-	var preferredPronoun: String?
-	var roomNumber: String?
-	var dinnerTeam: DinnerTeam?
-	var parentUsername: String?
-	var roles: [UserRoleType]
+	let verification: String				
+	let accessLevel: UserAccessLevel
+	let userImage: String?
+	let about: String?
+	let email: String?
+	let homeLocation: String?
+	let message: String?
+	let preferredPronoun: String?
+	let roomNumber: String?
+	let dinnerTeam: DinnerTeam?
+	let parentUsername: String?
+	let roles: [UserRoleType]
 	/// Event UIDs, the thing in the ICS file spec--NOT database IDs!
-	var favoriteEvents: [String]
+	let favoriteEvents: [String]
 	/// For shadow event organizers, their associated Performer data (which contains the event UIDs for the events 'they're running).
-	var performer: PerformerUploadData?
+	let performer: PerformerUploadData?
 	// karaoke, game favorites?
 }
 
@@ -470,6 +470,9 @@ extension UserSaveRestoreData {
 		favoriteEvents = user.favoriteEvents.map { $0.uid }
 		if let perf = user.performer {
 			performer = try? PerformerUploadData(perf)
+		}
+		else {
+			performer = nil
 		}
 	}
 }

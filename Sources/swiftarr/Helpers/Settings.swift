@@ -3,11 +3,11 @@ import Vapor
 
 /// A (hopefully) thread-safe singleton that provides modifiable global settings.
 
-final class Settings: Encodable {
+final class Settings: Encodable, @unchecked Sendable {
 
 	/// Wraps settings properties, making them thread-safe. All access to the internalValue should be done through the wrapper
 	/// because of the thread-safety thing.
-	@propertyWrapper class SettingsValue<T>: Encodable where T: Encodable {
+	@propertyWrapper class SettingsValue<T>: Encodable, @unchecked Sendable where T: Encodable & Sendable {
 		fileprivate var internalValue: T
 		var wrappedValue: T {
 			get { return Settings.settingsQueue.sync { internalValue } }
@@ -26,8 +26,8 @@ final class Settings: Encodable {
 
 	/// Wraps settings properties, making them thread-safe. Contains methods for loading/storing values from a Redis hash.
 	/// Use this for settings that should be database-backed.
-	@propertyWrapper class StoredSettingsValue<T>: SettingsValue<T>, StoredSetting
-	where T: Encodable & RESPValueConvertible {
+	@propertyWrapper class StoredSettingsValue<T>: SettingsValue<T>, StoredSetting, @unchecked Sendable
+	where T: Encodable & RESPValueConvertible & Sendable {
 		var projectedValue: StoredSettingsValue<T> { self }
 		var redisField: String
 		override var wrappedValue: T {

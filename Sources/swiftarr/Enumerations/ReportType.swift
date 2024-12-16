@@ -2,7 +2,7 @@ import Vapor
 
 /// The type of entity being reported in a `Report`.
 
-public enum ReportType: String, Codable {
+enum ReportType: String, Codable {
 	/// An entire `Forum`.
 	case forum
 	/// An individual `ForumPost`.
@@ -27,7 +27,7 @@ public enum ReportType: String, Codable {
 
 /// Moderation status of a piece of reportable content.
 /// This enum is used both in Models and in data transfer objects in the API. Be very careful about renaming enum cases or customizing case strings.
-enum ContentModerationStatus: String, Codable {
+enum ContentModerationStatus: String, Codable, Sendable {
 	/// The initial state for all content.
 	case normal
 	/// Auto-quarantine gets set automatically when a certain number of users have reported on content in the 'normal' state. Auto-quarantined content is not visible to non-mods,

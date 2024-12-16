@@ -2,7 +2,7 @@ import Vapor
 
 /// The type of `FriendlyFez`.
 
-public enum FezType: String, CaseIterable, Codable {
+enum FezType: String, CaseIterable, Codable {
 	/// A closed chat. Participants are set at creation and can't be changed. No location, start/end time, or capacity. Not moderated.
 	case closed
 	/// An open chat. Participants can be added/removed after creation *and your UI should make this clear*. No location, start/end time, or capacity.

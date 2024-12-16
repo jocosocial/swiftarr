@@ -2,7 +2,7 @@ import Fluent
 import Vapor
 
 
-final class EventPerformer: Model {
+final class EventPerformer: Model, @unchecked Sendable {
 	static let schema = "event+performer"
 
 	/// The pivot's ID.

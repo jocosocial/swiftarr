@@ -3,7 +3,7 @@ import Foundation
 
 /// A `Pivot` holding a siblings relation between `User` and `ForumPost`.
 
-final class PostLikes: Model {
+final class PostLikes: Model, @unchecked Sendable {
 	static let schema = "post+likes"
 
 	// MARK: Properties

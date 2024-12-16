@@ -1,5 +1,5 @@
 import Foundation
-import Redis
+@preconcurrency import Redis
 import Vapor
 
 /// Extends Request.Redis for Site

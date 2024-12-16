@@ -188,13 +188,10 @@ struct ModerationController: APIRouteCollection {
 		let start = (req.query[Int.self, at: "start"] ?? 0)
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...200)
 		let query = ModeratorAction.query(on: req.db)
-		async let totalActionCount = try query.count()
-		async let result = try query.copy().range(start..<(start + limit)).sort(\.$createdAt, .descending).all()
-			.map { try ModeratorActionLogData(action: $0, on: req) }
-		let response = try await ModeratorActionLogResponseData(
-			actions: result,
-			paginator: Paginator(total: totalActionCount, start: start, limit: limit)
-		)
+		let totalActionCount = try await query.count()
+		let result = try await query.copy().range(start..<(start + limit)).sort(\.$createdAt, .descending).all()
+				.map { try ModeratorActionLogData(action: $0, on: req) }
+		let response = ModeratorActionLogResponseData(actions: result, paginator: Paginator(total: totalActionCount, start: start, limit: limit))
 		return response
 	}
 

@@ -3,7 +3,7 @@ import Foundation
 
 /// A `Pivot` holding a sibllings relation between `User` and another `User`.
 
-final class UserFavorite: Model {
+final class UserFavorite: Model, @unchecked Sendable {
 	static let schema = "user+favorite"
 
 	// MARK: Properties

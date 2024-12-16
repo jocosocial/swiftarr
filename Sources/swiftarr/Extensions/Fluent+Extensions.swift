@@ -1,5 +1,6 @@
 import Fluent
 import FluentSQL
+import FluentPostgresDriver
 import SQLKit
 import Vapor
 
@@ -66,7 +67,7 @@ extension Array where Element: Model {
 	public func childCountsPerModel<ChildModel: Model>(
 		atPath: KeyPath<Element, ChildrenProperty<Element, ChildModel>>,
 		on db: Database,
-		fluentFilter: @escaping (QueryBuilder<ChildModel>) -> Void = { _ in },
+		fluentFilter: @escaping @Sendable (QueryBuilder<ChildModel>) -> Void = { _ in },
 		sqlFilter: ((SQLSelectBuilder) -> Void)? = nil
 	)
 		async throws -> [Element.IDValue: Int]
@@ -318,5 +319,63 @@ extension QueryBuilder {
 			self.dataType.serialize(to: &serializer)
 			serializer.write("[]")
 		}
+	}
+	
+	// This is not quite a Fluent model, but it's used like one to pull the results of `SELECT count(*)`
+	// out of an SQL result.
+	final class AllPlusCountFields: Fields, @unchecked Sendable {
+		@Field(key: "all_plus_count") var count: Int64
+	}
+
+	// Makes a single query that returns what `.all()` and `.count()` do, as a tuple. 
+	// NOT READY FOR USE YET! Needs more testing.
+	// This method can't add fields for joined models. If you do a join() as part of your query, you have to manually add the fields.
+	@available(*, deprecated, message: "This method isn't ready for use yet.")
+	func allPlusCount() async throws -> ([Model], Int64) {
+		if database is PostgresDatabase {
+			nonisolated(unsafe) var modelResults: [Result<Model, any Error>] = []
+			nonisolated(unsafe) var counterResult: Result<AllPlusCountFields, any Error>?
+			
+			// Add the fields normally inserted by `run()` and also our custom count field.
+			// Slightly screwed as we can't access the query's `models` property and therefore can't add fields from joins.
+			if query.fields.isEmpty {
+				self.fields(for: Model.self)
+			}
+			query.fields.append(.custom("count(*) over() as all_plus_count"))
+			try await run { output in
+				modelResults.append(Result.init(catching: {
+					let model = Model()
+					try model.output(from: output.qualifiedSchema(space: Model.alias == nil ? Model.space : nil, Model.schemaOrAlias))
+					return model
+				}))
+				// Count value appears in every row even though value is always the same, so process it once.
+				if counterResult == nil {
+					counterResult = .init(catching: {
+						let cm = AllPlusCountFields()
+						try cm.output(from: output)
+						return cm
+					})
+				}
+			}.get()
+			let returnedModels = try modelResults.map { try $0.get() }
+			let count = try counterResult?.get().count ?? 0
+
+			// if eager loads exist, run them, and update models
+			if !self.eagerLoaders.isEmpty, !modelResults.isEmpty {
+				let loaders = self.eagerLoaders
+				let db = self.database
+				// run eager loads
+				for loader in loaders {
+					try await loader.anyRun(models: returnedModels.map { $0 }, on: db).get()
+				}
+			}
+
+			return (returnedModels, count)
+		}
+		// Non-Postgres drivers: just use 2 calls. 
+		// MySQL has a way to do this in a single call, but uses different syntax; we could special-case it too.
+		let count: Int64 = Int64(try await count())
+		let models = try await all()
+		return (models, count)
 	}
 }

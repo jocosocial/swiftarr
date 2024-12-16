@@ -12,7 +12,7 @@ public enum GDError: Swift.Error {
 }
 
 /// A structure that represents a geometric angle.
-public struct Angle {
+public struct Angle: Sendable {
 	/// The angle value in radians.
 	public var radians: Double
 
@@ -58,7 +58,7 @@ extension Angle {
 	}
 }
 
-public struct Color {
+public struct Color: Sendable {
 	public var redComponent: Double
 	public var greenComponent: Double
 	public var blueComponent: Double
@@ -176,7 +176,7 @@ extension Color {
 }
 
 /// A structure that contains a point in a two-dimensional coordinate system.
-public struct Point {
+public struct Point: Sendable {
 	/// The x-coordinate of the point.
 	public var x: Int
 
@@ -223,7 +223,7 @@ extension Point: Equatable {
 }
 
 /// A structure that represents a rectangle.
-public struct Rectangle {
+public struct Rectangle: Sendable {
 	/// The origin of the rectangle.
 	public var point: Point
 
@@ -283,7 +283,7 @@ extension Rectangle: Equatable {
 }
 
 /// A structure that represents a two-dimensional size.
-public struct Size {
+public struct Size: Sendable {
 	/// The width value of the size.
 	public var width: Int
 

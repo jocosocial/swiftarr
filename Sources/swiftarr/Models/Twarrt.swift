@@ -19,7 +19,7 @@ import Vapor
 /// 	- See Also: [TwarrtDetailData](TwarrtDetailData) the DTO for returning basic data on Twarrts.
 /// 	- See Also: [PostData](PostData) the DTO for creating or editing Twarrts.
 /// 	- See Also: [CreateTwarrtSchema](CreateTwarrtSchema) the Migration for creating the Twarrts table in the database.
-final class Twarrt: Model, Searchable {
+final class Twarrt: Model, Searchable, @unchecked Sendable {
 	static let schema = "twarrt"
 
 	// MARK: Properties

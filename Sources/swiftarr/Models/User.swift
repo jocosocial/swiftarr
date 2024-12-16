@@ -16,7 +16,7 @@ import Vapor
 /// `.deletedAt` are all maintained automatically by the model protocols and should never be
 ///  otherwise modified.
 
-final class User: Model {
+final class User: Model, @unchecked Sendable {
 	static let schema = "user"
 
 	/// The user's ID, provisioned automatically.
@@ -291,11 +291,11 @@ struct CreateUserSchema: AsyncMigration {
 
 // MARK: - ModelAuthenticatable Conformance
 
-extension User: ModelAuthenticatable {
+extension User: ModelAuthenticatable {	
 	/// Required username key for HTTP Basic Authorization.
-	static let usernameKey = \User.$username
+	static let usernameKey: KeyPath<User, Field<String>> = \User.$username
 	/// Required password key for HTTP Basic Authorization.
-	static let passwordHashKey = \User.$password
+	static let passwordHashKey: KeyPath<User, Field<String>> = \User.$password
 
 	func verify(password: String) throws -> Bool {
 		try Bcrypt.verify(password, created: self.password)

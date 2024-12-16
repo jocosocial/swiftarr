@@ -8,7 +8,7 @@ import Vapor
 /// 	only by users with an access level of `.moderator` or above.
 ///
 /// 	- See Also: [CreateProfileEditSchema](CreateProfileEditSchema) the Migration for creating the ProfileEdit table in the database.
-final class ProfileEdit: Model {
+final class ProfileEdit: Model, @unchecked Sendable {
 	static let schema = "profileedit"
 
 	// MARK: Properties

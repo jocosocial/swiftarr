@@ -7,7 +7,7 @@ import Vapor
 /// 	 - See Also: [EventData](EventData) the DTO for returning info on Events.
 /// 	 - See Also: [CreateEventSchema](CreateEventSchema) the Migration for creating the Event table in the database.
 /// 	 - See Also: [EventType](EventType)
-final class Event: Model, Searchable {
+final class Event: Model, Searchable, @unchecked Sendable {
 	static let schema = "event"
 
 	// MARK: Properties

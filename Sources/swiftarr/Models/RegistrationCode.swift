@@ -12,7 +12,7 @@ import Vapor
 /// Twit-arr admins prior to the event, and they are loaded by a `Migration` during system
 /// startup.
 
-final class RegistrationCode: Model {
+final class RegistrationCode: Model, @unchecked Sendable {
 	static let schema = "registrationcode"
 
 	// MARK: Properties

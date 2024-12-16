@@ -3,7 +3,7 @@ import Vapor
 /// Catches 404 errors where we don't match any route, genrates HTML error pages for them unless the path starts with `/api/v3`.
 /// Must be installed as a global middleware (via app.middleware) to work, since it needs to be called for paths that don't mach routes.
 public final class SiteNoRouteErrorMiddleware: AsyncMiddleware {
-	var isReleaseMode: Bool
+	let isReleaseMode: Bool
 
 	func handleError(req: Request, error: Error) async throws -> Response {
 		guard req.route == nil else  {
@@ -62,7 +62,7 @@ public final class SiteNoRouteErrorMiddleware: AsyncMiddleware {
 
 /// Captures all errors and transforms them into an internal server error HTTP response.
 public final class SiteErrorMiddleware: AsyncMiddleware {
-	var isReleaseMode: Bool
+	let isReleaseMode: Bool
 
 	func handleError(req: Request, error: Error) async throws -> Response {
 		if let route = req.route {
