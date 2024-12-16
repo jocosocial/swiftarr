@@ -21,7 +21,7 @@ import Vapor
 /// - Moderator modifies content, quarantines content, warns user, bans user, or takes some other action.
 /// - Moderator fills in actionTaken field and closes the report.
 
-final class Report: Model {
+final class Report: Model, @unchecked Sendable {
 	static let schema = "report"
 
 	// MARK: Properties

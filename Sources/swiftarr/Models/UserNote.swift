@@ -9,7 +9,7 @@ import Vapor
 /// user's use only. In other words, different users viewing the same profile will each see
 /// their own viewer-specific `UserNote` text.
 
-final class UserNote: Model {
+final class UserNote: Model, @unchecked Sendable {
 	static let schema = "usernote"
 
 	// MARK: Properties

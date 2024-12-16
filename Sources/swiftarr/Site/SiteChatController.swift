@@ -211,7 +211,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		privateRoutes.post("post", "report", postIDParam, use: fezPostReportPostHandler)
 		privateRoutes.get("former", use: showFormerLFGsHandler)
 
-		privateRoutes.webSocket(fezIDParam, "socket", shouldUpgrade: shouldCreateFezSocket, onUpgrade: createFezSocket)
+		privateRoutes.webSocket(fezIDParam, "socket", shouldUpgrade: shouldCreateFezSocket, onUpgrade: createChatSocket)
 
 		// Mods only
 		privateRoutes.post(fezIDParam, "delete", use: fezDeleteHandler)
@@ -421,7 +421,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	// web client and updates include HTML fragments ready for document insertion.
 	// There are no messages intended to be sent from the client of this socket. Although this socket sends HTML for
 	// new posts to the client, new posts *created* by the client should use the regular POST method.
-	func createFezSocket(_ req: Request, _ ws: WebSocket) async {
+	func createChatSocket(_ req: Request, _ ws: WebSocket) async {
 		guard let user = try? req.auth.require(UserCacheData.self),
 			let fezID = req.parameters.get(fezIDParam.paramString, as: UUID.self)
 		else {
@@ -431,10 +431,10 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		// Note: This kind of breaks UI-API separation as it makes webSocketStore a structure that operates
 		// at both levels.
 		let userSocket = UserSocket(userID: user.userID, socket: ws, fezID: fezID, htmlOutput: true)
-		try? req.webSocketStore.storeFezSocket(userSocket)
+		try? await req.webSocketStore.storeChatSocket(userSocket)
 
 		ws.onClose.whenComplete { result in
-			try? req.webSocketStore.removeFezSocket(userSocket)
+			try? req.webSocketStore.removeChatSocket(userSocket)
 		}
 	}
 

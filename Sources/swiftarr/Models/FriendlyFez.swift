@@ -18,7 +18,7 @@ import Vapor
 /// 	- See Also: [FezData](FezData) the DTO for returning basic data on Fezzes.
 /// 	- See Also: [FezContentData](FezContentData) the DTO for creating or editing Fezzes.
 /// 	- See Also: [CreateFriendlyFezSchema](CreateFriendlyFezSchema) the Migration for creating the Fez table in the database.
-final class FriendlyFez: Model, Searchable {
+final class FriendlyFez: Model, Searchable, @unchecked Sendable {
 	static let schema = "friendlyfez"
 
 	// MARK: Properties

@@ -3,7 +3,7 @@ import Foundation
 
 /// A `Pivot` holding a sibllings relation between `User` and `Twarrt`.
 
-final class TwarrtLikes: Model {
+final class TwarrtLikes: Model, @unchecked Sendable {
 	static let schema = "twarrt+likes"
 
 	// MARK: Properties

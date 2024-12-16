@@ -456,8 +456,8 @@ struct SiteUserController: SiteControllerUtils {
 				try await apiQuery(req, endpoint: "/user/\(targetUserIDVal)/image", method: .DELETE)
 			}
 		}
-		else if let imageUploadData = ImageUploadData(nil, profileStruct.avatarPhotoInput) {
-			try await apiQuery(req, endpoint: "/user/image", method: .POST, encodeContent: imageUploadData)
+		else if let photo = profileStruct.avatarPhotoInput {
+			try await apiQuery(req, endpoint: "/user/image", method: .POST, encodeContent: ImageUploadData(nil, photo))
 		}
 		else if profileStruct.serverAvatarPhoto.hasPrefix("/api/v3/image/user/identicon") {
 			try await apiQuery(req, endpoint: "/user/image", method: .DELETE)

@@ -43,16 +43,10 @@ extension ISO8601DateFormatter {
 }
 
 @available(OSX 10.13, *)
-extension Formatter {
-	/// Abstract helper for formatter initialization.
-	static let iso8601ms = ISO8601DateFormatter([.withInternetDateTime, .withFractionalSeconds])
-}
-
-@available(OSX 10.13, *)
 extension Date {
 	/// Returns an iso8601 string representation with milliseconds.
 	var iso8601ms: String {
-		return Formatter.iso8601ms.string(from: self)
+		return ISO8601DateFormatter([.withInternetDateTime, .withFractionalSeconds]).string(from: self)
 	}
 }
 
@@ -60,7 +54,7 @@ extension Date {
 extension String {
 	/// Returns a `Date?` from an iso8601 string representation with milliseconds.
 	var iso8601ms: Date? {
-		return Formatter.iso8601ms.date(from: self)
+		return ISO8601DateFormatter([.withInternetDateTime, .withFractionalSeconds]).date(from: self)
 	}
 }
 
@@ -70,7 +64,7 @@ extension JSONDecoder.DateDecodingStrategy {
 	static let iso8601ms = custom {
 		let container = try $0.singleValueContainer()
 		let string = try container.decode(String.self)
-		guard let date = Formatter.iso8601ms.date(from: string) else {
+		guard let date = ISO8601DateFormatter([.withInternetDateTime, .withFractionalSeconds]).date(from: string) else {
 			throw DecodingError.dataCorruptedError(
 				in: container,
 				debugDescription: "invalid format: " + string
@@ -85,7 +79,7 @@ extension JSONEncoder.DateEncodingStrategy {
 	/// Custom encoding strategy for iso8601 strings with milliseconds.
 	static let iso8601ms = custom {
 		var container = $1.singleValueContainer()
-		try container.encode(Formatter.iso8601ms.string(from: $0))
+		try container.encode(ISO8601DateFormatter([.withInternetDateTime, .withFractionalSeconds]).string(from: $0))
 	}
 }
 

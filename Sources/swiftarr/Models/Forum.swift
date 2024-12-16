@@ -8,7 +8,7 @@ import Vapor
 /// 	- See Also: [ForumListData](ForumListData) the DTO for returning basic info on Forums. Mostly, ForumListData does not include posts.
 /// 	- See Also: [ForumCreateData](ForumCreateData) the DTO for creating forums.
 /// 	- See Also: [CreateForumSchema](CreateForumSchema) the Migration for creating the Forum table in the database.
-final class Forum: Model, Searchable {
+final class Forum: Model, Searchable, @unchecked Sendable {
 	static let schema = "forum"
 
 	// MARK: Properties

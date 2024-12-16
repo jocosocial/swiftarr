@@ -798,25 +798,17 @@ public struct ForumSearchData: Content {
 /// Incorporated into `PostContentData`, which is in turn required by several routes.
 ///
 /// See `UserController.imageHandler(_:data)`.
-public struct ImageUploadData: Content {
+struct ImageUploadData: Content, Sendable {
 	/// The filename of an existing image previously uploaded to the server. Ignored if image is set.
-	var filename: String?
+	let filename: String?
 	/// The image in `Data` format.
-	var image: Data?
+	let image: Data?
 }
 
 extension ImageUploadData {
-	/// Failable initializer; either filename or image must be non-nil and non-empty.
-	init?(_ filename: String?, _ image: Data?) {
-		if let fn = filename, !fn.isEmpty {
-			self.filename = fn
-		}
-		if let img = image, !img.isEmpty {
-			self.image = img
-		}
-		if self.filename == nil && self.image == nil {
-			return nil
-		}
+	init(_ filename: String? = nil, _ image: Data? = nil) {
+		self.filename = filename
+		self.image = image
 	}
 }
 
@@ -1282,34 +1274,34 @@ public struct PerformerResponseData: Content {
 ///
 /// Used by: `POST /api/v3/performer/forEvent/:event_id`
 /// Used by: `POST /api/v3/performer/official/add`
-public struct PerformerUploadData: Content {
+struct PerformerUploadData: Content, Sendable {
 	/// If this is an existing performer that is being updated. Not required for shadow event organizers; we can find them by userID.
-	var performerID: UUID?
+	let performerID: UUID?
 	/// The name of the performer. Required.
-	var name: String
-	var pronouns: String?
+	let name: String
+	let pronouns: String?
 	/// Bio can contain Markdown.
-	var bio: String?
+	let bio: String?
 	/// New photo data if we're updating it, or the name of an existing photo on the server.
-	var photo: ImageUploadData
+	let photo: ImageUploadData
 	/// TRUE if this is an official performer, FALSE if it's a shadow event organizer. Note that this struct can't link a Performer with a User, so can't be
 	/// used by admin/mods to create Shadow Event Organizers. The idea is that they should create their records themselves, but mods may have to edit them.
-	var isOfficialPerformer: Bool
-	var organization: String?
-	var title: String?
-	var yearsAttended: [Int]
+	let isOfficialPerformer: Bool
+	let organization: String?
+	let title: String?
+	let yearsAttended: [Int]
 	/// Social media URLs. Should be actual URLs we put into an HREF.
-	var website: String?
+	let website: String?
 	/// Social media URLs. Should be actual URLs we put into an HREF.
-	var facebookURL: String?
+	let facebookURL: String?
 	/// Social media URLs. Should be actual URLs we put into an HREF.
-	var xURL: String?
+	let xURL: String?
 	/// Social media URLs. Should be actual URLs we put into an HREF.
-	var instagramURL: String?
+	let instagramURL: String?
 	/// Social media URLs. Should be actual URLs we put into an HREF.
-	var youtubeURL: String?
+	let youtubeURL: String?
 	/// UIDs of events where this performer is scheduled to appear.
-	var eventUIDs: [String]
+	let eventUIDs: [String]
 }
 
 extension PerformerUploadData {
@@ -1319,7 +1311,7 @@ extension PerformerUploadData {
 		name = performer.name
 		pronouns = performer.pronouns
 		bio = performer.bio
-		photo = ImageUploadData(filename: performer.photo)
+		photo = ImageUploadData(performer.photo)
 		isOfficialPerformer = performer.officialPerformer
 		organization = performer.organization
 		title = performer.title
@@ -1894,7 +1886,7 @@ extension UserCreateData: RCFValidatable {
 /// * `GET /api/v3/client/user/headers/since/DATE`
 ///
 /// See `UsersController.headerHandler(_:)`, `ClientController.userHeadersHandler(_:)`.
-public struct UserHeader: Content {
+public struct UserHeader: Content, Sendable {
 	/// The user's ID.
 	var userID: UUID
 	/// The user's username.
@@ -2151,7 +2143,7 @@ extension UserPasswordData: RCFValidatable {
 /// * `POST /api/v3/user/profile`
 ///
 /// See `UserController.profileHandler(_:)`, `UserController.profileUpdateHandler(_:data:)`.
-public struct UserProfileUploadData: Content {
+public struct UserProfileUploadData: Content, Sendable {
 	/// Basic info about the user--their ID, username, displayname, and avatar image. May be nil on POST.
 	var header: UserHeader?
 	/// The displayName, again. Will be equal to header.displayName in results. When POSTing, set this field to update displayName.

@@ -1,5 +1,5 @@
 import Foundation
-import Redis
+@preconcurrency import Redis
 import Vapor
 
 /// This extends Request.Redis with a bunch of function wrappers that (mostly) make a single Redis call. The function names describe what

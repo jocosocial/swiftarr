@@ -7,7 +7,7 @@ import Fluent
 /// The 'current' TimeZoneChange is the one with the a start date in the most recent past.  The timezone indicated by the current TimeZoneChange 
 /// is in force until the next (in Date order) TimeZoneChange becomes current.
 /// 
-final class TimeZoneChange: Model {
+final class TimeZoneChange: Model, @unchecked Sendable {
 	static let schema = "time_zone_change"
 	
    // MARK: Properties

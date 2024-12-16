@@ -12,7 +12,7 @@ import Vapor
 /// Because it's often the case that there's at least one late change to the official lineup, these models can be soft-deleted by admin, which
 /// should be easier to manage than delete-on-update logic.This also gives the *technical* ability to list performers who weren't able to make it aboard. 
 /// I haven't checked whether this is information we can actually provide--there may be contractual issues or something.
-final class Performer: Model {
+final class Performer: Model, @unchecked Sendable {
 	static let schema = "performer"
 	
 	@ID(key: .id) var id: UUID?

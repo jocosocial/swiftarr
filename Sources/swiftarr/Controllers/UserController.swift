@@ -152,14 +152,9 @@ struct UserController: APIRouteCollection {
 		// Reg Codes may be delivered in user's emails as "ABC DEF", but the normalized form is lowercase, no spaces.
 		// Note: We don't check the reg code against the table until we're inside the transaction
 		guard let normalizedRegCode = data.verification?.lowercased().replacingOccurrences(of: " ", with: ""),
-			normalizedRegCode.rangeOfCharacter(from: CharacterSet.alphanumerics.inverted) == nil,
-			normalizedRegCode.count == 6
-		else {
-			throw Abort(
-				.badRequest,
-				reason:
-					"Malformed verification code. Verification code must be 6 alphanumeric letters; spaces optional."
-			)
+				normalizedRegCode.rangeOfCharacter(from: CharacterSet.alphanumerics.inverted) == nil,
+				normalizedRegCode.count == 6 else {
+			throw Abort(.badRequest, reason: "Malformed verification code. Verification code must be 6 alphanumeric letters; spaces optional.")
 		}
 
 		// create user
@@ -178,13 +173,10 @@ struct UserController: APIRouteCollection {
 
 		// wrap in a transaction to ensure each user connects to a unique reg code
 		try await req.db.transaction { database in
-			guard
-				let dbRegCode = try await RegistrationCode.query(on: database).filter(\.$code == normalizedRegCode)
-					.first()
-			else {
+			guard let dbRegCode = try await RegistrationCode.query(on: database).filter(\.$code == normalizedRegCode).first() else {
 				throw Abort(.badRequest, reason: "No match for registration code")
 			}
-			guard dbRegCode.user == nil else {
+			guard dbRegCode.$user.id == nil else {
 				throw Abort(.conflict, reason: "registration code has already been used")
 			}
 			user.verification = dbRegCode.code

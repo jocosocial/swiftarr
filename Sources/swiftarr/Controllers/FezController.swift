@@ -247,17 +247,14 @@ struct FezController: APIRouteCollection {
 		}
 
 		// get owned fezzes
-		async let fezCount = query.count()
-		async let fezzes = query.range(start..<(start + limit)).sort(\.$createdAt, .descending).all()
+		let fezCount = try await query.count()
+		let fezzes = try await query.range(start..<(start + limit)).sort(\.$createdAt, .descending).all()
 		// convert to FezData
-		let fezDataArray = try await fezzes.map { (fez) -> FezData in
+		let fezDataArray = try fezzes.map { (fez) -> FezData in
 			let userParticipant = try fez.joined(FezParticipant.self)
 			return try buildFezData(from: fez, with: userParticipant, for: user, on: req)
 		}
-		return try await FezListData(
-			paginator: Paginator(total: fezCount, start: start, limit: limit),
-			fezzes: fezDataArray
-		)
+		return FezListData(paginator: Paginator(total: fezCount, start: start, limit: limit), fezzes: fezDataArray)
 	}
 
 	/// `GET /api/v3/fez/:fez_ID`
@@ -325,14 +322,13 @@ struct FezController: APIRouteCollection {
 				.filter(\.$user.$id == effectiveUser.userID)
 				.filter(FriendlyFez.self, \.$fezType !~ [.closed, .personalEvent])
 				.withDeleted().filter(\.$deletedAt < Date())
-		async let fezCount = try query.count()
-		async let pivots = query.copy().sort(FriendlyFez.self, \.$createdAt, .descending).range(urlQuery.calcRange()).all()
-		let fezDataArray = try await pivots.map { pivot -> FezData in
+		let fezCount = try await query.count()
+		let pivots = try await query.copy().sort(FriendlyFez.self, \.$createdAt, .descending).range(urlQuery.calcRange()).all()
+		let fezDataArray = try pivots.map { pivot -> FezData in
 			let fez = try pivot.joined(FriendlyFez.self)
 			return try buildFezData(from: fez, with: nil, for: effectiveUser, on: req)
 		}
-		return try await FezListData(paginator: Paginator(total: fezCount, start: urlQuery.calcStart(), limit: urlQuery.calcLimit()),
-				fezzes: fezDataArray)
+		return FezListData(paginator: Paginator(total: fezCount, start: urlQuery.calcStart(), limit: urlQuery.calcLimit()), fezzes: fezDataArray)
 	}
 
 	// MARK: Membership
@@ -378,7 +374,7 @@ struct FezController: APIRouteCollection {
 		newParticipant.hiddenCount = try await fez.$fezPosts.query(on: req.db).filter(\.$author.$id ~~ blocksAndMutes)
 			.count()
 		try await newParticipant.save(on: req.db)
-		try forwardMembershipChangeToSockets(fez, participantID: cacheUser.userID, joined: true, on: req)
+		try await forwardMembershipChangeToSockets(fez, participantID: cacheUser.userID, joined: true, on: req)
 		let fezData = try buildFezData(from: fez, with: newParticipant, for: cacheUser, on: req)
 		_ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
 		// return with 201 status
@@ -413,7 +409,7 @@ struct FezController: APIRouteCollection {
 		try await fez.save(on: req.db)
 		try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID).delete()
 		try await deleteFezNotifications(userIDs: [cacheUser.userID], fez: fez, on: req)
-		try forwardMembershipChangeToSockets(fez, participantID: cacheUser.userID, joined: false, on: req)
+		try await forwardMembershipChangeToSockets(fez, participantID: cacheUser.userID, joined: false, on: req)
 		_ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
 		return try buildFezData(from: fez, with: nil, for: cacheUser, on: req)
 	}
@@ -493,7 +489,7 @@ struct FezController: APIRouteCollection {
 			infoStr.append(" in \(fez.fezType.lfgLabel) \"\(fez.title)\".")
 		}
 		try await addNotifications(users: participantNotifyList, type: .chatUnreadMsg(fez.requireID(), fez.fezType), info: infoStr, on: req)
-		try forwardPostToSockets(fez, post, on: req)
+		try await forwardPostToSockets(fez, post, on: req)
 		// A user posting is assumed to have read all prev posts. (even if this proves untrue, we should increment
 		// readCount as they've read the post they just wrote!)
 		if let pivot = try await getUserPivot(lfg: fez, userID: cacheUser.userID, on: req.db) {
@@ -729,7 +725,7 @@ struct FezController: APIRouteCollection {
 			try await newParticipant.save(on: transaction)
 		}
 		// Tell chat members listening on chat sockets about the new member
-		try forwardMembershipChangeToSockets(fez, participantID: addingUserID, joined: true, on: req)
+		try await forwardMembershipChangeToSockets(fez, participantID: addingUserID, joined: true, on: req)
 		// Tell the new member they've been added by the chat owner.
 		let infoStr = "@\(requester.username) added you to their \(fez.fezType.lfgLabel) titled \"\(fez.title)\""
 		try await addNotifications(users: [addingUserID], type: .addedToChat(fez.requireID(), fez.fezType), info: infoStr, on: req)
@@ -776,7 +772,7 @@ struct FezController: APIRouteCollection {
 			try await fez.$participants.detach(removeUser, on: transaction)
 		}
 		try await deleteFezNotifications(userIDs: [removeUserID], fez: fez, on: req)
-		try forwardMembershipChangeToSockets(fez, participantID: removeUserID, joined: false, on: req)
+		try await forwardMembershipChangeToSockets(fez, participantID: removeUserID, joined: false, on: req)
 		let effectiveUser = getEffectiveUser(user: requester, req: req, fez: fez)
 		let pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first()
 		return try buildFezData(from: fez, with: pivot, for: requester, on: req)
@@ -831,10 +827,10 @@ struct FezController: APIRouteCollection {
 				throw Abort(.badRequest, reason: "User can't vew messages in this LFG")
 			}
 			let userSocket = UserSocket(userID: user.userID, socket: ws, fezID: fezID, htmlOutput: false)
-			try req.webSocketStore.storeFezSocket(userSocket)
+			try await req.webSocketStore.storeChatSocket(userSocket)
 
 			ws.onClose.whenComplete { result in
-				try? req.webSocketStore.removeFezSocket(userSocket)
+				try? req.webSocketStore.removeChatSocket(userSocket)
 			}
 		}
 		catch {
@@ -843,14 +839,13 @@ struct FezController: APIRouteCollection {
 	}
 
 	// Checks for sockets open on this fez, and sends the post to each of them.
-	func forwardPostToSockets(_ fez: FriendlyFez, _ post: FezPost, on req: Request) throws {
-		try req.webSocketStore.getFezSockets(fez.requireID()).forEach { userSocket in
-			let postAuthor = try req.userCache.getHeader(post.$author.id)
+	func forwardPostToSockets(_ fez: FriendlyFez, _ post: FezPost, on req: Request) async throws {
+		let postAuthor = try req.userCache.getHeader(post.$author.id)
+		let sockets = try await req.webSocketStore.getChatSockets(fez.requireID())
+		for userSocket in sockets {
 			guard let socketOwner = req.userCache.getUser(userSocket.userID),
-				userCanViewMemberData(user: socketOwner, fez: fez),
-				!(socketOwner.getBlocks().contains(postAuthor.userID)
-					|| socketOwner.getMutes().contains(postAuthor.userID))
-			else {
+					userCanViewMemberData(user: socketOwner, fez: fez),
+					!(socketOwner.getBlocks().contains(postAuthor.userID) || socketOwner.getMutes().contains(postAuthor.userID)) else {
 				return
 			}
 			var leafPost = try SocketFezPostData(post: post, author: postAuthor)
@@ -860,54 +855,43 @@ struct FezController: APIRouteCollection {
 					var fezPost: SocketFezPostData
 					var showModButton: Bool
 				}
-				let ctx = FezPostContext(
-					userID: userSocket.userID,
-					fezPost: leafPost,
-					showModButton: socketOwner.accessLevel.hasAccess(.moderator) && fez.fezType != .closed
-				)
-				_ = req.view.render("Fez/fezPost", ctx)
-					.flatMapThrowing { postBuffer in
-						if let data = postBuffer.data.getData(at: 0, length: postBuffer.data.readableBytes),
-							let htmlString = String(data: data, encoding: .utf8)
-						{
-							leafPost.html = htmlString
-							let data = try JSONEncoder().encode(leafPost)
-							if let dataString = String(data: data, encoding: .utf8) {
-								userSocket.socket.send(dataString)
-							}
-						}
+				let ctx = FezPostContext(userID: userSocket.userID, fezPost: leafPost,
+						showModButton: socketOwner.accessLevel.hasAccess(.moderator) && fez.fezType != .closed)
+				leafPost.html = try await req.view.render("Fez/fezPost", ctx) .flatMapThrowing { postBuffer -> String? in
+					if let data = postBuffer.data.getData(at: 0, length: postBuffer.data.readableBytes),
+							let htmlString = String(data: data, encoding: .utf8) {
+						return htmlString
 					}
+					return nil 
+				}.get()
 			}
-			else {
-				let data = try JSONEncoder().encode(leafPost)
-				if let dataString = String(data: data, encoding: .utf8) {
-					userSocket.socket.send(dataString)
-				}
+			let data = try JSONEncoder().encode(leafPost)
+			if let dataString = String(data: data, encoding: .utf8) {
+				try await userSocket.socket.send(dataString)
 			}
 		}
 	}
 
 	// Checks for sockets open on this fez, and sends the membership change info to each of them.
-	func forwardMembershipChangeToSockets(_ fez: FriendlyFez, participantID: UUID, joined: Bool, on req: Request) throws
+	func forwardMembershipChangeToSockets(_ fez: FriendlyFez, participantID: UUID, joined: Bool, on req: Request) async throws
 	{
-		try req.webSocketStore.getFezSockets(fez.requireID())
-			.forEach { userSocket in
-				let participantHeader = try req.userCache.getHeader(participantID)
-				guard let socketOwner = req.userCache.getUser(userSocket.userID),
-					userCanViewMemberData(user: socketOwner, fez: fez),
-					!socketOwner.getBlocks().contains(participantHeader.userID)
-				else {
-					return
-				}
-				var change = SocketFezMemberChangeData(user: participantHeader, joined: joined)
-				if userSocket.htmlOutput {
-					change.html = "<i>\(participantHeader.username) has \(joined ? "entered" : "left") the chat</i>"
-				}
-				let data = try JSONEncoder().encode(change)
-				if let dataString = String(data: data, encoding: .utf8) {
-					userSocket.socket.send(dataString)
-				}
+		try await req.webSocketStore.getChatSockets(fez.requireID()).forEach { userSocket in
+			let participantHeader = try req.userCache.getHeader(participantID)
+			guard let socketOwner = req.userCache.getUser(userSocket.userID),
+				userCanViewMemberData(user: socketOwner, fez: fez),
+				!socketOwner.getBlocks().contains(participantHeader.userID)
+			else {
+				return
 			}
+			var change = SocketFezMemberChangeData(user: participantHeader, joined: joined)
+			if userSocket.htmlOutput {
+				change.html = "<i>\(participantHeader.username) has \(joined ? "entered" : "left") the chat</i>"
+			}
+			let data = try JSONEncoder().encode(change)
+			if let dataString = String(data: data, encoding: .utf8) {
+				userSocket.socket.send(dataString)
+			}
+		}
 	}
 
 	/// `POST /api/v3/fez/:fez_ID/mute`
@@ -1023,14 +1007,14 @@ extension FezController {
 		if let matchID = urlQuery.matchID {
 			query.filter(\.$id == matchID)
 		}
-		async let fezCount = try query.count()
-		async let pivots = query.copy().sort(FezParticipant.self, \.$isMuted, .descending)
+		let fezCount = try await query.count()
+		let pivots = try await query.copy().sort(FezParticipant.self, \.$isMuted, .descending)
 			.sort(FriendlyFez.self, \.$updatedAt, .descending).range(urlQuery.calcRange()).all()
-		let fezDataArray = try await pivots.map { pivot -> FezData in
+		let fezDataArray = try pivots.map { pivot -> FezData in
 			let fez = try pivot.joined(FriendlyFez.self)
 			return try buildFezData(from: fez, with: pivot, for: effectiveUser, on: req)
 		}
-		return try await FezListData(paginator: Paginator(total: fezCount, start: urlQuery.calcStart(), limit: urlQuery.calcLimit()),
+		return FezListData(paginator: Paginator(total: fezCount, start: urlQuery.calcStart(), limit: urlQuery.calcLimit()),
 				fezzes: fezDataArray)
 	}
 

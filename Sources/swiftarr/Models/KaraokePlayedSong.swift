@@ -6,7 +6,7 @@ import Vapor
 ///
 /// 	The played song is related to a song in the Karaoke Library, and the Manager records the name(s) of the karaoke singer(s).
 /// 	A timestamp is added automatically.
-final class KaraokePlayedSong: Model {
+final class KaraokePlayedSong: Model, @unchecked Sendable {
 	static let schema = "karaoke_played_song"
 
 	/// The song's ID, provisioned automatically.

@@ -332,7 +332,7 @@ extension MessagePostFormContent {
 			ImageUploadData(serverPhoto3, localPhoto3),
 			ImageUploadData(serverPhoto4, localPhoto4),
 		]
-		.compactMap { $0 }
+			.filter { $0.filename != nil || $0.image != nil }
 		let postContent = PostContentData(
 			text: postText ?? "",
 			images: images,

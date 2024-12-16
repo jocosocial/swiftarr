@@ -7,7 +7,7 @@ import Vapor
 ///
 /// 	- See Also: [FezPostData](FezPostData) the DTO for returning info on FezPosts. FezPostData is also a member of `FezData`.
 /// 	- See Also: [CreateFezPostSchema](CreateFezPostSchema) the Migration for creating the FezPost table in the database.
-final class FezPost: Model, Searchable {
+final class FezPost: Model, Searchable, @unchecked Sendable {
 	static let schema = "fezposts"
 
 	// MARK: Properties

@@ -1,7 +1,7 @@
 import Fluent
 import Vapor
 
-final class AlertWordPivot: Model {
+final class AlertWordPivot: Model, @unchecked Sendable {
 	static let schema = "alertword+user"
 
 	// MARK: Properties

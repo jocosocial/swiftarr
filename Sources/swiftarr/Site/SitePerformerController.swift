@@ -185,8 +185,8 @@ struct SitePerformerController: SiteControllerUtils {
 		} else {
 			serverPhotoName = postStruct.serverPhoto
 		}
-		var uploadData = PerformerUploadData(form: postStruct, photo:  ImageUploadData(filename: serverPhotoName, image: photoData))
-		uploadData.isOfficialPerformer = false
+		let uploadData = PerformerUploadData(form: postStruct, photo:  ImageUploadData(filename: serverPhotoName, image: photoData), 
+				overrideIsOfficial: false)
 		try await apiQuery(req, endpoint: "/performer/forevent/\(eventID)", method: .POST, encodeContent: uploadData)
 		return .ok
 	}
@@ -339,7 +339,7 @@ struct SitePerformerController: SiteControllerUtils {
 
 // Used to create a PerformerUploadData from the web form. Used in a couple of places.
 extension PerformerUploadData {
-	fileprivate init(form: AddPerformerFormContent, photo: ImageUploadData) {
+	fileprivate init(form: AddPerformerFormContent, photo: ImageUploadData, overrideIsOfficial: Bool? = nil ) {
 		performerID = form.performerID
 		if let eventUID = form.eventUID {
 			eventUIDs = [eventUID]
@@ -358,7 +358,7 @@ extension PerformerUploadData {
 		xURL = form.xURL
 		instagramURL = form.instagramURL
 		youtubeURL = form.youtubeURL
-		isOfficialPerformer = form.isOfficialPerformer ?? true
+		isOfficialPerformer = overrideIsOfficial ?? form.isOfficialPerformer ?? true
 		yearsAttended = form.yearsAttended?.matches(of: #/20\d\d/#).compactMap { Int($0.output) }.sorted() ?? []
 	}
 }

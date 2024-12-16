@@ -14,7 +14,7 @@ import Vapor
 /// 	- See Also: [AnnouncementData](AnnouncementData) the DTO for returning info on Announcements.
 /// 	- See Also: [AnnouncementCreateData](AnnouncementCreateData) the DTO for creating and editing Announcements.
 /// 	- See Also: [CreateAnnouncementSchema](CreateAnnouncementSchema) the Migration that creates the Announcement table in the database.
-final class Announcement: Model {
+final class Announcement: Model, @unchecked Sendable {
 	static let schema = "announcements"
 
 	// MARK: Properties

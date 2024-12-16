@@ -4,7 +4,7 @@ import Foundation
 /// A `Pivot` holding a siblings relation between a `User` and a `Forum`.
 /// The pivot tracks how many posts the user has read in the forum.
 
-final class ForumReaders: Model {
+final class ForumReaders: Model, @unchecked Sendable {
 	static let schema = "forum+readers"
 
 	// MARK: Properties

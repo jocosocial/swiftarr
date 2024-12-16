@@ -349,10 +349,10 @@ struct SiteSeamailController: SiteControllerUtils {
 			return
 		}
 		let userSocket = UserSocket(userID: user.userID, socket: ws, fezID: lfgID, htmlOutput: true)
-		try? req.webSocketStore.storeFezSocket(userSocket)
+		try? await req.webSocketStore.storeChatSocket(userSocket)
 
 		ws.onClose.whenComplete { result in
-			try? req.webSocketStore.removeFezSocket(userSocket)
+			try? req.webSocketStore.removeChatSocket(userSocket)
 		}
 	}
 

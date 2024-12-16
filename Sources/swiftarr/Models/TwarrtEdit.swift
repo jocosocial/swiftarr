@@ -7,7 +7,7 @@ import Vapor
 /// This is done for accountability purposes and the data collected is intended to be viewable
 /// only by users with an access level of `.moderator` or above.
 
-final class TwarrtEdit: Model {
+final class TwarrtEdit: Model, @unchecked Sendable {
 	static let schema = "twarrtedit"
 
 	// MARK: Properties

@@ -225,16 +225,18 @@ struct AlertController: APIRouteCollection {
 	///
 	/// This socket only sends `SocketNotificationData` messages from the server to the client; there are no client-initiated
 	/// messages defined for this socket.
-	func createNotificationSocket(_ req: Request, _ ws: WebSocket) {
+	func createNotificationSocket(_ req: Request, _ ws: WebSocket) async {
 		guard let user = try? req.auth.require(UserCacheData.self) else {
-			_ = ws.close()
+			_ = try? await ws.close()
 			return
 		}
 		let userSocket = UserSocket(userID: user.userID, socket: ws)
-		req.webSocketStore.storeSocket(userSocket)
+		await req.webSocketStore.storeSocket(userSocket)
 		req.logger.log(level: .info, "Created notification socket for user \(user.username)")
 		ws.onClose.whenComplete { result in
-			req.webSocketStore.removeSocket(userSocket)
+			Task {
+				await req.webSocketStore.removeSocket(userSocket)
+			}
 		}
 	}
 

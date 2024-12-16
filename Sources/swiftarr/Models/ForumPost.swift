@@ -12,7 +12,7 @@ import FluentSQL
 /// 	- See Also: [PostDetailData](PostDetailData) the DTO for returning extended data on ForumPosts.
 /// 	- See Also: [PostContentData](PostContentData) the DTO for creating ForumPosts.
 /// 	- See Also: [CreateForumPostSchema](CreateForumPostSchema) the Migration for creating the ForumPost table in the database.
-final class ForumPost: Model, Searchable {
+final class ForumPost: Model, Searchable, @unchecked Sendable {
 	static let schema = "forumpost"
 
 	// MARK: Properties

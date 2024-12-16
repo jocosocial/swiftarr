@@ -10,7 +10,7 @@ import Vapor
 /// 	- See Also: [DailyThemeData](DailyThemeData) the DTO for returning info on DailyThemes.
 /// 	- See Also: [DailyThemeUploadData](DailyThemeUploadData) the DTO for mutating DailyThemes..
 /// 	- See Also: [CreateDailyThemeSchema](CreateDailyThemeSchema) the Migration for creating the DailyTheme table in the database.
-final class DailyTheme: Model {
+final class DailyTheme: Model, @unchecked Sendable {
 	static let schema = "daily_theme"
 
 	// MARK: Properties

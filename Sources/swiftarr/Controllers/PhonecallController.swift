@@ -130,7 +130,7 @@ struct PhonecallController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Cannot call a user who has not made you a favorite user.")
 		}
 
-		let calleeNotificationSockets = req.webSocketStore.getSockets(calleeID)
+		let calleeNotificationSockets = await req.webSocketStore.getSockets(calleeID)
 		guard !calleeNotificationSockets.isEmpty else {
 			req.logger.log(level: .notice, "Attempt to call user with no notification socket.")
 			throw Abort(.badRequest, reason: "User unavailable.")
@@ -198,8 +198,7 @@ struct PhonecallController: APIRouteCollection {
 		}
 
 		// Make sure we can notify the callee
-		let callerNotificationSockets = req.webSocketStore.getSockets(calleeID)
-		guard !callerNotificationSockets.isEmpty else {
+		guard await req.webSocketStore.userHasSockat(calleeID) else {
 			req.logger.log(level: .notice, "Attempt to call user with no notification socket.")
 			throw Abort(.notFound, reason: "User unavailable.")
 		}
@@ -231,7 +230,7 @@ struct PhonecallController: APIRouteCollection {
 		}
 
 		// Double-check we can notify the callee
-		let calleeNotificationSockets = req.webSocketStore.getSockets(calleeID)
+		let calleeNotificationSockets = await req.webSocketStore.getSockets(calleeID)
 		guard !calleeNotificationSockets.isEmpty else {
 			req.logger.log(level: .notice, "All of a sudden, no callee notification socket.")
 			try? await ws.close()
@@ -298,7 +297,7 @@ struct PhonecallController: APIRouteCollection {
 		}
 
 		// Send 'already answered' to all the callee's devices, so they stop ringing
-		let calleeNotificationSockets = req.webSocketStore.getSockets(call.callee)
+		let calleeNotificationSockets = await req.webSocketStore.getSockets(call.callee)
 		let msgStruct = SocketNotificationData(forCallAnswered: call.callID)
 		if let jsonData = try? encoder.encode(msgStruct), let jsonDataStr = String(data: jsonData, encoding: .utf8) {
 			calleeNotificationSockets.forEach { notificationSocket in
@@ -369,7 +368,7 @@ struct PhonecallController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Request parameter call_ID is missing.")
 		}
 		// Send 'call answered' to all the callee's devices, so they stop ringing
-		let calleeNotificationSockets = req.webSocketStore.getSockets(callee.userID)
+		let calleeNotificationSockets = await req.webSocketStore.getSockets(callee.userID)
 		let msgStruct = SocketNotificationData(forCallAnswered: callID)
 		if let jsonData = try? encoder.encode(msgStruct), let jsonDataStr = String(data: jsonData, encoding: .utf8) {
 			calleeNotificationSockets.forEach { notificationSocket in
@@ -402,7 +401,7 @@ struct PhonecallController: APIRouteCollection {
 		}
 		// Tell the caller the call is declined. Only necessary for the direct-connect case.
 		if let call = await ActivePhoneCalls.shared.getCall(withID: callID) {
-			let callerSockets = req.webSocketStore.getSockets(call.caller)
+			let callerSockets = await req.webSocketStore.getSockets(call.caller)
 			let msgStruct = SocketNotificationData(forCallEnded: callID)
 			if let jsonData = try? encoder.encode(msgStruct), let jsonDataStr = String(data: jsonData, encoding: .utf8)
 			{

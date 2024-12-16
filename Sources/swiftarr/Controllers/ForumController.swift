@@ -366,7 +366,7 @@ struct ForumController: APIRouteCollection {
 					}
 		}
 		// get forums and total forum count, turn into [ForumListData] and then insert into ForumSearchData
-		async let forumCount = try countQuery.count()
+		let forumCount = try await countQuery.count()
 		let start = urlQuery.start ?? 0
 		let limit = urlQuery.limit ?? 50
 		let orderDirection = req.orderDirection();
@@ -376,12 +376,9 @@ struct ForumController: APIRouteCollection {
 			case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
 			default: _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 		}
-		async let forums = try forumQuery.all()
+		let forums = try await forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser)
-		return try await ForumSearchData(
-			paginator: Paginator(total: forumCount, start: start, limit: limit),
-			forumThreads: forumList
-		)
+		return ForumSearchData( paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
 	}
 
 	/// `GET /api/v3/forum/owner`
@@ -405,7 +402,7 @@ struct ForumController: APIRouteCollection {
 		if let cat = req.query[UUID.self, at: "cat"] {
 			countQuery.filter(\.$category.$id == cat)
 		}
-		async let forumCount = try countQuery.count()
+		let forumCount = try await countQuery.count()
 		let orderDirection = req.orderDirection();
 		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
@@ -415,10 +412,7 @@ struct ForumController: APIRouteCollection {
 		}
 		async let forums = try forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser)
-		return try await ForumSearchData(
-			paginator: Paginator(total: forumCount, start: start, limit: limit),
-			forumThreads: forumList
-		)
+		return ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
 	}
 
 	/// `GET /api/v3/forum/favorites`
@@ -445,7 +439,7 @@ struct ForumController: APIRouteCollection {
 		if let cat = req.query[UUID.self, at: "cat"] {
 			countQuery.filter(\.$category.$id == cat)
 		}
-		async let forumCount = try countQuery.count()
+		let forumCount = try await countQuery.count()
 		let orderDirection = req.orderDirection()
 		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
@@ -455,10 +449,7 @@ struct ForumController: APIRouteCollection {
 		}
 		async let forums = try forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser, forceIsFavorite: true)
-		return try await ForumSearchData(
-			paginator: Paginator(total: forumCount, start: start, limit: limit),
-			forumThreads: forumList
-		)
+		return ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
 	}
 
 	/// `GET /api/v3/forum/mutes`
@@ -485,7 +476,7 @@ struct ForumController: APIRouteCollection {
 		if let cat = req.query[UUID.self, at: "cat"] {
 			countQuery.filter(\.$category.$id == cat)
 		}
-		async let forumCount = try countQuery.count()
+		let forumCount = try await countQuery.count()
 		let orderDirection = req.orderDirection()
 		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
@@ -495,10 +486,7 @@ struct ForumController: APIRouteCollection {
 		}
 		async let forums = try forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser, forceIsMuted: true)
-		return try await ForumSearchData(
-			paginator: Paginator(total: forumCount, start: start, limit: limit),
-			forumThreads: forumList
-		)
+		return ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
 	}
 
 	/// `GET /api/v3/forum/unread`
@@ -539,7 +527,7 @@ struct ForumController: APIRouteCollection {
 		if let cat = req.query[UUID.self, at: "cat"] {
 			countQuery.filter(\.$category.$id == cat)
 		}
-		async let forumCount = try countQuery.count()
+		let forumCount = try await countQuery.count()
 		let orderDirection = req.orderDirection()
 		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
@@ -547,12 +535,9 @@ struct ForumController: APIRouteCollection {
 		case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
 		default: _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 		}
-		async let forums = try forumQuery.all()
+		let forums = try await forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser)
-		return try await ForumSearchData(
-			paginator: Paginator(total: forumCount, start: start, limit: limit),
-			forumThreads: forumList
-		)
+		return ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
 	}
 
 	/// `GET /api/v3/forum/recent`
@@ -569,19 +554,16 @@ struct ForumController: APIRouteCollection {
 		let start = (req.query[Int.self, at: "start"] ?? 0)
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
 		let countQuery = Forum.query(on: req.db).filter(\.$creator.$id !~ cacheUser.getBlocks())
-			.categoryAccessFilter(for: cacheUser)
-			.join(ForumReaders.self, on: \Forum.$id == \ForumReaders.$forum.$id)
-			.filter(ForumReaders.self, \.$user.$id == cacheUser.userID)
-		async let forumCount = try countQuery.count()
+				.categoryAccessFilter(for: cacheUser)
+				.join(ForumReaders.self, on: \Forum.$id == \ForumReaders.$forum.$id)
+				.filter(ForumReaders.self, \.$user.$id == cacheUser.userID)
+		let forumCount = try await countQuery.count()
 		let rangeQuery = countQuery.copy().range(start..<(start + limit))
-			.sort(ForumReaders.self, \.$updatedAt, .descending)
-			.join(child: \.$scheduleEvent, method: .left)
-		async let forums = try rangeQuery.all()
+				.sort(ForumReaders.self, \.$updatedAt, .descending)
+				.join(child: \.$scheduleEvent, method: .left)
+		let forums = try await rangeQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser, forceIsFavorite: false)
-		return try await ForumSearchData(
-			paginator: Paginator(total: forumCount, start: start, limit: limit),
-			forumThreads: forumList
-		)
+		return ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
 	}
 
 	// MARK: Returns Posts
@@ -852,11 +834,11 @@ struct ForumController: APIRouteCollection {
 
 		let countQuery = query.copy()
 		let rangeQuery = query.copy()
-		async let totalPostsFound = try countQuery.count()
-		async let posts = rangeQuery.range(start..<(start + limit)).all()
+		let totalPostsFound = try await countQuery.count()
+		let posts = try await rangeQuery.range(start..<(start + limit)).all()
 		// The filter() for mentions will include usernames that are prefixes for other usernames and other false positives.
 		// This filters those out after the query.
-		var postFilteredPosts = try await posts
+		var postFilteredPosts = posts
 		if let postFilter = postFilterMentions {
 			postFilteredPosts = postFilteredPosts.compactMap { $0.filterForMention(of: postFilter) }
 			if postFilter == "@\(cacheUser.username)" {
@@ -864,7 +846,7 @@ struct ForumController: APIRouteCollection {
 			}
 		}
 		let postData = try await buildPostData(postFilteredPosts, userID: cacheUser.userID, on: req, mutewords: cacheUser.mutewords)
-		return try await PostSearchData(queryString: req.url.query ?? "", posts: postData,
+		return PostSearchData(queryString: req.url.query ?? "", posts: postData,
 				paginator: Paginator(total: totalPostsFound, start: start, limit: limit))
 	}
 
@@ -1088,19 +1070,14 @@ struct ForumController: APIRouteCollection {
 		}
 		try guardUserCanAccessCategory(cacheUser, category: category)
 		// process images
-		async let imageFilenames = try self.processImages(data.firstPost.images, usage: .forumPost, on: req)
+		let imageFilenames = try await self.processImages(data.firstPost.images, usage: .forumPost, on: req)
 		// create forum
 		let effectiveAuthor = data.firstPost.effectiveAuthor(actualAuthor: cacheUser, on: req)
 		let forum = try Forum(title: data.title, category: category, creatorID: effectiveAuthor.userID, isLocked: false)
 		try await forum.save(on: req.db)
 		try await forum.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
 		// create first post
-		let forumPost = try await ForumPost(
-			forum: forum,
-			authorID: effectiveAuthor.userID,
-			text: data.firstPost.text,
-			images: imageFilenames
-		)
+		let forumPost = try ForumPost(forum: forum, authorID: effectiveAuthor.userID, text: data.firstPost.text, images: imageFilenames)
 		try await forumPost.save(on: req.db)
 		try await forumPost.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
 		// Update the forum last post at
@@ -1113,21 +1090,9 @@ struct ForumController: APIRouteCollection {
 		// If the post @mentions anyone, update their mention counts
 		try await processForumMentions(post: forumPost, editedText: nil, isCreate: true, on: req)
 		let creatorHeader = effectiveAuthor.makeHeader()
-		let postData = try PostData(
-			post: forumPost,
-			author: creatorHeader,
-			bookmarked: false,
-			userLike: nil,
-			likeCount: 0
-		)
-		let forumData = try ForumData(
-			forum: forum,
-			creator: creatorHeader,
-			isFavorite: false,
-			isMuted: false,
-			posts: [postData],
-			pager: Paginator(total: 1, start: 0, limit: 50)
-		)
+		let postData = try PostData(post: forumPost, author: creatorHeader, bookmarked: false, userLike: nil, likeCount: 0)
+		let forumData = try ForumData(forum: forum, creator: creatorHeader, isFavorite: false, isMuted: false, posts: [postData], 
+				pager: Paginator(total: 1, start: 0, limit: 50))
 		return forumData
 	}
 
@@ -1848,7 +1813,7 @@ extension ForumController {
 			}
 			let accessLevelToView = post.forum.category.accessLevelToView
 			let role = post.forum.category.requiredRole
-			let canUserAccessCategory = { (user: UserCacheData) -> UUID? in
+			let canUserAccessCategory = { @Sendable (user: UserCacheData) -> UUID? in
 				if !user.accessLevel.hasAccess(accessLevelToView) {
 					return nil
 				}

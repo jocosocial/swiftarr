@@ -2,7 +2,7 @@ import Fluent
 import Foundation
 
 /// A `Pivot` holding a sibling relation between `User` and `Boardgame`.
-final class BoardgameFavorite: Model {
+final class BoardgameFavorite: Model, @unchecked Sendable {
 	static let schema = "boardgame+favorite"
 
 	// MARK: Properties

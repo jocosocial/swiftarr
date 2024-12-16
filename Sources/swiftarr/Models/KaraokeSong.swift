@@ -5,7 +5,7 @@ import Vapor
 /// 	A song in the Karaoke Jukebox. The Jukebox has ~25000 songs; rather too many to let users browse without searching.
 /// 	For Heroku deploys there's an alternate import file that only import ~1000 songs. This is due to Heroku's free tier limiting us
 /// 	to 10000 database rows.
-final class KaraokeSong: Model, Searchable {
+final class KaraokeSong: Model, Searchable, @unchecked Sendable {
 	static let schema = "karaoke_song"
 
 	/// The song's ID, provisioned automatically.

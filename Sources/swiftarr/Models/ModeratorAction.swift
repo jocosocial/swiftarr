@@ -8,7 +8,7 @@ import Vapor
 ///
 /// 	- See Also: [ModeratorActionLogData](ModeratorActionLogData) the DTO for returning data about moderator actions.
 /// 	- See Also: [CreateModeratorActionSchema](CreateModeratorActionSchema) the Migration for creating the ModeratorAction table in the database.
-final class ModeratorAction: Model {
+final class ModeratorAction: Model, @unchecked Sendable {
 	static let schema = "moderator_action"
 
 	// MARK: Properties

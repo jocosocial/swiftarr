@@ -1,7 +1,7 @@
 import Fluent
 import Vapor
 
-final class MKSong: Model {
+final class MKSong: Model, @unchecked Sendable {
 	static let schema = "microkaraoke_song"
 
 	// MARK: Properties

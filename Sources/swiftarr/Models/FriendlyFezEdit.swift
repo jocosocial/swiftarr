@@ -9,7 +9,7 @@ import Vapor
 /// 	- See Also: [FezModerationData](FezModerationData) the DTO for returning data moderators need to moderate fezzes. Specifically, the
 /// 	sub-struct [FezEditLogData](FezEditLogData) delivers values from the `FriendlyFezEdit` .
 /// 	- See Also: [CreateFriendlyFezEditSchema](CreateFriendlyFezEditSchema) the Migration for creating the FriendlyFezEdit table in the database.
-final class FriendlyFezEdit: Model {
+final class FriendlyFezEdit: Model, @unchecked Sendable {
 	static let schema = "fez_edit"
 
 	/// The edit's ID.

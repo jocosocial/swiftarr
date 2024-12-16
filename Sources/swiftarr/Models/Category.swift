@@ -9,7 +9,7 @@ import Vapor
 ///
 /// 	- See Also: [CategoryData](CategoryData) the DTO for returning info on Categories.
 /// 	- See Also: [CreateCategorySchema](CreateCategorySchema) the Migration for creating the Category table in the database.
-final class Category: Model {
+final class Category: Model, @unchecked Sendable {
 	static let schema = "category"
 
 	// MARK: Properties

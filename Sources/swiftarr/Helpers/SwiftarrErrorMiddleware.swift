@@ -2,7 +2,7 @@ import Vapor
 
 /// Captures all errors and transforms them into an internal server error HTTP response.
 public final class SwiftarrErrorMiddleware: AsyncMiddleware {
-	var isReleaseMode: Bool
+	let isReleaseMode: Bool
 
 	func handleError(req: Request, error: Error) -> Response {
 		// variables to determine

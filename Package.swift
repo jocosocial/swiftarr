@@ -1,4 +1,4 @@
-// swift-tools-version:5.10
+// swift-tools-version:6.0
 import PackageDescription
 
 let package = Package(
@@ -61,11 +61,7 @@ let package = Package(
 )
 
 var swiftSettings: [SwiftSetting] { [
-	.enableUpcomingFeature("DisableOutwardActorInference"),
-//	.enableUpcomingFeature("BareSlashRegexLiterals"),
-//	.enableExperimentalFeature("StrictConcurrency"),
-//	.unsafeFlags(["-Xfrontend", "-strict-concurrency=complete"])
-//	.unsafeFlags(["-Xfrontend", "-warn-concurrency"])
+//	.enableUpcomingFeature("StrictConcurrency"),
 ] }
 
 /// Because I have discovered and forgotten this 3 times now, and because it's difficult to find the answer as it's Google-obscured:

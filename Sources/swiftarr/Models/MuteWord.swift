@@ -1,7 +1,7 @@
 import Fluent
 import Vapor
 
-final class MuteWord: Model {
+final class MuteWord: Model, @unchecked Sendable {
 	static let schema = "muteword"
 
 	// MARK: Properties

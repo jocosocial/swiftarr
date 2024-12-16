@@ -2,7 +2,7 @@ import Vapor
 
 /// Optional indicator of dinner seating team.
 
-public enum DinnerTeam: String, CaseIterable, Codable {
+enum DinnerTeam: String, CaseIterable, Codable {
 	/// Red Team
 	case red
 	/// Gold Team

@@ -3,7 +3,7 @@ import Vapor
 
 /// Names of clients that consume the Swiftarr client API. Used in the `SettingsAppFeaturePair` struct.
 /// Clients: Be sure to anticipate server values not listed here.
-public enum SwiftarrClientApp: String, Content, CaseIterable {
+enum SwiftarrClientApp: String, Content, CaseIterable {
 	/// The website, but NOT the API layer
 	case swiftarr
 
@@ -33,7 +33,7 @@ public enum SwiftarrClientApp: String, Content, CaseIterable {
 
 /// Functional areas of the Swiftarr API. Used in the `SettingsAppFeaturePair` struct.
 /// Clients: Be sure to anticipate server values not listed here.
-public enum SwiftarrFeature: String, Content, CaseIterable {
+public enum SwiftarrFeature: String, Content, CaseIterable, Sendable {
 	case tweets  // Tweet stream; perma-disabled
 	case forums
 	case seamail  // Chat. Includes group chats and 'open' chats that allow membership changes after creation
