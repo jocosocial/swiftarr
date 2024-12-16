@@ -155,7 +155,7 @@ extension Request {
 		}
 
 		// MARK: Notification Sockets
-		func userHasSockat(_ userID: UUID) async -> Bool {
+		func userHasSocket(_ userID: UUID) async -> Bool {
 			return await request.application.notificationSockets.hasSocket(forID: userID)
 		}
 		

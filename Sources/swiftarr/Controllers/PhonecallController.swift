@@ -198,7 +198,7 @@ struct PhonecallController: APIRouteCollection {
 		}
 
 		// Make sure we can notify the callee
-		guard await req.webSocketStore.userHasSockat(calleeID) else {
+		guard await req.webSocketStore.userHasSocket(calleeID) else {
 			req.logger.log(level: .notice, "Attempt to call user with no notification socket.")
 			throw Abort(.notFound, reason: "User unavailable.")
 		}
