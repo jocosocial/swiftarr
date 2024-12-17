@@ -1,12 +1,12 @@
-name: PublishDocumentation
+name: Generate Documentation
 on:
   workflow_dispatch:
+  pull_request:
   push:
     branches:
     - master
 jobs:
-  build:
-    # if: github.repository == 'jocosocial/swiftarr'
+  Build:
     runs-on: macos-15
     steps:
     - name: Install SourceKitten
@@ -21,6 +21,8 @@ jobs:
     #     swift-version: "5.10.0"
     - name: Confirm Swift Version
       run: swift --version
+    - name: Install Swiftarr Dependencies
+      run: brew install gd
     - name: Checkout Swiftarr
       uses: actions/checkout@v2
     - name: Generate Docs
@@ -31,6 +33,7 @@ jobs:
         name: github-pages
         path: docs/Output
   deploy:
+    if: github.repository == 'jocosocial/swiftarr' && github.ref == 'refs/heads/master'
     needs: build
     permissions:
       pages: write
