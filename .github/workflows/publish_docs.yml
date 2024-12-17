@@ -34,7 +34,7 @@ jobs:
         path: docs/Output
   deploy:
     if: github.repository == 'jocosocial/swiftarr' && github.ref == 'refs/heads/master'
-    needs: build
+    needs: Build
     permissions:
       pages: write
       id-token: write
