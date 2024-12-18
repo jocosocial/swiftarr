@@ -97,8 +97,8 @@
 											<input class="image-upload-input d-none" type="file" accept="image/png, image/jpeg" name="photo" aria-describedby="photoHelp">
 											Choose Photo
 										</label>
-										<input type="hidden" value="#(performer.header.photo)" name="serverPhoto">
-										<input type="hidden" id="photo-upload-url" name="photoURL" class="photo-upload-url">
+										<input type="hidden" class="external-photo-url photo-upload-url" name="photoURL" id="photo-upload-url">
+										<input type="hidden" class="current-server-photo" name="serverPhoto" value="#(performer.header.photo)">
 									</div>
 								</div>
 								<div class="row justify-content-between m-0">
