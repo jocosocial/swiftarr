@@ -17,11 +17,28 @@
 			#if(performer.header.isOfficialPerformer):
 				<p>This form is for TwitarrTeam and above to manually add a bio page for an official performer. This form does not attach
 					the performer to any events (that step is done by bulk import of a Sched spreadsheet).</p>
+				<form action="/admin/performer/add">
+					<div class="card mb-2">	
+						<div class="card-header bg-primary">
+							<span class="text-white">
+								Autofill from Performer's page on jococruise.com:
+							</span>
+						</div>
+						<div class="card-body bg-light">
+							<input type="text" class="form-control" id="performerurl" name="performerurl" aria-describedby="performerurlhelp" placeholder="jococruise.com URL">
+							<div id="performerurlhelp" class="form-text">
+							</div>
+							<div class="col col-auto">
+								<button type="submit" class="btn btn-primary">Fill Form<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+							</div>
+						</div>
+					</div>
+				</form>
 			#else:
 				<p>This form is for TwitarrTeam and above to edit the bio page for an shadow event organizer. This form does not attach
 					the performer to any events (Users need to do that themselves).</p>
 			#endif
-
+			
 			<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST" data-successurl="/admin/performer/root">
 				#if(performer.header.id != nil):
 					<input type="hidden" name="performerID" id="performerID" value="#(performer.header.id)">
@@ -54,7 +71,7 @@
 						<div class="card" style="width: 312px;">
 							<div class="m-1 border img-for-upload-container">
 								<div class="ratio ratio-1x1">
-									<img src="data:," width=300 height=300 class="img-for-upload" alt="">
+									<img src="#if(performer.header.photo):#(performer.header.photo)#elseif(performerImageURL):#(performerImageURL)#else::data:,#endif" width=300 height=300 class="img-for-upload" alt="">
 								</div>
 							</div>
 							<p class="text-center no-image-marker"><i>no photo selected</i></p>
@@ -65,8 +82,8 @@
 											<input class="image-upload-input d-none" type="file" accept="image/png, image/jpeg" name="photo" aria-describedby="photoHelp">
 											Choose Photo
 										</label>
-										<input type="hidden" value="#(performer.header.photo)" name="serverPhoto">
-										<input type="hidden" id="photo-upload-url" name="photoURL" class="photo-upload-url">
+										<input type="hidden" class="external-photo-url photo-upload-url" id="photo-upload-url" name="photoURL" value="#(performerImageURL)">
+										<input type="hidden" class="current-server-photo" name="serverPhoto" value="#(performer.header.photo)">
 									</div>
 								</div>
 								<div class="row justify-content-between m-0">

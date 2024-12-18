@@ -335,7 +335,8 @@ function updatePhotoCardState(cardElement) {
 	let imgContainer = cardElement.querySelector('.img-for-upload-container');
 	let noImgElem = cardElement.querySelector('.no-image-marker');
 	let fileInputElem = cardElement.querySelector('.image-upload-input');
-	let hiddenFormElem = cardElement.querySelector('input[type="hidden"]');
+	let externalPhotoElem = cardElement.querySelector('input[type="hidden"].external-photo-url');
+	let serverPhotoElem = cardElement.querySelector('input[type="hidden"].current-server-photo');
 	let imageSwapButton = cardElement.querySelector('.twitarr-image-swap');
 	let imageRemoveButton = cardElement.querySelector('.twitarr-image-remove');
 	let imageVisible = true;
@@ -343,14 +344,24 @@ function updatePhotoCardState(cardElement) {
 		imgElem.src = window.URL.createObjectURL(fileInputElem.files[0]);
 		imgContainer.style.display = "block";
 		noImgElem.style.display = "none";
-		hiddenFormElem.value = "";
+		if (externalPhotoElem) {
+			externalPhotoElem.value = "";
+		}
+		if (serverPhotoElem) {
+			serverPhotoElem.value = "";
+		}
 	}
-	else if (hiddenFormElem.value) {
-		if (hiddenFormElem.value.startsWith('/api/v3') || hiddenFormElem.value.startsWith('/avatar')) {
-			imgElem.src = hiddenFormElem.value;
+	else if (externalPhotoElem?.value) {
+		imgElem.src = externalPhotoElem.value;
+		imgContainer.style.display = "block";
+		noImgElem.style.display = "none";
+	} 
+	else if (serverPhotoElem?.value) {
+		if (serverPhotoElem.value.startsWith('/api/v3') || serverPhotoElem.value.startsWith('/avatar')) {
+			imgElem.src = serverPhotoElem.value;
 		}
 		else {
-			imgElem.src = "/api/v3/image/thumb/" + hiddenFormElem.value;
+			imgElem.src = "/api/v3/image/thumb/" + serverPhotoElem.value;
 		}
 		imgContainer.style.display = "block";
 		noImgElem.style.display = "none";

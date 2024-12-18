@@ -2,6 +2,7 @@ import FluentSQL
 import LeafKit
 import Vapor
 import RegexBuilder
+import SwiftSoup
 
 struct PerformersListContext: Encodable {
 	var trunk: TrunkContext
@@ -213,10 +214,18 @@ struct SitePerformerController: SiteControllerUtils {
 	// Adds an official performer to the performer list, or edits an existing official or shadow performer.
 	// Only TwitarrTeam and above can access.
 	// - Parameter performer: UUID. In URL Query. Set if this is an edit of an existing performer.
+	// - Parameter performerurl: String. In URL Query. Set if the form should be filled in with data from jococruise.com.
 	func upsertPerformer(_ req: Request) async throws -> View {
 		var performer: PerformerData?
+		var performerImageURL: String?
 		if let performerID = req.query[UUID.self, at: "performer"] {
 			performer = try await apiQuery(req, endpoint: "/performer/\(performerID)").content.decode(PerformerData.self)
+		}
+		else if let performerURL = req.query[String.self, at: "performerurl"] {
+			performer = try await buildPerformerFromURL(performerURL, on: req)
+			performerImageURL = performer?.header.photo
+			performer?.header.photo = nil
+			performer?.header.isOfficialPerformer = true
 		}
 		else {
 			performer = PerformerData()
@@ -225,18 +234,20 @@ struct SitePerformerController: SiteControllerUtils {
 		struct AddPerformerPageContext: Encodable {
 			var trunk: TrunkContext
 			var performer: PerformerData?
+			var performerImageURL: String?			// For 3rd party images that should appear on load
 			var formAction: String
 			var deleteAction: String?
 			var attendedYears: [String]
 			
-			init(_ req: Request, performer: PerformerData?) throws {
+			init(_ req: Request, performer: PerformerData?, image: String?) throws {
 				trunk = .init(req, title: "Add/Modify Official Performer Bio", tab: .events)
 				self.performer = performer
+				self.performerImageURL = image
 				self.formAction = "/admin/performer/add"
 				if let _ = performer?.header.id {
 					self.deleteAction = "/admin/performer/delete"
 				}
-				let currentYear = Settings.shared.cruiseStartDateComponents.year ?? 2024
+				let currentYear = Settings.shared.cruiseStartDateComponents.year ?? 2025
 				var years = performer?.yearsAttended ?? [currentYear]
 				if !years.contains(currentYear) {
 					years.append(currentYear)
@@ -244,7 +255,7 @@ struct SitePerformerController: SiteControllerUtils {
 				attendedYears = years.map { String($0) }
 			}
 		}
-		let ctx = try AddPerformerPageContext(req, performer: performer)
+		let ctx = try AddPerformerPageContext(req, performer: performer, image: performerImageURL)
 		return try await req.view.render("Performers/addPerformer", ctx)
 	}
 	
@@ -335,6 +346,95 @@ struct SitePerformerController: SiteControllerUtils {
 		try await apiQuery(req, endpoint: "/admin/performer/link/apply", method: .POST)
 		return .ok
 	}
+}
+
+extension SitePerformerController {
+	// Scrapes the HTML found at the given url, builds a PerformerData out of what it finds.
+	// Meant to work with urls of the form: "https://jococruise.com/jonathan-coulton/" 
+	// Like all scrapers, this code is fragile to changes in the HTML structure in the page being scraped.
+	fileprivate func buildPerformerFromURL(_ urlString: String, on req: Request) async throws -> PerformerData {
+		guard let _ = URL(string: urlString) else {
+			throw Abort(.badRequest, reason: "Invalid performer URL: \(urlString)")
+		}
+		let uri = URI(string: urlString)
+		var response = try await req.client.get(uri)
+		guard let bytes = response.body?.readableBytes, let html = response.body?.readString(length: bytes) else {
+			throw Abort(.badRequest, reason: "No HTML returned from URL: \(urlString)")
+		}
+		var result = PerformerData()
+		let doc = try SwiftSoup.parse(html)
+		result.youtubeURL = try doc.select("li.et-social-youtube a").first()?.attr("href")
+		result.instagramURL = try doc.select("li.et-social-instagram a").first()?.attr("href")
+		result.facebookURL = try doc.select("li.et-social-facebook a").first()?.attr("href")
+		result.website = try doc.select("li.et-social-google-plus a").first()?.attr("href")
+		result.xURL = try doc.select("li.et-social-twitter a").first()?.attr("href")
+		result.header.name = try doc.select("div.et_pb_text_0_tb_body div").first()?.text() ?? ""
+		result.pronouns = try doc.select("div.et_pb_text_1_tb_body div").first()?.text()
+		result.header.photo = try doc.select("div.et_pb_image_0_tb_body img").first()?.attr("src")
+		result.yearsAttended = try doc.select("div.et_pb_column_2_tb_body div.et_pb_blurb_description").first()?.text()
+				.split(separator: " • ").compactMap( { Int($0) } ) ?? []
+		if let bio = try doc.select("div.et_pb_text_2_tb_body div").first() {
+			result.bio = try processHTMLIntoMarkdown(bio)
+		}
+		// Clear out any values scraped from the page footer (they're all JoCo links, not specific to this performer)
+		if result.youtubeURL == "https://www.youtube.com/jococruise" {
+			result.youtubeURL = nil
+		}
+		if result.instagramURL == "https://www.instagram.com/jococruise/" {
+			result.instagramURL = nil
+		}
+		if result.facebookURL == "https://www.facebook.com/JoCoCruise" {
+			result.facebookURL = nil
+		}
+		return result
+	}
+	
+	// A really bad implementation of HTML to Markdown. Only works with a few Markdonw tags, but these seem to be the only
+	// ones used by the Performer Bio html sections on jococruise.com.
+	// 
+	// Any HTML tags not recognized and converted into their Markdown equivalent are removed from the output.
+	fileprivate func processHTMLIntoMarkdown(_ rootNode: Node) throws  -> String {
+		let accum = StringBuilder()
+        var nextNode: Node = rootNode
+        var parentStack: [(Node, String)] = [(rootNode, "")]
+
+		traversal: while true {
+	        let curNode = nextNode
+	        var tailText: String = ""
+            if let textNode = curNode as? TextNode {
+				accum.append(textNode.getWholeText())
+            } else if let element = (curNode as? Element) {
+				switch element.tagName() {
+					case "strong": accum.append("**"); tailText = "**"
+					case "i", "em": accum.append("*"); tailText = "*"
+					case "p": tailText = "\n"
+					case "a": accum.append("["); tailText = try "](\(element.attr("href")))"
+					default: break
+				}
+            }
+            if curNode.childNodeSize() > 0 {
+                nextNode = curNode.childNode(0)
+                parentStack.append((curNode, tailText))
+			} else {
+				accum.append(tailText)
+				while true {
+					if let node = nextNode.nextSibling() {
+						nextNode = node
+						break
+					}
+ 					if parentStack.isEmpty {
+						break traversal
+					}
+					else {
+						var tail: String
+						(nextNode, tail) = parentStack.removeLast()
+						accum.append(tail)
+					}
+				}
+            }
+        }
+        return accum.toString()
+    }
 }
 
 // Used to create a PerformerUploadData from the web form. Used in a couple of places.
