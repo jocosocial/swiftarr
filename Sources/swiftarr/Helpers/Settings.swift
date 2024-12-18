@@ -178,10 +178,10 @@ final class Settings: Encodable, @unchecked Sendable {
 	/// Root dir for files used by Swiftarr. The front-end's CSS, JS, static image files, all the Leaf templates are in here,
 	/// as are all the seeds files used for database migrations by the backend..
 	/// The Resources and Seeds dirs get *copied* into this dir from the root of the git repo by the build system.
-	@SettingsValue var staticFilesRootPath: URL = URL(fileURLWithPath: "~")
+	@SettingsValue var staticFilesRootPath: URL = FileManager.default.homeDirectoryForCurrentUser
 
 	/// User uploaded images will be inside this dir.
-	@SettingsValue var userImagesRootPath: URL = URL(fileURLWithPath: "~/swiftarrImages")
+	@SettingsValue var userImagesRootPath: URL = URL(filePath: "./swiftarrImages", directoryHint: .isDirectory, relativeTo: FileManager.default.homeDirectoryForCurrentUser).absoluteURL
 
 	// MARK: URLs
 	/// This is the EXTERNALLY VISIBLE URL for the server. If a user asks "What should I type into my browser to get to Twitarr?" you could tell them this.
