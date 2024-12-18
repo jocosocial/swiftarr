@@ -971,7 +971,7 @@ extension FezController {
 
 		if let dayFilter = req.query[Int.self, at: "cruiseday"] {
 			let portCalendar = Settings.shared.getPortCalendar()
-			if let dayStart = portCalendar.date(byAdding: .day, value: dayFilter - 1, to: Settings.shared.cruiseStartDate()),
+			if let dayStart = portCalendar.date(byAdding: .day, value: dayFilter, to: Settings.shared.cruiseStartDate()),
 					let dayEnd = portCalendar.date(byAdding: DateComponents(day: 1, hour: 3), to: dayStart) {
 				query.filter(FriendlyFez.self, \.$endTime >= dayStart).filter(FriendlyFez.self, \.$startTime < dayEnd)
 			}
