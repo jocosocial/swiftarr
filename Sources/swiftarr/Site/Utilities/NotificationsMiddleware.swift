@@ -19,6 +19,7 @@ struct NotificationsMiddleware: AsyncMiddleware, SiteControllerUtils {
 		guard req.method == .GET, let user = req.auth.get(UserCacheData.self) else {
 			return try await next.respond(to: req)
 		}
+		print("WEEEEE", Settings.shared.enableSiteNotificationDataCaching)
 		let hasChanges = try await req.redis.testAndClearStateChange(user.userID)
 		var isStale = false
 		if !hasChanges {
@@ -26,7 +27,7 @@ struct NotificationsMiddleware: AsyncMiddleware, SiteControllerUtils {
 				let lastCheckInterval = Double(lastCheckTimeStr)
 			{
 				let lastCheckDate = Date(timeIntervalSince1970: lastCheckInterval)
-				if lastCheckDate.timeIntervalSinceNow > -60.0 {
+				if lastCheckDate.timeIntervalSinceNow > -60.0 && Settings.shared.enableSiteNotificationDataCaching {
 					return try await next.respond(to: req)
 				}
 			}
