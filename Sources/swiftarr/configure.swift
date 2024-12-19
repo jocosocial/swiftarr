@@ -558,6 +558,9 @@ struct SwiftarrConfigurator {
 		// Setup the schedule update job to run at an interval and on-demand.
 		app.queues.schedule(UpdateScheduleJob()).hourly().at(5)
 		app.queues.schedule(UserEventNotificationJob()).minutely().at(0)
+		// @TODO this job should absolutely not run every minute
+		app.queues.schedule(UpdateRedisJob()).minutely().at(0)
+		app.queues.schedule(UpdateRedisJob()).minutely().at(30)
 		app.queues.add(OnDemandScheduleUpdateJob())
 		try app.queues.startInProcessJobs(on: .default)
 		try app.queues.startScheduledJobs()

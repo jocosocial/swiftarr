@@ -253,7 +253,7 @@ extension APIRouteCollection {
 			}
 		}
 		// Users who aren't "moderator" and are in the thread see it as a normal thread.
-		let inbox = Request.Redis.MailInbox.mailboxForChatType(type: chatType)
+		let inbox = MailInbox.mailboxForChatType(type: chatType)
 		for userID in users {
 			group.addTask { try await req.redis.userAddedToChat(chatID: msgID, userID: userID, inbox: inbox) }
 		}
@@ -284,7 +284,7 @@ extension APIRouteCollection {
 			}
 		}
 		// Users who aren't "moderator" and are in the thread see it as a normal thread.
-		let inbox = Request.Redis.MailInbox.mailboxForChatType(type: chatType)
+		let inbox = MailInbox.mailboxForChatType(type: chatType)
 		for userID in users {
 			group.addTask { try await req.redis.newUnreadMessage(chatID: msgID, userID: userID, inbox: inbox) }
 		}
