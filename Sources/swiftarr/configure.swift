@@ -573,6 +573,7 @@ struct SwiftarrConfigurator {
 		// Migration order is important here, particularly for initializing a new database.
 		// First initialize custom enum types. These are custom 'types' for fields (like .string, .int, or .uuid) -- but custom.
 		app.migrations.add(CreateCustomEnums(), to: .psql)
+		app.migrations.add(CreateCallInResultEnum(), to: .psql)
 
 		// Second group is schema-creation migrations. These create an initial database schema
 		// and do not add any data to the db. These need to be ordered such that referred-to tables
