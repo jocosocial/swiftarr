@@ -324,7 +324,6 @@ extension Application.Redis {
 	// This should only be used for data consistency validation. Sets the unread count
 	// for a given MailInbox for given user to a given value.
 	func setChatUnreadCount(_ value: Int, chatID: UUID, userID: UUID, inbox: MailInbox) async throws {
-		print("setUnreadCount", chatID.uuidString, value, inbox.unreadMailRedisKey(userID))
 		_ = try await hset(chatID.uuidString, to: value, in: inbox.unreadMailRedisKey(userID)).get()
 	}
 
