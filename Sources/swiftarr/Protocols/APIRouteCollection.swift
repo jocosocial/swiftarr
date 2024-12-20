@@ -442,6 +442,9 @@ extension APIRouteCollection {
 	}
 
 	// Calculates the start time of the earliest future followed event. Caches the value in Redis for quick access.
+	// The "current" reference date depends on a setting whether to operate in "real time" (aka what you the human
+	// reading this comment right now experience as the current date), or "cruise time" (aka what someone experienced)
+	// on board in the past or in the future.
 	func storeNextFollowedEvent(userID: UUID, on req: Request) async throws -> (Date, UUID)? {
 		let nextFavoriteEvent = try await getNextFollowedEvent(userID: userID, db: req.db)
 		// This will "clear" the next Event values of the UserNotificationData if no Events match the
