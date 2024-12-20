@@ -159,7 +159,7 @@ extension SocketNotificationData {
 		case .chatUnreadMsg(_, let chatType) where chatType.isSeamailType: self.type = .seamailUnreadMsg
 		case .chatUnreadMsg(_, let chatType) where chatType.isLFGType: self.type = .fezUnreadMsg
 		case .chatUnreadMsg(_, let chatType) where chatType.isPrivateEventType: self.type = .privateEventUnreadMsg
-		case .chatUnreadMsg: self.type = .addedToSeamail
+		case .chatUnreadMsg: self.type = .seamailUnreadMsg
 		
 		// nextFollowedEventTime and nextJoinedLFGTime are not a socket event, so is this OK?
 		case .nextFollowedEventTime: self.type = .followedEventStarting
