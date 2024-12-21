@@ -169,10 +169,22 @@ extension APIRouteCollection {
 				group.addTask { try await req.redis.resetActiveAnnouncementIDs() }
 
 			case .addedToChat(let msgID, let chatType):
-				stateChangeUsers = bookkeepUserAddedToChat(req: req, msgID: msgID, chatType: chatType, users: users, group: &group)
-			
+				stateChangeUsers = bookkeepUserAddedToChat(
+					req: req,
+					msgID: msgID,
+					chatType: chatType,
+					users: users,
+					group: &group
+				)
+
 			case .chatUnreadMsg(let msgID, let chatType):
-				stateChangeUsers = bookkeepNewChatMessage(req: req, msgID: msgID, chatType: chatType, users: users, group: &group)
+				stateChangeUsers = bookkeepNewChatMessage(
+					req: req,
+					msgID: msgID,
+					chatType: chatType,
+					users: users,
+					group: &group
+				)
 
 			case .nextFollowedEventTime(let date, let id):
 				for userID in users {
@@ -218,7 +230,12 @@ extension APIRouteCollection {
 
 			if forwardToSockets {
 				// Send a message to all involved users with open websockets.
-				await req.application.notificationSockets.forwardToSockets(app: req.application, idList: users, type: type, info: info)
+				await req.application.notificationSockets.forwardToSockets(
+					app: req.application,
+					idList: users,
+					type: type,
+					info: info
+				)
 			}
 
 			let stateChangeUsersCopy = stateChangeUsers
@@ -229,9 +246,13 @@ extension APIRouteCollection {
 		}
 	}
 
-
-	func bookkeepUserAddedToChat(req: Request, msgID: UUID, chatType: FezType, users: [UUID],
-			group: inout ThrowingTaskGroup<Void, Error>) -> [UUID] {
+	func bookkeepUserAddedToChat(
+		req: Request,
+		msgID: UUID,
+		chatType: FezType,
+		users: [UUID],
+		group: inout ThrowingTaskGroup<Void, Error>
+	) -> [UUID] {
 		var updateCountsUsers = users
 		// For seamail msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
 		// update counts list. This is so all team members have individual read counts.
@@ -261,8 +282,13 @@ extension APIRouteCollection {
 		return updateCountsUsers
 	}
 
-	func bookkeepNewChatMessage(req: Request, msgID: UUID, chatType: FezType, users: [UUID],
-			group: inout ThrowingTaskGroup<Void, Error>) -> [UUID] {
+	func bookkeepNewChatMessage(
+		req: Request,
+		msgID: UUID,
+		chatType: FezType,
+		users: [UUID],
+		group: inout ThrowingTaskGroup<Void, Error>
+	) -> [UUID] {
 		var updateCountsUsers = users
 		// For seamail msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
 		// update counts list. This is so all team members have individual read counts.
