@@ -194,6 +194,12 @@ final class Settings: Encodable, @unchecked Sendable {
 	/// Base URL that the web UI uses to call API level endpoints.
 	@SettingsValue var apiUrlComponents: URLComponents = URLComponents(string: "http://localhost:8081/api/v3")!
 
+	/// Enable caching the `UserNotificationData` in the users session data in `NotificationMiddleware`.
+	/// Disabling this can be useful for debugging the site UI in real time.
+	/// This was originally called disableSiteNotificationDataCaching requiring administrators to opt-out.
+	/// But https://github.com/jocosocial/swiftarr/issues/346 got in my way. Also "enableing" a "disable"
+	/// feels more gross the more I say it.
+	@StoredSettingsValue("enableSiteNotificationDataCaching", defaultValue: true) var enableSiteNotificationDataCaching: Bool
 
 }
 

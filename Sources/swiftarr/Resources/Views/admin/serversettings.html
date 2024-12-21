@@ -145,6 +145,14 @@
 							</div>
 						</div>
 					</li>
+					<li class="list-group-item">
+						<input type="checkbox" id="enableSiteNotificationDataCaching" name="enableSiteNotificationDataCaching" #if(settings.enableSiteNotificationDataCaching):checked#endif #if(!enableFields):disabled#endif>
+						<label for="enableSiteNotificationDataCaching">Enable Site UI Notification Data Caching</label><br>
+						Enable caching user notification data in Site UI sessions (normally up to 60 seconds).
+						<div class="alert alert-warning" role="alert">
+							Disabling this caching in production may have significant performance implications.
+						</div>
+					</li>
 				</ul>
 				<ul class="list-group mt-2">
 					<li class="list-group-item active">

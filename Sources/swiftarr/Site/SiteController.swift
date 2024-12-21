@@ -784,6 +784,7 @@ extension SiteControllerUtils {
 				app.sessions.middleware,
 				SiteErrorMiddleware(environment: app.environment),
 				UserCacheData.SessionAuth(),
+				NotificationsMiddleware(),
 			])
 		if overrideMinUserAccessLevel {
 			builder = builder.grouped(UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated.")))

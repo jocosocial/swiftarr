@@ -198,6 +198,9 @@ struct AdminController: APIRouteCollection {
 		if let value = data.upcomingLFGNotificationSetting {
 			Settings.shared.upcomingLFGNotificationSetting = value
 		}
+		if let value = data.enableSiteNotificationDataCaching {
+			Settings.shared.enableSiteNotificationDataCaching = value
+		}
 		var localDisables = Settings.shared.disabledFeatures.value
 		for pair in data.enableFeatures {
 			if let app = SwiftarrClientApp(rawValue: pair.app), let feature = SwiftarrFeature(rawValue: pair.feature) {
