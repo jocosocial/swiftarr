@@ -555,12 +555,14 @@ struct SwiftarrConfigurator {
 		}
 		app.queues.use(.redis(config))
 
+		if let rawNightlyJobHour = Environment.get("SWIFTARR_NIGHTLY_CRON_HOUR"), let nightlyJobHour = Int(rawNightlyJobHour) {
+			Settings.shared.nightlyJobHour = nightlyJobHour
+		}
+
 		// Setup the schedule update job to run at an interval and on-demand.
 		app.queues.schedule(UpdateScheduleJob()).hourly().at(5)
 		app.queues.schedule(UserEventNotificationJob()).minutely().at(0)
-		// @TODO this job should absolutely not run every minute
-		app.queues.schedule(UpdateRedisJob()).minutely().at(0)
-		app.queues.schedule(UpdateRedisJob()).minutely().at(30)
+		app.queues.schedule(UpdateRedisJob()).daily().at(.init(integerLiteral: Settings.shared.nightlyJobHour), 0)
 		app.queues.add(OnDemandScheduleUpdateJob())
 		app.queues.add(OnDemandUpdateRedisJob())
 		try app.queues.startInProcessJobs(on: .default)
