@@ -332,4 +332,28 @@ extension Application.Redis {
 	func clearChatUnreadCounts(userID: UUID, inbox: MailInbox) async throws {
 		_ = try await delete(inbox.unreadMailRedisKey(userID)).get()
 	}
+
+	func userHashRedisKey(userID: UUID) -> RedisKey {
+		return RedisKey("NotificationHash-\(userID)")
+	}
+
+	func setNextEventInUserHash(date: Date?, eventID: UUID?, userID: UUID) async throws {
+		if let date = date, let eventID = eventID {
+			let value = "\(date.timeIntervalSince1970) \(eventID)"
+			_ = try await hset("nextFollowedEvent", to: value, in: userHashRedisKey(userID: userID)).get()
+		}
+		else {
+			_ = try await hdel("nextFollowedEvent", from: userHashRedisKey(userID: userID)).get()
+		}
+	}
+
+	func setNextLFGInUserHash(date: Date?, lfgID: UUID?, userID: UUID) async throws {
+		if let date = date, let lfgID = lfgID {
+			let value = "\(date.timeIntervalSince1970) \(lfgID)"
+			_ = try await hset("nextJoinedLFG", to: value, in: userHashRedisKey(userID: userID)).get()
+		}
+		else {
+			_ = try await hdel("nextJoinedLFG", from: userHashRedisKey(userID: userID)).get()
+		}
+	}
 }

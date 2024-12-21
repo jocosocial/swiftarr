@@ -12,7 +12,7 @@ struct PrivilegedUsers {
 	}
 }
 
-public struct UpdateRedisJob: AsyncScheduledJob {
+public struct UpdateRedisJob: AsyncScheduledJob, APICollection {
 	func processChatParticipants(
 		_ context: QueueContext,
 		chatParticipants: [FezParticipant],
@@ -88,6 +88,10 @@ public struct UpdateRedisJob: AsyncScheduledJob {
 		}
 		// We don't have separate mailbox information for THO user
 		// End Fez Consistency
+
+		// Next Event
+		context.logger.info("Updating Followed Event")
+		let _ = try await storeNextFollowedEvent(userID: userID, on: context.application)
 	}
 
 	public func run(context: QueueContext) async throws {
