@@ -18,7 +18,7 @@ struct PrivilegedUsers {
 // inconsistent leading to permanently unread seamails and the like. This job recalculates
 // the most common failure modes and updates the Redis notification data so that inconsistencies
 // don't last too long.
-public struct UpdateRedisJob: AsyncScheduledJob, APICollection {
+struct UpdateRedisJobBase: APICollection {
 	// Looks at all Chats (Fezzes) that a user is a part of and calculates any unreads.
 	// Or clears any unreads if none exist.
 	func processChatParticipants(
@@ -111,7 +111,7 @@ public struct UpdateRedisJob: AsyncScheduledJob, APICollection {
 	}
 
 	// Execute the job
-	public func run(context: QueueContext) async throws {
+	public func execute(context: QueueContext) async throws {
 		context.logger.info("Starting UpdateRedisJob")
 		do {
 			let users = try await User.query(on: context.application.db).all()
@@ -142,5 +142,21 @@ public struct UpdateRedisJob: AsyncScheduledJob, APICollection {
 			context.logger.notice("UpdateRedisJob failed. \(String(reflecting: error))")
 		}
 		context.logger.info("Finished UpdateRedisJob")
+	}
+}
+
+/// Job to fix Redis data inconsistencies run on a "cron" (and by "cron" I mean Vapor Queue).
+public struct UpdateRedisJob: AsyncScheduledJob {
+	public func run(context: QueueContext) async throws {
+		try await UpdateRedisJobBase().execute(context: context)
+	}
+}
+
+/// Job to fix Redis data inconsistencies run on demand.
+public struct OnDemandUpdateRedisJob: AsyncJob, Sendable {
+	public typealias Payload = EmptyJobPayload
+
+	public func dequeue(_ context: QueueContext, _ payload: EmptyJobPayload) async throws {
+		try await UpdateRedisJobBase().execute(context: context)
 	}
 }

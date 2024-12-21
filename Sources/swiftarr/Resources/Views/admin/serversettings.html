@@ -179,6 +179,28 @@
 					</div>
 				</div>
 			</form>
+			<ul class="list-group my-4">
+				<li class="list-group-item active">
+					<b>Jobs</b>
+				</li>
+				<li class="list-group-item bg-transparent mb-3">				
+					<form class="ajax" action="/admin/notificationcheck" enctype="multipart/form-data" method="POST" data-successurl="reset" id="notificationcheckform">
+						<div class="container-fluid">
+							<div class="alert alert-danger mt-3 d-none" role="alert">
+							</div>		
+							<div class="row mb-2">
+								<div class="col col-auto gx-0">
+									<button type="submit" class="btn btn-primary">Run Notification Consistency Check<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+								</div>
+							</div>
+						</div>
+						<div class="alert alert-success mt-3 d-none" role="alert">
+							Job submitted! Check the server log for more information.
+						</div>
+						This job runs nightly. You can trigger it manually here. It's somewhat load intensive so use with caution.
+					</form>
+				</li>
+			</ul>
 		</div>
     #endexport
 #endextend

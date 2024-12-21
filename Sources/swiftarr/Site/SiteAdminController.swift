@@ -74,6 +74,8 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.get("scheduleupload", "complete", use: scheduleUpdateCompleteViewtHandler)
 		privateTTRoutes.get("schedulelogview", scheduleLogIDParam, use: scheduleLogEntryViewer)
 		privateTTRoutes.post("schedulereload", use: scheduleReloadHandler)
+		privateTTRoutes.post("notificationcheck", use: notificationConsistencyCheckHandler)
+
 		
 		privateTTRoutes.get("bulkuser", use: bulkUserRootViewHandler)
 		privateTTRoutes.get("bulkuser", "download", use: bulkUserFileDownload)
@@ -674,6 +676,11 @@ struct SiteAdminController: SiteControllerUtils {
 
 	func scheduleReloadHandler(_ req: Request) async throws -> HTTPStatus {
 		let _ = try await apiQuery(req, endpoint: "/admin/schedule/reload", method: .POST)
+		return .ok
+	}
+
+	func notificationConsistencyCheckHandler(_ req: Request) async throws -> HTTPStatus {
+		let _ = try await apiQuery(req, endpoint: "/admin/notifications/reload", method: .POST)
 		return .ok
 	}
 

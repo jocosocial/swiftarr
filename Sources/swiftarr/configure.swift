@@ -562,6 +562,7 @@ struct SwiftarrConfigurator {
 		app.queues.schedule(UpdateRedisJob()).minutely().at(0)
 		app.queues.schedule(UpdateRedisJob()).minutely().at(30)
 		app.queues.add(OnDemandScheduleUpdateJob())
+		app.queues.add(OnDemandUpdateRedisJob())
 		try app.queues.startInProcessJobs(on: .default)
 		try app.queues.startScheduledJobs()
 	}
