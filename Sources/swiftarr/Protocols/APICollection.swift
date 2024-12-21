@@ -1,35 +1,25 @@
+import Fluent
 import Foundation
 import Vapor
-import Fluent
 
+// This is a protocol of functions that interact below the hood of the API layer.
+// 99% of the time what we want lives in `APIRouteCollection` because that affects
+// the HTTP requests. However since we've added `Job` and `ScheduledJob` to the
+// application there are times when we need to share some backend processing
+// functionality with the API layer. This presents an opportunity to do that.
+//
+// `Request` is only available within a request context. `Application` can be accessed
+// both from within a job and request context. The functions in this protocol should
+// either rely on `Application` or a `Database` (that comes from either an `Application`
+// or `Request`).
 protocol APICollection {}
 
 extension APICollection {
-    func getNextFollowedEvent(userID: UUID, db: Database) async throws -> Event? {
-		let cruiseStartDate = Settings.shared.cruiseStartDate()
-		var filterDate = Date()
-		// If the cruise is in the future or more than 10 days in the past, construct a fake date during the cruise week
-		let secondsPerDay = 24 * 60 * 60.0
-		if cruiseStartDate.timeIntervalSinceNow > 0
-			|| cruiseStartDate.timeIntervalSinceNow < 0 - Double(Settings.shared.cruiseLengthInDays) * secondsPerDay
-		{
-			// This filtering nonsense is whack. There is a way to do .DateComponents() without needing the in: but then you
-			// have to specify the Calendar.Components that you want. Since I don't have enough testing around this I'm going
-			// to keep pumping the timezone in which lets me bypass that requirement.
-			let cal = Settings.shared.getPortCalendar()
-			var filterDateComponents = cal.dateComponents(in: Settings.shared.portTimeZone, from: cruiseStartDate)
-			let currentDateComponents = cal.dateComponents(in: Settings.shared.portTimeZone, from: Date())
-			filterDateComponents.hour = currentDateComponents.hour
-			filterDateComponents.minute = currentDateComponents.minute
-			filterDateComponents.second = currentDateComponents.second
-			filterDate = cal.date(from: filterDateComponents) ?? Date()
-			if let currentDayOfWeek = currentDateComponents.weekday {
-				let daysToAdd = (7 + currentDayOfWeek - Settings.shared.cruiseStartDayOfWeek) % 7
-				if let adjustedDate = cal.date(byAdding: .day, value: daysToAdd, to: filterDate) {
-					filterDate = adjustedDate
-				}
-			}
-		}
+	// Get the next followed event for the user.
+	func getNextFollowedEvent(userID: UUID, db: Database) async throws -> Event? {
+		let filterDate: Date = Settings.shared.getScheduleReferenceDate(
+			Settings.shared.upcomingEventNotificationSetting
+		)
 		let nextFavoriteEvent = try await Event.query(on: db)
 			.filter(\.$startTime > filterDate)
 			.sort(\.$startTime, .ascending)
@@ -39,7 +29,7 @@ extension APICollection {
 		return nextFavoriteEvent
 	}
 
-    // Calculates the start time of the earliest future followed event. Caches the value in Redis for quick access.
+	// Calculates the start time of the earliest future followed event. Caches the value in Redis for quick access.
 	func storeNextFollowedEvent(userID: UUID, on app: Application) async throws -> (Date, UUID)? {
 		let nextFavoriteEvent = try await getNextFollowedEvent(userID: userID, db: app.db)
 		guard let event = nextFavoriteEvent, let id = event.id else {
@@ -47,10 +37,39 @@ extension APICollection {
 		}
 		// .addNotifications() has an entire chain of dependencies on Request that are very hard
 		// for me to untangle so this copies the logic from inside that function instead.
-        // This will "clear" the next Event values of the UserNotificationData if no Events match the
+		// This will "clear" the next Event values of the UserNotificationData if no Events match the
 		// query (which is to say there is no next Event). Thought about using subtractNotifications()
 		// but this just seems easier for now.
 		try await app.redis.setNextEventInUserHash(date: event.startTime, eventID: id, userID: userID)
 		return (event.startTime, id)
+	}
+
+	// Get the next followed event for the user.
+	func getNextAppointment(userID: UUID, db: Database) async throws -> FriendlyFez? {
+		let filterDate: Date = Settings.shared.getScheduleReferenceDate(Settings.shared.upcomingLFGNotificationSetting)
+		let nextJoinedLFG = try await FriendlyFez.query(on: db)
+			.join(FezParticipant.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
+			.filter(FezParticipant.self, \.$user.$id == userID)
+			.filter(\.$fezType !~ [.open, .closed])
+			.filter(\.$startTime != nil)
+			.filter(\.$startTime > filterDate)
+			.sort(\.$startTime, .ascending)
+			.first()
+		return nextJoinedLFG
+	}
+
+	// Calculates the start time of the earliest future joined LFG. Caches the value in Redis for quick access.
+	func storeNextJoinedAppointment(userID: UUID, on app: Application) async throws -> (Date, UUID)? {
+		let nextJoinedLFG = try await getNextAppointment(userID: userID, db: app.db)
+		guard let lfg = nextJoinedLFG, let id = lfg.id, let startTime = lfg.startTime else {
+			return nil
+		}
+		// .addNotifications() has an entire chain of dependencies on Request that are very hard
+		// for me to untangle so this copies the logic from inside that function instead.
+		// This will "clear" the next LFG values of the UserNotificationData if no LFGs match the
+		// query (which is to say there is no next LFG). Thought about using subtractNotifications()
+		// but this just seems easier for now.
+		try await app.redis.setNextLFGInUserHash(date: startTime, lfgID: id, userID: userID)
+		return (startTime, id)
 	}
 }

@@ -92,6 +92,7 @@ public struct UpdateRedisJob: AsyncScheduledJob, APICollection {
 		// Next Event
 		context.logger.info("Updating Followed Event")
 		let _ = try await storeNextFollowedEvent(userID: userID, on: context.application)
+		let _ = try await storeNextJoinedAppointment(userID: userID, on: context.application)
 	}
 
 	public func run(context: QueueContext) async throws {

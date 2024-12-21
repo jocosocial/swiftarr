@@ -460,18 +460,8 @@ extension APIRouteCollection {
 	}
 
 	// Calculates the start time of the earliest future joined LFG. Caches the value in Redis for quick access.
-	// LFGs are stored in real-week time (not cruise-week time) so this doesn't need all of the date/time
-	// calculations like storeNextFollowedEvent() above.
 	func storeNextJoinedAppointment(userID: UUID, on req: Request) async throws -> (Date, UUID)? {
-		let filterDate = Date()
-		let nextJoinedLFG = try await FriendlyFez.query(on: req.db)
-			.join(FezParticipant.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
-			.filter(FezParticipant.self, \.$user.$id == userID)
-			.filter(\.$fezType !~ [.open, .closed])
-			.filter(\.$startTime != nil)
-			.filter(\.$startTime > filterDate)
-			.sort(\.$startTime, .ascending)
-			.first()
+		let nextJoinedLFG = try await getNextAppointment(userID: userID, db: req.db)
 		// This will "clear" the next LFG values of the UserNotificationData if no LFGs match the
 		// query (which is to say there is no next LFG). Thought about using subtractNotifications()
 		// but this just seems easier for now.
