@@ -85,7 +85,10 @@ extension JSONEncoder.DateEncodingStrategy {
 
 extension Swift.Bool: RediStack.RESPValueConvertible {
 	public init?(fromRESP value: RESPValue) {
-		self = value.int != 0
+		if let intValue = value.int {
+			self = intValue != 0
+		}
+		return nil
 	}
 
 	public func convertedToRESPValue() -> RESPValue {
