@@ -178,3 +178,5 @@ associated AddedToChat field value increase.
 * UserNotificationData has a new `PrivateEventMessageCount` field
 * SocketNotificationData has new `addedTo...` message types
 
+## Dec 21, 2024
+* New admin endpoint `POST /api/v3/admin/notifications/reload` to trigger the Redis consistency checker.

@@ -13,7 +13,7 @@ import Vapor
 /// 	- getting server time,,
 ///		- getting public address-style announcements,,
 ///		- getting notifications on alertwords,
-///		- getting notificaitons on incoming Fez messages.
+///		- getting notifications on incoming Fez messages.
 struct AlertController: APIRouteCollection {
 
 	/// Required. Registers routes to the incoming router.

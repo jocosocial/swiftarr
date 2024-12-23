@@ -133,6 +133,11 @@ final class Settings: Encodable, @unchecked Sendable {
 	/// Struct representing a set of TimeZoneChange's for this cruise. This setting can then be referenced elsewhere in the application.
 	@SettingsValue var timeZoneChanges: TimeZoneChangeSet = TimeZoneChangeSet()
 
+	/// Hour in the server runtimes time zone to run nightly scheduled jobs.
+	/// The default value of 9 is "9AM UTC" == "4AM EST" == "5AM EDT/AST" which corresponds to our
+	/// historical quietest period.
+	@SettingsValue var nightlyJobHour: Int = 9
+
 	/// Number of minutes before an event to trigger notifications. Some day this should be set per-user
 	/// based on their preferences. But since we don't have the concept of "User Settings" yet we set
 	/// a sane default instead. This is a StoredSettingsValue so that it can be modified in real time.
@@ -194,6 +199,12 @@ final class Settings: Encodable, @unchecked Sendable {
 	/// Base URL that the web UI uses to call API level endpoints.
 	@SettingsValue var apiUrlComponents: URLComponents = URLComponents(string: "http://localhost:8081/api/v3")!
 
+	/// Enable caching the `UserNotificationData` in the users session data in `NotificationMiddleware`.
+	/// Disabling this can be useful for debugging the site UI in real time.
+	/// This was originally called disableSiteNotificationDataCaching requiring administrators to opt-out.
+	/// But https://github.com/jocosocial/swiftarr/issues/346 got in my way. Also "enableing" a "disable"
+	/// feels more gross the more I say it.
+	@StoredSettingsValue("enableSiteNotificationDataCaching", defaultValue: true) var enableSiteNotificationDataCaching: Bool
 
 }
 
