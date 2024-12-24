@@ -540,6 +540,8 @@ public struct FezData: Content, ResponseEncodable {
 		var posts: [FezPostData]?
 		/// Whether user has muted the fez.
 		var isMuted: Bool
+		/// Whether the user has archived the fez.
+		var isArchived: Bool
 	}
 
 	/// Will be nil if user is not a member of the fez (in the participant or waiting lists).

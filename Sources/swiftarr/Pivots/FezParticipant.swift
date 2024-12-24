@@ -21,6 +21,9 @@ final class FezParticipant: Model, @unchecked Sendable {
 	/// Otherwise this field should be NIL or FALSE.
 	@Field(key: "mute") var isMuted: Bool?
 
+	/// Whether the reader has "archived" this Fez, which is kinda like an undo-able mute.
+	@Field(key: "archive") var isArchived: Bool
+
 	/// Timestamp of the model's soft-deletion, set automatically.
 	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
 
@@ -47,6 +50,7 @@ final class FezParticipant: Model, @unchecked Sendable {
 		self.readCount = 0
 		self.hiddenCount = 0
 		self.isMuted = nil
+		self.isArchived = false
 	}
 }
 
@@ -91,6 +95,21 @@ struct AddDeletedTimestampToFezParticipantSchema: AsyncMigration {
 	func revert(on database: Database) async throws {
 		try await database.schema("fez+participants")
 			.deleteField("deleted_at")
+			.update()
+	}
+}
+
+
+struct AddFezParticipantArchivedMigration: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("fez+participants")
+			.field("archive", .bool, .required, .sql(.default(false)))
+			.update()
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema("fez+participants")
+			.deleteField("archive")
 			.update()
 	}
 }

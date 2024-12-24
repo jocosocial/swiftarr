@@ -93,6 +93,8 @@ struct SiteSeamailController: SiteControllerUtils {
 		privateRoutes.post("seamail", fezIDParam, "post", use: seamailThreadPostHandler)
 		privateRoutes.post("seamail", fezIDParam, "mute", use: seamailAddMutePostHandler)
 		privateRoutes.delete("seamail", fezIDParam, "mute", use: seamailRemoveMutePostHandler)
+		privateRoutes.post("seamail", fezIDParam, "archive", use: seamailAddArchivePostHandler)
+		privateRoutes.delete("seamail", fezIDParam, "archive", use: seamailRemoveArchivePostHandler)
 		privateRoutes.webSocket("seamail", fezIDParam, "socket", shouldUpgrade: shouldCreateMsgSocket, onUpgrade: createMsgSocket)
 	}
 
@@ -388,6 +390,28 @@ struct SiteSeamailController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Missing fez_id parameter.")
 		}
 		try await apiQuery(req, endpoint: "/fez/\(fezID)/mute/remove", method: .POST)
+		return .noContent
+	}
+
+	// POST /seamail/archive/:seamail_ID
+	//
+	// Adds a seamail to the user's archive list.
+	func seamailAddArchivePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id parameter.")
+		}
+		try await apiQuery(req, endpoint: "/fez/\(fezID)/archive", method: .POST)
+		return .created
+	}
+
+	// DELETE /seamail/archive/:seamail_ID
+	//
+	// Removes a seamail from the user's archive list.
+	func seamailRemoveArchivePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id parameter.")
+		}
+		try await apiQuery(req, endpoint: "/fez/\(fezID)/archive/remove", method: .POST)
 		return .noContent
 	}
 }

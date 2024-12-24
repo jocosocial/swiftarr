@@ -14,6 +14,21 @@
 					<h6>Participants</h6>
 				</div>				
 				<div class="col col-auto btn-group btn-group-sm" role="group" aria-label="member actions">
+					#if(fez.fezType == "open" || fez.fezType == "closed"):
+						#if(fez.owner.userID == trunk.userID):
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="archiveSeamail" 
+									data-actionpath="/seamail/#(fez.fezID)/archive"
+									data-istoggle="true"
+									data-errordiv="mute_errorDisplay"
+									id="#(fez.fezID)_archive"
+								#if(fez.members.isArchived):checked#endif>
+						<label class="btn btn-outline-primary" for="#(fez.fezID)_archive">
+							Archive<span class="laughtext"></span>
+							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+							<span class="visually-hidden">Loading...</span>
+						</label>
+						#endif
+					#endif
 					#if(fez.fezType == "open"):
 						#if(fez.owner.userID == trunk.userID):
 							<a class="btn btn-outline-primary" href="/lfg/#(fez.fezID)/members">Manage Members</a>
