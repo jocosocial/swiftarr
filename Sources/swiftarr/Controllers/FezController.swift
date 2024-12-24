@@ -494,7 +494,7 @@ struct FezController: APIRouteCollection {
 		if fez.fezType != .closed {
 			infoStr.append(" in \(fez.fezType.lfgLabel) \"\(fez.title)\".")
 		}
-		try await addNotifications(users: participantNotifyList, type: .chatUnreadMsg(fez.requireID(), fez.fezType), info: infoStr, excludeUsers: [cacheUser.userID], on: req)
+		try await addNotifications(users: participantNotifyList, type: .chatUnreadMsg(fez.requireID(), fez.fezType), info: infoStr, on: req)
 		try await forwardPostToSockets(fez, post, on: req)
 		// A user posting is assumed to have read all prev posts. (even if this proves untrue, we should increment
 		// readCount as they've read the post they just wrote!)
