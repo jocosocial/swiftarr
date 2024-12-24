@@ -399,6 +399,12 @@ struct FezController: APIRouteCollection {
 		guard fez.fezType != .closed else {
 			throw Abort(.badRequest, reason: "Cannot remove members to a closed chat")
 		}
+		// Don't allow privileged users looking at a privileged mailbox to attempt to remove
+		// the privileged user from a Chat. Without this check their removal action will silently
+		// be a no-op.
+		if cacheUser.accessLevel.hasAccess(.moderator), !fez.participantArray.contains(cacheUser.userID) {
+			throw Abort(.badRequest, reason: "Privileged users cannot leave a chat they are not part of themselves")
+		}
 		// Save a FezEditRecord containing the participant list before removal
 		let fezEdit = try FriendlyFezEdit(fez: fez, editorID: cacheUser.userID)
 		try await fezEdit.save(on: req.db)
