@@ -913,6 +913,12 @@ struct FezController: APIRouteCollection {
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
 			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
 		}
+		// Without this check Moderator A could mute a chat for all Moderators which
+		// doesn't feel super good. It's also a confusing UX and would require Help
+		// signage to work around. So we're just going to the option to do that.
+		guard effectiveUser.userID == cacheUser.userID else {
+			throw Abort(.badRequest, reason: "Privileged mailbox chats cannot be muted")
+		}
 		guard let fezParticipant = try await fez.$participants.$pivots.query(on: req.db)
 				.filter(\.$user.$id == effectiveUser.userID).first() else {
 			throw Abort(.forbidden, reason: "user is not a member of this fez")
