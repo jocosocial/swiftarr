@@ -204,21 +204,21 @@ public struct CategoryData: Content {
 	var isRestricted: Bool
 	/// if TRUE, this category is for Event Forums, and is prepopulated with forum threads for each Schedule Event.
 	var isEventCategory: Bool
-	/// The number of threads in this category
-	var numThreads: Int32
 	/// The threads in the category. Only populated for /categories/ID.
 	var forumThreads: [ForumListData]?
+	/// Pagination of the results
+	var paginator: Paginator
 }
 
 extension CategoryData {
-	init(_ cat: Category, restricted: Bool, forumThreads: [ForumListData]? = nil) throws {
+	init(_ cat: Category, restricted: Bool, paginator: Paginator, forumThreads: [ForumListData]? = nil) throws {
 		categoryID = try cat.requireID()
 		title = cat.title
 		purpose = cat.purpose
 		isRestricted = restricted
 		isEventCategory = cat.isEventCategory
-		numThreads = cat.forumCount
 		self.forumThreads = forumThreads
+		self.paginator = paginator
 	}
 }
 
