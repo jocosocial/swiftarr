@@ -179,4 +179,4 @@ associated AddedToChat field value increase.
 * SocketNotificationData has new `addedTo...` message types
 
 ## Dec 25, 2024
-* `CategoryData` now implements `Paginator`
+* `CategoryData` now implements `Paginator`, removes `numThreads`
