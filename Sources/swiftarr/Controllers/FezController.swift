@@ -628,7 +628,7 @@ struct FezController: APIRouteCollection {
 			_ = try await storeNextJoinedAppointment(userID: fezParticipant, on: req)
 		}
 		let cancelNotifyTargets = fez.participantArray.filter { $0 != cacheUser.userID }
-		_ = try await addNotifications(users: cancelNotifyTargets, type: .chatCanceled(fez.requireID(), fez.fezType), info: "\(fez.title) has been canceled", on: req)
+			try await addNotifications(users: cancelNotifyTargets, type: .chatCanceled(fez.requireID(), fez.fezType), info: "\(fez.title) has been canceled", on: req)
 		let pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
 			.first()
 		return try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
