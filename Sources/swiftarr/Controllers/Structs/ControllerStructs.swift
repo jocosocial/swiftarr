@@ -204,6 +204,10 @@ public struct CategoryData: Content {
 	var isRestricted: Bool
 	/// if TRUE, this category is for Event Forums, and is prepopulated with forum threads for each Schedule Event.
 	var isEventCategory: Bool
+	/// The number of threads in this category.
+	/// Maintains backwards compatibility with API clients and is used when
+	/// paginator is not relevant such as in `/api/v3/forum/categories`.
+	var numThreads: Int32
 	/// The threads in the category. Only populated for /categories/ID.
 	var forumThreads: [ForumListData]?
 	/// Pagination of the results
@@ -217,6 +221,7 @@ extension CategoryData {
 		purpose = cat.purpose
 		isRestricted = restricted
 		isEventCategory = cat.isEventCategory
+		numThreads = cat.forumCount
 		self.forumThreads = forumThreads
 		self.paginator = paginator
 	}

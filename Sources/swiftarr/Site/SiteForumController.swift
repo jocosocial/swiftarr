@@ -47,6 +47,7 @@ struct ForumPageContext: Encodable {
 				purpose: "",
 				isRestricted: false,
 				isEventCategory: false,
+				numThreads: 0,
 				forumThreads: nil,
 				paginator: Paginator(total: 0, start: 0, limit: 50)
 			)
@@ -416,6 +417,7 @@ struct SiteForumController: SiteControllerUtils {
 						purpose: "",
 						isRestricted: false,
 						isEventCategory: false,
+						numThreads: 0,
 						forumThreads: nil,
 						paginator: Paginator(total: 0, start: 0, limit: 50)
 					)
