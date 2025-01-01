@@ -51,6 +51,7 @@ extension APICollection {
 			.join(FezParticipant.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
 			.filter(FezParticipant.self, \.$user.$id == userID)
 			.filter(\.$fezType !~ [.open, .closed])
+			.filter(\.$cancelled == false)
 			.filter(\.$startTime != nil)
 			.filter(\.$startTime > filterDate)
 			.sort(\.$startTime, .ascending)
