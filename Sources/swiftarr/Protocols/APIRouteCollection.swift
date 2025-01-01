@@ -220,7 +220,7 @@ extension APIRouteCollection {
 				for userID in users {
 					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
-			case .followedEventStarting(_), .joinedLFGStarting(_), .personalEventStarting(_), .chatCanceled(_):
+			case .followedEventStarting(_), .joinedLFGStarting(_), .personalEventStarting(_), .chatCanceled(_, _):
 				break
 			case .microKaraokeSongReady(_):
 				for userID in users {
