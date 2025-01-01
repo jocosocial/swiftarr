@@ -206,7 +206,9 @@ public struct CategoryData: Content {
 	var isEventCategory: Bool
 	/// The threads in the category. Only populated for /categories/ID.
 	var forumThreads: [ForumListData]?
-	/// Pagination of the results
+	/// Pagination of the results. For the `GET /api/v3/categories` endpoint only the `Paginator`s `total` is meaningful.
+	/// That values is the number of threads in the category (prior to blocks). It is never the number of categories.
+	/// Queries to `GET /api/v3/categories/:ID` return paginated results for the threads within that category.
 	var paginator: Paginator
 }
 
