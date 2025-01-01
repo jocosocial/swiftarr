@@ -178,3 +178,5 @@ associated AddedToChat field value increase.
 * UserNotificationData has a new `PrivateEventMessageCount` field
 * SocketNotificationData has new `addedTo...` message types
 
+## Dec 25, 2024
+* `CategoryData` now implements `Paginator`, removes `numThreads`

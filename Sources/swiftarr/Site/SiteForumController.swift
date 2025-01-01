@@ -47,8 +47,8 @@ struct ForumPageContext: Encodable {
 				purpose: "",
 				isRestricted: false,
 				isEventCategory: false,
-				numThreads: 0,
-				forumThreads: nil
+				forumThreads: nil,
+				paginator: Paginator(total: 0, start: 0, limit: 50)
 			)
 		}
 		paginator = PaginatorContext(forum.paginator) { pageIndex in
@@ -361,7 +361,7 @@ struct SiteForumController: SiteControllerUtils {
 			init(_ req: Request, forums: CategoryData, start: Int, limit: Int) throws {
 				trunk = .init(req, title: "\(forums.title) | Forum Threads", tab: .forums)
 				self.forums = forums
-				paginator = .init(start: start, total: Int(forums.numThreads), limit: limit) { pageIndex in
+				paginator = .init(start: start, total: Int(forums.paginator.total), limit: limit) { pageIndex in
 					"/forums/\(forums.categoryID)?start=\(pageIndex * limit)&limit=\(limit)"
 				}
 
@@ -416,8 +416,8 @@ struct SiteForumController: SiteControllerUtils {
 						purpose: "",
 						isRestricted: false,
 						isEventCategory: false,
-						numThreads: 0,
-						forumThreads: nil
+						forumThreads: nil,
+						paginator: Paginator(total: 0, start: 0, limit: 50)
 					)
 				}
 			}
