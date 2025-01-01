@@ -618,8 +618,6 @@ struct FezController: APIRouteCollection {
 	/// Cancel a FriendlyFez. Owner only. Cancelling a Fez is different from deleting it. A canceled fez is still visible; members may still post to it.
 	/// But, a cenceled fez does not show up in searches for open fezzes, and should be clearly marked in UI to indicate that it's been canceled.
 	///
-	/// - Note: Eventually, cancelling a fez should notifiy all members via the notifications endpoint.
-	///
 	/// - Parameter fezID: in URL path.
 	/// - Throws: 403 error if user is not the fez owner. A 5xx response should be
 	///   reported as a likely bug, please and thank you.
@@ -630,12 +628,13 @@ struct FezController: APIRouteCollection {
 		guard fez.$owner.id == cacheUser.userID else {
 			throw Abort(.forbidden, reason: "user does not own this \(fez.fezType.lfgLabel)")
 		}
-		// FIXME: this should send out notifications
+		fez.cancelled = true
+		try await fez.save(on: req.db)
 		for fezParticipant in fez.participantArray {
 			_ = try await storeNextJoinedAppointment(userID: fezParticipant, on: req)
 		}
-		fez.cancelled = true
-		try await fez.save(on: req.db)
+		let cancelNotifyTargets = fez.participantArray.filter { $0 != cacheUser.userID }
+			try await addNotifications(users: cancelNotifyTargets, type: .chatCanceled(fez.requireID(), fez.fezType), info: "\(fez.title) has been canceled", on: req)
 		let pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
 			.first()
 		return try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
