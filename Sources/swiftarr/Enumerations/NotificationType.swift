@@ -57,6 +57,8 @@ enum NotificationType {
 	case joinedLFGStarting(UUID)
 	/// A Personal Event the user has created or was added to is about to start.
 	case personalEventStarting(UUID)
+	/// An LFG or Private Event the user has joined has been cancelled.
+	case chatCanceled(UUID, FezType)
 
 // @mentions and Alertwords
 	/// A twarrt has been posted that contained a word that a user was alerting on. Associated value is a tuple. First is the alert word that matched.
@@ -84,6 +86,7 @@ enum NotificationType {
 		case .announcement: return "announcement"
 		
 		case .addedToChat(let msgID, _): return msgID.uuidString
+		case .chatCanceled(let msgID, _): return msgID.uuidString
 		case .chatUnreadMsg(let msgID, _): return msgID.uuidString
 		
 		case .nextFollowedEventTime: return "nextFollowedEventTime"
@@ -115,6 +118,7 @@ enum NotificationType {
 		
 		case .addedToChat: return "UnreadChats-\(userID)"
 		case .chatUnreadMsg: return "UnreadSeamails-\(userID)"
+		case .chatCanceled: return "NotificationHash-\(userID)"
 		
 		case .nextFollowedEventTime: return "NotificationHash-\(userID)"
 		case .followedEventStarting: return "NotificationHash-\(userID)"
@@ -156,6 +160,7 @@ enum NotificationType {
 		
 		case .addedToChat(let uuid, _): return String(uuid)
 		case .chatUnreadMsg(let uuid, _): return String(uuid)
+		case .chatCanceled(let uuid, _): return String(uuid)
 
 		case .nextFollowedEventTime(_, let uuid): return uuid != nil ? String(uuid!) : ""
 		case .followedEventStarting(let id): return String(id)
