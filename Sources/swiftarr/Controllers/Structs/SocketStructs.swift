@@ -80,7 +80,7 @@ struct SocketNotificationData: Content {
 		case announcement
 		
 // Added to Chat - only fires when someone else adds you to their chat
-// Note: I'm specifically not making notificaitons for "Removed From Chat" because: it can feel mean to receive that notification, and
+// Note: I'm specifically not making notifications for "Removed From Chat" because: it can feel mean to receive that notification, and
 // there's nowhere for the notification to take the user. 
 		///  Only for 'open' seamails. The owner of the chata has added this user.
 		case addedToSeamail

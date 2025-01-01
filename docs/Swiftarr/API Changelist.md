@@ -180,3 +180,6 @@ associated AddedToChat field value increase.
 
 ## Dec 25, 2024
 * `CategoryData` now implements `Paginator`, removes `numThreads`
+
+## Jan 01, 2025
+* New admin endpoint `POST /api/v3/admin/notifications/reload` to trigger the Redis consistency checker.

@@ -301,6 +301,7 @@ public struct SettingsAdminData: Content {
 	var upcomingEventNotificationSeconds: Int
 	var upcomingEventNotificationSetting: EventNotificationSetting
 	var upcomingLFGNotificationSetting: EventNotificationSetting
+	var enableSiteNotificationDataCaching: Bool
 }
 
 extension SettingsAdminData {
@@ -327,6 +328,7 @@ extension SettingsAdminData {
 		self.upcomingEventNotificationSeconds = Int(settings.upcomingEventNotificationSeconds)
 		self.upcomingEventNotificationSetting = settings.upcomingEventNotificationSetting
 		self.upcomingLFGNotificationSetting = settings.upcomingLFGNotificationSetting
+		self.enableSiteNotificationDataCaching = settings.enableSiteNotificationDataCaching
 	}
 }
 
@@ -363,6 +365,8 @@ public struct SettingsUpdateData: Content {
 	var upcomingEventNotificationSetting: EventNotificationSetting?
 	/// Upcoming joined LFG notification setting
 	var upcomingLFGNotificationSetting: EventNotificationSetting?
+	/// Enable site UI notification data caching
+	var enableSiteNotificationDataCaching: Bool?
 }
 
 /// Used to return information about the time zone changes scheduled to occur during the cruise.
