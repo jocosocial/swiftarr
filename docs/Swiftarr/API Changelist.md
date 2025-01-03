@@ -180,3 +180,6 @@ associated AddedToChat field value increase.
 
 ## Dec 25, 2024
 * `CategoryData` now implements `Paginator`, removes `numThreads`
+
+## Jan 03, 2025
+* `/api/v3/boardgames/recommend` is now a `POST` rather than a `GET` with the same request body.

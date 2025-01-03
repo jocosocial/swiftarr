@@ -148,7 +148,7 @@ struct SiteBoardgameController: SiteControllerUtils {
 				minAge: minAge,
 				complexity: complexity
 			)
-			let response = try await apiQuery(req, endpoint: "/boardgames/recommend", encodeContent: queryContent)
+			let response = try await apiQuery(req, endpoint: "/boardgames/recommend", method: .POST, encodeContent: queryContent)
 			games = try response.content.decode(BoardgameResponseData.self)
 		}
 		let gameListContext = try GameListContext(req, games: games)
