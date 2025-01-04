@@ -399,6 +399,12 @@ struct FezController: APIRouteCollection {
 		guard fez.fezType != .closed else {
 			throw Abort(.badRequest, reason: "Cannot remove members to a closed chat")
 		}
+		// Don't allow privileged users looking at a privileged mailbox to attempt to remove
+		// the privileged user from a Chat. Without this check their removal action will silently
+		// be a no-op.
+		if cacheUser.accessLevel.hasAccess(.moderator), !fez.participantArray.contains(cacheUser.userID) {
+			throw Abort(.badRequest, reason: "Privileged users cannot leave a chat they are not part of themselves")
+		}
 		// Save a FezEditRecord containing the participant list before removal
 		let fezEdit = try FriendlyFezEdit(fez: fez, editorID: cacheUser.userID)
 		try await fezEdit.save(on: req.db)
@@ -488,7 +494,7 @@ struct FezController: APIRouteCollection {
 		if fez.fezType != .closed {
 			infoStr.append(" in \(fez.fezType.lfgLabel) \"\(fez.title)\".")
 		}
-		try await addNotifications(users: participantNotifyList, type: .chatUnreadMsg(fez.requireID(), fez.fezType), info: infoStr, on: req)
+		try await addNotifications(users: participantNotifyList, type: .chatUnreadMsg(fez.requireID(), fez.fezType), info: infoStr, creatorID: cacheUser.userID, on: req)
 		try await forwardPostToSockets(fez, post, on: req)
 		// A user posting is assumed to have read all prev posts. (even if this proves untrue, we should increment
 		// readCount as they've read the post they just wrote!)
@@ -905,6 +911,12 @@ struct FezController: APIRouteCollection {
 		let effectiveUser = getEffectiveUser(user: cacheUser, req: req, fez: fez)
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
 			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
+		}
+		// Without this check Moderator A could mute a chat for all Moderators which
+		// doesn't feel super good. It's also a confusing UX and would require Help
+		// signage to work around. So we're just going to the option to do that.
+		guard effectiveUser.userID == cacheUser.userID else {
+			throw Abort(.badRequest, reason: "Privileged mailbox chats cannot be muted")
 		}
 		guard let fezParticipant = try await fez.$participants.$pivots.query(on: req.db)
 				.filter(\.$user.$id == effectiveUser.userID).first() else {
