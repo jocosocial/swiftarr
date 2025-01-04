@@ -155,9 +155,13 @@ extension APIRouteCollection {
 	//
 	// The users array should be pre-filtered to include only those who can actually see the new content (that is, not
 	// blocking or muting it, or not in the group that receives the content).
+	// The only exception to this should be when determining whether to addNotifications for privileged
+	// users. Example: the list of all mods/twitarrteam are calculated deeper within this function.
+	// There are situations where it is inappropriate to generate a notification for the user that
+	// did something. In that situation, the creatorID can be used to avoid notifying one person.
 	//
 	// Adding a new notification will also send out an update to all relevant users who are listening on notification sockets.
-	func addNotifications(users: [UUID], type: NotificationType, info: String, on req: Request) async throws {
+	func addNotifications(users: [UUID], type: NotificationType, info: String, creatorID: UUID? = nil, on req: Request) async throws {
 		try await withThrowingTaskGroup(of: Void.self) { group -> Void in
 			var forwardToSockets = true
 			// Members of `users` get push notifications
@@ -172,7 +176,7 @@ extension APIRouteCollection {
 				stateChangeUsers = bookkeepUserAddedToChat(req: req, msgID: msgID, chatType: chatType, users: users, group: &group)
 			
 			case .chatUnreadMsg(let msgID, let chatType):
-				stateChangeUsers = bookkeepNewChatMessage(req: req, msgID: msgID, chatType: chatType, users: users, group: &group)
+				stateChangeUsers = bookkeepNewChatMessage(req: req, msgID: msgID, chatType: chatType, users: users, group: &group, creatorID: creatorID)
 
 			case .nextFollowedEventTime(let date, let id):
 				for userID in users {
@@ -261,12 +265,15 @@ extension APIRouteCollection {
 	}
 
 	func bookkeepNewChatMessage(req: Request, msgID: UUID, chatType: FezType, users: [UUID],
-			group: inout ThrowingTaskGroup<Void, Error>) -> [UUID] {
+			group: inout ThrowingTaskGroup<Void, Error>, creatorID: UUID? = nil) -> [UUID] {
 		var updateCountsUsers = users
 		// For seamail msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
 		// update counts list. This is so all team members have individual read counts.
+		//
+		// To avoid generating notifications for the user who created the new chat message,
+		// pass their ID in via the creatorID to omit them from generating the messages.
 		if let mod = req.userCache.getUser(username: "moderator"), users.contains(mod.userID) {
-			let modList = req.userCache.allUsersWithAccessLevel(.moderator).map { $0.userID }
+			let modList = req.userCache.allUsersWithAccessLevel(.moderator).filter({ $0.userID != creatorID }).map { $0.userID }
 			updateCountsUsers.append(contentsOf: modList)
 			for modUserID in modList {
 				group.addTask {
@@ -275,7 +282,7 @@ extension APIRouteCollection {
 			}
 		}
 		if let ttUser = req.userCache.getUser(username: "TwitarrTeam"), users.contains(ttUser.userID) {
-			let ttList = req.userCache.allUsersWithAccessLevel(.twitarrteam).map { $0.userID }
+			let ttList = req.userCache.allUsersWithAccessLevel(.twitarrteam).filter({ $0.userID != creatorID }).map { $0.userID }
 			updateCountsUsers.append(contentsOf: ttList)
 			for ttUserID in ttList {
 				group.addTask {
@@ -285,7 +292,8 @@ extension APIRouteCollection {
 		}
 		// Users who aren't "moderator" and are in the thread see it as a normal thread.
 		let inbox = Request.Redis.MailInbox.mailboxForChatType(type: chatType)
-		for userID in users {
+		let actualUsers = users.filter({ $0 != creatorID })
+		for userID in actualUsers {
 			group.addTask { try await req.redis.newUnreadMessage(chatID: msgID, userID: userID, inbox: inbox) }
 		}
 		return updateCountsUsers
