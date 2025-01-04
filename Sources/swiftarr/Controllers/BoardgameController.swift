@@ -175,6 +175,9 @@ struct BoardgameController: APIRouteCollection {
 		if data.minAge != 0 {
 			query.filter(\.$minAge >= data.minAge)
 		}
+		if (data.complexity != 0) {
+			query.filter(\.$complexity >= Float(data.complexity))
+		}
 		let games = try await query.all()
 		struct GameScore {
 			let game: Boardgame
