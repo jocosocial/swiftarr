@@ -15,7 +15,7 @@ struct BoardgameController: APIRouteCollection {
 		flexAuthGroup.get("", use: getBoardgames)
 		flexAuthGroup.get(boardgameIDParam, use: getBoardgame)
 		flexAuthGroup.get("expansions", boardgameIDParam, use: getExpansions)
-		flexAuthGroup.get("recommend", use: recommendGames)
+		flexAuthGroup.post("recommend", use: recommendGames)
 
 		let tokenAuthGroup = boardgameRoutes.tokenRoutes(feature: .gameslist)
 		tokenAuthGroup.post(boardgameIDParam, "favorite", use: addFavorite)
@@ -146,7 +146,7 @@ struct BoardgameController: APIRouteCollection {
 		return .noContent
 	}
 
-	/// `GET /api/v3/boardgames/recommend`
+	/// `POST /api/v3/boardgames/recommend`
 	///
 	/// Returns an array of boardgames in a structure designed to support pagination. The returned array of board games will be sorted
 	/// in decreasing order of how closely each games matches the criteria in the `BoardgameRecommendationData` JSON content.
@@ -174,6 +174,9 @@ struct BoardgameController: APIRouteCollection {
 		}
 		if data.minAge != 0 {
 			query.filter(\.$minAge >= data.minAge)
+		}
+		if (data.complexity != 0) {
+			query.filter(\.$complexity >= Float(data.complexity))
 		}
 		let games = try await query.all()
 		struct GameScore {
