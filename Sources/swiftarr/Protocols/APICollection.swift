@@ -30,17 +30,34 @@ extension APICollection {
 	}
 
 	// Calculates the start time of the earliest future followed event. Caches the value in Redis for quick access.
+	// This version of the function operates on the Application context for use in Jobs and such.
 	func storeNextFollowedEvent(userID: UUID, on app: Application) async throws -> (Date, UUID)? {
 		let nextFavoriteEvent = try await getNextFollowedEvent(userID: userID, db: app.db)
 		guard let event = nextFavoriteEvent, let id = event.id else {
 			return nil
 		}
+		let userHash = try await app.redis.getUserHash(userID: userID)
+		let currentNextEvent = app.redis.getNextEventFromUserHash(userHash)
+		// If there are no inconsistencies then return the previous values.
+		// No need to generate any notifications or alter any values.
+		guard currentNextEvent?.1 != id || currentNextEvent?.0 != event.startTime else {
+			return (event.startTime, id)
+		}
+		app.logger.info("Inconsistency found for user \(userID). Setting nextFollowedEvent to \(id).")
 		// .addNotifications() has an entire chain of dependencies on Request that are very hard
 		// for me to untangle so this copies the logic from inside that function instead.
 		// This will "clear" the next Event values of the UserNotificationData if no Events match the
 		// query (which is to say there is no next Event). Thought about using subtractNotifications()
 		// but this just seems easier for now.
 		try await app.redis.setNextEventInUserHash(date: event.startTime, eventID: id, userID: userID)
+		// Whenever there's a change to notification data for a user, the API layer should add
+		// that user to the set by calling .addUsersWithStateChange().
+		// Doing so causes `NotificationMiddleware` to reload the user's notification data the
+		// next time a page is loaded on the site.
+		// .addNotifications(), .subtractNotifications(), and .markNotificationsViewed() all make
+		// this call internally. Until we decide to untangle those from Request we need to
+		// replicate that behavior here.
+		try await app.redis.addUsersWithStateChange([userID])
 		return (event.startTime, id)
 	}
 
@@ -60,17 +77,34 @@ extension APICollection {
 	}
 
 	// Calculates the start time of the earliest future joined LFG. Caches the value in Redis for quick access.
+	// This version of the function operates on the Application context for use in Jobs and such.
 	func storeNextJoinedAppointment(userID: UUID, on app: Application) async throws -> (Date, UUID)? {
 		let nextJoinedLFG = try await getNextAppointment(userID: userID, db: app.db)
 		guard let lfg = nextJoinedLFG, let id = lfg.id, let startTime = lfg.startTime else {
 			return nil
 		}
+		let userHash = try await app.redis.getUserHash(userID: userID)
+		let currentNextLFG = app.redis.getNextLFGFromUserHash(userHash)
+		// If there are no inconsistencies then return the previous values.
+		// No need to generate any notifications or alter any values.
+		guard currentNextLFG?.1 != id || currentNextLFG?.0 != startTime else {
+			return (startTime, id)
+		}
+		app.logger.info("Inconsistency found for user \(userID). Setting nextJoinedLFG to \(id).")
 		// .addNotifications() has an entire chain of dependencies on Request that are very hard
 		// for me to untangle so this copies the logic from inside that function instead.
 		// This will "clear" the next LFG values of the UserNotificationData if no LFGs match the
 		// query (which is to say there is no next LFG). Thought about using subtractNotifications()
 		// but this just seems easier for now.
 		try await app.redis.setNextLFGInUserHash(date: startTime, lfgID: id, userID: userID)
+		// Whenever there's a change to notification data for a user, the API layer should add
+		// that user to the set by calling .addUsersWithStateChange().
+		// Doing so causes `NotificationMiddleware` to reload the user's notification data the
+		// next time a page is loaded on the site.
+		// .addNotifications(), .subtractNotifications(), and .markNotificationsViewed() all make
+		// this call internally. Until we decide to untangle those from Request we need to
+		// replicate that behavior here.
+		try await app.redis.addUsersWithStateChange([userID])
 		return (startTime, id)
 	}
 }
