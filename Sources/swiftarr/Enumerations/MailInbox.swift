@@ -14,6 +14,11 @@ enum MailInbox {
     case twitarrTeamSeamail
     case lfgMessages
     case privateEvent
+
+    // MailInboxes that are for users, basically the non-privileged stuff.
+    static var userMailInboxes: [MailInbox] {
+        [.lfgMessages, .privateEvent, .seamail]
+    }
     
     // Does not attempt to match moderator or TwitarrTeam mailboxes. Generally in a group chat you need to notify
     // on the seamail/lfg/pe mailbox for the user themselves and also (if they're a mod/TT) on the mod/TT inbox.

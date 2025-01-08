@@ -19,6 +19,23 @@ struct PrivilegedUsers {
 // the most common failure modes and updates the Redis notification data so that inconsistencies
 // don't last too long.
 struct UpdateRedisJobBase: APICollection {
+	// Removes any stale unread chat IDs from the given mailbox.
+	func cleanupMailInbox(_ context: QueueContext, userID: UUID, inbox: MailInbox, inboxData: [UUID: MailInbox]) async throws -> Void {
+		// existingKeys are the keys present in the Redis Hash.
+		let existingKeys = try await Set(context.application.redis.getUnreadChats(userID: userID, inbox: inbox))
+		// newKeys are the keys that should be the Redis Hash.
+		let newKeys = Set(inboxData.filter { $0.value == inbox }.map { $0.key })
+		// staleKeys are garbage that should be removed from the Redis Hash.
+		let staleKeys = existingKeys.subtracting(newKeys)
+		for key in staleKeys {
+			context.logger.warning("Found stale key \(key) in \(inbox) for \(userID)")
+			try await context.application.redis.markChatRead(key, in: inbox, for: userID)
+		}
+		if (staleKeys.count > 0) {
+			try await context.application.redis.addUsersWithStateChange([userID])
+		}
+	}
+
 	// Looks at all Chats (Fezzes) that a user is a part of and calculates any unreads.
 	// Or clears any unreads if none exist.
 	func processChatParticipants(
@@ -28,6 +45,7 @@ struct UpdateRedisJobBase: APICollection {
 		overrideInbox: MailInbox? = nil
 	) async throws {
 		try await withThrowingTaskGroup(of: Void.self) { group in
+			var chatsInboxData: [UUID: MailInbox] = [:]
 			for participant in chatParticipants {
 				let chatID = try participant.fez.requireID()
 				let unreadCount = participant.fez.postCount - participant.readCount
@@ -37,14 +55,26 @@ struct UpdateRedisJobBase: APICollection {
 				guard unreadCount != 0 else {
 					continue
 				}
-				group.addTask {
-					try await context.application.redis.setChatUnreadCount(
-						unreadCount,
-						chatID: chatID,
-						userID: userID,
-						inbox: inbox
-					)
+				let redisUnreadCount = try await context.application.redis.getChatUnreadCount(chatID, for: userID, in: inbox)
+				if (unreadCount != redisUnreadCount) {
+					context.application.logger.warning("Unread count inconsistent in chat \(chatID) for user \(userID)")
+					group.addTask {
+						try await context.application.redis.setChatUnreadCount(
+							unreadCount,
+							chatID: chatID,
+							userID: userID,
+							inbox: inbox
+						)
+					}
+					try await context.application.redis.addUsersWithStateChange([userID])
 				}
+				chatsInboxData[chatID] = inbox
+			}
+			if let inbox = overrideInbox {
+				try await cleanupMailInbox(context, userID: userID, inbox: inbox, inboxData: chatsInboxData)
+			}
+			for inbox in MailInbox.userMailInboxes {
+				try await cleanupMailInbox(context, userID: userID, inbox: inbox, inboxData: chatsInboxData)
 			}
 		}
 	}
@@ -60,9 +90,6 @@ struct UpdateRedisJobBase: APICollection {
 			.filter(\.$user.$id == userID)
 			.all()
 		context.logger.debug("User is part of \(userFezParticipants.count) chats")
-		try await context.application.redis.clearChatUnreadCounts(userID: userID, inbox: MailInbox.seamail)
-		try await context.application.redis.clearChatUnreadCounts(userID: userID, inbox: MailInbox.lfgMessages)
-		try await context.application.redis.clearChatUnreadCounts(userID: userID, inbox: MailInbox.privateEvent)
 		try await self.processChatParticipants(context, chatParticipants: userFezParticipants, userID: userID)
 
 		// Privileged Users
@@ -72,10 +99,6 @@ struct UpdateRedisJobBase: APICollection {
 				.filter(\.$user.$id == privilegedUsers.ttUser.requireID())
 				.all()
 			context.logger.debug("User is part of \(ttFezParticipants.count) TwitarrTeam chats")
-			try await context.application.redis.clearChatUnreadCounts(
-				userID: userID,
-				inbox: MailInbox.twitarrTeamSeamail
-			)
 			try await self.processChatParticipants(
 				context,
 				chatParticipants: ttFezParticipants,
@@ -90,10 +113,6 @@ struct UpdateRedisJobBase: APICollection {
 				.filter(\.$user.$id == privilegedUsers.modUser.requireID())
 				.all()
 			context.logger.debug("User is part of \(modFezParticipants.count) moderator chats")
-			try await context.application.redis.clearChatUnreadCounts(
-				userID: userID,
-				inbox: MailInbox.moderatorSeamail
-			)
 			try await self.processChatParticipants(
 				context,
 				chatParticipants: modFezParticipants,

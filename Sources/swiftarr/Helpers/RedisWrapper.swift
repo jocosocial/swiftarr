@@ -240,6 +240,18 @@ extension RedisClient {
 		return counts
 	}
 
+	// Get the unread message count for a given chat in a mailinbox for a user.
+	// nil if the value or chat does not exist.
+	func getChatUnreadCount(_ chatID: UUID, for userID: UUID, in inbox: MailInbox) async throws -> Int? {
+		return try await hget(chatID.uuidString, from: inbox.unreadMailRedisKey(userID), as: Int.self).get()
+	}
+
+	// This returns an array of UUIDs representing each Chat ID that is unread according to Redis.
+	func getUnreadChats(userID: UUID, inbox: MailInbox) async throws -> [UUID] {
+		let keys = try await hkeys(in: inbox.unreadMailRedisKey(userID)).get()
+		return keys.compactMap { UUID(uuidString: $0) }
+	}
+
 	// `type` must be a Chat notification type. Marks the given chat as fully read.
 	func markChatRead(type: NotificationType, in inbox: MailInbox? = nil, userID: UUID) async throws {
 		switch type {
@@ -249,6 +261,11 @@ extension RedisClient {
 			_ = try await hdel(type.redisFieldName(), from: actualInbox.unreadMailRedisKey(userID)).get()
 		default: break
 		}
+	}
+
+	// Mark a given chat as fully read in Redis.
+	func markChatRead(_ fezID: UUID, in inbox: MailInbox, for userID: UUID) async throws {
+		_ = try await hdel(String(fezID), from: inbox.unreadMailRedisKey(userID)).get()
 	}
 
 	// Call this when a user is added to a chat. In the key "Unread<mailboxname>-<userID>", sets the value
@@ -321,10 +338,5 @@ extension RedisClient {
 	// for a given MailInbox for given user to a given value.
 	func setChatUnreadCount(_ value: Int, chatID: UUID, userID: UUID, inbox: MailInbox) async throws {
 		_ = try await hset(chatID.uuidString, to: value, in: inbox.unreadMailRedisKey(userID)).get()
-	}
-
-	// Clear out all unreads for a given mailbox. Use with caution.
-	func clearChatUnreadCounts(userID: UUID, inbox: MailInbox) async throws {
-		_ = try await delete(inbox.unreadMailRedisKey(userID)).get()
 	}
 }
