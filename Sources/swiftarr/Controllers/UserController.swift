@@ -85,9 +85,10 @@ struct UserController: APIRouteCollection {
 
 		// convenience route group for all /api/v3/user endpoints
 		let userRoutes = app.grouped("api", "v3", "user")
-
-		// open access endpoints
-		userRoutes.post("create", use: createHandler).setUsedForPreregistration()
+		
+		// Route group needed for registration
+		let regRoutes = userRoutes.grouped(DisabledAPISectionMiddleware(feature: .registration))
+		regRoutes.post("create", use: createHandler).setUsedForPreregistration()
 
 		// endpoints available only when logged in
 		let tokenAuthGroup = userRoutes.tokenRoutes()

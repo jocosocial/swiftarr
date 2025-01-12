@@ -9,11 +9,14 @@ struct SiteLoginController: SiteControllerUtils {
 		let openRoutes = getOpenRoutes(app)
 		openRoutes.get("login", use: loginPageViewHandler)
 		openRoutes.post("login", use: loginPagePostHandler)
-		openRoutes.get("createAccount", use: createAccountPageHandler)
-		openRoutes.post("createAccount", use: createAccountPostHandler)
 		openRoutes.post("recoverPassword", use: recoverPasswordPostHandler)  // Change pw while not logged in
 		openRoutes.get("codeOfConduct", use: codeOfConductViewHandler)
 		openRoutes.get("conductAgree", use: codeOfConductViewHandler)
+
+		// Registration routes
+		let regOpenRoutes = getOpenRoutes(app, feature: .registration)
+		regOpenRoutes.get("createAccount", use: createAccountPageHandler)
+		regOpenRoutes.post("createAccount", use: createAccountPostHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app, overrideMinUserAccessLevel: true)
