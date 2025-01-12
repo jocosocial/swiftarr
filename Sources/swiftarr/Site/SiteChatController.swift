@@ -223,8 +223,9 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 
 	// GET /lfg
 	// Shows the root Fez page, with a list of all fezzes.
+	// Also supports search by passing through the query.
 	func fezRootPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/fez/open")
+		let response = try await apiQuery(req, endpoint: "/fez/open", passThroughQuery: true)
 		let fezList = try response.content.decode(FezListData.self)
 		let ctx = try FezListPageContext(req, fezList: fezList, tab: .find)
 		return try await req.view.render("Fez/fezRoot", ctx)
@@ -249,9 +250,9 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 
 	// GET /lfg/joined
 	//
-	// Shows the Joined Fezzes page.
+	// Shows the Joined Fezzes page. Also supports search by passing through the query.
 	func joinedFezPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/fez/joined", query: [URLQueryItem(name: "lfgtypes", value: "true")])
+		let response: ClientResponse = try await apiQuery(req, endpoint: "/fez/joined", query: [URLQueryItem(name: "lfgtypes", value: "true")], passThroughQuery: true)
 		let fezList = try response.content.decode(FezListData.self)
 		let ctx = try FezListPageContext(req, fezList: fezList, tab: .joined)
 		return try await req.view.render("Fez/fezJoined", ctx)
@@ -260,8 +261,9 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	// GET /lfg/owned
 	//
 	// Shows the Owned Fezzes page. These are the Fezzes a user has created.
+	// Also supports search by passing through the query.
 	func ownedFezPageHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/fez/owner", query: [URLQueryItem(name: "lfgtypes", value: "true")])
+		let response = try await apiQuery(req, endpoint: "/fez/owner", query: [URLQueryItem(name: "lfgtypes", value: "true")], passThroughQuery: true)
 		let fezList = try response.content.decode(FezListData.self)
 		let ctx = try FezListPageContext(req, fezList: fezList, tab: .owned)
 		return try await req.view.render("Fez/fezOwned", ctx)
