@@ -924,18 +924,7 @@ struct AdminController: APIRouteCollection {
 		var imageImportError: String?
 		do {
 			if let userImage = userToImport.userImage {
-				let archiveSource = try uploadUserDirPath().appendingPathComponent("Twitarr_userfile/userImages", isDirectory: true)
-						.appendingPathComponent(userImage)
-				let serverImageDest = Settings.shared.userImagesRootPath.appendingPathComponent(ImageSizeGroup.full.rawValue)
-						.appendingPathComponent(String(userImage.prefix(2)))
-						.appendingPathComponent(userImage)
-				if !FileManager.default.fileExists(atPath: serverImageDest.path) {
-					throw Abort(.badRequest, reason: "Source image file not found")
-				}
-				if !verifyOnly, !FileManager.default.fileExists(atPath: serverImageDest.path) {
-					try FileManager.default.copyItem(at: archiveSource, to: serverImageDest)
-				}
-				copiedUserImage = userImage
+				copiedUserImage = try await copyImage(userImage, verifyOnly: verifyOnly)
 			}
 		}
 		catch {
@@ -1067,18 +1056,7 @@ struct AdminController: APIRouteCollection {
 		var copiedUserImage: String?
 		do {
 			if let image = performerData.photo.filename {
-				let archiveSource = try uploadUserDirPath().appendingPathComponent("Twitarr_userfile/userImages", isDirectory: true)
-						.appendingPathComponent(image)
-				let serverImageDest = Settings.shared.userImagesRootPath.appendingPathComponent(ImageSizeGroup.full.rawValue)
-						.appendingPathComponent(String(image.prefix(2)))
-						.appendingPathComponent(image)
-				if !FileManager.default.fileExists(atPath: serverImageDest.path) {
-					throw Abort(.badRequest, reason: "Source image file not found")
-				}
-				if !verifyOnly, !FileManager.default.fileExists(atPath: serverImageDest.path) {
-					try FileManager.default.copyItem(at: archiveSource, to: serverImageDest)
-				}
-				copiedUserImage = image
+				copiedUserImage = try await copyImage(image, verifyOnly: verifyOnly)
 			}
 		}
 		catch {
@@ -1136,6 +1114,29 @@ struct AdminController: APIRouteCollection {
 			verification.otherErrors.append("Error when importing Performer \"\(performerData.name)\": \(error.localizedDescription)")
 			verification.performerCounts.errorCount += 1
 		}
+	}
+
+	// Copy an image from the uploaded data bundle to the expected location on the filesystem.
+	func copyImage(_ image: String, verifyOnly: Bool) async throws -> String {
+		let archiveSource = try uploadUserDirPath().appendingPathComponent("Twitarr_userfile/userImages", isDirectory: true)
+				.appendingPathComponent(image)
+		let serverImageDestDir = Settings.shared.userImagesRootPath.appendingPathComponent(ImageSizeGroup.full.rawValue)
+				.appendingPathComponent(String(image.prefix(2)))
+		let serverImageDest = serverImageDestDir.appendingPathComponent(image)
+		if !FileManager.default.fileExists(atPath: archiveSource.path) {
+			throw Abort(.badRequest, reason: "Source image file not found")
+		}
+		if !verifyOnly, !FileManager.default.fileExists(atPath: serverImageDest.path) {
+			// Testing this requires copying from Computer A to Computer B or otherwise
+			// wiping the local images directory.
+			// This ObjCBool-by-ref nonsense is silly.
+			var isDirectory = ObjCBool(true)
+			if (!FileManager.default.fileExists(atPath: serverImageDestDir.path, isDirectory: &isDirectory)) {
+				try FileManager.default.createDirectory(at: serverImageDestDir, withIntermediateDirectories: true)
+			}
+			try FileManager.default.copyItem(at: archiveSource, to: serverImageDest)
+		}
+		return image
 	}
 
 	// Gets the path where the uploaded schedule is kept. Only one schedule file can be in the hopper at a time.
