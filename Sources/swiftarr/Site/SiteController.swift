@@ -743,7 +743,7 @@ extension SiteControllerUtils {
 
 	// Routes that the user does not need to be logged in to access.
 	func getOpenRoutes(_ app: Application, feature: SwiftarrFeature? = nil, path: PathComponent...) -> RoutesBuilder {
-		return app.grouped([
+		var builder = app.grouped(path).grouped([
 			app.sessions.middleware,
 			SiteErrorMiddleware(environment: app.environment),
 			UserCacheData.SessionAuth(),
@@ -751,6 +751,10 @@ extension SiteControllerUtils {
 			NotificationsMiddleware(),
 			SiteMinUserAccessLevelMiddleware(requireAuth: false),
 		])
+		if let feature = feature {
+			builder = builder.grouped(DisabledSiteSectionMiddleware(feature: feature))
+		}
+		return builder
 	}
 
 	// Routes that require login but are generally 'global' -- Two logged-in users could share this URL and both see the content

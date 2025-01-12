@@ -15,9 +15,9 @@ struct ImageController: APIRouteCollection {
 		let userImageRoutes = imageRoutes.flexRoutes(feature: .images)
 		userImageRoutes.get("full", imageFilenameParam, use: getImage_FullHandler).setUsedForPreregistration()
 		userImageRoutes.get("thumb", imageFilenameParam, use: getImage_ThumbnailHandler).setUsedForPreregistration()
-		userImageRoutes.get("user", "identicon", userIDParam, use: getUserIdenticonHandler)
-		userImageRoutes.get("user", "full", userIDParam, use: getUserAvatarHandler)
-		userImageRoutes.get("user", "thumb", userIDParam, use: getUserAvatarHandler)
+		userImageRoutes.get("user", "identicon", userIDParam, use: getUserIdenticonHandler).setUsedForPreregistration()
+		userImageRoutes.get("user", "full", userIDParam, use: getUserAvatarHandler).setUsedForPreregistration()
+		userImageRoutes.get("user", "thumb", userIDParam, use: getUserAvatarHandler).setUsedForPreregistration()
 
 		// Moderator-only endpoints
 		let tokenAuthGroup = imageRoutes.tokenRoutes(feature: .images, minAccess: .moderator)
