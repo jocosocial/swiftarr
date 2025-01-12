@@ -148,6 +148,15 @@ struct FezController: APIRouteCollection {
 			let dayEnd = portCalendar.date(byAdding: .day, value: 1, to: dayStart) ?? Date()
 			fezQuery.filter(\.$startTime >= dayStart).filter(\.$startTime < dayEnd)
 		}
+		if var searchStr = urlQuery.search {
+			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
+				.replacingOccurrences(of: "%", with: "\\%")
+				.trimmingCharacters(in: .whitespacesAndNewlines)
+			fezQuery.group(.or) { group in
+				group.fullTextFilter(FriendlyFez.self, \.$title, searchStr)
+					.fullTextFilter(FriendlyFez.self, \.$info, searchStr)
+			}
+		}
 		let fezCount = try await fezQuery.count()
 		let fezzes = try await fezQuery.sort(\.$startTime, .ascending).sort(\.$title, .ascending)
 			.range(urlQuery.calcRange()).all()
@@ -244,6 +253,16 @@ struct FezController: APIRouteCollection {
 		if urlQuery.hidePast ?? false {
 			let searchStartTime = Settings.shared.timeZoneChanges.displayTimeToPortTime().addingTimeInterval(-3600)
 			query.filter(\.$startTime > searchStartTime)
+		}
+
+		if var searchStr = urlQuery.search {
+			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
+				.replacingOccurrences(of: "%", with: "\\%")
+				.trimmingCharacters(in: .whitespacesAndNewlines)
+			query.group(.or) { group in
+				group.fullTextFilter(FriendlyFez.self, \.$title, searchStr)
+					.fullTextFilter(FriendlyFez.self, \.$info, searchStr)
+			}
 		}
 
 		// get owned fezzes
