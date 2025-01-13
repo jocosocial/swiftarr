@@ -64,6 +64,8 @@ custom_categories:
     - KaraokeController
     - MicroKaraokeController
     - ModerationController
+    - PerformerController
+    - PersonalEventController
     - PhonecallController
     - PhotostreamController
     - TestController
@@ -285,6 +287,9 @@ custom_categories:
       - SiteKaraokeController
       - SiteLoginController
       - SiteModController
+      - SitePerformerController
+      - SitePhotostreamController
+      - SitePrivateEventController
       - SiteSeamailController
       - SiteTwitarrController
       - SiteUserController
@@ -295,6 +300,7 @@ custom_categories:
       - CalendarSessionFixerMiddleware
       - DisabledAPISectionMiddleware
       - DisabledSiteSectionMiddleware
+      - MinUserAccessLevelMiddleware
       - NotificationsMiddleware
       - RequireAdminMiddleware
       - RequireModeratorMiddleware
@@ -302,6 +308,8 @@ custom_categories:
       - RequireTwitarrTeamMiddleware
       - RequireVerifiedMiddleware
       - SiteErrorMiddleware
+      - SiteMinUserAccessLevelMiddleware
+      - SiteNoRouteErrorMiddleware
       - SiteRequireAdminMiddleware
       - SiteRequireModeratorMiddleware
       - SiteRequireTHOMiddleware
