@@ -3,7 +3,7 @@ Privacy Policy
 
 The Twitarr Developers ("we," "us," or "our") are committed to protecting your privacy. This Privacy Policy outlines how we collect, use, and safeguard your personal information when you use our applications. By using Twitarr ("Platform"), you agree to the practices described in this Privacy Policy.
 
-This policy covers Twitarr the service and it's associated client applications Tricordarr (Android) and The Kraken (iOS).
+This policy covers Twit-arr the service and its associated client applications Tricordarr (Android) and The Kraken (iOS).
 
 Information We Collect
 ----------------------
