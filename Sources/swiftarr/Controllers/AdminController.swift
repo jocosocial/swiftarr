@@ -33,6 +33,8 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.get("serversettings", use: settingsHandler)
 		ttAuthGroup.get("rollup", use: serverRollupCounts)
 
+		ttAuthGroup.post("notifications", "reload", use: triggerConsistencyJobHandler)
+
 		// endpoints available for THO and Admin only
 		let thoAuthGroup = adminRoutes.tokenRoutes(minAccess: .tho)
 		thoAuthGroup.on(.POST, "dailytheme", "create", body: .collect(maxSize: "30mb"), use: addDailyThemeHandler)
@@ -197,6 +199,9 @@ struct AdminController: APIRouteCollection {
 		}
 		if let value = data.upcomingLFGNotificationSetting {
 			Settings.shared.upcomingLFGNotificationSetting = value
+		}
+		if let value = data.enableSiteNotificationDataCaching {
+			Settings.shared.enableSiteNotificationDataCaching = value
 		}
 		var localDisables = Settings.shared.disabledFeatures.value
 		for pair in data.enableFeatures {
@@ -733,6 +738,16 @@ struct AdminController: APIRouteCollection {
 	/// - Returns: HTTP 200 OK.
 	func reloadScheduleHandler(_ req: Request) async throws -> HTTPStatus {
 		try await req.queue.dispatch(OnDemandScheduleUpdateJob.self, .init())
+		return .ok
+	}
+
+	/// `POST /api/v3/admin/notifications/reload`
+	///
+	/// Trigger an internal consistency check job for Redis data.
+	///
+	/// - Returns: HTTP 200 OK.
+	func triggerConsistencyJobHandler(_ req: Request) async throws -> HTTPStatus {
+		try await req.queue.dispatch(OnDemandUpdateRedisJob.self, .init())
 		return .ok
 	}
 	
