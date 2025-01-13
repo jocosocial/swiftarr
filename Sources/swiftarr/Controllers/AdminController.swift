@@ -1144,9 +1144,7 @@ struct AdminController: APIRouteCollection {
 		if !verifyOnly, !FileManager.default.fileExists(atPath: serverImageDest.path) {
 			// Testing this requires copying from Computer A to Computer B or otherwise
 			// wiping the local images directory.
-			// This ObjCBool-by-ref nonsense is silly.
-			var isDirectory = ObjCBool(true)
-			if (!FileManager.default.fileExists(atPath: serverImageDestDir.path, isDirectory: &isDirectory)) {
+			if (!FileManager.default.fileExists(atPath: serverImageDestDir.path)) {
 				try FileManager.default.createDirectory(at: serverImageDestDir, withIntermediateDirectories: true)
 			}
 			try FileManager.default.copyItem(at: archiveSource, to: serverImageDest)
