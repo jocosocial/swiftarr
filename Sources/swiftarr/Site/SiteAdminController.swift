@@ -74,6 +74,8 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.get("scheduleupload", "complete", use: scheduleUpdateCompleteViewtHandler)
 		privateTTRoutes.get("schedulelogview", scheduleLogIDParam, use: scheduleLogEntryViewer)
 		privateTTRoutes.post("schedulereload", use: scheduleReloadHandler)
+		privateTTRoutes.post("notificationcheck", use: notificationConsistencyCheckHandler)
+
 		
 		privateTTRoutes.get("bulkuser", use: bulkUserRootViewHandler)
 		privateTTRoutes.get("bulkuser", "download", use: bulkUserFileDownload)
@@ -450,6 +452,7 @@ struct SiteAdminController: SiteControllerUtils {
 			// In the .leaf file, the name property for the select that sets this is "reenable[]".
 			// The "[]" in the name is magic, somewhere in multipart-kit. It collects all form-data value with the same name into an array.
 			var reenable: [String]?
+			var enableSiteNotificationDataCaching: String?
 		}
 		let postStruct = try req.content.decode(SettingsPostFormContent.self)
 
@@ -488,7 +491,8 @@ struct SiteAdminController: SiteControllerUtils {
 			scheduleUpdateURL: postStruct.scheduleUpdateURL,
 			upcomingEventNotificationSeconds: postStruct.upcomingEventNotificationSeconds,
 			upcomingEventNotificationSetting: postStruct.upcomingEventNotificationSetting,
-			upcomingLFGNotificationSetting: postStruct.upcomingLFGNotificationSetting
+			upcomingLFGNotificationSetting: postStruct.upcomingLFGNotificationSetting,
+			enableSiteNotificationDataCaching: postStruct.enableSiteNotificationDataCaching == "on"
 		)
 		try await apiQuery(req, endpoint: "/admin/serversettings/update", method: .POST, encodeContent: apiPostContent)
 		return .ok
@@ -672,6 +676,11 @@ struct SiteAdminController: SiteControllerUtils {
 
 	func scheduleReloadHandler(_ req: Request) async throws -> HTTPStatus {
 		let _ = try await apiQuery(req, endpoint: "/admin/schedule/reload", method: .POST)
+		return .ok
+	}
+
+	func notificationConsistencyCheckHandler(_ req: Request) async throws -> HTTPStatus {
+		let _ = try await apiQuery(req, endpoint: "/admin/notifications/reload", method: .POST)
 		return .ok
 	}
 

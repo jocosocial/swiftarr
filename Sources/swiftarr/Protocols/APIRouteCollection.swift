@@ -58,7 +58,7 @@ extension RoutesBuilder {
 	}
 }
 
-protocol APIRouteCollection {
+protocol APIRouteCollection: APICollection {
 	func registerRoutes(_ app: Application) throws
 }
 
@@ -173,8 +173,14 @@ extension APIRouteCollection {
 				group.addTask { try await req.redis.resetActiveAnnouncementIDs() }
 
 			case .addedToChat(let msgID, let chatType):
-				stateChangeUsers = bookkeepUserAddedToChat(req: req, msgID: msgID, chatType: chatType, users: users, group: &group)
-			
+				stateChangeUsers = bookkeepUserAddedToChat(
+					req: req,
+					msgID: msgID,
+					chatType: chatType,
+					users: users,
+					group: &group
+				)
+
 			case .chatUnreadMsg(let msgID, let chatType):
 				stateChangeUsers = bookkeepNewChatMessage(req: req, msgID: msgID, chatType: chatType, users: users, group: &group, creatorID: creatorID)
 
@@ -212,7 +218,7 @@ extension APIRouteCollection {
 				for userID in users {
 					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
-			case .followedEventStarting(_), .joinedLFGStarting(_), .personalEventStarting(_), .chatCanceled(_):
+			case .followedEventStarting(_), .joinedLFGStarting(_), .personalEventStarting(_), .chatCanceled(_, _):
 				break
 			case .microKaraokeSongReady(_):
 				for userID in users {
@@ -222,7 +228,12 @@ extension APIRouteCollection {
 
 			if forwardToSockets {
 				// Send a message to all involved users with open websockets.
-				await req.application.notificationSockets.forwardToSockets(app: req.application, idList: users, type: type, info: info)
+				await req.application.notificationSockets.forwardToSockets(
+					app: req.application,
+					idList: users,
+					type: type,
+					info: info
+				)
 			}
 
 			let stateChangeUsersCopy = stateChangeUsers
@@ -233,8 +244,13 @@ extension APIRouteCollection {
 		}
 	}
 
-	func bookkeepUserAddedToChat(req: Request, msgID: UUID, chatType: FezType, users: [UUID],
-			group: inout ThrowingTaskGroup<Void, Error>) -> [UUID] {
+	func bookkeepUserAddedToChat(
+		req: Request,
+		msgID: UUID,
+		chatType: FezType,
+		users: [UUID],
+		group: inout ThrowingTaskGroup<Void, Error>
+	) -> [UUID] {
 		var updateCountsUsers = users
 		// For seamail msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
 		// update counts list. This is so all team members have individual read counts.
@@ -257,7 +273,7 @@ extension APIRouteCollection {
 			}
 		}
 		// Users who aren't "moderator" and are in the thread see it as a normal thread.
-		let inbox = Request.Redis.MailInbox.mailboxForChatType(type: chatType)
+		let inbox = MailInbox.mailboxForChatType(type: chatType)
 		for userID in users {
 			group.addTask { try await req.redis.userAddedToChat(chatID: msgID, userID: userID, inbox: inbox) }
 		}
@@ -291,7 +307,7 @@ extension APIRouteCollection {
 			}
 		}
 		// Users who aren't "moderator" and are in the thread see it as a normal thread.
-		let inbox = Request.Redis.MailInbox.mailboxForChatType(type: chatType)
+		let inbox = MailInbox.mailboxForChatType(type: chatType)
 		let actualUsers = users.filter({ $0 != creatorID })
 		for userID in actualUsers {
 			group.addTask { try await req.redis.newUnreadMessage(chatID: msgID, userID: userID, inbox: inbox) }
@@ -453,13 +469,7 @@ extension APIRouteCollection {
 	// reading this comment right now experience as the current date), or "cruise time" (aka what someone experienced)
 	// on board in the past or in the future.
 	func storeNextFollowedEvent(userID: UUID, on req: Request) async throws -> (Date, UUID)? {
-		let filterDate: Date = Settings.shared.getScheduleReferenceDate(Settings.shared.upcomingEventNotificationSetting)
-		let nextFavoriteEvent = try await Event.query(on: req.db)
-			.filter(\.$startTime > filterDate)
-			.sort(\.$startTime, .ascending)
-			.join(EventFavorite.self, on: \Event.$id == \EventFavorite.$event.$id)
-			.filter(EventFavorite.self, \.$user.$id == userID)
-			.first()
+		let nextFavoriteEvent = try await getNextFollowedEvent(userID: userID, db: req.db)
 		// This will "clear" the next Event values of the UserNotificationData if no Events match the
 		// query (which is to say there is no next Event). Thought about using subtractNotifications()
 		// but this just seems easier for now.
@@ -476,20 +486,8 @@ extension APIRouteCollection {
 	}
 
 	// Calculates the start time of the earliest future joined LFG. Caches the value in Redis for quick access.
-	// The "current" reference date depends on a setting whether to operate in "real time" (aka what you the human
-	// reading this comment right now experience as the current date), or "cruise time" (aka what someone experienced)
-	// on board in the past or in the future.
 	func storeNextJoinedAppointment(userID: UUID, on req: Request) async throws -> (Date, UUID)? {
-		let filterDate: Date = Settings.shared.getScheduleReferenceDate(Settings.shared.upcomingLFGNotificationSetting)
-		let nextJoinedLFG = try await FriendlyFez.query(on: req.db)
-			.join(FezParticipant.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
-			.filter(FezParticipant.self, \.$user.$id == userID)
-			.filter(\.$fezType !~ [.open, .closed])
-			.filter(\.$cancelled == false)
-			.filter(\.$startTime != nil)
-			.filter(\.$startTime > filterDate)
-			.sort(\.$startTime, .ascending)
-			.first()
+		let nextJoinedLFG = try await getNextAppointment(userID: userID, db: req.db)
 		// This will "clear" the next LFG values of the UserNotificationData if no LFGs match the
 		// query (which is to say there is no next LFG). Thought about using subtractNotifications()
 		// but this just seems easier for now.
