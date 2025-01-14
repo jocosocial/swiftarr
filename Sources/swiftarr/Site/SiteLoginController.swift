@@ -380,50 +380,13 @@ struct SiteLoginController: SiteControllerUtils {
 	/// `GET /codeOfConduct`
 	/// `GET /conductAgree`
 	///
+	/// Shows the CoC page, which is a render of a Markdown source.
+	/// 
+	/// Query Options:
+	/// 	* ?boxed=true		Removes the site header navbar; useful for apps that want to show this page but not allow general site nav.
 	func codeOfConductViewHandler(_ req: Request) async throws -> View {
-		var urlComponents = Settings.shared.apiUrlComponents
-		urlComponents.path = "/public/codeofconduct.json"
-		guard let apiURLString = urlComponents.string else {
-			throw Abort(.internalServerError, reason: "Unable to build URL to API endpoint.")
-		}
-		let response = try await req.client.send(.GET, to: URI(string: apiURLString))
-		let document = try response.content.decode(ConductDoc.self)
-
-		struct ConductDocParagraph: Codable {
-			var text: String?
-			var list: [String]?
-		}
-
-		struct ConductDocSection: Codable {
-			var header: String?
-			var paragraphs: [ConductDocParagraph]?
-		}
-
-		struct ConductDocDocument: Codable {
-			var header: String?
-			var sections: [ConductDocSection]?
-		}
-
-		struct ConductDoc: Codable {
-			var codeofconduct: ConductDocDocument
-			var guidelines: ConductDocDocument
-			var twitarrconduct: ConductDocDocument
-		}
-
-		struct ConductContext: Encodable {
-			var trunk: TrunkContext
-			var conductDocuments: [ConductDocDocument]
-			var enableCreate: Bool
-
-			init(_ req: Request, conductDocument: ConductDoc, enableCreate: Bool = false) throws {
-				trunk = .init(req, title: "Code of Conduct", tab: .none)
-				self.conductDocuments = [conductDocument.guidelines, conductDocument.codeofconduct, conductDocument.twitarrconduct]
-				self.enableCreate = enableCreate
-			}
-		}
-
-		let ctx = try ConductContext(req, conductDocument: document, enableCreate: req.url.path == "/conductAgree")
-		return try await req.view.render("codeOfConduct", ctx)
+		return try await displayMarkdownFileContents(req, filePath: "/public/codeofconduct.md", 
+				agreeButtonDestination: req.url.path == "/conductAgree" ? "/createAccount" : nil)
 	}
 
 	/// `GET /createAltAccount`

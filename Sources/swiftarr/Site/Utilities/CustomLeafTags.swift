@@ -98,7 +98,7 @@ struct MarkdownTextTag: UnsafeUnescapedLeafTag {
 		string = string.htmlEscaped()
 
 		let parser = MarkdownParser()
-		let html = parser.html(from: string)
+		let html = "<div class=\"InkMarkdown\">\(parser.html(from: string))</div>"
 		return LeafData.string(html)
 	}
 }
