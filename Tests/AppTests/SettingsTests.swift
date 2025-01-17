@@ -39,7 +39,9 @@ class SettingsTests: XCTestCase, SwiftarrBaseTest {
     }
 
     // The day we go to DST, 11:00AM UTC 7:00AM UTC-4 (EDT, EST+DST, AST)
-    // "Theme: Retro Day" uses this date so its an easy checkpoint.
+    // "Theme: Retro Day" uses this date so its an easy checkpoint. In the database
+    // it is stored as 2024-03-10T11:00:00Z. Whereas "Theme: Welcome, New Cruisers!"
+    // starts at "2024-03-09 12:00:00+00" in the DB at 12:00PM UTC aka 7:00AM UTC-5, EST.
 	let dstDate = ISO8601DateFormatter().date(from: "2024-03-10T11:00:00Z")!
 
     func testPresentDstDate() {
@@ -48,13 +50,31 @@ class SettingsTests: XCTestCase, SwiftarrBaseTest {
 		XCTAssertEqual(dstDate, resultDate)
     }
 
+    // @TODO validate that the date times are correct in reality.
+
+    // This date is in the past but is still within daylight time (UTC-4)
 	func testPastDstDate() {
 		let testDate = ISO8601DateFormatter().date(from: "2023-07-09T11:00:00Z")!
 		let resultDate = Settings.shared.getDateInCruiseWeek(from: testDate)
 		XCTAssertEqual(dstDate, resultDate)
     }
 
+    // This date is in the past but back in standard time (UTC-5)
+    func testPastNonDstDate() {
+		let testDate = ISO8601DateFormatter().date(from: "2023-11-12T11:00:00Z")!
+		let resultDate = Settings.shared.getDateInCruiseWeek(from: testDate)
+		XCTAssertEqual(dstDate, resultDate)
+    }
+
+    // This date is in the future but is still within daylight time (UTC-4)
 	func testFutureDstDate() {
+		let testDate = ISO8601DateFormatter().date(from: "2024-05-12T11:00:00Z")!
+		let resultDate = Settings.shared.getDateInCruiseWeek(from: testDate)
+		XCTAssertEqual(dstDate, resultDate)
+    }
+
+    // This date is the future but back in standard time (UTC-5)
+	func testFutureNonDstDate() {
 		let testDate = ISO8601DateFormatter().date(from: "2025-01-12T11:00:00Z")!
 		let resultDate = Settings.shared.getDateInCruiseWeek(from: testDate)
 		XCTAssertEqual(dstDate, resultDate)
