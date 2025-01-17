@@ -255,11 +255,11 @@ extension Settings {
 	// It can be difficult to test schedule functionality because the events are all coded for
 	// their actual times. So at various points in the app we display the data of "what would be".
 	// This takes it a step further and pretends based on the time rather than just a weekday.
-	func getDateInCruiseWeek() -> Date {
+	func getDateInCruiseWeek(from date: Date = Date()) -> Date {
 		// @TODO Ensure this honors or passes sanity check for portTimeZone or something like that.
 		// It's probably OK, but we should be sure.
 		let secondsPerWeek = 60 * 60 * 24 * 7
-		let partialWeek = Int(Date().timeIntervalSince(Settings.shared.cruiseStartDate())) % secondsPerWeek
+		let partialWeek = Int(date.timeIntervalSince(Settings.shared.cruiseStartDate())) % secondsPerWeek
 		// When startDate is in the future, the partialWeek is negative. Which if taken at face value returns
 		// the current date (start - time since start = now). When startDate is in the past, the partialWeek is 
 		// positive. Since the whole point of this functionality is to time travel, we abs() it.
@@ -272,10 +272,9 @@ extension Settings {
 	// I'm totally not salty about spending several hours chasing this down. Anywho...
 	// This takes the current Date(), strips the ultra-high-precision that we don't want, and returns Date() with the
 	// upcoming notification offset applied.
-	func getCurrentFilterDate() -> Date {
-		let todayDate = Date()
-		let todayCalendar = Settings.shared.calendarForDate(todayDate)
-		let todayComponents = todayCalendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: todayDate)
+	func getCurrentFilterDate(from date: Date = Date()) -> Date {
+		let todayCalendar = Settings.shared.calendarForDate(date)
+		let todayComponents = todayCalendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
 		return todayCalendar.date(from: todayComponents)!
 	}
 
