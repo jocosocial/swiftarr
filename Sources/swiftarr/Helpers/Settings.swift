@@ -251,27 +251,38 @@ extension Settings {
 		return cal
 	}
 
+	// Determines the UTC offset in seconds from the cruiseStartDate to the given date.
+	// When the given date and the cruiseStartDate are in the same time zone and Daylight 
+	// Savings mode the offset should be 0. Moving into another time zone (such as Atlantic
+	// Time) or engaging Daylight Savings Time will adjust this offset. Positive number
+	// is towards UTC (ex: UTC-5 to UTC-4) while a negative number is away from UTC 
+	// (ex: UTC-4 to UTC-5)
+	func getPortOffset(_ date: Date) -> Int {
+		let portUtcOffset = timeZoneChanges.tzAtTime(cruiseStartDate()).secondsFromGMT(for: cruiseStartDate())
+		let dateUtcOffset = timeZoneChanges.tzAtTime(date).secondsFromGMT(for: date)
+		return dateUtcOffset - portUtcOffset
+	}
+
 	// Generate a `Date` that lets us pretend we are at that point in time during the sailing.
 	// It can be difficult to test schedule functionality because the events are all coded for
 	// their actual times. So at various points in the app we display the data of "what would be".
 	// This takes it a step further and pretends based on the time rather than just a weekday.
 	func getDateInCruiseWeek(from date: Date = Date()) -> Date {
-		// @TODO Ensure this honors or passes sanity check for portTimeZone or something like that.
-		// It's probably OK, but we should be sure.
 		let secondsPerWeek = 60 * 60 * 24 * 7
-		let partialWeek = Int(date.timeIntervalSince(Settings.shared.cruiseStartDate())) % secondsPerWeek
-		// When startDate is in the future, the partialWeek is negative. Which if taken at face value returns
-		// the current date (start - time since start = now). When startDate is in the past, the partialWeek is 
-		// positive. Since the whole point of this functionality is to time travel, we abs() it.
-		return Settings.shared.cruiseStartDate() + abs(TimeInterval(partialWeek))
+		var partialWeek = Int(date.timeIntervalSince(Settings.shared.cruiseStartDate())) % secondsPerWeek
+		// When cruiseStartDate is in the future, the partialWeek is negative.
+		// When cruiseStartDate is in the past, the partialWeek is positive.
+		if (partialWeek < 0) {
+			partialWeek += secondsPerWeek
+		}
+		return Settings.shared.cruiseStartDate() + TimeInterval(partialWeek)
 	}
 
 	// This is sufficiently complex enough to merit its own function. Unlike the Settings.shared.getDateInCruiseWeek(),
 	// just adding .seconds to Date() isn't enough because Date() returns millisecond-precision. Which no one tells you
 	// unless you do a .timeIntervalSince1970 and get the actual Double value back to look at what's behind the dot.
 	// I'm totally not salty about spending several hours chasing this down. Anywho...
-	// This takes the current Date(), strips the ultra-high-precision that we don't want, and returns Date() with the
-	// upcoming notification offset applied.
+	// This takes the current Date(), strips the ultra-high-precision that we don't want, and returns Date().
 	func getCurrentFilterDate(from date: Date = Date()) -> Date {
 		let todayCalendar = Settings.shared.calendarForDate(date)
 		let todayComponents = todayCalendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
@@ -282,7 +293,7 @@ extension Settings {
 	// Often in the code we use Date() to get the current time, but this can sometimes cause
 	// strange behavior because we occasionally pretend to be in the cruise week.
 	func getScheduleReferenceDate(_ settingType: EventNotificationSetting) -> Date {
-		// The filter date is calculated by adding the notification offset interval to either:
+		// The reference date is calculated as either:
 		// 1) The current date (as in what the server is experiencing right now).
 		// 2) The current time/day transposed within the cruise week (when we pretend it is).
 		var filterDate: Date
@@ -309,8 +320,7 @@ extension Settings {
 			}
 			try await storedSetting.readFromRedis(redis: app.redis)
 		}
-		// TimeZoneChanges load in from postgres
-		timeZoneChanges = try await TimeZoneChangeSet(app.db)
+		try await readTimeZoneChanges(app)
 	}
 
 	// Stores all settings to Redis
@@ -320,6 +330,11 @@ extension Settings {
 				_ = try await storedSetting.writeToRedis(redis: req.redis)
 			}
 		}
+	}
+
+	// TimeZoneChanges load in from postgres
+	func readTimeZoneChanges(_ app: Application) async throws {
+		timeZoneChanges = try await TimeZoneChangeSet(app.db)
 	}
 }
 
