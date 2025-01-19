@@ -9,6 +9,7 @@
         "oobeVersion": 2,
         "cruiseStartDate": "2024-03-09",
         "cruiseLength": "8",
-        "portTimeZoneID": "America/New_York"
+        "portTimeZoneID": "America/New_York",
+        "schedBaseUrl": "https://jococruise2024.sched.com"
     }
 }
