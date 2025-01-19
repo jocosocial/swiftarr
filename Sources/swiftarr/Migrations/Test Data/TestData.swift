@@ -14,10 +14,16 @@ struct CreateTestData: AsyncMigration {
 
 	func revert(on database: Database) async throws {
 		try await Twarrt.query(on: database).delete()
-		guard let category = try await Category.query(on: database).filter(\.$title == "Test 1").first() else {
+		guard let category = try await Category.query(on: database).filter(\.$title == "General").first() else {
 			throw Abort(.internalServerError, reason: "No category found.")
 		}
-		try await Forum.query(on: database).filter(\.$category.$id == category.requireID()).delete()
+		if let forum = try await Forum.query(on: database).filter(\.$category.$id == category.requireID()).filter(\.$title == "Say Hello Here")
+				.with(\.$posts).with(\.$readers.$pivots).with(\.$edits).first() {
+			try await forum.posts.delete(on: database)
+			try await forum.$readers.pivots.delete(on: database)
+			try await forum.edits.delete(on: database)
+			try await forum.delete(on: database)
+		}
 	}
 
 	// Makes a single tweet by admin.
@@ -29,13 +35,13 @@ struct CreateTestData: AsyncMigration {
 		try await twarrt.save(on: database)
 	}
 
-	// Creates a forum in Test 1, adds 6 posts to it
+	// Creates a forum in General, adds 6 posts to it
 	func createTestForumPosts(on database: Database) async throws {
 		guard let admin = try await User.query(on: database).filter(\.$username == "admin").first() else {
 			throw Abort(.internalServerError, reason: "Could not find admin user.")
 		}
-		guard let category = try await Category.query(on: database).filter(\.$title == "Egype").first() else {
-			throw Abort(.internalServerError, reason: "Test category doesn't exist;, can't make test posts.")
+		guard let category = try await Category.query(on: database).filter(\.$title == "General").first() else {
+			throw Abort(.internalServerError, reason: "General category doesn't exist;, can't make test posts.")
 		}
 		let thread = try Forum(title: "Say Hello Here", category: category, creatorID: admin.requireID())
 		try await thread.save(on: database)
