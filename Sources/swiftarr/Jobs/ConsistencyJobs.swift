@@ -135,7 +135,7 @@ struct UpdateRedisJobBase: APICollection {
 		do {
 			let users = try await User.query(on: context.application.db).all()
 			guard
-				let ttUser = try await User.query(on: context.application.db).filter(\.$username == "TwitarrTeam")
+				let ttUser = try await User.query(on: context.application.db).filter(\.$username == PrivilegedUser.TwitarrTeam.rawValue)
 					.first()
 			else {
 				throw Abort(
@@ -144,7 +144,7 @@ struct UpdateRedisJobBase: APICollection {
 				)
 			}
 			guard
-				let modUser = try await User.query(on: context.application.db).filter(\.$username == "moderator")
+				let modUser = try await User.query(on: context.application.db).filter(\.$username == PrivilegedUser.moderator.rawValue)
 					.first()
 			else {
 				throw Abort(

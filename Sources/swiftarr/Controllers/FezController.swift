@@ -1058,7 +1058,7 @@ extension FezController {
 			guard user.accessLevel >= .twitarrteam else {
 				throw Abort(.badRequest, reason: "Must have TwitarrTeam access to post as @TwitarrTeam")
 			}
-			guard let ttUser = req.userCache.getUser(username: "TwitarrTeam") else {
+			guard let ttUser = req.userCache.getUser(username: PrivilegedUser.TwitarrTeam.rawValue) else {
 				throw Abort(.internalServerError, reason: "Cannot find @TwitarrTeam user")
 			}
 			creator = ttUser
@@ -1067,7 +1067,7 @@ extension FezController {
 			guard user.accessLevel >= .moderator else {
 				throw Abort(.badRequest, reason: "Must have moderator access to post as @moderator")
 			}
-			guard let modUser = req.userCache.getUser(username: "moderator") else {
+			guard let modUser = req.userCache.getUser(username: PrivilegedUser.moderator.rawValue) else {
 				throw Abort(.internalServerError, reason: "Cannot find @moderator user")
 			}
 			creator = modUser
@@ -1275,13 +1275,13 @@ extension FezController {
 			return user
 		}
 		var effectiveUser = user
-		if effectiveUserParam.lowercased() == "moderator", let modUser = req.userCache.getUser(username: "moderator") {
+		if effectiveUserParam.lowercased() == PrivilegedUser.moderator.queryParam, let modUser = req.userCache.getUser(username: PrivilegedUser.moderator.rawValue) {
 			guard user.accessLevel.hasAccess(.moderator) else {
 				throw Abort(.forbidden, reason: "Only moderators can access moderator seamail.")
 			}
 			effectiveUser = modUser
 		}
-		if effectiveUserParam.lowercased() == "twitarrteam", let ttUser = req.userCache.getUser(username: "TwitarrTeam")
+		if effectiveUserParam.lowercased() == PrivilegedUser.TwitarrTeam.queryParam, let ttUser = req.userCache.getUser(username: PrivilegedUser.TwitarrTeam.rawValue)
 		{
 			guard user.accessLevel.hasAccess(.twitarrteam) else {
 				throw Abort(.forbidden, reason: "Only TwitarrTeam members can access TwitarrTeam seamail.")
@@ -1298,12 +1298,12 @@ extension FezController {
 	func getEffectiveUser(user: UserCacheData, req: Request, fez: FriendlyFez) -> UserCacheData {
 		// If either of these 'special' users are fez members and the user has high enough access, we can see the
 		// members-only values of the fez as the 'special' user.
-		if user.accessLevel >= .twitarrteam, let ttUser = req.userCache.getUser(username: "TwitarrTeam"),
+		if user.accessLevel >= .twitarrteam, let ttUser = req.userCache.getUser(username: PrivilegedUser.TwitarrTeam.rawValue),
 			fez.participantArray.contains(ttUser.userID)
 		{
 			return ttUser
 		}
-		if user.accessLevel >= .moderator, let modUser = req.userCache.getUser(username: "moderator"),
+		if user.accessLevel >= .moderator, let modUser = req.userCache.getUser(username: PrivilegedUser.moderator.rawValue),
 			fez.participantArray.contains(modUser.userID)
 		{
 			return modUser
