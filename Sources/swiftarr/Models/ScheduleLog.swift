@@ -76,6 +76,6 @@ struct CreateScheduleLogSchema: AsyncMigration {
 	}
 
 	func revert(on database: Database) async throws {
-		try await database.schema("profileedit").delete()
+		try await database.schema("schedulelog").delete()
 	}
 }
