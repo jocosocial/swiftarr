@@ -38,14 +38,16 @@ class SettingsTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
+	// 2023-07-08 is within DST, so "midnight" is UTC-4 == 04:00:00Z
 	func testPastEmbarkationDate() async throws {
 		try await withApp { app in
-			let testDate = ISO8601DateFormatter().date(from: "2023-07-08T05:00:00Z")!
+			let testDate = ISO8601DateFormatter().date(from: "2023-07-08T04:00:00Z")!
 			let resultDate = Settings.shared.getDateInCruiseWeek(from: testDate)
 			XCTAssertEqual(embarkationDate, resultDate)
 		}
 	}
 
+	// 2025-01-11 is outside DST, so "midnight" is UTC-5 == 05:00:00Z
 	func testFutureEmbarkationDate() async throws {
 		try await withApp { app in
 			let testDate = ISO8601DateFormatter().date(from: "2025-01-11T05:00:00Z")!
@@ -76,10 +78,11 @@ class SettingsTests: XCTestCase, SwiftarrBaseTest {
 		XCTAssertEqual(dstDate, resultDate)
 	}
 
-	// This date is in the past but back in standard time (UTC-5)
+	// This date is in the past but back in standard time (UTC-5).
+	// +1H to account for DST within the cruise week.
 	func testPastNonDstDate() async throws {
 		try await withApp { app in
-			let testDate = ISO8601DateFormatter().date(from: "2023-11-12T11:00:00Z")!
+			let testDate = ISO8601DateFormatter().date(from: "2023-11-12T12:00:00Z")!
 			let resultDate = Settings.shared.getDateInCruiseWeek(from: testDate)
 			XCTAssertEqual(dstDate, resultDate)
 		}
@@ -94,10 +97,11 @@ class SettingsTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
-	// This date is the future but back in standard time (UTC-5)
+	// This date is the future but back in standard time (UTC-5).
+	// +1H to deal with DST within the cruise week.
 	func testFutureNonDstDate() async throws {
 		try await withApp { app in
-			let testDate = ISO8601DateFormatter().date(from: "2025-01-12T11:00:00Z")!
+			let testDate = ISO8601DateFormatter().date(from: "2025-01-12T12:00:00Z")!
 			let resultDate = Settings.shared.getDateInCruiseWeek(from: testDate)
 			XCTAssertEqual(dstDate, resultDate)
 		}
@@ -112,7 +116,6 @@ class SettingsTests: XCTestCase, SwiftarrBaseTest {
             let testDateComponents = cal.dateComponents([.minute, .hour], from: testDate)
 			let resultDate = Settings.shared.getDateInCruiseWeek(from: testDate)
             let resultDateComponents = cal.dateComponents([.minute, .hour], from: resultDate)
-
             // We only really care about the hour. Minute is there for fun.
             XCTAssertEqual(testDateComponents.hour, resultDateComponents.hour)
             XCTAssertEqual(testDateComponents.minute, resultDateComponents.minute)
