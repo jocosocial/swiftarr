@@ -251,36 +251,15 @@ extension Settings {
 		return cal
 	}
 
-	// Determines the UTC offset in seconds from the cruiseStartDate to the given date.
-	// When the given date and the cruiseStartDate are in the same time zone and Daylight 
-	// Savings mode the offset should be 0. Moving into another time zone (such as Atlantic
-	// Time) or engaging Daylight Savings Time will adjust this offset. Positive number
-	// is towards UTC (ex: UTC-5 to UTC-4) while a negative number is away from UTC 
-	// (ex: UTC-4 to UTC-5)
-	func getPortOffset(_ date: Date) -> Int {
-		let portUtcOffset = timeZoneChanges.tzAtTime(cruiseStartDate()).secondsFromGMT(for: cruiseStartDate())
-		let dateUtcOffset = timeZoneChanges.tzAtTime(date).secondsFromGMT(for: date)
-		return dateUtcOffset - portUtcOffset
-	}
-
 	// Generate a `Date` that lets us pretend we are at that point in time during the sailing.
 	// It can be difficult to test schedule functionality because the events are all coded for
 	// their actual times. So at various points in the app we display the data of "what would be".
 	// This takes it a step further and pretends based on the time rather than just a weekday.
+	//
+	// There have been multiple version of this function over time that deal with DST to various
+	// degrees of success. This code was lifted from EventController and seems to do the job 
+	// "correctly". Hey we even have tests for it now.
 	func getDateInCruiseWeek(from date: Date = Date()) -> Date {
-		// let secondsPerWeek = 60 * 60 * 24 * 7
-		// var partialWeek = Int(date.timeIntervalSince(Settings.shared.cruiseStartDate())) % secondsPerWeek
-		// // When cruiseStartDate is in the future, the partialWeek is negative.
-		// // When cruiseStartDate is in the past, the partialWeek is positive.
-		// if (partialWeek < 0) {
-		// 	partialWeek += secondsPerWeek
-		// }
-		// return Settings.shared.cruiseStartDate() + TimeInterval(partialWeek)
-		
-
-
-
-		// This code was lifted from EventController
 		let cruiseStartDate = Settings.shared.cruiseStartDate()
 		var filterDate = date
 		// If the cruise is in the future or more than 10 days in the past, construct a fake date during the cruise week
