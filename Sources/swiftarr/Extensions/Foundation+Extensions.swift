@@ -88,7 +88,9 @@ extension Swift.Bool: RediStack.RESPValueConvertible {
 		if let intValue = value.int {
 			self = intValue != 0
 		}
-		return nil
+		else {
+			return nil
+		}
 	}
 
 	public func convertedToRESPValue() -> RESPValue {
