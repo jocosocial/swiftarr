@@ -11,9 +11,11 @@ struct SiteSeamailController: SiteControllerUtils {
 		var paginator: PaginatorContext
 		var query: SeamailQueryOptions
 		var queryDescription: String
+		var archived: Bool
 
 		init(_ req: Request, fezList: FezListData, fezzes: [FezData]) throws {
 			effectiveUser = req.query[String.self, at: "foruser"]
+			archived = req.query[Bool.self, at: "archived"] ?? false
 			let (title, tab) = titleAndTab(for: req)
 			trunk = .init(req, title: title, tab: tab)
 			self.fezList = fezList
@@ -104,7 +106,7 @@ struct SiteSeamailController: SiteControllerUtils {
 	// Shows the root Seamail page, with a list of all conversations.
 	func seamailRootPageHandler(_ req: Request) async throws -> View {
 		let typeList = [URLQueryItem(name: "type", value: "closed"), URLQueryItem(name: "type", value: "open"),
-				URLQueryItem(name: "type", value: "privateEvent")]
+				URLQueryItem(name: "type", value: "privateEvent"), URLQueryItem(name: "archived", value: "false")]
 		let response = try await apiQuery(req, endpoint: "/fez/joined", query: typeList, passThroughQuery: true)
 		let fezList = try response.content.decode(FezListData.self)
 		// Re-sort fezzes so ones with new msgs are first. Keep most-recent-change sort within each group.
@@ -437,6 +439,9 @@ private func titleAndTab(for req: Request) -> (String, TrunkContext.Tab) {
 		else {
 			title = "Seamail"
 			tab = .seamail
+			if let archived = req.query[Bool.self, at: "archived"], archived {
+				title = "Archived Seamail"
+			}
 		}
 	}
 	return (title, tab)

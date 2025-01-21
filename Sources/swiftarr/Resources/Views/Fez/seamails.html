@@ -14,7 +14,10 @@
 			    		Filter: New Msgs
 					</a>
 					#endif
-			    	<a class="btn btn-primary btn-sm" role="button" href="/seamail/create">New Seamail</a>
+					#if(!effectiveUser):
+					<a class="btn #if(archived):btn-primary#else:btn-outline-primary#endif btn-sm" role="button" href="?archived=#(!archived)">Archived</a>
+			    	#endif
+					<a class="btn btn-primary btn-sm" role="button" href="/seamail/create">New Seamail</a>
 				</div>
 			</div>
 			#extend("paginator")
@@ -24,6 +27,8 @@
 						<div class="col">
 							#if(query.search):
 								<li class="list-group-item">No search results found. Try another search, or start a new Seamail by tapping "New Seamail".</li>
+							#elseif(archived):
+								<li class="list-group-item">You haven't archived any Seamails.</li>
 							#else:
 								<li class="list-group-item">You haven't received any Seamail messages yet, but you can create one by tapping "New Seamail"</li>
 							#endif

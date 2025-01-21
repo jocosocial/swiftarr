@@ -22,6 +22,7 @@ struct FezController: APIRouteCollection {
 		var search: String?
 		var hidePast: Bool?
 		var matchID: UUID?
+		var archived: Bool?
 
 		func getTypes() throws -> [FezType]? {
 			var includeTypes = try type.map { try FezType.fromAPIString($0) }
@@ -193,7 +194,8 @@ struct FezController: APIRouteCollection {
 	/// - `?search=STRING` - Only show fezzes whose title, info, or any post contains the given string.
 	/// - `?hidepast=BOOLEAN` - Hide fezzes that started more than one hour in the past. For this endpoint, this defaults to FALSE.
 	/// - `?matchID=UUID` - Returns a single LFG with the given ID.
-	/// - `?lfgtypes=BOOLEAN` - Shorthand to include/exliude all the LFG types (Activity, Gaming, Dining, etc.) Acts the same as using multiple `type=` or `exludetype=` params.
+	/// - `?lfgtypes=BOOLEAN` - Shorthand to include/exclude all the LFG types (Activity, Gaming, Dining, etc.) Acts the same as using multiple `type=` or `exludetype=` params.
+	/// - `?archived=BOOLEAN` - Show only archived Fezzes. Relevant for Seamail only.
 	///
 	/// Moderators and above can use the `foruser` query parameter to access pseudo-accounts:
 	///
@@ -970,8 +972,11 @@ struct FezController: APIRouteCollection {
 		guard fez.fezType.isSeamailType else {
 			throw Abort(.badRequest, reason: "only seamails can be archived")
 		}
+		guard effectiveUser.userID == cacheUser.userID else {
+			throw Abort(.badRequest, reason: "privileged seamails cannot be archived")
+		}
 		guard let fezParticipant = try await fez.$participants.$pivots.query(on: req.db)
-				.filter(\.$user.$id == effectiveUser.userID).first() else {
+				.filter(\.$user.$id == cacheUser.userID).first() else {
 			throw Abort(.forbidden, reason: "user is not a member of this fez")
 		}
 
@@ -1031,8 +1036,11 @@ struct FezController: APIRouteCollection {
 		guard fez.fezType.isSeamailType else {
 			throw Abort(.badRequest, reason: "only seamails can be archived")
 		}
+		guard effectiveUser.userID == cacheUser.userID else {
+			throw Abort(.badRequest, reason: "privileged seamails cannot be archived")
+		}
 		guard let fezParticipant = try await fez.$participants.$pivots.query(on: req.db)
-				.filter(\.$user.$id == effectiveUser.userID).first() else {
+				.filter(\.$user.$id == cacheUser.userID).first() else {
 			throw Abort(.forbidden, reason: "user is not a member of this fez")
 		}
 
@@ -1102,6 +1110,9 @@ extension FezController {
 		if let matchID = urlQuery.matchID {
 			query.filter(\.$id == matchID)
 		}
+
+		query.filter(FezParticipant.self, \.$isArchived == urlQuery.archived ?? false)
+
 		let fezCount = try await query.count()
 		let pivots = try await query.copy().sort(FezParticipant.self, \.$isMuted, .descending)
 			.sort(FriendlyFez.self, \.$updatedAt, .descending).range(urlQuery.calcRange()).all()
