@@ -507,8 +507,13 @@ struct FezController: APIRouteCollection {
 				}
 			}
 			else if participantUserID != cacheUser.userID {
-				if let pivot = try await getUserPivot(lfg: fez, userID: participantUserID, on: req.db), pivot.isMuted == true {
-					continue
+				if let pivot = try await getUserPivot(lfg: fez, userID: participantUserID, on: req.db) {
+					if pivot.isMuted == true {
+						continue
+					} else if pivot.isArchived {
+						pivot.isArchived = false
+						try await pivot.save(on: req.db)
+					}
 				}
 				participantNotifyList.append(participantUserID)
 			}
@@ -570,6 +575,7 @@ struct FezController: APIRouteCollection {
 				participantPivot.readCount -= 1
 				pivotNeedsSave = true
 			}
+			// If a post has been deleted, we don't care for the purposes of archived Fezzes.
 			if pivotNeedsSave {
 				try await participantPivot.save(on: req.db)
 			}
