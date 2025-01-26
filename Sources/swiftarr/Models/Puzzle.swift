@@ -82,7 +82,7 @@ struct CreatePuzzleSchema: AsyncMigration {
 			.field("answer", .string, .required)
 			.field("hints", .dictionary(of: .string), .required)
 			.field("hunt", .uuid, .required, .references("hunt", "id", onDelete: .cascade))
-			.field("unlock_time", .date)
+			.field("unlock_time", .datetime)
 			.create()
 	}
 
