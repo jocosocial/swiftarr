@@ -789,6 +789,23 @@ public struct ForumSearchData: Content {
 	var forumThreads: [ForumListData]
 }
 
+public struct HuntData: Content {
+	var huntID: UUID
+	var title: String
+	var description: String
+	var puzzles: [HuntPuzzleData]
+}
+
+public struct HuntPuzzleData: Content {
+	var puzzleID: UUID
+	var title: String
+	var description: String
+	/// The answer to this puzzle, if you have solved it (or are an admin)
+	var answer: String?
+	/// When this puzzle unlocked. If you are an admin, this may be in the future
+	var unlockTime: Date
+}
+
 /// Used to upload an image file or refer to an already-uploaded image. Either `filename` or `image` should always be set.
 /// If both are set, `filename` is ignored and `image` is processed and saved with a new name. A more Swift-y way to do this
 /// would be an Enum with associated values, except Codable support becomes a pain and makes it difficult to understand

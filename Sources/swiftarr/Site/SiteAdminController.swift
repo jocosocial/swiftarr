@@ -108,6 +108,8 @@ struct SiteAdminController: SiteControllerUtils {
 		privateAdminRoutes.post("karaoke", "reload", use: karaokePostHandler)
 		privateAdminRoutes.get("boardgames", use: boardGamesHandler)
 		privateAdminRoutes.post("boardgames", "reload", use: boardGamesPostHandler)
+		privateAdminRoutes.get("hunts", use: huntHandler)
+		privateAdminRoutes.post("hunts", "create", use: huntPostHandler)
 	}
 
 	// MARK: - Admin Pages
@@ -521,7 +523,7 @@ struct SiteAdminController: SiteControllerUtils {
 		return try await req.view.render("admin/serverRollup", ctx)
 	}
 
-// MARK: - TZ, Karaoke, Games
+// MARK: - TZ, Karaoke, Games, Hunts
 	// GET /admin/timezonechanges
 	//
 	// Shows the list of time zone changes that occur during the cruise.
@@ -586,6 +588,30 @@ struct SiteAdminController: SiteControllerUtils {
 	// probably via git push.
 	func boardGamesPostHandler(_ req: Request) async throws -> HTTPStatus {
 		try await apiQuery(req, endpoint: "/boardgames/reload", method: .POST)
+		return .ok
+	}
+
+	func huntHandler(_ req: Request) async throws -> View {
+		struct AdminHuntsContext: Encodable {
+			var trunk: TrunkContext
+
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "Hunts Admin", tab: .admin)
+			}
+		}
+		let ctx = try AdminHuntsContext(req)
+		return try await req.view.render("admin/hunts", ctx)
+	}
+
+	func huntPostHandler(_ req: Request) async throws -> HTTPStatus {
+		struct HuntPostContent: Codable {
+			let huntJson: String
+		}
+		let postStruct = try req.content.decode(HuntPostContent.self)
+		guard let jsonData = postStruct.huntJson.data(using: .utf8) else {
+			return .badRequest
+		}
+		try await apiQuery(req, endpoint: "/hunts/create", method: .POST, encodeContent: try JSONDecoder.custom(dates: .iso8601).decode(HuntCreateData.self, from: jsonData))
 		return .ok
 	}
 

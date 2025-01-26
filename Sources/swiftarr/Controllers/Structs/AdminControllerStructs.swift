@@ -168,6 +168,27 @@ public struct EventPerformerValidationData: Content {
 	var errors: [String]
 }
 
+public struct HuntCreateData: Content {
+	var title: String
+	var description: String
+	var puzzles: [HuntPuzzleCreateData]
+}
+
+public struct HuntPuzzleCreateData: Content {
+	var title: String
+	var body: String
+	var unlockTime: Date?
+	var answer: String
+	var hints: [String:String]
+}
+
+extension HuntCreateData: RCFValidatable {
+	func runValidations(using decoder: ValidatingDecoder) throws {
+		let tester = try decoder.validator(keyedBy: CodingKeys.self)
+		tester.validate(!puzzles.isEmpty, forKey: .puzzles, or: "Puzzles cannot be empty")
+	}
+}
+
 /// Returns the registration code associated with a user. Not all users have registration codes; e.g. asking for the reg code for 'admin' will return an error.
 public struct RegistrationCodeUserData: Content {
 	// User accounts associated with the reg code. First item in the array is the primary account.

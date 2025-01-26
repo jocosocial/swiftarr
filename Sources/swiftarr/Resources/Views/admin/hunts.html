@@ -1,0 +1,41 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+			<div class="row">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Hunts</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<div class="row my-1">
+				<div class="col">
+					Adds a Hunt
+				</div>
+			</div>
+			<form class="ajax" action="/admin/hunts/create" enctype="multipart/form-data" method="POST" data-successurl="reset" id="createHuntForm">
+				<div class="container-fluid">
+                    <div class="row"> 
+                        <textarea 
+                            class="form-control" 
+                            rows="10" 
+                            name="huntJson" 
+                            id="huntJson" 
+                            placeholder="Hunt JSON"></textarea>
+                    </div>
+                </div>
+                <div class="row mb-2">
+					<div class="col col-auto">
+						<button type="submit" class="btn btn-primary">Create Hunt<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+					</div>
+				</div>
+				<div class="alert alert-danger mt-3 d-none" role="alert">
+				</div>				
+				<div class="alert alert-success mt-3 d-none" role="alert">Success.</div>				
+			</form>
+    	</div>
+	#endexport
+#endextend

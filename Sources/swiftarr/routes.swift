@@ -17,6 +17,7 @@ public func routes(_ app: Application) throws {
 		EventController(),
 		FezController(),
 		ForumController(),
+		HuntController(),
 		ImageController(),
 		KaraokeController(),
 		TestController(),
