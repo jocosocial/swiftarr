@@ -18,6 +18,7 @@ let package = Package(
 		.package(url: "https://github.com/johnsundell/ink.git", from: "0.6.0"),
 		.package(url: "https://github.com/weichsel/ZIPFoundation.git", .upToNextMajor(from: "0.9.0")),
 		.package(url: "https://github.com/challfry/CoreXLSX.git", .upToNextMinor(from: "0.14.1")),
+	    .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.6.0"),
 	],
 	targets: [
 		.systemLibrary(name: "gd", pkgConfig: "gdlib", providers: [.apt(["libgd-dev"]), .brew(["gd"]), .yum(["gd-devel"])]),
@@ -37,6 +38,7 @@ let package = Package(
 				.product(name: "Prometheus", package: "swift-prometheus"),
 				.product(name: "Ink", package: "ink"),
 				.product(name: "CoreXLSX", package: "CoreXLSX"),
+				.product(name: "SwiftSoup", package: "SwiftSoup"),
 				"gd",
 				"jpeg",
 				"gdOverrides",

@@ -33,6 +33,8 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.get("serversettings", use: settingsHandler)
 		ttAuthGroup.get("rollup", use: serverRollupCounts)
 
+		ttAuthGroup.post("notifications", "reload", use: triggerConsistencyJobHandler)
+
 		// endpoints available for THO and Admin only
 		let thoAuthGroup = adminRoutes.tokenRoutes(minAccess: .tho)
 		thoAuthGroup.on(.POST, "dailytheme", "create", body: .collect(maxSize: "30mb"), use: addDailyThemeHandler)
@@ -197,6 +199,9 @@ struct AdminController: APIRouteCollection {
 		}
 		if let value = data.upcomingLFGNotificationSetting {
 			Settings.shared.upcomingLFGNotificationSetting = value
+		}
+		if let value = data.enableSiteNotificationDataCaching {
+			Settings.shared.enableSiteNotificationDataCaching = value
 		}
 		var localDisables = Settings.shared.disabledFeatures.value
 		for pair in data.enableFeatures {
@@ -735,6 +740,16 @@ struct AdminController: APIRouteCollection {
 		try await req.queue.dispatch(OnDemandScheduleUpdateJob.self, .init())
 		return .ok
 	}
+
+	/// `POST /api/v3/admin/notifications/reload`
+	///
+	/// Trigger an internal consistency check job for Redis data.
+	///
+	/// - Returns: HTTP 200 OK.
+	func triggerConsistencyJobHandler(_ req: Request) async throws -> HTTPStatus {
+		try await req.queue.dispatch(OnDemandUpdateRedisJob.self, .init())
+		return .ok
+	}
 	
 	// MARK: - Bulk User Update
 	
@@ -924,18 +939,7 @@ struct AdminController: APIRouteCollection {
 		var imageImportError: String?
 		do {
 			if let userImage = userToImport.userImage {
-				let archiveSource = try uploadUserDirPath().appendingPathComponent("Twitarr_userfile/userImages", isDirectory: true)
-						.appendingPathComponent(userImage)
-				let serverImageDest = Settings.shared.userImagesRootPath.appendingPathComponent(ImageSizeGroup.full.rawValue)
-						.appendingPathComponent(String(userImage.prefix(2)))
-						.appendingPathComponent(userImage)
-				if !FileManager.default.fileExists(atPath: serverImageDest.path) {
-					throw Abort(.badRequest, reason: "Source image file not found")
-				}
-				if !verifyOnly, !FileManager.default.fileExists(atPath: serverImageDest.path) {
-					try FileManager.default.copyItem(at: archiveSource, to: serverImageDest)
-				}
-				copiedUserImage = userImage
+				copiedUserImage = try await copyImage(userImage, verifyOnly: verifyOnly)
 			}
 		}
 		catch {
@@ -1067,18 +1071,7 @@ struct AdminController: APIRouteCollection {
 		var copiedUserImage: String?
 		do {
 			if let image = performerData.photo.filename {
-				let archiveSource = try uploadUserDirPath().appendingPathComponent("Twitarr_userfile/userImages", isDirectory: true)
-						.appendingPathComponent(image)
-				let serverImageDest = Settings.shared.userImagesRootPath.appendingPathComponent(ImageSizeGroup.full.rawValue)
-						.appendingPathComponent(String(image.prefix(2)))
-						.appendingPathComponent(image)
-				if !FileManager.default.fileExists(atPath: serverImageDest.path) {
-					throw Abort(.badRequest, reason: "Source image file not found")
-				}
-				if !verifyOnly, !FileManager.default.fileExists(atPath: serverImageDest.path) {
-					try FileManager.default.copyItem(at: archiveSource, to: serverImageDest)
-				}
-				copiedUserImage = image
+				copiedUserImage = try await copyImage(image, verifyOnly: verifyOnly)
 			}
 		}
 		catch {
@@ -1136,6 +1129,27 @@ struct AdminController: APIRouteCollection {
 			verification.otherErrors.append("Error when importing Performer \"\(performerData.name)\": \(error.localizedDescription)")
 			verification.performerCounts.errorCount += 1
 		}
+	}
+
+	// Copy an image from the uploaded data bundle to the expected location on the filesystem.
+	func copyImage(_ image: String, verifyOnly: Bool) async throws -> String {
+		let archiveSource = try uploadUserDirPath().appendingPathComponent("Twitarr_userfile/userImages", isDirectory: true)
+				.appendingPathComponent(image)
+		let serverImageDestDir = Settings.shared.userImagesRootPath.appendingPathComponent(ImageSizeGroup.full.rawValue)
+				.appendingPathComponent(String(image.prefix(2)))
+		let serverImageDest = serverImageDestDir.appendingPathComponent(image)
+		if !FileManager.default.fileExists(atPath: archiveSource.path) {
+			throw Abort(.badRequest, reason: "Source image file not found")
+		}
+		if !verifyOnly, !FileManager.default.fileExists(atPath: serverImageDest.path) {
+			// Testing this requires copying from Computer A to Computer B or otherwise
+			// wiping the local images directory.
+			if (!FileManager.default.fileExists(atPath: serverImageDestDir.path)) {
+				try FileManager.default.createDirectory(at: serverImageDestDir, withIntermediateDirectories: true)
+			}
+			try FileManager.default.copyItem(at: archiveSource, to: serverImageDest)
+		}
+		return image
 	}
 
 	// Gets the path where the uploaded schedule is kept. Only one schedule file can be in the hopper at a time.

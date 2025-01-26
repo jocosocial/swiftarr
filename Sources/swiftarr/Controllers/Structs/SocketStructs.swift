@@ -80,7 +80,7 @@ struct SocketNotificationData: Content {
 		case announcement
 		
 // Added to Chat - only fires when someone else adds you to their chat
-// Note: I'm specifically not making notificaitons for "Removed From Chat" because: it can feel mean to receive that notification, and
+// Note: I'm specifically not making notifications for "Removed From Chat" because: it can feel mean to receive that notification, and
 // there's nowhere for the notification to take the user. 
 		///  Only for 'open' seamails. The owner of the chata has added this user.
 		case addedToSeamail
@@ -88,6 +88,10 @@ struct SocketNotificationData: Content {
 		case addedToLFG
 		/// The creator of the event has added this user.
 		case addedToPrivateEvent
+		/// A Private Event the user has joined has been canceled.
+		case privateEventCanceled
+		/// An LFG the user has joined has been canceled.
+		case lfgCanceled
 		
 // New Chat Messages
 		/// A participant in a Chat the user is a member of has posted a new message.
@@ -159,8 +163,12 @@ extension SocketNotificationData {
 		case .chatUnreadMsg(_, let chatType) where chatType.isSeamailType: self.type = .seamailUnreadMsg
 		case .chatUnreadMsg(_, let chatType) where chatType.isLFGType: self.type = .fezUnreadMsg
 		case .chatUnreadMsg(_, let chatType) where chatType.isPrivateEventType: self.type = .privateEventUnreadMsg
-		case .chatUnreadMsg: self.type = .addedToSeamail
+		case .chatUnreadMsg: self.type = .seamailUnreadMsg
 		
+		case .chatCanceled(_, let chatType) where chatType.isLFGType: self.type = .lfgCanceled
+		case .chatCanceled(_, let chatType) where chatType.isPrivateEventType: self.type = .privateEventCanceled
+		case .chatCanceled: self.type = .lfgCanceled
+
 		// nextFollowedEventTime and nextJoinedLFGTime are not a socket event, so is this OK?
 		case .nextFollowedEventTime: self.type = .followedEventStarting
 		case .followedEventStarting: self.type = .followedEventStarting

@@ -178,3 +178,11 @@ associated AddedToChat field value increase.
 * UserNotificationData has a new `PrivateEventMessageCount` field
 * SocketNotificationData has new `addedTo...` message types
 
+## Dec 25, 2024
+* `CategoryData` now implements `Paginator`, removes `numThreads`
+
+## Jan 01, 2025
+* New admin endpoint `POST /api/v3/admin/notifications/reload` to trigger the Redis consistency checker.
+
+## Jan 03, 2025
+* `/api/v3/boardgames/recommend` is now a `POST` rather than a `GET` with the same request body.

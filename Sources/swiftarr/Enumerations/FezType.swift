@@ -42,7 +42,7 @@ enum FezType: String, CaseIterable, Codable {
 		[.open, .closed]
 	}
 	var isSeamailType: Bool {
-		FezType.lfgTypes.contains(self)
+		FezType.seamailTypes.contains(self)
 	}
 	
 	/// Types that are Private Events.

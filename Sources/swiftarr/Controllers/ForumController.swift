@@ -120,7 +120,9 @@ struct ForumController: APIRouteCollection {
 		}
 		// return as CategoryData
 		return try sortedCats.map {
-			try CategoryData($0, restricted: $0.accessLevelToCreate > effectiveAccessLevel)
+			// This instance of the paginator uses the Category.forumCount from the database
+			// since we don't know what the user has requested yet. Used to be Category.numThreads.
+			try CategoryData($0, restricted: $0.accessLevelToCreate > effectiveAccessLevel, paginator: Paginator(total: Int($0.forumCount), start: 0, limit: 50))
 		}
 	}
 
@@ -167,10 +169,9 @@ struct ForumController: APIRouteCollection {
 		// remove blocks from results, unless it's an admin category
 		let blocked = category.accessLevelToCreate.hasAccess(.moderator) ? [] : cacheUser.getBlocks()
 		// sort user categories
-		let query = try Forum.query(on: req.db)
+		let countQuery = try Forum.query(on: req.db)
 			.filter(\.$category.$id == category.requireID())
 			.filter(\.$creator.$id !~ blocked)
-			.range(start..<(start + limit))
 			.join(ForumReaders.self, on: \Forum.$id == \ForumReaders.$forum.$id, method: .left)
 			.join(
 				Forum.self,
@@ -186,7 +187,7 @@ struct ForumController: APIRouteCollection {
 			.sort(ForumReaders.self, \.$isMuted, .descending)
 			.sort(Forum.self, \.$pinned, .descending)
 		if category.isEventCategory {
-			_ = query.join(child: \.$scheduleEvent, method: .left)
+			_ = countQuery.join(child: \.$scheduleEvent, method: .left)
 			// https://github.com/jocosocial/swiftarr/issues/199
 			// .withDeleted() applies to the entire query, not just the joined table.
 			// So simply slapping that on there would continue to display deleted Forums
@@ -200,42 +201,48 @@ struct ForumController: APIRouteCollection {
 		var dateFilterUsesUpdate = false
 		let orderDirection = req.orderDirection()
 		switch req.query[String.self, at: "sort"] {
-		case "create": _ = query.sort(\.$createdAt, orderDirection ?? .descending)
-		case "title": _ = query.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
+		case "create": _ = countQuery.sort(\.$createdAt, orderDirection ?? .descending)
+		case "title": _ = countQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
 		case "update":
-			_ = query.sort(\.$lastPostTime, orderDirection ?? .descending)
+			_ = countQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 			dateFilterUsesUpdate = true
 		default:
 			if category.isEventCategory {
 				// Sort by event start time
-				_ = query.sort(Event.self, \Event.$startTime, orderDirection ?? .ascending).sort(Event.self, \Event.$title, orderDirection ?? .ascending)
+				_ = countQuery.sort(Event.self, \Event.$startTime, orderDirection ?? .ascending).sort(Event.self, \Event.$title, orderDirection ?? .ascending)
 			}
 			else {
-				_ = query.sort(\.$lastPostTime, orderDirection ?? .descending)
+				_ = countQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 				dateFilterUsesUpdate = true
 			}
 		}
 		if let beforeDate = req.query[Date.self, at: "beforedate"] {
 			if dateFilterUsesUpdate {
-				query.filter(\.$lastPostTime < beforeDate)
+				countQuery.filter(\.$lastPostTime < beforeDate)
 			}
 			else {
-				query.filter(\.$createdAt < beforeDate)
+				countQuery.filter(\.$createdAt < beforeDate)
 			}
 		}
 		else if let afterDate = req.query[Date.self, at: "afterdate"] {
 			if dateFilterUsesUpdate {
-				query.filter(\.$lastPostTime > afterDate)
+				countQuery.filter(\.$lastPostTime > afterDate)
 			}
 			else {
-				query.filter(\.$createdAt > afterDate)
+				countQuery.filter(\.$createdAt > afterDate)
 			}
 		}
-		let forums = try await query.all()
+		let forumsQuery = countQuery.copy().range(start..<(start + limit))
+		let forums = try await forumsQuery.all()
+		// We store the number of threads in a category in the database via Category.forumCount.
+		// But this is global and doesn't account for users blocks. For the purposes of Pagination
+		// we use the number of results from the query as the "forum count".
+		let forumCount = try await countQuery.count()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser)
 		return try CategoryData(
 			category,
 			restricted: category.accessLevelToCreate > cacheUser.accessLevel,
+			paginator: Paginator(total: forumCount, start: start, limit: limit),
 			forumThreads: forumList
 		)
 	}

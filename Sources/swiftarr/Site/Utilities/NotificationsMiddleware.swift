@@ -1,13 +1,13 @@
 import Vapor
 
 /// NotificationsMiddleware gets attached to Site routes, and periodically calls an API notification endpoint to get user notifications.
-/// The user notificaiton counts are then attached ot the user's Session.
+/// The user notification counts are then attached to the user's Session.
 ///
-/// This setup is not ideal as a user with multiple Sessions on different devices may see different notificaitons at different times.
+/// This setup is not ideal as a user with multiple Sessions on different devices may see different notifications at different times.
 ///
 /// Currently this code breaks the UI/API layer separation somewhat by looking at the authenticated User. If we do need to build separate UI and API
 /// servers, we can either:
-/// 	* Stop inspecting the `updatedAt `property; notificaitons will be sligihtly less realtime.
+/// 	* Stop inspecting the `updatedAt `property; notifications will be sligihtly less realtime.
 ///		* Add a webSocket betwen the UI and API, pass usernames that have new notifications as they happen.
 ///		* Use Redis pub/sub
 ///		* Really, the communication is one-way -- perhaps build a server endpoint in the UI code and the API layer acts as a client to call it?
@@ -26,7 +26,7 @@ struct NotificationsMiddleware: AsyncMiddleware, SiteControllerUtils {
 				let lastCheckInterval = Double(lastCheckTimeStr)
 			{
 				let lastCheckDate = Date(timeIntervalSince1970: lastCheckInterval)
-				if lastCheckDate.timeIntervalSinceNow > -60.0 {
+				if lastCheckDate.timeIntervalSinceNow > -60.0 && Settings.shared.enableSiteNotificationDataCaching {
 					return try await next.respond(to: req)
 				}
 			}

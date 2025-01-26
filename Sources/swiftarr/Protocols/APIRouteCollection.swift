@@ -58,7 +58,7 @@ extension RoutesBuilder {
 	}
 }
 
-protocol APIRouteCollection {
+protocol APIRouteCollection: APICollection {
 	func registerRoutes(_ app: Application) throws
 }
 
@@ -155,9 +155,13 @@ extension APIRouteCollection {
 	//
 	// The users array should be pre-filtered to include only those who can actually see the new content (that is, not
 	// blocking or muting it, or not in the group that receives the content).
+	// The only exception to this should be when determining whether to addNotifications for privileged
+	// users. Example: the list of all mods/twitarrteam are calculated deeper within this function.
+	// There are situations where it is inappropriate to generate a notification for the user that
+	// did something. In that situation, the creatorID can be used to avoid notifying one person.
 	//
 	// Adding a new notification will also send out an update to all relevant users who are listening on notification sockets.
-	func addNotifications(users: [UUID], type: NotificationType, info: String, on req: Request) async throws {
+	func addNotifications(users: [UUID], type: NotificationType, info: String, creatorID: UUID? = nil, on req: Request) async throws {
 		try await withThrowingTaskGroup(of: Void.self) { group -> Void in
 			var forwardToSockets = true
 			// Members of `users` get push notifications
@@ -169,10 +173,16 @@ extension APIRouteCollection {
 				group.addTask { try await req.redis.resetActiveAnnouncementIDs() }
 
 			case .addedToChat(let msgID, let chatType):
-				stateChangeUsers = bookkeepUserAddedToChat(req: req, msgID: msgID, chatType: chatType, users: users, group: &group)
-			
+				stateChangeUsers = bookkeepUserAddedToChat(
+					req: req,
+					msgID: msgID,
+					chatType: chatType,
+					users: users,
+					group: &group
+				)
+
 			case .chatUnreadMsg(let msgID, let chatType):
-				stateChangeUsers = bookkeepNewChatMessage(req: req, msgID: msgID, chatType: chatType, users: users, group: &group)
+				stateChangeUsers = bookkeepNewChatMessage(req: req, msgID: msgID, chatType: chatType, users: users, group: &group, creatorID: creatorID)
 
 			case .nextFollowedEventTime(let date, let id):
 				for userID in users {
@@ -208,7 +218,7 @@ extension APIRouteCollection {
 				for userID in users {
 					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
-			case .followedEventStarting(_), .joinedLFGStarting(_), .personalEventStarting(_):
+			case .followedEventStarting(_), .joinedLFGStarting(_), .personalEventStarting(_), .chatCanceled(_, _):
 				break
 			case .microKaraokeSongReady(_):
 				for userID in users {
@@ -218,7 +228,12 @@ extension APIRouteCollection {
 
 			if forwardToSockets {
 				// Send a message to all involved users with open websockets.
-				await req.application.notificationSockets.forwardToSockets(app: req.application, idList: users, type: type, info: info)
+				await req.application.notificationSockets.forwardToSockets(
+					app: req.application,
+					idList: users,
+					type: type,
+					info: info
+				)
 			}
 
 			let stateChangeUsersCopy = stateChangeUsers
@@ -229,8 +244,13 @@ extension APIRouteCollection {
 		}
 	}
 
-	func bookkeepUserAddedToChat(req: Request, msgID: UUID, chatType: FezType, users: [UUID],
-			group: inout ThrowingTaskGroup<Void, Error>) -> [UUID] {
+	func bookkeepUserAddedToChat(
+		req: Request,
+		msgID: UUID,
+		chatType: FezType,
+		users: [UUID],
+		group: inout ThrowingTaskGroup<Void, Error>
+	) -> [UUID] {
 		var updateCountsUsers = users
 		// For seamail msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
 		// update counts list. This is so all team members have individual read counts.
@@ -253,7 +273,7 @@ extension APIRouteCollection {
 			}
 		}
 		// Users who aren't "moderator" and are in the thread see it as a normal thread.
-		let inbox = Request.Redis.MailInbox.mailboxForChatType(type: chatType)
+		let inbox = MailInbox.mailboxForChatType(type: chatType)
 		for userID in users {
 			group.addTask { try await req.redis.userAddedToChat(chatID: msgID, userID: userID, inbox: inbox) }
 		}
@@ -261,12 +281,15 @@ extension APIRouteCollection {
 	}
 
 	func bookkeepNewChatMessage(req: Request, msgID: UUID, chatType: FezType, users: [UUID],
-			group: inout ThrowingTaskGroup<Void, Error>) -> [UUID] {
+			group: inout ThrowingTaskGroup<Void, Error>, creatorID: UUID? = nil) -> [UUID] {
 		var updateCountsUsers = users
 		// For seamail msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
 		// update counts list. This is so all team members have individual read counts.
+		//
+		// To avoid generating notifications for the user who created the new chat message,
+		// pass their ID in via the creatorID to omit them from generating the messages.
 		if let mod = req.userCache.getUser(username: "moderator"), users.contains(mod.userID) {
-			let modList = req.userCache.allUsersWithAccessLevel(.moderator).map { $0.userID }
+			let modList = req.userCache.allUsersWithAccessLevel(.moderator).filter({ $0.userID != creatorID }).map { $0.userID }
 			updateCountsUsers.append(contentsOf: modList)
 			for modUserID in modList {
 				group.addTask {
@@ -275,7 +298,7 @@ extension APIRouteCollection {
 			}
 		}
 		if let ttUser = req.userCache.getUser(username: "TwitarrTeam"), users.contains(ttUser.userID) {
-			let ttList = req.userCache.allUsersWithAccessLevel(.twitarrteam).map { $0.userID }
+			let ttList = req.userCache.allUsersWithAccessLevel(.twitarrteam).filter({ $0.userID != creatorID }).map { $0.userID }
 			updateCountsUsers.append(contentsOf: ttList)
 			for ttUserID in ttList {
 				group.addTask {
@@ -284,8 +307,9 @@ extension APIRouteCollection {
 			}
 		}
 		// Users who aren't "moderator" and are in the thread see it as a normal thread.
-		let inbox = Request.Redis.MailInbox.mailboxForChatType(type: chatType)
-		for userID in users {
+		let inbox = MailInbox.mailboxForChatType(type: chatType)
+		let actualUsers = users.filter({ $0 != creatorID })
+		for userID in actualUsers {
 			group.addTask { try await req.redis.newUnreadMessage(chatID: msgID, userID: userID, inbox: inbox) }
 		}
 		return updateCountsUsers
@@ -373,7 +397,7 @@ extension APIRouteCollection {
 					)
 				}
 			case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting,
-				.personalEventStarting:
+				.personalEventStarting, .chatCanceled:
 				break
 			case .microKaraokeSongReady(_):
 				// There is currently no method by which songs become not-ready. But,
@@ -432,7 +456,7 @@ extension APIRouteCollection {
 				try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)
 			}
 		case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting,
-			.personalEventStarting:
+			.personalEventStarting, .chatCanceled:
 			return  // Can't be cleared
 		case .microKaraokeSongReady:
 			try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)
@@ -441,37 +465,11 @@ extension APIRouteCollection {
 	}
 
 	// Calculates the start time of the earliest future followed event. Caches the value in Redis for quick access.
+	// The "current" reference date depends on a setting whether to operate in "real time" (aka what you the human
+	// reading this comment right now experience as the current date), or "cruise time" (aka what someone experienced)
+	// on board in the past or in the future.
 	func storeNextFollowedEvent(userID: UUID, on req: Request) async throws -> (Date, UUID)? {
-		let cruiseStartDate = Settings.shared.cruiseStartDate()
-		var filterDate = Date()
-		// If the cruise is in the future or more than 10 days in the past, construct a fake date during the cruise week
-		let secondsPerDay = 24 * 60 * 60.0
-		if cruiseStartDate.timeIntervalSinceNow > 0
-			|| cruiseStartDate.timeIntervalSinceNow < 0 - Double(Settings.shared.cruiseLengthInDays) * secondsPerDay
-		{
-			// This filtering nonsense is whack. There is a way to do .DateComponents() without needing the in: but then you
-			// have to specify the Calendar.Components that you want. Since I don't have enough testing around this I'm going
-			// to keep pumping the timezone in which lets me bypass that requirement.
-			let cal = Settings.shared.getPortCalendar()
-			var filterDateComponents = cal.dateComponents(in: Settings.shared.portTimeZone, from: cruiseStartDate)
-			let currentDateComponents = cal.dateComponents(in: Settings.shared.portTimeZone, from: Date())
-			filterDateComponents.hour = currentDateComponents.hour
-			filterDateComponents.minute = currentDateComponents.minute
-			filterDateComponents.second = currentDateComponents.second
-			filterDate = cal.date(from: filterDateComponents) ?? Date()
-			if let currentDayOfWeek = currentDateComponents.weekday {
-				let daysToAdd = (7 + currentDayOfWeek - Settings.shared.cruiseStartDayOfWeek) % 7
-				if let adjustedDate = cal.date(byAdding: .day, value: daysToAdd, to: filterDate) {
-					filterDate = adjustedDate
-				}
-			}
-		}
-		let nextFavoriteEvent = try await Event.query(on: req.db)
-			.filter(\.$startTime > filterDate)
-			.sort(\.$startTime, .ascending)
-			.join(EventFavorite.self, on: \Event.$id == \EventFavorite.$event.$id)
-			.filter(EventFavorite.self, \.$user.$id == userID)
-			.first()
+		let nextFavoriteEvent = try await getNextFollowedEvent(userID: userID, db: req.db)
 		// This will "clear" the next Event values of the UserNotificationData if no Events match the
 		// query (which is to say there is no next Event). Thought about using subtractNotifications()
 		// but this just seems easier for now.
@@ -488,18 +486,8 @@ extension APIRouteCollection {
 	}
 
 	// Calculates the start time of the earliest future joined LFG. Caches the value in Redis for quick access.
-	// LFGs are stored in real-week time (not cruise-week time) so this doesn't need all of the date/time
-	// calculations like storeNextFollowedEvent() above.
 	func storeNextJoinedAppointment(userID: UUID, on req: Request) async throws -> (Date, UUID)? {
-		let filterDate = Date()
-		let nextJoinedLFG = try await FriendlyFez.query(on: req.db)
-			.join(FezParticipant.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
-			.filter(FezParticipant.self, \.$user.$id == userID)
-			.filter(\.$fezType !~ [.open, .closed])
-			.filter(\.$startTime != nil)
-			.filter(\.$startTime > filterDate)
-			.sort(\.$startTime, .ascending)
-			.first()
+		let nextJoinedLFG = try await getNextAppointment(userID: userID, db: req.db)
 		// This will "clear" the next LFG values of the UserNotificationData if no LFGs match the
 		// query (which is to say there is no next LFG). Thought about using subtractNotifications()
 		// but this just seems easier for now.

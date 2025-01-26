@@ -9,7 +9,7 @@ import Vapor
 ///
 /// Unlike Postgres with Fluent, Redis doesn't provide us with a centralized data model for how the db is structured. Having code all over the app
 /// call hset directly makes it difficult to answer questions like, "What fields should exist in this hash set?" So, all that is centralized here.
-extension Request.Redis {
+extension RedisClient {
 	// MARK: Notification State Change
 	//
 	// Every user session keeps track of the notifications for that user, as basically every page in the UI has
@@ -125,7 +125,9 @@ extension Request.Redis {
 	// We use an ordered set because zrangebylex lets us query for all hashtags that start with a substring, but that only
 	// works when all the scores are the same. It'd be nicer if we could increment a tag's score each time it's used, and
 	// getHashtags could then return tags matching a substring, ordered by frequency of use.
-	static let hashtagsRedisKey = RedisKey("hashtags")
+	static var hashtagsRedisKey: RedisKey {
+		return RedisKey("hashtags")
+	}
 
 	func getHashtags(matching: String) async throws -> [String] {
 		let strings = try await zrangebylex(
@@ -155,7 +157,9 @@ extension Request.Redis {
 	// Each time a user modifies their alertwords, rebuild a Redis key, set with all alertwords
 	// This way, each alert could have a count field, and each pivot could have a 'seenCount' field.
 
-	static let alertwordsRedisKey = RedisKey("alertwords")
+	static var alertwordsRedisKey: RedisKey {
+		RedisKey("alertwords")
+	}
 
 	func getAlertwordUsersRedisKey(_ word: String) -> RedisKey {
 		return RedisKey("alertwordUsers-\(word)")
@@ -195,7 +199,9 @@ extension Request.Redis {
 	//
 	// Each announcement gets a monotonically increasing ID, and announcements have an 'end time' where they
 	// automatically stop being shown. This lets us quickly get the currently-active announcement IDs.
-	static let activeAnnouncementRedisKey = RedisKey("ActiveAnnouncementIDs")
+	static var activeAnnouncementRedisKey: RedisKey {
+		return RedisKey("ActiveAnnouncementIDs")
+	}
 
 	func getActiveAnnouncementIDs() async throws -> [Int]? {
 		let alertIDStr = try await get(Request.Redis.activeAnnouncementRedisKey, as: String.self).get()
@@ -218,51 +224,13 @@ extension Request.Redis {
 		_ = try await delete(Request.Redis.activeAnnouncementRedisKey).get()
 	}
 
-	// MARK: Seamails
-	//
-	// Each user has up to 4 Redis keys for tracking unread seamail and LFG messages. Each key roughly translates to
-	// a mailbox. Each key is a hash associating the UUID of a message thread with the # of messages the user hasn't
-	// read. This means each user with mod privledges has their own counts of the moderator seamails they haven't read.
-	// This also means that given a seamail thread that has both @moderator and Alice (a mod user) in the thread, Alice
-	// will have 2 separate unread notifications for this email.
-	enum MailInbox {
-		case seamail
-		case moderatorSeamail
-		case twitarrTeamSeamail
-		case lfgMessages
-		case privateEvent
-		
-		// Does not attempt to match moderator or TwitarrTeam mailboxes. Generally in a group chat you need to notify
-		// on the seamail/lfg/pe mailbox for the user themselves and also (if they're a mod/TT) on the mod/TT inbox.
-		static func mailboxForChatType(type: FezType) -> MailInbox {
-			if type.isLFGType { 
-				return .lfgMessages 
-			}
-			else if type.isPrivateEventType {
-				return .privateEvent
-			}
-			return .seamail
-		}
-		
-		func unreadMailRedisKey(_ userID: UUID) -> RedisKey {
-			switch self {
-			case .seamail: return RedisKey("UnreadSeamails-\(userID)")
-			case .moderatorSeamail: return RedisKey("UnreadModSeamails-\(userID)")
-			case .twitarrTeamSeamail: return RedisKey("UnreadTTSeamails-\(userID)")
-			case .lfgMessages: return RedisKey("UnreadLFGs-\(userID)")
-			case .privateEvent: return RedisKey("UnreadPersonalEvents-\(userID)")
-			}
-		}
-	}
-
-
 	// This returns a tuple where the first Int is the number of chats the user has been added to but not yet viewed,
 	// and the second Int is number of chats with unread messages (not the total number of unread messages).
 	func getChatUnreadCounts(userID: UUID, inbox: MailInbox) async throws -> (Int, Int) {
 		let hash = try await hvals(in: inbox.unreadMailRedisKey(userID), as: Int.self).get()
 		let counts = hash.reduce((0, 0)) {
 			if let hashVal = $1 {
-				if  hashVal > 9000 { 
+				if hashVal > 9000 {
 					return ($0.0 + 1, $0.1)
 				}
 				return ($0.0, $0.1 + 1)
@@ -272,15 +240,32 @@ extension Request.Redis {
 		return counts
 	}
 
+	// Get the unread message count for a given chat in a mailinbox for a user.
+	// nil if the value or chat does not exist.
+	func getChatUnreadCount(_ chatID: UUID, for userID: UUID, in inbox: MailInbox) async throws -> Int? {
+		return try await hget(chatID.uuidString, from: inbox.unreadMailRedisKey(userID), as: Int.self).get()
+	}
+
+	// This returns an array of UUIDs representing each Chat ID that is unread according to Redis.
+	func getUnreadChats(userID: UUID, inbox: MailInbox) async throws -> [UUID] {
+		let keys = try await hkeys(in: inbox.unreadMailRedisKey(userID)).get()
+		return keys.compactMap { UUID(uuidString: $0) }
+	}
+
 	// `type` must be a Chat notification type. Marks the given chat as fully read.
 	func markChatRead(type: NotificationType, in inbox: MailInbox? = nil, userID: UUID) async throws {
 		switch type {
 		case .chatUnreadMsg(_, let chatType), .addedToChat(_, let chatType):
 			let actualInbox = (inbox ?? MailInbox.mailboxForChatType(type: chatType))
-//			_ = try await hset(type.redisFieldName(), to: 0, in: actualInbox.unreadMailRedisKey(userID)).get()
+			//			_ = try await hset(type.redisFieldName(), to: 0, in: actualInbox.unreadMailRedisKey(userID)).get()
 			_ = try await hdel(type.redisFieldName(), from: actualInbox.unreadMailRedisKey(userID)).get()
 		default: break
 		}
+	}
+
+	// Mark a given chat as fully read in Redis.
+	func markChatRead(_ fezID: UUID, in inbox: MailInbox, for userID: UUID) async throws {
+		_ = try await hdel(String(fezID), from: inbox.unreadMailRedisKey(userID)).get()
 	}
 
 	// Call this when a user is added to a chat. In the key "Unread<mailboxname>-<userID>", sets the value
@@ -296,7 +281,7 @@ extension Request.Redis {
 		_ = try await hincrby(1, field: chatID.uuidString, in: inbox.unreadMailRedisKey(userID)).get()
 	}
 
-	// Call this when a message in a LFG or seamail is deleted. 
+	// Call this when a message in a LFG or seamail is deleted.
 	func deletedUnreadMessage(msgID: UUID, userID: UUID, inbox: MailInbox) async throws {
 		_ = try await hincrby(-1, field: msgID.uuidString, in: inbox.unreadMailRedisKey(userID)).get()
 	}
@@ -333,9 +318,6 @@ extension Request.Redis {
 		let blocks = try await smembers(of: redisKey, as: UUID.self).get()
 		return blocks.compactMap { $0 }
 	}
-}
-
-extension RedisClient {
 
 	// MARK: Settings
 	//
@@ -347,15 +329,14 @@ extension RedisClient {
 	func writeSetting(_ field: String, value: RESPValue) async throws -> Bool {
 		return try await hset(field, to: value, in: "Settings").get()
 	}
-}
 
-extension Application.Redis {
-
-	// Redis stores blocks as users you've blocked AND users who have blocked you,
-	// for all subaccounts of both you and the other user.
-	func getBlocks(for userUUID: UUID) async throws -> [UUID] {
-		let redisKey: RedisKey = "rblocks:\(userUUID.uuidString)"
-		let blocks = try await smembers(of: redisKey, as: UUID.self).get()
-		return blocks.compactMap { $0 }
+	// MARK: Special Purpose
+	//
+	// These should only be used for data consistency validation, not for general purpose.
+	//
+	// Sets the unread count
+	// for a given MailInbox for given user to a given value.
+	func setChatUnreadCount(_ value: Int, chatID: UUID, userID: UUID, inbox: MailInbox) async throws {
+		_ = try await hset(chatID.uuidString, to: value, in: inbox.unreadMailRedisKey(userID)).get()
 	}
 }

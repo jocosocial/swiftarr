@@ -148,6 +148,15 @@ struct FezController: APIRouteCollection {
 			let dayEnd = portCalendar.date(byAdding: .day, value: 1, to: dayStart) ?? Date()
 			fezQuery.filter(\.$startTime >= dayStart).filter(\.$startTime < dayEnd)
 		}
+		if var searchStr = urlQuery.search {
+			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
+				.replacingOccurrences(of: "%", with: "\\%")
+				.trimmingCharacters(in: .whitespacesAndNewlines)
+			fezQuery.group(.or) { group in
+				group.fullTextFilter(FriendlyFez.self, \.$title, searchStr)
+					.fullTextFilter(FriendlyFez.self, \.$info, searchStr)
+			}
+		}
 		let fezCount = try await fezQuery.count()
 		let fezzes = try await fezQuery.sort(\.$startTime, .ascending).sort(\.$title, .ascending)
 			.range(urlQuery.calcRange()).all()
@@ -244,6 +253,16 @@ struct FezController: APIRouteCollection {
 		if urlQuery.hidePast ?? false {
 			let searchStartTime = Settings.shared.timeZoneChanges.displayTimeToPortTime().addingTimeInterval(-3600)
 			query.filter(\.$startTime > searchStartTime)
+		}
+
+		if var searchStr = urlQuery.search {
+			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
+				.replacingOccurrences(of: "%", with: "\\%")
+				.trimmingCharacters(in: .whitespacesAndNewlines)
+			query.group(.or) { group in
+				group.fullTextFilter(FriendlyFez.self, \.$title, searchStr)
+					.fullTextFilter(FriendlyFez.self, \.$info, searchStr)
+			}
 		}
 
 		// get owned fezzes
@@ -399,6 +418,12 @@ struct FezController: APIRouteCollection {
 		guard fez.fezType != .closed else {
 			throw Abort(.badRequest, reason: "Cannot remove members to a closed chat")
 		}
+		// Don't allow privileged users looking at a privileged mailbox to attempt to remove
+		// the privileged user from a Chat. Without this check their removal action will silently
+		// be a no-op.
+		if cacheUser.accessLevel.hasAccess(.moderator), !fez.participantArray.contains(cacheUser.userID) {
+			throw Abort(.badRequest, reason: "Privileged users cannot leave a chat they are not part of themselves")
+		}
 		// Save a FezEditRecord containing the participant list before removal
 		let fezEdit = try FriendlyFezEdit(fez: fez, editorID: cacheUser.userID)
 		try await fezEdit.save(on: req.db)
@@ -488,7 +513,7 @@ struct FezController: APIRouteCollection {
 		if fez.fezType != .closed {
 			infoStr.append(" in \(fez.fezType.lfgLabel) \"\(fez.title)\".")
 		}
-		try await addNotifications(users: participantNotifyList, type: .chatUnreadMsg(fez.requireID(), fez.fezType), info: infoStr, on: req)
+		try await addNotifications(users: participantNotifyList, type: .chatUnreadMsg(fez.requireID(), fez.fezType), info: infoStr, creatorID: cacheUser.userID, on: req)
 		try await forwardPostToSockets(fez, post, on: req)
 		// A user posting is assumed to have read all prev posts. (even if this proves untrue, we should increment
 		// readCount as they've read the post they just wrote!)
@@ -612,8 +637,6 @@ struct FezController: APIRouteCollection {
 	/// Cancel a FriendlyFez. Owner only. Cancelling a Fez is different from deleting it. A canceled fez is still visible; members may still post to it.
 	/// But, a cenceled fez does not show up in searches for open fezzes, and should be clearly marked in UI to indicate that it's been canceled.
 	///
-	/// - Note: Eventually, cancelling a fez should notifiy all members via the notifications endpoint.
-	///
 	/// - Parameter fezID: in URL path.
 	/// - Throws: 403 error if user is not the fez owner. A 5xx response should be
 	///   reported as a likely bug, please and thank you.
@@ -624,12 +647,13 @@ struct FezController: APIRouteCollection {
 		guard fez.$owner.id == cacheUser.userID else {
 			throw Abort(.forbidden, reason: "user does not own this \(fez.fezType.lfgLabel)")
 		}
-		// FIXME: this should send out notifications
+		fez.cancelled = true
+		try await fez.save(on: req.db)
 		for fezParticipant in fez.participantArray {
 			_ = try await storeNextJoinedAppointment(userID: fezParticipant, on: req)
 		}
-		fez.cancelled = true
-		try await fez.save(on: req.db)
+		let cancelNotifyTargets = fez.participantArray.filter { $0 != cacheUser.userID }
+			try await addNotifications(users: cancelNotifyTargets, type: .chatCanceled(fez.requireID(), fez.fezType), info: "\(fez.title) has been canceled", on: req)
 		let pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
 			.first()
 		return try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
@@ -907,6 +931,12 @@ struct FezController: APIRouteCollection {
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
 			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
 		}
+		// Without this check Moderator A could mute a chat for all Moderators which
+		// doesn't feel super good. It's also a confusing UX and would require Help
+		// signage to work around. So we're just going to the option to do that.
+		guard effectiveUser.userID == cacheUser.userID else {
+			throw Abort(.badRequest, reason: "Privileged mailbox chats cannot be muted")
+		}
 		guard let fezParticipant = try await fez.$participants.$pivots.query(on: req.db)
 				.filter(\.$user.$id == effectiveUser.userID).first() else {
 			throw Abort(.forbidden, reason: "user is not a member of this fez")
@@ -971,7 +1001,7 @@ extension FezController {
 
 		if let dayFilter = req.query[Int.self, at: "cruiseday"] {
 			let portCalendar = Settings.shared.getPortCalendar()
-			if let dayStart = portCalendar.date(byAdding: .day, value: dayFilter - 1, to: Settings.shared.cruiseStartDate()),
+			if let dayStart = portCalendar.date(byAdding: .day, value: dayFilter, to: Settings.shared.cruiseStartDate()),
 					let dayEnd = portCalendar.date(byAdding: DateComponents(day: 1, hour: 3), to: dayStart) {
 				query.filter(FriendlyFez.self, \.$endTime >= dayStart).filter(FriendlyFez.self, \.$startTime < dayEnd)
 			}

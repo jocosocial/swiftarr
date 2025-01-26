@@ -15,62 +15,64 @@
 </head>
 <body style="background-image: url('/img/background.png'); background-size: 100%;">
 
-	<div class="sticky-top">
-		<nav class="navbar navbar-dark bg-light pt-3 mb-2" style="background-image: url('/img/header-waves.png'); background-repeat: repeat-x;">
-			<div class="container-fluid px-0">
-				<div class="row justify-content-between w-100 ms-3 me-2">
-					<div class="col-auto px-0">
-						<a class="nav-item nav-link link-light px-1
-								#if(trunk.tab == "home"): active#endif
-								#if(trunk.alertCounts.newAnnouncementCount > 0 || trunk.alertCounts.newPrivateEventMessageCount):
-									border-bottom border-danger
-								#endif"
-								href="/">
-							Today
-						</a>
-					</div>
-					<div class="col-auto px-0">
-						<a class="nav-item nav-link link-light px-1#if(trunk.tab == "forums"): active#endif" #if(trunk.tab == "forums"):aria-current="page"#endif href="/forums">
-							<span class="#if(trunk.alertCounts.newForumMentionCount > 0 || trunk.newForumAlertwords):border-bottom border-danger#endif">
-								Forums
-							</span>
-						</a>
-					</div>
-					<div class="col-auto px-0">
-						<a class="nav-item nav-link link-light px-1#if(trunk.tab == "seamail"): active#endif" #if(trunk.tab == "seamail"):aria-current="page"#endif href="/seamail">
-							<span #if(trunk.alertCounts.newSeamailMessageCount > 0):class="border-bottom border-danger"#endif>
-								Seamail
-							</span>
-						</a>
-					</div>
-					<div class="col-auto px-0">
-						<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "events"): active#endif" #if(trunk.tab == "events"):aria-current="page"#endif href="/events">
-							<span #if(trunk.eventStartingSoon == true):class="border-bottom border-danger"#endif>
-								Schedule
-							</span>
-						</a>
-					</div>
-					<div class="col-auto px-0">
-						<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "lfg"): active#endif" #if(trunk.tab == "lfg"):aria-current="page"#endif href="/lfg">
-							<span class="#if(trunk.alertCounts.newFezMessageCount > 0):border-bottom border-danger#endif">
-								LFG
-							</span>
-						</a>
-					</div>
-					<div class="col px-0"></div>
-					#if(import("hassearch")):
-						<div class="col-auto px-0 mt-1">
-							<span class="link-light navbar-brand me-0" data-bs-toggle="collapse" data-bs-target="\#searchBar" aria-controls="searchBar" aria-expanded="false" aria-label="Toggle Search Bar">
-								<img src="/img/searchIcon.png" width=24 height=24 alt="Search Bar">
-							</span>
+	#if(!hideHeaderBar):
+		<div class="sticky-top">
+			<nav class="navbar navbar-dark bg-light pt-3 mb-2" style="background-image: url('/img/header-waves.png'); background-repeat: repeat-x;">
+				<div class="container-fluid px-0">
+					<div class="row justify-content-between w-100 ms-3 me-2">
+						<div class="col-auto px-0">
+							<a class="nav-item nav-link link-light px-1
+									#if(trunk.tab == "home"): active#endif
+									#if(trunk.alertCounts.newAnnouncementCount > 0 || trunk.alertCounts.newPrivateEventMessageCount || trunk.alertCounts.moderatorData.newModeratorSeamailMessageCount > 0 || trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0 || alertCounts.moderatorData.newModeratorForumMentionCount > 0 || alertCounts.moderatorData.newTTForumMentionCount > 0):
+										border-bottom border-danger
+									#endif"
+									href="/">
+								Today
+							</a>
 						</div>
-					#endif
+						<div class="col-auto px-0">
+							<a class="nav-item nav-link link-light px-1#if(trunk.tab == "forums"): active#endif" #if(trunk.tab == "forums"):aria-current="page"#endif href="/forums">
+								<span class="#if(trunk.alertCounts.newForumMentionCount > 0 || trunk.newForumAlertwords):border-bottom border-danger#endif">
+									Forums
+								</span>
+							</a>
+						</div>
+						<div class="col-auto px-0">
+							<a class="nav-item nav-link link-light px-1#if(trunk.tab == "seamail"): active#endif" #if(trunk.tab == "seamail"):aria-current="page"#endif href="/seamail">
+								<span #if(trunk.alertCounts.newSeamailMessageCount > 0):class="border-bottom border-danger"#endif>
+									Seamail
+								</span>
+							</a>
+						</div>
+						<div class="col-auto px-0">
+							<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "events"): active#endif" #if(trunk.tab == "events"):aria-current="page"#endif href="/events">
+								<span #if(trunk.eventStartingSoon == true):class="border-bottom border-danger"#endif>
+									Schedule
+								</span>
+							</a>
+						</div>
+						<div class="col-auto px-0">
+							<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "lfg"): active#endif" #if(trunk.tab == "lfg"):aria-current="page"#endif href="/lfg">
+								<span class="#if(trunk.alertCounts.newFezMessageCount > 0):border-bottom border-danger#endif">
+									LFG
+								</span>
+							</a>
+						</div>
+						<div class="col px-0"></div>
+						#if(import("hassearch")):
+							<div class="col-auto px-0 mt-1">
+								<span class="link-light navbar-brand me-0" data-bs-toggle="collapse" data-bs-target="\#searchBar" aria-controls="searchBar" aria-expanded="false" aria-label="Toggle Search Bar">
+									<img src="/img/searchIcon.png" width=24 height=24 alt="Search Bar">
+								</span>
+							</div>
+						#endif
+					</div>
+					#import("searchform")
 				</div>
-				#import("searchform")
-			</div>
-		</nav>
-		#import("subheader")
-	</div>
+			</nav>
+			#import("subheader")
+		</div>
+	#endif
 	#if(trunk.minAccessLevel != nil):
     	<div class="container-md ms-0 mt-2">
 			<div class="alert alert-warning mt-3" role="alert">
