@@ -1,0 +1,35 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0">
+    		<div class="row align-items-center my-1">
+    			<div class="col col-auto">
+			    	<b>Hunts</b>
+				</div>
+    			<div class="col">
+				</div>
+			</div>
+			<div class="list-group">
+                #if(hunts.hunts.count == 0):
+                    <div class="list-group-item text-muted">
+                        No hunts have been created.
+                    </div>
+				#else:#for(hunt in hunts.hunts):
+					<a href="/hunts/#(hunt.huntID)" class="list-group-item list-group-item-action">
+						<div class="container-fluid">
+							<div class="row">
+								<div class="col fw-bold">
+									#(hunt.title)
+								</div>
+							</div>
+							<div class="row">
+								<div class="col text-muted">
+									#(hunt.description)
+								</div>
+							</div>
+						</div>
+					</a>
+				#endfor#endif
+			</div>
+		</div>
+    #endexport
+#endextend

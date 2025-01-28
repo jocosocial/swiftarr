@@ -22,6 +22,7 @@ struct TrunkContext: Encodable {
 		case admin
 		case time
 		case map
+		case hunts
 
 		case none
 	}

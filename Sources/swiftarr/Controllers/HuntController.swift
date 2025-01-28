@@ -9,9 +9,16 @@ struct HuntController: APIRouteCollection {
 		
 		// convenience route group for all /api/v3/hunt endpoints
 		let huntRoutes = app.grouped("api", "v3", "hunts")
+		let flexRoutes = huntRoutes.flexRoutes(feature: .hunts)
+		flexRoutes.get("", use: list)
 
 		let adminAuthGroup = huntRoutes.tokenRoutes(feature: .hunts, minAccess: .admin)
 		adminAuthGroup.post("create", use: addHunt)
+	}
+
+	func list(_ req: Request) async throws -> HuntListData {
+		let hunts = try await Hunt.query(on: req.db).sort(\.$title, .ascending).all()
+		return try HuntListData(hunts)
 	}
 
 	func addHunt(_ req: Request) async throws -> HTTPStatus {

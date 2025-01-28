@@ -791,6 +791,34 @@ public struct ForumSearchData: Content {
 	var forumThreads: [ForumListData]
 }
 
+/// Used to return a list of hunts.
+/// We probably don't have enough of them to require a paginator for now.
+/// Returned by:
+/// * `GET /api/v3/hunts`
+public struct HuntListData: Content {
+	var hunts: [HuntListItemData]
+}
+
+extension HuntListData {
+	init(_ hunts: [Hunt]) throws {
+		self.hunts = try hunts.map { try HuntListItemData($0) }
+	}
+}
+
+public struct HuntListItemData: Content {
+	var huntID: UUID
+	var title: String
+	var description: String
+}
+
+extension HuntListItemData {
+	init(_ hunt: Hunt) throws {
+		huntID = try hunt.requireID()
+		title = hunt.title
+		description = hunt.description
+	}
+}
+
 public struct HuntData: Content {
 	var huntID: UUID
 	var title: String
