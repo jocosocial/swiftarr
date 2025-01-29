@@ -1,6 +1,7 @@
+import Vapor
 /// The result of calling in a possible answer for a puzzle.
 
-public enum CallInResult: String, Codable, Sendable {
+enum CallInResult: String, Codable, Sendable {
   /// The call-in was not recognized
   case incorrect
 

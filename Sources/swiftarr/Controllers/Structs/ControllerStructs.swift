@@ -823,17 +823,49 @@ public struct HuntData: Content {
 	var huntID: UUID
 	var title: String
 	var description: String
+	/// Only contains puzzles which are unlocked
 	var puzzles: [HuntPuzzleData]
+	/// If any puzzles are locked, the time of the next one to unlock.
+	var nextUnlockTime: Date?
+}
+
+extension HuntData {
+	init(_ hunt: Hunt, _ puzzles: [Puzzle]) throws {
+		huntID = try hunt.requireID()
+		title = hunt.title
+		description = hunt.description
+		let now = Date()
+		self.puzzles = []
+		self.puzzles.reserveCapacity(puzzles.count)
+		for puzzle in puzzles {
+			if let unlockTime = puzzle.unlockTime, unlockTime > now {
+				nextUnlockTime = unlockTime
+				break
+			}
+			self.puzzles.append(try HuntPuzzleData(puzzle))
+		}
+	}
 }
 
 public struct HuntPuzzleData: Content {
 	var puzzleID: UUID
 	var title: String
-	var description: String
-	/// The answer to this puzzle, if you have solved it (or are an admin)
+	var body: String
+	/// The answer to this puzzle, if you have solved it
 	var answer: String?
-	/// When this puzzle unlocked. If you are an admin, this may be in the future
-	var unlockTime: Date
+	var unlockTime: Date?
+}
+
+extension HuntPuzzleData {
+	init(_ puzzle: Puzzle) throws {
+		puzzleID = try puzzle.requireID()
+		title = puzzle.title
+		body = puzzle.body
+		unlockTime = puzzle.unlockTime
+		if let callIn = try? puzzle.joined(PuzzleCallIn.self), let _ = try? callIn.requireID() {
+			answer = puzzle.answer
+		}
+	}
 }
 
 /// Used to upload an image file or refer to an already-uploaded image. Either `filename` or `image` should always be set.

@@ -13,11 +13,11 @@ final class PuzzleCallIn: Model, @unchecked Sendable {
 	/// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
 
-  @Field(key: "raw_submission") var rawSubmission: String
+	@Field(key: "raw_submission") var rawSubmission: String
 
-  @Field(key: "normalized_submission") var normalizedSubmission: String
+	@Field(key: "normalized_submission") var normalizedSubmission: String
 
-  @Field(key: "result") var result: CallInResult
+	@Enum(key: "result") var result: CallInResult
 
 	// MARK: Relationships
 
@@ -43,8 +43,8 @@ final class PuzzleCallIn: Model, @unchecked Sendable {
 		self.$puzzle.id = try puzzle.requireID()
 		self.$puzzle.value = puzzle
 		self.rawSubmission = submission
-    self.normalizedSubmission = submission.normalizePuzzleAnswer()
-    self.result = result;
+		self.normalizedSubmission = submission.normalizePuzzleAnswer()
+		self.result = result;
 	}
 
 	init(_ userID: UUID, _ puzzle: Puzzle, _ submission: String, _ result: CallInResult) throws {
@@ -53,8 +53,8 @@ final class PuzzleCallIn: Model, @unchecked Sendable {
 		self.$puzzle.value = puzzle
 		self.$puzzle.value = puzzle
 		self.rawSubmission = submission
-    self.normalizedSubmission = submission.normalizePuzzleAnswer()
-    self.result = result;
+		self.normalizedSubmission = submission.normalizePuzzleAnswer()
+		self.result = result;
 	}
 }
 
@@ -62,15 +62,15 @@ struct CreatePuzzleCallInSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
     let callInResult = try await database.enum("call_in_result").read()
 		try await database.schema("puzzle+callin")
-			.id()
-			.unique(on: "user", "puzzle", "normalized_submission")
-			.field("created_at", .datetime)
-			.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
-			.field("puzzle", .uuid, .required, .references("puzzle", "id", onDelete: .cascade))
-      .field("raw_submission", .string, .required)
-			.field("normalized_submission", .string, .required)
-      .field("result", callInResult, .required)
-			.create()
+				.id()
+				.unique(on: "user", "puzzle", "normalized_submission")
+				.field("created_at", .datetime)
+				.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
+				.field("puzzle", .uuid, .required, .references("puzzle", "id", onDelete: .cascade))
+				.field("raw_submission", .string, .required)
+				.field("normalized_submission", .string, .required)
+				.field("result", callInResult, .required)
+				.create()
 	}
 
 	func revert(on database: Database) async throws {
