@@ -1,0 +1,65 @@
+#extend("trunk"):
+    #export("body"):
+        <div class="container-md ms-0">
+            <div class="row align-items-center my-1">
+                <div class="col col-12">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item" aria-current="page"><a href="/hunts">Hunts</a></li>
+                            <li class="breadcrumb-item" aria-current="page"><a href="/hunts/#(puzzle.huntID)">#(puzzle.huntTitle)</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">#(puzzle.title)</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+    		<div class="row mb-2">
+    			<div class="col col-12">
+    				#markdownTextTag(puzzle.body)
+				</div>
+			</div>
+            #if(trunk.userIsLoggedIn):
+                #if(!solved):
+                    <form class="ajax d-flex" action="/hunts/puzzles/#(puzzle.puzzleID)/callin" enctype="multipart/form-data" method="POST">
+                        <div class="input-group">
+                            <label class="visually-hidden" for="puzzleAnswer">Answer Submission</label>
+                            <input class="form-control" type="text" name="puzzleAnswer" id="puzzleAnswer" placeholder="Enter Answer Here" maxlength="100">
+                        </div>
+                        <button class="ms-2" type="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                #endif
+                #if(puzzle.callIns.count):
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Submission</th>
+                                <th>Time</th>
+                                <th>Result</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            #for(callIn in puzzle.callIns):
+                                <tr>
+                                    <td class="fw-bold">#(callIn.rawSubmission)</td>
+                                    <td>#localTime(callIn.creationTime)</td>
+                                    #if(callIn.correct):
+                                        <td class="text-uppercase text-success">#(callin.correct)</td>
+                                    #elseif(callIn.hint):
+                                        <td class="text-warning">#(callIn.hint)</td>
+                                    #else:
+                                        <td class="text-uppercase text-danger">incorrect</td>
+                                    #endif
+                                </tr>
+                            #endfor
+                        </tbody>
+                    </table>
+                #endif
+            #else:
+                <div class="row mb-2">
+                    <div class="col col-12">
+                        <a class="btn btn-outline-primary" href="/login">Login</a> to check your answers and track your progress.
+                    </div>
+                </div>
+            #endif
+		</div>
+    #endexport
+#endextend

@@ -4,7 +4,8 @@ struct SiteHuntController: SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws {
 		let openRoutes = getOpenRoutes(app, feature: .hunts)
 		openRoutes.get("hunts", use: huntsPageHandler).destination("the hunts")
-		openRoutes.get("hunts", huntIDParam, use: singleHuntPageHandler).destination("the hunts")
+		openRoutes.get("hunts", huntIDParam, use: singleHuntPageHandler)
+		openRoutes.get("hunts", "puzzles", puzzleIDParam, use: singlePuzzlePageHandler)
     }
 
     func huntsPageHandler(_ req: Request) async throws -> View {
@@ -36,5 +37,25 @@ struct SiteHuntController: SiteControllerUtils {
         let response = try await apiQuery(req, endpoint: "/hunts/\(huntID)")
         let ctx = SingleHuntPageContext(req, try response.content.decode(HuntData.self))
         return try await req.view.render("Hunts/hunt.html", ctx)
+    }
+
+    func singlePuzzlePageHandler(_ req: Request) async throws -> View {
+        struct SinglePuzzlePageContext: Encodable {
+            var trunk: TrunkContext
+            var puzzle: HuntPuzzleDetailData
+            var solved: Bool
+            init(_ req: Request, _ puzzle: HuntPuzzleDetailData) {
+                trunk = .init(req, title: "\(puzzle.title) | Puzzle", tab: .hunts)
+                self.puzzle = puzzle
+                solved = puzzle.callIns.contains { $0.correct != nil }
+            }
+        }
+		guard let puzzleID = req.parameters.get(puzzleIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw "Invalid puzzle ID"
+		}
+        let response = try await apiQuery(req, endpoint: "/hunts/puzzles/\(puzzleID)")
+        let ctx = SinglePuzzlePageContext(req, try response.content.decode(HuntPuzzleDetailData.self))
+        return try await req.view.render("Hunts/puzzle.html", ctx)
+
     }
 }

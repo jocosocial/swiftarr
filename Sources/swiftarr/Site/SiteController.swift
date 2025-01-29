@@ -653,6 +653,7 @@ extension SiteControllerUtils {
 	var performerIDParam: PathComponent { PathComponent(":performer_id") }
 	var personalEventIDParam: PathComponent { PathComponent(":personal_event_id") }
 	var huntIDParam: PathComponent { PathComponent(":hunt_id") }
+	var puzzleIDParam: PathComponent { PathComponent(":puzzle_id") }
 
 	@discardableResult func apiQuery<EncodableContent: Encodable>(
 		_ req: Request,

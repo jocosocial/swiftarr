@@ -12,6 +12,7 @@ struct HuntController: APIRouteCollection {
 		let flexRoutes = huntRoutes.flexRoutes(feature: .hunts)
 		flexRoutes.get("", use: list)
 		flexRoutes.get(huntIDParam, use: getHunt)
+		flexRoutes.get("puzzles", puzzleIDParam, use: getPuzzle)
 
 		let adminAuthGroup = huntRoutes.tokenRoutes(feature: .hunts, minAccess: .admin)
 		adminAuthGroup.post("create", use: addHunt)
@@ -37,6 +38,24 @@ struct HuntController: APIRouteCollection {
 					.value(.path(PuzzleCallIn.path(for: \.$result), schema: PuzzleCallIn.schema), .equal, .enumCase("correct"))])
 		}
 		return try HuntData(hunt, try await puzzlesQuery.all())
+	}
+
+	func getPuzzle(_ req: Request) async throws -> HuntPuzzleDetailData {
+		let user = req.auth.get(UserCacheData.self)
+		let puzzle = try await Puzzle.findFromParameter(puzzleIDParam, on: req) { query in
+			query.with(\.$hunt).group(.or) { group in
+				group.filter(\.$unlockTime == nil).filter(\.$unlockTime <= Date())
+			}
+		}
+		let puzzleID = try puzzle.requireID()
+		var callIns: [PuzzleCallIn] = []
+		if let user = user {
+			callIns = try await PuzzleCallIn.query(on: req.db)
+				.filter(\.$user.$id == user.userID)
+				.filter(\.$puzzle.$id == puzzleID)
+				.all()
+		}
+		return try HuntPuzzleDetailData(puzzle, callIns)
 	}
 
 	func addHunt(_ req: Request) async throws -> HTTPStatus {
