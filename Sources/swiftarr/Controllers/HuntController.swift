@@ -53,6 +53,7 @@ struct HuntController: APIRouteCollection {
 			callIns = try await PuzzleCallIn.query(on: req.db)
 				.filter(\.$user.$id == user.userID)
 				.filter(\.$puzzle.$id == puzzleID)
+				.sort(\.$createdAt)
 				.all()
 		}
 		return try HuntPuzzleDetailData(puzzle, callIns)
