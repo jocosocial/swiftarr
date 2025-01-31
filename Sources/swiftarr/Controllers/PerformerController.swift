@@ -120,7 +120,7 @@ struct PerformerController: APIRouteCollection {
 	
 // MARK: Modifying Performer Data
 		
-	/// `POST /api/v3/performer/forEvent/:event_id`
+	/// `POST /api/v3/performer/forevent/:event_id`
 	///
 	/// Creates or updates a Performer profile for the current user, associating them with the given event if they're not already associated with it. This method is only for
 	/// shadow events, but can be called by any verified user. Each user may only have one Performer associated with it, so if this user already has a Perfomer profile
@@ -182,7 +182,7 @@ struct PerformerController: APIRouteCollection {
 	}
 	
 	/// `POST /api/v3/performer/self/delete`
-	/// `DELETE /api/v3/events/self/performer`
+	/// `DELETE /api/v3/performer/self/performer`
 	/// 
 	///  Deletes a shadow event organizer's Performer record and any of their EventPerformer records (linking their Performer to their Events).
 	///  We haven't created a way to delete individual EventPerformer pivots. If a user signs up as an organizer of an event they're not organizing (wrong event, or

@@ -64,11 +64,12 @@ struct SitePerformerController: SiteControllerUtils {
 		globalRoutes.get("performers", use: officialPerformersPageHandler).setUsedForPreregistration()
 		globalRoutes.get("performer", performerIDParam, use: performerPageHandler).setUsedForPreregistration()
 		globalRoutes.get("performers", "shadow", use: shadowPerformersPageHandler).setUsedForPreregistration()
-		
+
 		let privateRoutes = getPrivateRoutes(app, feature: .performers)
 		privateRoutes.get("performer", "shadow", "addtoevent", eventIDParam, use: addEventOrganizer).setUsedForPreregistration()
 		privateRoutes.post("performer", "shadow", "add", eventIDParam, use: postAddEventOrganizer).setUsedForPreregistration()
-		
+		privateRoutes.post("performer", "self", "delete", use: selfPerformerDeleteHandler).setUsedForPreregistration()
+
 		let ttRoutes = getPrivateRoutes(app, feature: .performers, minAccess: .twitarrteam)
 		ttRoutes.get("admin", "performer", "root", use: getPerformersRoot)
 		ttRoutes.get("admin", "performer", "add", use: upsertPerformer)
@@ -190,6 +191,13 @@ struct SitePerformerController: SiteControllerUtils {
 				overrideIsOfficial: false)
 		try await apiQuery(req, endpoint: "/performer/forevent/\(eventID)", method: .POST, encodeContent: uploadData)
 		return .ok
+	}
+
+	// `POST /performer/self/delete`
+	//
+	func selfPerformerDeleteHandler(_ req: Request) async throws -> HTTPStatus {
+		let response = try await apiQuery(req, endpoint: "/performer/self", method: .DELETE)
+		return response.status
 	}
 	
 	// MARK:  TT Routes
