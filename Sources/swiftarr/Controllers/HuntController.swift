@@ -2,12 +2,12 @@ import Fluent
 import FluentSQL
 import Vapor
 
-/// The collection of `/api/v3/hunt/*` route endpoints and handler functions related to Hunts and their Puzzles.
+/// The collection of `/api/v3/hunts/*` route endpoints and handler functions related to Hunts and their Puzzles.
 struct HuntController: APIRouteCollection {
 	/// Required. Registers routes to the incoming router.
 	func registerRoutes(_ app: Application) throws {
 		
-		// convenience route group for all /api/v3/hunt endpoints
+		// convenience route group for all /api/v3/hunts endpoints
 		let huntRoutes = app.grouped("api", "v3", "hunts")
 		let flexRoutes = huntRoutes.flexRoutes(feature: .hunts)
 		flexRoutes.get("", use: list)
