@@ -6,6 +6,10 @@ struct SiteHuntController: SiteControllerUtils {
 		openRoutes.get("hunts", use: huntsPageHandler).destination("the hunts")
 		openRoutes.get("hunts", huntIDParam, use: singleHuntPageHandler)
 		openRoutes.get("hunts", "puzzles", puzzleIDParam, use: singlePuzzlePageHandler)
+
+		// Routes for non-shareable content. If you're not logged in we failscreen.
+		let privateRoutes = getPrivateRoutes(app, feature: .hunts)
+        privateRoutes.post("hunts", "puzzles", puzzleIDParam, "callin", use: callinPostHandler)
     }
 
     func huntsPageHandler(_ req: Request) async throws -> View {
@@ -56,6 +60,21 @@ struct SiteHuntController: SiteControllerUtils {
         let response = try await apiQuery(req, endpoint: "/hunts/puzzles/\(puzzleID)")
         let ctx = SinglePuzzlePageContext(req, try response.content.decode(HuntPuzzleDetailData.self))
         return try await req.view.render("Hunts/puzzle.html", ctx)
+    }
 
+    func callinPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let puzzleID = req.parameters.get(puzzleIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing puzzle ID parameter.")
+		}
+        struct CallinPostFormContent: Codable {
+            var puzzleAnswer: String
+        }
+		let postStruct = try req.content.decode(CallinPostFormContent.self)
+        let resp = try await apiQuery(
+                req,
+                endpoint: "/hunts/puzzles/\(puzzleID)/callin",
+                method: .POST,
+                encodeContent: postStruct.puzzleAnswer)
+        return resp.status
     }
 }

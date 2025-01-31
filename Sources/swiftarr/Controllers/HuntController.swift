@@ -14,6 +14,10 @@ struct HuntController: APIRouteCollection {
 		flexRoutes.get(huntIDParam, use: getHunt)
 		flexRoutes.get("puzzles", puzzleIDParam, use: getPuzzle)
 
+		// Hunt Route Group, requires token
+		let tokenAuthGroup = huntRoutes.tokenRoutes(feature: .hunts)
+		tokenAuthGroup.post("puzzles", puzzleIDParam, "callin", use: callIn)
+
 		let adminAuthGroup = huntRoutes.tokenRoutes(feature: .hunts, minAccess: .admin)
 		adminAuthGroup.post("create", use: addHunt)
 	}
@@ -57,6 +61,37 @@ struct HuntController: APIRouteCollection {
 				.all()
 		}
 		return try HuntPuzzleDetailData(puzzle, callIns)
+	}
+
+	func callIn(_ req: Request) async throws -> Response {
+		let user = try req.auth.require(UserCacheData.self)
+		let rawSubmission = try req.content.decode(String.self, using: PlaintextDecoder())
+		let normalizedSubmission = rawSubmission.normalizePuzzleAnswer()
+		let puzzle = try await Puzzle.findFromParameter(puzzleIDParam, on: req)
+		let puzzleID = try puzzle.requireID()
+		if let alreadySubmitted = try await PuzzleCallIn.query(on: req.db)
+				.filter(\.$user.$id == user.userID)
+				.filter(\.$puzzle.$id == puzzleID)
+				.filter(\.$normalizedSubmission == normalizedSubmission)
+				.first() { 
+			return Response(status:.ok, body: Response.Body(data: try JSONEncoder().encode(HuntPuzzleCallInResultData(alreadySubmitted, puzzle))))
+		}
+		if let _ = try await PuzzleCallIn.query(on: req.db)
+				.filter(\.$user.$id == user.userID)
+				.filter(\.$puzzle.$id == puzzleID)
+				.filter(\.$result == .correct)  // unfortunately can't easily make a partial index
+				.first() {
+			throw Abort(.conflict, reason: "you have already solved this puzzle")
+		}
+		var callInResult: CallInResult = .incorrect
+		if puzzle.answer.normalizePuzzleAnswer() == normalizedSubmission {
+			callInResult = .correct
+		} else if let _ = puzzle.hints[normalizedSubmission] {
+			callInResult = .hint
+		}
+		let newCallIn = try PuzzleCallIn(user.userID, puzzle, rawSubmission, callInResult)
+		try await newCallIn.create(on: req.db)
+		return Response(status: .created, body: Response.Body(data: try JSONEncoder().encode(HuntPuzzleCallInResultData(newCallIn, puzzle))))
 	}
 
 	func addHunt(_ req: Request) async throws -> HTTPStatus {
