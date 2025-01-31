@@ -9,10 +9,10 @@
 				</div>
 			</div>
 			<div class="list-group">
-                #if(hunts.hunts.count == 0):
-                    <div class="list-group-item text-muted">
-                        No hunts have been created.
-                    </div>
+				#if(count(hunts.hunts) == 0):
+					<div class="list-group-item text-muted">
+						No hunts have been created.
+					</div>
 				#else:#for(hunt in hunts.hunts):
 					<a href="/hunts/#(hunt.huntID)" class="list-group-item list-group-item-action">
 						<div class="container-fluid">
