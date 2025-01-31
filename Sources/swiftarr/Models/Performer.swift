@@ -93,8 +93,11 @@ struct CreatePerformerSchema: AsyncMigration {
 			.field("official_performer", .bool, .required)
 			.field("deleted_at", .datetime)
 			.field("user", .uuid, .references("user", "id"))
-			.unique(on: "user", name: "one_performer_per_user")		// I believe this makes a `UNIQUE NULLS DISTINCT` type of constraint, 
-																	// meaning multiple performers with no User will be okay.
+			// I believe this makes a `UNIQUE NULLS DISTINCT` type of constraint,
+			// meaning multiple performers with no User will be okay.
+			// There is a migration below to expand this constraint to include
+			// the deleted_at column.
+			.unique(on: "user", name: "one_performer_per_user")
 			.create()
 	}
 
@@ -103,4 +106,27 @@ struct CreatePerformerSchema: AsyncMigration {
 	}
 }
 
+struct UpdatePerformerUniqueConstraint: AsyncMigration {
+    func prepare(on database: Database) async throws {
+        try await database.schema("performer")
+            .deleteConstraint(name: "one_performer_per_user")
+            .update()
 
+        try await database.schema("performer")
+			// deleted_at will be NULL for any records attempting to be live.
+			// Expanding this prevents SQL errors when you delete and re-create
+			// your own performer profile.
+            .unique(on: "user", "deleted_at", name: "one_performer_per_user")
+            .update()
+    }
+
+    func revert(on database: Database) async throws {
+        try await database.schema("performer")
+            .deleteConstraint(name: "one_performer_per_user")
+            .update()
+
+        try await database.schema("performer")
+            .unique(on: "user")
+            .update()
+    }
+}
