@@ -73,8 +73,7 @@ struct SiteHuntController: SiteControllerUtils {
         let resp = try await apiQuery(
                 req,
                 endpoint: "/hunts/puzzles/\(puzzleID)/callin",
-                method: .POST,
-                encodeContent: postStruct.puzzleAnswer)
+                method: .POST) { try $0.content.encode(postStruct.puzzleAnswer, as: .plainText) }
         return resp.status
     }
 }
