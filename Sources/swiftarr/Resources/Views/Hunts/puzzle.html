@@ -24,10 +24,10 @@
                             <label class="visually-hidden" for="puzzleAnswer">Answer Submission</label>
                             <input class="form-control" type="text" name="puzzleAnswer" id="puzzleAnswer" placeholder="Enter Answer Here" maxlength="100">
                         </div>
-                        <button class="ms-2" type="submit" class="btn btn-primary">Submit</button>
+                        <button class="ms-2 btn btn-primary" type="submit">Submit</button>
                     </form>
                 #endif
-                #if(puzzle.callIns.count):
+                #if(puzzle.callIns):
                     <table class="table">
                         <thead>
                             <tr>
@@ -39,10 +39,10 @@
                         <tbody>
                             #for(callIn in puzzle.callIns):
                                 <tr>
-                                    <td class="fw-bold">#(callIn.rawSubmission)</td>
+                                    <td class="fw-bold text-uppercase">#if(callIn.correct):#(callIn.correct)#else:#(callIn.rawSubmission)#endif</td>
                                     <td>#localTime(callIn.creationTime)</td>
                                     #if(callIn.correct):
-                                        <td class="text-uppercase text-success">#(callin.correct)</td>
+                                        <td class="text-uppercase text-success">Correct!</td>
                                     #elseif(callIn.hint):
                                         <td class="text-warning">#(callIn.hint)</td>
                                     #else:
