@@ -60,6 +60,7 @@ custom_categories:
     - EventController
     - FezController
     - ForumController
+    - HuntController
     - ImageController
     - KaraokeController
     - MicroKaraokeController
@@ -88,11 +89,13 @@ custom_categories:
     - Forum
     - FriendlyFezEdit
     - FriendlyFez
+    - Hunt
     - KaraokePlayedSong
     - KaraokeSong
     - ModeratorAction
     - MuteWord
     - ProfileEdit
+    - Puzzle
     - RegistrationCode
     - Report
     - TimeZoneChange
@@ -105,6 +108,7 @@ custom_categories:
     
   - name: Enumerations
     children:
+    - CallInResult
     - ContentModerationStatus
     - EventModification
     - EventType
@@ -153,6 +157,10 @@ custom_categories:
     - FezPostData
     - ForumData
     - ForumListData
+    - HuntData
+    - HuntListData
+    - HuntPuzzleCallInResultData
+    - HuntPuzzleDetailData
     - NoteData
     - PostData
     - PostDetailData
@@ -213,6 +221,7 @@ custom_categories:
       - CreateForumSchema
       - CreateFriendlyFezEditSchema
       - CreateFriendlyFezSchema
+      - CreateHuntSchema
       - CreateKaraokeFavoriteSchema
       - CreateKaraokePlayedSongSchema
       - CreateKaraokeSongSchema
@@ -220,6 +229,8 @@ custom_categories:
       - CreateMuteWordSchema
       - CreatePostLikesSchema
       - CreateProfileEditSchema
+      - CreatePuzzleCallInSchema
+      - CreatePuzzleSchema
       - CreateRegistrationCodeSchema
       - CreateReportSchema
       - CreateTestData
@@ -251,6 +262,7 @@ custom_categories:
     - ForumReaders
     - KaraokeFavorite
     - PostLikes
+    - PuzzleCallIn
     - TwarrtLikes
     - UserFavorite
     
@@ -284,6 +296,7 @@ custom_categories:
       - SiteFileController
       - SiteForumController
       - SiteFriendlyFezController
+      - SiteHuntController
       - SiteKaraokeController
       - SiteLoginController
       - SiteModController
