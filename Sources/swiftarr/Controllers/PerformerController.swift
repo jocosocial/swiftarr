@@ -39,6 +39,7 @@ struct PerformerController: APIRouteCollection {
 		ttAuthGroup.post("performer", "link", "upload", use: uploadPerformerLinkSpreadsheet)
 		ttAuthGroup.get("performer", "link", "verify", use: performerLinkVerificationHandler)
 		ttAuthGroup.post("performer", "link", "apply", use: performerLinkApplyHandler)
+		ttAuthGroup.delete("performer", performerIDParam, use: deletePerformerHandler).setUsedForPreregistration()
 	}
 	
 // MARK: Getting Performer Data
@@ -338,6 +339,20 @@ struct PerformerController: APIRouteCollection {
 		try await pivots.delete(on: req.db)
 		try await builtPerformerPivots.create(on: req.db)
 		return .ok
+	}
+
+	// `DELETE /api/v3/performer/:performer_ID`
+	//
+	// Delete a performer profile.
+	func deletePerformerHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let performerID = req.parameters.get(performerIDParam.paramString, as: UUID.self) else {
+			throw Abort(.badRequest, reason: "Request parameter identifying Performer is missing.")
+		}
+		if let performer = try await Performer.query(on: req.db).filter(\.$id == performerID).first() {
+			try await performer.delete(on: req.db)
+			return .ok
+		}
+		return .noContent
 	}
 	
 	// MARK: Utilities
