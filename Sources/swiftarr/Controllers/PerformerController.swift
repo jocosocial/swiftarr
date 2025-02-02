@@ -33,7 +33,9 @@ struct PerformerController: APIRouteCollection {
 		tokenAuthGroup.post("self", use: editSelfPerformer).setUsedForPreregistration()
 		tokenAuthGroup.post("self", "delete", use: deleteSelfPerformer).setUsedForPreregistration()
 		tokenAuthGroup.delete("self", use: deleteSelfPerformer).setUsedForPreregistration()
-		
+		tokenAuthGroup.post("forevent", eventIDParam, "delete", use: deleteSelfPerformerForEvent).setUsedForPreregistration()
+		tokenAuthGroup.delete("forevent", eventIDParam, use: deleteSelfPerformerForEvent).setUsedForPreregistration()
+
 		// Endpoints available to TT and up
 		let ttAuthGroup = app.tokenRoutes(feature: .performers, minAccess: .twitarrteam, path: "api", "v3", "admin")
 		ttAuthGroup.post("performer", "upsert", use: upsertPerformer)
@@ -232,20 +234,55 @@ struct PerformerController: APIRouteCollection {
 	/// `DELETE /api/v3/performer/self/performer`
 	/// 
 	///  Deletes a shadow event organizer's Performer record and any of their EventPerformer records (linking their Performer to their Events).
-	///  We haven't created a way to delete individual EventPerformer pivots. If a user signs up as an organizer of an event they're not organizing (wrong event, or
-	///  a non-organizer didn't know what they were doing, or a troll), just have them delete the Performer (which also deletes all the pivots) and recreate it if necessary,
-	///  attaching it to the right event(s).
-	/// 
 	func deleteSelfPerformer(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		guard let performer = try await Performer.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first() else {
 			throw Abort(.badRequest, reason: "User does not have a performer profile.")
 		}
-		guard Settings.shared.enablePreregistration || cacheUser.userRoles.contains(.performerselfeditor) else {
+		guard Settings.shared.enablePreregistration || cacheUser.userRoles.contains(.performerselfeditor) || cacheUser.accessLevel.hasAccess(.moderator) else {
 			throw Abort(.forbidden, reason: "Editing your Performer profile is limited to pre-registration; see the Help Desk if you need to change something.")
 		}
 		try await EventPerformer.query(on: req.db).filter(\.$performer.$id == performer.requireID()).delete()
 		try await performer.delete(on: req.db)
+		return .ok
+	}
+
+	/// `POST /api/v3/performer/forevent/:event_ID/delete`
+	/// `DELETE /api/v3/performer/forevent/:event_ID`
+	/// 
+	/// Removes the callers shadow event organizer Performer from the given Event.
+	/// At this time this capability has not been added to the site UI. Those users will
+	/// still delete their entire profile to remove from an event.
+	func deleteSelfPerformerForEvent(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		guard let performer = try await Performer.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first() else {
+			return .noContent
+		}
+		guard Settings.shared.enablePreregistration || cacheUser.userRoles.contains(.performerselfeditor) || cacheUser.accessLevel.hasAccess(.moderator) else {
+			throw Abort(.forbidden, reason: "Editing your Performer profile is limited to pre-registration; see the Help Desk if you need to change something.")
+		}
+		guard let eventID = req.parameters.get(eventIDParam.paramString, as: UUID.self) else {
+			throw Abort(.badRequest, reason: "Request parameter identifying Event is missing.")
+		}
+		guard let _ = try await Event.find(eventID, on: req.db) else {
+			throw Abort(.badRequest, reason: "Event ID doesn't match any event in database.")
+		}		 
+		let eventCount = try await EventPerformer.query(on: req.db)
+				.join(Performer.self, on: \EventPerformer.$performer.$id == \Performer.$id)
+				.filter(Performer.self, \.$user.$id == cacheUser.userID).count()
+		guard eventCount <= 5 else {
+			throw Abort(.badRequest, reason: "Twitarr doesn't let a single person be the organizer for more than 5 Shadow Events as an anti-brigading defense. If you're actually the organizer for all these events (not ATTENDING them, ORGANIZING them) let us know.")
+		}
+
+		let eventPerformerQuery = try EventPerformer.query(on: req.db)
+			.filter(\.$performer.$id == performer.requireID())
+			.filter(\.$event.$id == eventID)
+
+		guard let eventPerformer = try await eventPerformerQuery.first() else {
+			return .noContent
+		}
+
+		try await eventPerformer.delete(on: req.db)
 		return .ok
 	}
 	
