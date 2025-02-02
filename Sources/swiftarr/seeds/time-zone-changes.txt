@@ -5,8 +5,9 @@
 # information than timezone abbreviations, such as whether an area observers DST.
 #
 # 2024 sailing, assumed
-20240120T070000Z	EST	America/New_York
-20240121T070000Z	EDT	America/New_York
-20240123T060000Z	EDT	America/Grand_Turk
-20240124T060000Z	AST	America/Santo_Domingo
-20240125T070000Z	EDT	America/New_York
+20240309T070000Z	EST	America/New_York
+20240310T070000Z	EDT	America/New_York
+20240312T060000Z	EDT	America/Grand_Turk
+20240313T060000Z	AST	America/Santo_Domingo
+20240314T070000Z	EDT	America/New_York
+20241103T060000Z	EST	America/New_York
