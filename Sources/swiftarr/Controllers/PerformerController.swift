@@ -30,6 +30,7 @@ struct PerformerController: APIRouteCollection {
 		let tokenAuthGroup = performerRoutes.tokenRoutes(feature: .performers)
 		tokenAuthGroup.get("self", use: getSelfPerformer).setUsedForPreregistration()
 		tokenAuthGroup.post("forevent", eventIDParam, use: addSelfPerformerForEvent).setUsedForPreregistration()
+		tokenAuthGroup.post("self", use: editSelfPerformer).setUsedForPreregistration()
 		tokenAuthGroup.post("self", "delete", use: deleteSelfPerformer).setUsedForPreregistration()
 		tokenAuthGroup.delete("self", use: deleteSelfPerformer).setUsedForPreregistration()
 		
@@ -96,7 +97,7 @@ struct PerformerController: APIRouteCollection {
 			return PerformerData()
 		}
 		let favorites = try await getFavorites(in: req, from: performer.events)
-		return try PerformerData(performer, favoriteEventIDs: favorites)
+		return try PerformerData(performer, favoriteEventIDs: favorites, user: cacheUser.makeHeader())
 	}
 	
 	/// `GET /api/v3/performer/:performer_id`
@@ -112,8 +113,8 @@ struct PerformerController: APIRouteCollection {
 		}
 		let favorites = try await getFavorites(in: req, from: performer.events)
 		var result = try PerformerData(performer, favoriteEventIDs: favorites)
-		// Mods and above can identify the Twitarr user who made the Performer.
-		if let currentUser = req.auth.get(UserCacheData.self), currentUser.accessLevel.hasAccess(.moderator), let userID = performer.$user.id {
+		// Mods and above can identify the Twitarr user who made the Performer, as can themselves.
+		if let currentUser = req.auth.get(UserCacheData.self), let userID = performer.$user.id, currentUser.accessLevel.hasAccess(.moderator) || currentUser.userID == userID {
 			result.user = try req.userCache.getHeader(userID)
 		}
 		return result
@@ -127,7 +128,7 @@ struct PerformerController: APIRouteCollection {
 	/// shadow events, but can be called by any verified user. Each user may only have one Performer associated with it, so if this user already has a Perfomer profile
 	/// the new data updates it.
 	/// 
-	/// When associating a shadow event organizer a new event, callers should take care to call `/api/v3/events/performer/user/:user_id` to check if this user
+	/// When associating a shadow event organizer a new event, callers should take care to call `/api/v3/performer/self` to check if this user
 	/// has a profile already and if so, return their existing Performer fields--unless the user wants to edit them.
 	/// 
 	/// Does not currently use the `eventUIDs'`array in `PerformerUploadData`. This method could be modified to use this field, allowing multiple events to be 
@@ -181,6 +182,51 @@ struct PerformerController: APIRouteCollection {
 		}
 		return .ok
 	}
+
+	/// `POST /api/v3/performer/self`
+	///
+	/// Creates or updates a Performer profile for the current user. This method can be called
+	/// by any verified user. Each user may only have one Performer associated with it, so if
+	/// this user already has a Perfomer profile the new data updates it.
+	/// 
+	/// When updating a profile, callers should take care to call `/api/v3/performer/self` to
+	/// check if this user has a profile already and if so, return their existing Performer
+	/// fields--unless the user wants to edit them.
+	/// 
+	/// Does not currently use the `eventUIDs'`array in `PerformerUploadData`. This method
+	/// could be modified to use this field, allowing multiple events to be set for a performer
+	/// at once.
+	///
+	/// I think we should eventually make a `POST /api/v3/performer/:performer_ID` edit endpoint
+	/// that conditionally requires twitarrTeam authentication whether you're editing your own
+	/// profile or an official profile. There is some functionality duplicated with upsertPerformer
+	/// at `POST /api/v3/performer/upsert`.
+	///
+	/// - Parameter PerformerUploadData: JSON POST content.
+	/// - Returns: HTTP status.
+	func editSelfPerformer(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		guard let userReg = try await RegistrationCode.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first() else {
+			throw Abort(.badRequest, reason: "No registration code found for this user. Only users created with registration codes may make Performer profiles.")
+		}
+		// Discord-linked accounts *can* create Performer profiles, they just won't get transferred to the boat. Anyone with a Discord-linked account
+		// should eventually get a JoCo reg code to use for their 'real' account. If someone wants to try making a Performer profile early, they
+		// can get the UserRole, and we'll remind them it's just for testing.
+		guard !userReg.isDiscordUser || cacheUser.userRoles.contains(.performerselfeditor) else {
+			throw Abort(.badRequest, reason: "This account is linked to a Discord user and won't be transferred to the ship when we sail. You should get a registration code from JoCo that will work.")
+		}
+		guard Settings.shared.enablePreregistration || cacheUser.userRoles.contains(.performerselfeditor) else {
+			throw Abort(.forbidden, reason: "Editing your Performer profile is limited to pre-registration; see the Help Desk if you need to change something.")
+		}
+		let uploadData = try req.content.decode(PerformerUploadData.self)
+		var performer = try await Performer.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first() ?? Performer()
+		try await buildPerformerFromUploadData(performer: &performer, uploadData: uploadData, on: req)
+		performer.officialPerformer = false
+		performer.$user.id = cacheUser.userID
+		try await performer.save(on: req.db) // Updates or creates
+		return .ok
+	}
+
 	
 	/// `POST /api/v3/performer/self/delete`
 	/// `DELETE /api/v3/performer/self/performer`
