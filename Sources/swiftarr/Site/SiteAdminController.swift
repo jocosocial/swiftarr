@@ -95,6 +95,10 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.post("userroles", userRoleParam, "addrole", userIDParam, use: addRoleToUser)
 		privateTTRoutes.post("userroles", userRoleParam, "removerole", userIDParam, use: removeRoleFromUser)
 
+		
+		privateTTRoutes.get("hunts", use: huntHandler)
+		privateTTRoutes.post("hunts", "create", use: huntPostHandler)
+
 		// Mods, TwitarrTeam, and THO levels can all be promoted to, but they all demote back to Verified.
 		let privateTHORoutes = getPrivateRoutes(app, minAccess: .tho, path: "admin")
 		privateTHORoutes.get("mods", use: getModsHandler)
