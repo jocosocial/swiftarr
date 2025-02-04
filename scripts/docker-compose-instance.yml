@@ -22,6 +22,26 @@ services:
     volumes:
       - redis_data:/bitnami/redis/data
 
+  postgres-test:
+    image: docker.io/bitnami/postgresql:14
+    environment:
+      POSTGRESQL_DATABASE: swiftarr-test
+      POSTGRESQL_USERNAME: swiftarr
+      POSTGRESQL_PASSWORD: password
+    ports:
+      - 5433:5432
+    volumes:
+      - postgres_test_data:/bitnami/postgresql
+
+  redis-test:
+    image: docker.io/bitnami/redis:6.2
+    ports:
+      - 6380:6379
+    environment:
+      REDIS_PASSWORD: password
+    volumes:
+      - redis_test_data:/bitnami/redis/data
+
   prometheus:
     image: docker.io/bitnami/prometheus:2.48.0
     ports:
@@ -43,3 +63,5 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  postgres_test_data:
+  redis_test_data:

@@ -693,6 +693,7 @@ struct FezController: APIRouteCollection {
 		try await fez.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
 		try await fez.$participants.detachAll(on: req.db).get()
 		try await fez.delete(on: req.db)
+		_ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
 		return .noContent
 	}
 
