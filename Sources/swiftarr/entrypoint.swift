@@ -19,6 +19,7 @@ enum Entrypoint {
         
         do {
 			try await SwiftarrConfigurator(app).configure()
+            try SwiftarrConfigurator.configurePrometheus(app)
         } catch {
             app.logger.report(error: error)
             try? await app.asyncShutdown()

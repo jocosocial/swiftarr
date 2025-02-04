@@ -70,7 +70,6 @@ struct SwiftarrConfigurator {
 		try configureSessions(app)
 		try configureLeaf(app)
 		try configureQueues(app)
-		try configurePrometheus(app)
 		try routes(app)
 		try configureMigrations(app)
 	}
@@ -569,7 +568,13 @@ struct SwiftarrConfigurator {
 		try app.queues.startScheduledJobs()
 	}
 
-	func configurePrometheus(_ app: Application) throws {
+	// configurePrometheus can only be called once, which makes testing a problem.
+	// It is now done in entrypoint.swift since that calls this same function
+	// and is not duplicated with the tests. Used to be above in `configure()`.
+	// These have not been helpful.
+	// https://github.com/swift-server/swift-prometheus/issues/39
+	// https://github.com/swift-server/swift-prometheus/issues/40
+	static func configurePrometheus(_ app: Application) throws {
 		let myProm = PrometheusCollectorRegistry()
 		MetricsSystem.bootstrap(PrometheusMetricsFactory(registry: myProm))
 	}

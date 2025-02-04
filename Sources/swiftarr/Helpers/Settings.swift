@@ -255,27 +255,46 @@ extension Settings {
 	// It can be difficult to test schedule functionality because the events are all coded for
 	// their actual times. So at various points in the app we display the data of "what would be".
 	// This takes it a step further and pretends based on the time rather than just a weekday.
-	func getDateInCruiseWeek() -> Date {
-		// @TODO Ensure this honors or passes sanity check for portTimeZone or something like that.
-		// It's probably OK, but we should be sure.
-		let secondsPerWeek = 60 * 60 * 24 * 7
-		let partialWeek = Int(Date().timeIntervalSince(Settings.shared.cruiseStartDate())) % secondsPerWeek
-		// When startDate is in the future, the partialWeek is negative. Which if taken at face value returns
-		// the current date (start - time since start = now). When startDate is in the past, the partialWeek is 
-		// positive. Since the whole point of this functionality is to time travel, we abs() it.
-		return Settings.shared.cruiseStartDate() + abs(TimeInterval(partialWeek))
+	//
+	// There have been multiple version of this function over time that deal with DST to various
+	// degrees of success. This code was lifted from EventController and seems to do the job 
+	// "correctly". Hey we even have tests for it now.
+	func getDateInCruiseWeek(from date: Date = Date()) -> Date {
+		let cruiseStartDate = Settings.shared.cruiseStartDate()
+		var filterDate = date
+		// If the cruise is in the future or more than 10 days in the past, construct a fake date during the cruise week
+		let secondsPerDay = 24 * 60 * 60.0
+		if cruiseStartDate.timeIntervalSinceNow > 0
+			|| cruiseStartDate.timeIntervalSinceNow < 0 - Double(Settings.shared.cruiseLengthInDays) * secondsPerDay
+		{
+			// This filtering nonsense is whack. There is a way to do .DateComponents() without needing the in: but then you
+			// have to specify the Calendar.Components that you want. Since I don't have enough testing around this I'm going
+			// to keep pumping the timezone in which lets me bypass that requirement.
+			let cal = Settings.shared.getPortCalendar()
+			var filterDateComponents = cal.dateComponents(in: Settings.shared.portTimeZone, from: cruiseStartDate)
+			let currentDateComponents = cal.dateComponents(in: Settings.shared.portTimeZone, from: filterDate)
+			filterDateComponents.hour = currentDateComponents.hour
+			filterDateComponents.minute = currentDateComponents.minute
+			filterDateComponents.second = currentDateComponents.second
+			filterDate = cal.date(from: filterDateComponents) ?? filterDate
+			if let currentDayOfWeek = currentDateComponents.weekday {
+				let daysToAdd = (7 + currentDayOfWeek - Settings.shared.cruiseStartDayOfWeek) % 7
+				if let adjustedDate = cal.date(byAdding: .day, value: daysToAdd, to: filterDate) {
+					filterDate = adjustedDate
+				}
+			}
+		}
+		return filterDate
 	}
 
 	// This is sufficiently complex enough to merit its own function. Unlike the Settings.shared.getDateInCruiseWeek(),
 	// just adding .seconds to Date() isn't enough because Date() returns millisecond-precision. Which no one tells you
 	// unless you do a .timeIntervalSince1970 and get the actual Double value back to look at what's behind the dot.
 	// I'm totally not salty about spending several hours chasing this down. Anywho...
-	// This takes the current Date(), strips the ultra-high-precision that we don't want, and returns Date() with the
-	// upcoming notification offset applied.
-	func getCurrentFilterDate() -> Date {
-		let todayDate = Date()
-		let todayCalendar = Settings.shared.calendarForDate(todayDate)
-		let todayComponents = todayCalendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: todayDate)
+	// This takes the current Date(), strips the ultra-high-precision that we don't want, and returns Date().
+	func getCurrentFilterDate(from date: Date = Date()) -> Date {
+		let todayCalendar = Settings.shared.calendarForDate(date)
+		let todayComponents = todayCalendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
 		return todayCalendar.date(from: todayComponents)!
 	}
 
@@ -283,7 +302,7 @@ extension Settings {
 	// Often in the code we use Date() to get the current time, but this can sometimes cause
 	// strange behavior because we occasionally pretend to be in the cruise week.
 	func getScheduleReferenceDate(_ settingType: EventNotificationSetting) -> Date {
-		// The filter date is calculated by adding the notification offset interval to either:
+		// The reference date is calculated as either:
 		// 1) The current date (as in what the server is experiencing right now).
 		// 2) The current time/day transposed within the cruise week (when we pretend it is).
 		var filterDate: Date
@@ -310,8 +329,7 @@ extension Settings {
 			}
 			try await storedSetting.readFromRedis(redis: app.redis)
 		}
-		// TimeZoneChanges load in from postgres
-		timeZoneChanges = try await TimeZoneChangeSet(app.db)
+		try await readTimeZoneChanges(app)
 	}
 
 	// Stores all settings to Redis
@@ -321,6 +339,11 @@ extension Settings {
 				_ = try await storedSetting.writeToRedis(redis: req.redis)
 			}
 		}
+	}
+
+	// TimeZoneChanges load in from postgres
+	func readTimeZoneChanges(_ app: Application) async throws {
+		timeZoneChanges = try await TimeZoneChangeSet(app.db)
 	}
 }
 
