@@ -3,7 +3,7 @@
     	<div class="container-md ms-0">
     		<div class="row align-items-center my-1">
     			<div class="col col-auto">
-			    	<b>Hunts</b>
+			    	<b>Puzzle Hunts</b>
 				</div>
     			<div class="col">
 				</div>
@@ -11,7 +11,7 @@
 			<div class="list-group">
 				#if(count(hunts.hunts) == 0):
 					<div class="list-group-item text-muted">
-						No hunts have been created.
+						No puzzle hunts have been created.
 					</div>
 				#else:#for(hunt in hunts.hunts):
 					<a href="/hunts/#(hunt.huntID)" class="list-group-item list-group-item-action">
