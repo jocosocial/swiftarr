@@ -114,8 +114,6 @@ struct SiteAdminController: SiteControllerUtils {
 		privateAdminRoutes.post("karaoke", "reload", use: karaokePostHandler)
 		privateAdminRoutes.get("boardgames", use: boardGamesHandler)
 		privateAdminRoutes.post("boardgames", "reload", use: boardGamesPostHandler)
-		privateAdminRoutes.get("hunts", use: huntHandler)
-		privateAdminRoutes.post("hunts", "create", use: huntPostHandler)
 	}
 
 	// MARK: - Admin Pages
