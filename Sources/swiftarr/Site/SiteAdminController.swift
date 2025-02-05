@@ -600,12 +600,15 @@ struct SiteAdminController: SiteControllerUtils {
 	func huntHandler(_ req: Request) async throws -> View {
 		struct AdminHuntsContext: Encodable {
 			var trunk: TrunkContext
+			var hunts: HuntListData
 
-			init(_ req: Request) throws {
+			init(_ req: Request, _ hunts: HuntListData) throws {
 				trunk = .init(req, title: "Hunts Admin", tab: .admin)
+				self.hunts = hunts
 			}
 		}
-		let ctx = try AdminHuntsContext(req)
+		let response = try await apiQuery(req, endpoint: "/hunts")
+		let ctx = try AdminHuntsContext(req, try response.content.decode(HuntListData.self))
 		return try await req.view.render("admin/hunts", ctx)
 	}
 

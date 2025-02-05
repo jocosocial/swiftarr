@@ -11,12 +11,30 @@
 					</nav>
 				</div>
 			</div>
+			<div class="list-group">
+				#if(count(hunts.hunts) > 0):
+					<div class="row my-1">
+						<div class="col">
+							Current Hunts
+						</div>
+					</div>
+					#for(hunt in hunts.hunts):
+						<div class="list-group-item container-fluid">
+							<div class="row">
+								<div class="col fw-bold">
+									#(hunt.title)
+								</div>
+							</div>
+						</div>
+					#endfor
+				#endif
+			</div>
 			<div class="row my-1">
 				<div class="col">
 					Adds a Puzzle Hunt
 				</div>
 			</div>
-			<form class="ajax" action="/admin/hunts/create" enctype="multipart/form-data" method="POST" data-successurl="reset" id="createHuntForm">
+			<form class="ajax" action="/admin/hunts/create" enctype="multipart/form-data" method="POST" id="createHuntForm">
 				<div class="container-fluid">
                     <div class="row"> 
                         <textarea 
