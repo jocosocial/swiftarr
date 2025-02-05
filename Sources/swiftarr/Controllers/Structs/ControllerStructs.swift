@@ -823,7 +823,7 @@ public struct HuntData: Content {
 	var huntID: UUID
 	var title: String
 	var description: String
-	/// Only contains puzzles which are unlocked
+	/// For solvers, only contains puzzles which are unlocked
 	var puzzles: [HuntPuzzleData]
 	/// If any puzzles are locked, the time of the next one to unlock.
 	var nextUnlockTime: Date?
@@ -845,15 +845,23 @@ extension HuntData {
 			self.puzzles.append(try HuntPuzzleData(puzzle))
 		}
 	}
+	init(forAdmin hunt: Hunt) throws {
+		huntID = try hunt.requireID()
+		title = hunt.title
+		description = hunt.description
+		self.puzzles = try hunt.puzzles.map({try HuntPuzzleData(forAdmin: $0)})
+	}
 }
 
 public struct HuntPuzzleData: Content {
 	var puzzleID: UUID
 	var title: String
 	var body: String
-	/// The answer to this puzzle, if you have solved it
+	/// The answer to this puzzle, if you have solved it or are an admin.
 	var answer: String?
 	var unlockTime: Date?
+	// Only set for admins.
+	var hints: [String:String]?
 }
 
 extension HuntPuzzleData {
@@ -865,6 +873,14 @@ extension HuntPuzzleData {
 		if let callIn = try? puzzle.joined(PuzzleCallIn.self), let _ = try? callIn.requireID() {
 			answer = puzzle.answer
 		}
+	}
+	init(forAdmin puzzle: Puzzle) throws {
+		puzzleID = try puzzle.requireID()
+		title = puzzle.title
+		body = puzzle.body
+		unlockTime = puzzle.unlockTime
+		answer = puzzle.answer
+		hints = puzzle.hints
 	}
 }
 

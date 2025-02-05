@@ -20,6 +20,7 @@ struct HuntController: APIRouteCollection {
 
 		let adminAuthGroup = huntRoutes.tokenRoutes(feature: .hunts, minAccess: .twitarrteam)
 		adminAuthGroup.post("create", use: addHunt)
+		adminAuthGroup.get(huntIDParam, "admin", use: getHuntAdmin)
 		adminAuthGroup.delete(huntIDParam, use: deleteHunt)
 	}
 
@@ -43,6 +44,11 @@ struct HuntController: APIRouteCollection {
 					.value(.path(PuzzleCallIn.path(for: \.$result), schema: PuzzleCallIn.schema), .equal, .enumCase("correct"))])
 		}
 		return try HuntData(hunt, try await puzzlesQuery.all())
+	}
+
+	func getHuntAdmin(_ req: Request) async throws -> HuntData {
+		let hunt = try await Hunt.findFromParameter(huntIDParam, on: req) { $0.with(\.$puzzles) }
+		return try HuntData(forAdmin: hunt)
 	}
 
 	func getPuzzle(_ req: Request) async throws -> HuntPuzzleDetailData {

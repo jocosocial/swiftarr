@@ -99,6 +99,7 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.get("hunts", use: huntHandler)
 		privateTTRoutes.post("hunts", "create", use: huntPostHandler)
 		privateTTRoutes.post("hunts", huntIDParam, "delete", use: huntDeleteHandler)
+		privateTTRoutes.get("hunts", huntIDParam, "edit", use: huntEditHandler)
 
 		// Mods, TwitarrTeam, and THO levels can all be promoted to, but they all demote back to Verified.
 		let privateTHORoutes = getPrivateRoutes(app, minAccess: .tho, path: "admin")
@@ -624,6 +625,56 @@ struct SiteAdminController: SiteControllerUtils {
 		try await apiQuery(req, endpoint: "/hunts/create", method: .POST, encodeContent: try JSONDecoder.custom(dates: .iso8601).decode(HuntCreateData.self, from: jsonData))
 		return .ok
 	}
+
+    func huntEditHandler(_ req: Request) async throws -> View {
+		struct HintContext: Encodable {
+			var key: String
+			var value: String
+			init(_ element: [String:String].Element) {
+				key = element.key
+				value = element.value
+			}
+		}
+		struct PuzzleContext: Encodable {
+			var id: UUID
+			var title: String
+			var body: String
+			var answer: String
+			var unlockTime: Date?
+			var hints: [HintContext]
+			init(_ puzzle: HuntPuzzleData) throws {
+				id = puzzle.puzzleID
+				title = puzzle.title
+				body = puzzle.body
+				guard let answer = puzzle.answer else {
+					throw "answer must be set for admin"
+				}
+				self.answer = answer
+				unlockTime = puzzle.unlockTime
+				hints = puzzle.hints?.sorted(by: <).map({HintContext($0)}) ?? []
+			}
+		}
+        struct SingleHuntPageContext: Encodable {
+            var trunk: TrunkContext
+			var id: UUID
+			var title: String
+			var description: String
+			var puzzles: [PuzzleContext]
+            init(_ req: Request, _ hunt: HuntData) throws {
+                trunk = .init(req, title: "\(hunt.title) | Hunt Admin", tab: .admin)
+				id = hunt.huntID
+				title = hunt.title
+				description = hunt.description
+				puzzles = try hunt.puzzles.map({try PuzzleContext($0)})
+            }
+        }
+		guard let huntID = req.parameters.get(huntIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw "Invalid hunt ID"
+		}
+        let response = try await apiQuery(req, endpoint: "/hunts/\(huntID)/admin")
+        let ctx = try SingleHuntPageContext(req, try response.content.decode(HuntData.self))
+        return try await req.view.render("admin/huntEdit", ctx)
+    }
 
 	func huntDeleteHandler(_ req: Request) async throws -> HTTPStatus {
 		guard let huntID = req.parameters.get(huntIDParam.paramString)?.percentEncodeFilePathEntry() else {

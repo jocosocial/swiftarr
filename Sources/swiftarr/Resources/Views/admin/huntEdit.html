@@ -1,0 +1,62 @@
+#extend("trunk"):
+    #export("body"):
+        <div class="container-md ms-0">
+            <div class="row align-items-center my-1">
+                <div class="col col-12">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+                            <li class="breadcrumb-item" aria-current="page"><a href="/admin/hunts">Puzzle Hunts</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">#(title)</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="#(id)/description" class="form-label">Description</label>
+                <textarea id="#(id)/description" disabled name="description" value="#(description)" class="form-control" rows="5">#(description)</textarea>
+            </div>
+			<ul class="list-group">
+                #for(puzzle in puzzles):
+					<li class="list-group-item list-group-item-action container-fluid">
+                        <div class="mb-3">
+                            <label for="#(puzzle.id)/title" class="form-label">Title</label>
+                            <input id="#(puzzle.id)/title" type="text" disabled name="title" value="#(puzzle.title)" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="#(puzzle.id)/body" class="form-label">Body</label>
+                            <textarea id="#(puzzle.id)/body" disabled name="body" value="#(puzzle.body)" class="form-control" rows="5">#(puzzle.body)</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="#(puzzle.id)/answer" class="form-label">Answer</label>
+                            <input id="#(puzzle.id)/answer" type="text" disabled name="answer" value="#(puzzle.answer)" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="#(puzzle.id)/unlockTime" class="form-label">Unlock Time</label>
+                            <input id="#(puzzle.id)/unlockTime" type="datetime-local" span="1" disabled name="unlockTime" value="#if(puzzle.unlockTime):#localTime(puzzle.unlockTime)#endif" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Hints</label>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Input</th>
+                                        <th>Hint</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    #for(hint in puzzle.hints):
+                                        <tr>
+                                            <td>#(hint.key)</td>
+                                            <td>#(hint.value)</td>
+                                        </tr>
+                                    #endfor
+                                </tbody>
+                            </table>
+                        </div>
+					</li>
+				#endfor
+            </ul>
+		</div>
+    #endexport
+#endextend
