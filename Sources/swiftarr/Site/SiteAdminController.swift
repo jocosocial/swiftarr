@@ -98,6 +98,7 @@ struct SiteAdminController: SiteControllerUtils {
 		
 		privateTTRoutes.get("hunts", use: huntHandler)
 		privateTTRoutes.post("hunts", "create", use: huntPostHandler)
+		privateTTRoutes.post("hunts", huntIDParam, "delete", use: huntDeleteHandler)
 
 		// Mods, TwitarrTeam, and THO levels can all be promoted to, but they all demote back to Verified.
 		let privateTHORoutes = getPrivateRoutes(app, minAccess: .tho, path: "admin")
@@ -621,6 +622,14 @@ struct SiteAdminController: SiteControllerUtils {
 			return .badRequest
 		}
 		try await apiQuery(req, endpoint: "/hunts/create", method: .POST, encodeContent: try JSONDecoder.custom(dates: .iso8601).decode(HuntCreateData.self, from: jsonData))
+		return .ok
+	}
+
+	func huntDeleteHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let huntID = req.parameters.get(huntIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			return .badRequest
+		}
+		try await apiQuery(req, endpoint: "/hunts/\(huntID)", method: .DELETE)
 		return .ok
 	}
 

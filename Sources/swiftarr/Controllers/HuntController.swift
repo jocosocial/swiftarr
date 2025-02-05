@@ -20,6 +20,7 @@ struct HuntController: APIRouteCollection {
 
 		let adminAuthGroup = huntRoutes.tokenRoutes(feature: .hunts, minAccess: .twitarrteam)
 		adminAuthGroup.post("create", use: addHunt)
+		adminAuthGroup.delete(huntIDParam, use: deleteHunt)
 	}
 
 	func list(_ req: Request) async throws -> HuntListData {
@@ -105,5 +106,11 @@ struct HuntController: APIRouteCollection {
 			}
 		}
 		return .created
+	}
+
+	func deleteHunt(_ req: Request) async throws -> HTTPStatus {
+		let hunt = try await Hunt.findFromParameter(huntIDParam, on: req)
+		try await hunt.delete(on: req.db)
+		return .ok
 	}
 }
