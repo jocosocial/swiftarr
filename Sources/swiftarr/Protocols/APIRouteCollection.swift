@@ -464,6 +464,13 @@ extension APIRouteCollection {
 		try await req.redis.addUsersWithStateChange([user.userID])
 	}
 
+	// Alternative version for doing the same action across a large number of users.
+	func markNotificationViewed(for users: [UserCacheData], type: NotificationType, on req: Request) async throws {
+		for user in users {
+			try await markNotificationViewed(user: user, type: type, on: req)
+		}
+	}
+
 	// Calculates the start time of the earliest future followed event. Caches the value in Redis for quick access.
 	// The "current" reference date depends on a setting whether to operate in "real time" (aka what you the human
 	// reading this comment right now experience as the current date), or "cruise time" (aka what someone experienced)
