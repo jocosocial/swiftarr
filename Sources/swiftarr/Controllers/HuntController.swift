@@ -48,8 +48,12 @@ struct HuntController: APIRouteCollection {
 	}
 
 	func getHuntAdmin(_ req: Request) async throws -> HuntData {
-		let hunt = try await Hunt.findFromParameter(huntIDParam, on: req) { $0.with(\.$puzzles) }
-		return try HuntData(forAdmin: hunt)
+		let hunt = try await Hunt.findFromParameter(huntIDParam, on: req)
+		let huntID = try hunt.requireID()
+		let puzzles = try await Puzzle.query(on: req.db)
+				.filter(\.$hunt.$id == huntID)
+				.sort(\.$unlockTime, .custom("ASC NULLS FIRST")).all()
+		return try HuntData(forAdmin: hunt, puzzles)
 	}
 
 	func getPuzzle(_ req: Request) async throws -> HuntPuzzleDetailData {

@@ -845,11 +845,11 @@ extension HuntData {
 			self.puzzles.append(try HuntPuzzleData(puzzle))
 		}
 	}
-	init(forAdmin hunt: Hunt) throws {
+	init(forAdmin hunt: Hunt, _ puzzles: [Puzzle]) throws {
 		huntID = try hunt.requireID()
 		title = hunt.title
 		description = hunt.description
-		self.puzzles = try hunt.puzzles.map({try HuntPuzzleData(forAdmin: $0)})
+		self.puzzles = try puzzles.map({try HuntPuzzleData(forAdmin: $0)})
 	}
 }
 
