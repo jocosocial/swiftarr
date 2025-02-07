@@ -32,10 +32,13 @@
                             <label for="#(puzzle.id)/answer" class="form-label">Answer</label>
                             <input id="#(puzzle.id)/answer" type="text" disabled name="answer" value="#(puzzle.answer)" class="form-control">
                         </div>
-                        <div class="mb-3">
+                        <form class="mb-3 form ajax" action="/admin/puzzles/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
                             <label for="#(puzzle.id)/unlockTime" class="form-label">Unlock Time</label>
-                            <input id="#(puzzle.id)/unlockTime" type="datetime-local" span="1" disabled name="unlockTime" value="#if(puzzle.unlockTime):#localTime(puzzle.unlockTime)#endif" class="form-control">
-                        </div>
+                            <div class="input-group">
+                                <input id="#(puzzle.id)/unlockTime" type="datetime-local" step="1" name="unlockTime" value="#if(puzzle.unlockTime):#localTime(puzzle.unlockTime)#endif" class="form-control">
+                                <button type="submit" class="btn btn-primary">Edit</button>
+                            </div>
+                        </form>
                         <div class="mb-3">
                             <label class="form-label">Hints</label>
                             <table class="table">

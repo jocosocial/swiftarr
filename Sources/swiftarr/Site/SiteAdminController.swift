@@ -681,8 +681,27 @@ struct SiteAdminController: SiteControllerUtils {
 		guard let puzzleID = req.parameters.get(puzzleIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			return .badRequest
 		}
-		let postStruct = try req.content.decode(HuntPuzzlePatchData.self)
-        let response = try await apiQuery(req, endpoint: "/hunts/puzzles/\(puzzleID)", method: .PATCH, encodeContent: postStruct)
+		// Needs to be slightly different from HuntPuzzlePatchData because we need to feed unlockTime through
+		// dateFromW3DatetimeString.
+		struct PuzzleEditPostData: Content {
+			var body: String?
+			var unlockTime: String?
+		}
+		let postStruct = try req.content.decode(PuzzleEditPostData.self)
+		var patchStruct = HuntPuzzlePatchData(body: postStruct.body, unlockTime: .absent)
+		if let unlockTime = postStruct.unlockTime {
+			if unlockTime == "" {
+				patchStruct.unlockTime = .null
+			} else {
+				guard let unlockDate = dateFromW3DatetimeString(unlockTime) else {
+					return .badRequest
+				}
+				patchStruct.unlockTime = .present(unlockDate)
+			}
+		} else {
+			patchStruct.unlockTime = .absent
+		}
+        let response = try await apiQuery(req, endpoint: "/hunts/puzzles/\(puzzleID)", method: .PATCH, encodeContent: patchStruct)
 		return response.status
 	}
 

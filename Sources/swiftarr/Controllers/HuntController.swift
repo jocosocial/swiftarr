@@ -125,6 +125,14 @@ struct HuntController: APIRouteCollection {
 		if let body = data.body {
 			puzzle.body = body
 		}
+		switch data.unlockTime {
+			case .absent:
+				break
+			case .null:
+				puzzle.unlockTime = nil
+			case .present(let unlockTime):
+				puzzle.unlockTime = unlockTime
+		}
 		try await puzzle.save(on: req.db)
 		return .noContent
 	}
