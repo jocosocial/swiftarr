@@ -21,6 +21,7 @@ struct HuntController: APIRouteCollection {
 		let adminAuthGroup = huntRoutes.tokenRoutes(feature: .hunts, minAccess: .twitarrteam)
 		adminAuthGroup.post("create", use: addHunt)
 		adminAuthGroup.get(huntIDParam, "admin", use: getHuntAdmin)
+		adminAuthGroup.patch("puzzles", puzzleIDParam, use: updatePuzzle)
 		adminAuthGroup.delete(huntIDParam, use: deleteHunt)
 	}
 
@@ -100,7 +101,7 @@ struct HuntController: APIRouteCollection {
 		try await newCallIn.create(on: req.db)
 		return Response(status: .created, body: Response.Body(data: try JSONEncoder().encode(HuntPuzzleCallInResultData(newCallIn, puzzle))))
 	}
-
+	
 	func addHunt(_ req: Request) async throws -> HTTPStatus {
 		let data = try ValidatingJSONDecoder().decode(HuntCreateData.self, fromBodyOf: req)
 		try await req.db.transaction { transaction in
@@ -112,6 +113,16 @@ struct HuntController: APIRouteCollection {
 			}
 		}
 		return .created
+	}
+
+	func updatePuzzle(_ req: Request) async throws -> HTTPStatus {
+		let data = try req.content.decode(HuntPuzzlePatchData.self)
+		let puzzle = try await Puzzle.findFromParameter(puzzleIDParam, on: req)
+		if let body = data.body {
+			puzzle.body = body
+		}
+		try await puzzle.save(on: req.db)
+		return .noContent
 	}
 
 	func deleteHunt(_ req: Request) async throws -> HTTPStatus {

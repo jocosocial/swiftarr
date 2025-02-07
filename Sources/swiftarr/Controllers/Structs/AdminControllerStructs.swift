@@ -189,6 +189,12 @@ extension HuntCreateData: RCFValidatable {
 	}
 }
 
+/// Used to modify a puzzle. Optional fields in this are required fields in Puzzle;
+/// if not nil, the value in the puzzle will be modified.
+public struct HuntPuzzlePatchData: Content {
+	var body: String?
+}
+
 /// Returns the registration code associated with a user. Not all users have registration codes; e.g. asking for the reg code for 'admin' will return an error.
 public struct RegistrationCodeUserData: Content {
 	// User accounts associated with the reg code. First item in the array is the primary account.

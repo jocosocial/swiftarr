@@ -23,10 +23,11 @@
                             <label for="#(puzzle.id)/title" class="form-label">Title</label>
                             <input id="#(puzzle.id)/title" type="text" disabled name="title" value="#(puzzle.title)" class="form-control">
                         </div>
-                        <div class="mb-3">
+                        <form class="mb-3 form ajax" action="/admin/puzzles/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
                             <label for="#(puzzle.id)/body" class="form-label">Body</label>
-                            <textarea id="#(puzzle.id)/body" disabled name="body" value="#(puzzle.body)" class="form-control" rows="5">#(puzzle.body)</textarea>
-                        </div>
+                            <textarea id="#(puzzle.id)/body" name="body" value="#(puzzle.body)" class="form-control" rows="5">#(puzzle.body)</textarea>
+                            <button type="submit" class="btn btn-primary">Edit</button>
+                        </form>
                         <div class="mb-3">
                             <label for="#(puzzle.id)/answer" class="form-label">Answer</label>
                             <input id="#(puzzle.id)/answer" type="text" disabled name="answer" value="#(puzzle.answer)" class="form-control">
