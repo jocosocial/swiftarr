@@ -684,11 +684,12 @@ struct SiteAdminController: SiteControllerUtils {
 		// Needs to be slightly different from HuntPuzzlePatchData because we need to feed unlockTime through
 		// dateFromW3DatetimeString.
 		struct PuzzleEditPostData: Content {
+			var title: String?
 			var body: String?
 			var unlockTime: String?
 		}
 		let postStruct = try req.content.decode(PuzzleEditPostData.self)
-		var patchStruct = HuntPuzzlePatchData(body: postStruct.body, unlockTime: .absent)
+		var patchStruct = HuntPuzzlePatchData(title: postStruct.title, body: postStruct.body, unlockTime: .absent)
 		if let unlockTime = postStruct.unlockTime {
 			if unlockTime == "" {
 				patchStruct.unlockTime = .null

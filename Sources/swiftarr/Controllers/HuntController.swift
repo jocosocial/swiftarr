@@ -125,6 +125,9 @@ struct HuntController: APIRouteCollection {
 		if let body = data.body {
 			puzzle.body = body
 		}
+		if let title = data.title {
+			puzzle.title = title
+		}
 		switch data.unlockTime {
 			case .absent:
 				break

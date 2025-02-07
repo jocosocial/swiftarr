@@ -248,6 +248,7 @@ extension KeyedEncodingContainer {
 /// If absent in the JSON, not affected.
 /// If present and null, will unset the field.
 public struct HuntPuzzlePatchData: Content {
+	var title: String?
 	var body: String?
 	var unlockTime: ExplicitNull<Date>
 }

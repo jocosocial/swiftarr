@@ -19,11 +19,14 @@
 			<ul class="list-group">
                 #for(puzzle in puzzles):
 					<li class="list-group-item list-group-item-action container-fluid">
-                        <div class="mb-3">
+                        <form class="mb-3 ajax" action="/admin/puzzles/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
                             <label for="#(puzzle.id)/title" class="form-label">Title</label>
-                            <input id="#(puzzle.id)/title" type="text" disabled name="title" value="#(puzzle.title)" class="form-control">
-                        </div>
-                        <form class="mb-3 form ajax" action="/admin/puzzles/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
+                            <div class="input-group">
+                                <input id="#(puzzle.id)/title" type="text" name="title" value="#(puzzle.title)" class="form-control">
+                                <button type="submit" class="btn btn-primary">Edit</button>
+                            </div>
+                        </form>
+                        <form class="mb-3 ajax" action="/admin/puzzles/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
                             <label for="#(puzzle.id)/body" class="form-label">Body</label>
                             <textarea id="#(puzzle.id)/body" name="body" value="#(puzzle.body)" class="form-control" rows="5">#(puzzle.body)</textarea>
                             <button type="submit" class="btn btn-primary">Edit</button>
@@ -32,7 +35,7 @@
                             <label for="#(puzzle.id)/answer" class="form-label">Answer</label>
                             <input id="#(puzzle.id)/answer" type="text" disabled name="answer" value="#(puzzle.answer)" class="form-control">
                         </div>
-                        <form class="mb-3 form ajax" action="/admin/puzzles/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
+                        <form class="mb-3 ajax" action="/admin/puzzles/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
                             <label for="#(puzzle.id)/unlockTime" class="form-label">Unlock Time</label>
                             <div class="input-group">
                                 <input id="#(puzzle.id)/unlockTime" type="datetime-local" step="1" name="unlockTime" value="#if(puzzle.unlockTime):#localTime(puzzle.unlockTime)#endif" class="form-control">
