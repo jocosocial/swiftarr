@@ -40,7 +40,7 @@
                             #for(callIn in puzzle.callIns):
                                 <tr>
                                     <td class="fw-bold text-uppercase">#if(callIn.correct):#(callIn.correct)#else:#(callIn.rawSubmission)#endif</td>
-                                    <td>#localTime(callIn.creationTime)</td>
+                                    <td>#staticTime(callIn.creationTime)</td>
                                     #if(callIn.correct):
                                         <td class="text-uppercase text-success">Correct!</td>
                                     #elseif(callIn.hint):
