@@ -98,6 +98,6 @@ extension String {
 	/// them in their original form. We do store hint keys like this so we can do a
 	/// dictionary lookup.
 	func normalizePuzzleAnswer() -> String {
-		return self.uppercased().filter { !$0.isWhitespace }
+		return self.uppercased().filter { !$0.isWhitespace && !$0.isPunctuation }
 	}
 }
