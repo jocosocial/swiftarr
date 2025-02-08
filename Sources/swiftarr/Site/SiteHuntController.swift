@@ -4,12 +4,12 @@ struct SiteHuntController: SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws {
 		let openRoutes = getOpenRoutes(app, feature: .hunts)
 		openRoutes.get("hunts", use: huntsPageHandler).destination("the hunts")
-		openRoutes.get("hunts", huntIDParam, use: singleHuntPageHandler)
-		openRoutes.get("hunts", "puzzles", puzzleIDParam, use: singlePuzzlePageHandler)
+		openRoutes.get("hunt", huntIDParam, use: singleHuntPageHandler)
+		openRoutes.get("puzzle", puzzleIDParam, use: singlePuzzlePageHandler)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app, feature: .hunts)
-        privateRoutes.post("hunts", "puzzles", puzzleIDParam, "callin", use: callinPostHandler)
+        privateRoutes.post("puzzle", puzzleIDParam, "callin", use: callinPostHandler)
     }
 
     func huntsPageHandler(_ req: Request) async throws -> View {

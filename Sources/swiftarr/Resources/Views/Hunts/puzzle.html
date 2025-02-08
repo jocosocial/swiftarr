@@ -6,7 +6,7 @@
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb mb-0">
                             <li class="breadcrumb-item" aria-current="page"><a href="/hunts">Puzzle Hunts</a></li>
-                            <li class="breadcrumb-item" aria-current="page"><a href="/hunts/#(puzzle.huntID)">#(puzzle.huntTitle)</a></li>
+                            <li class="breadcrumb-item" aria-current="page"><a href="/hunt/#(puzzle.huntID)">#(puzzle.huntTitle)</a></li>
                             <li class="breadcrumb-item active" aria-current="page">#(puzzle.title)</li>
                         </ol>
                     </nav>
@@ -19,7 +19,7 @@
 			</div>
             #if(trunk.userIsLoggedIn):
                 #if(!solved):
-                    <form class="ajax d-flex" action="/hunts/puzzles/#(puzzle.puzzleID)/callin" enctype="multipart/form-data" method="POST">
+                    <form class="ajax d-flex" action="/puzzle/#(puzzle.puzzleID)/callin" enctype="multipart/form-data" method="POST">
                         <div class="input-group">
                             <label class="visually-hidden" for="puzzleAnswer">Answer Submission</label>
                             <input class="form-control" type="text" name="puzzleAnswer" id="puzzleAnswer" placeholder="Enter Answer Here" maxlength="100">

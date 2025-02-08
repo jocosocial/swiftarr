@@ -97,11 +97,11 @@ struct SiteAdminController: SiteControllerUtils {
 
 		
 		privateTTRoutes.get("hunts", use: huntHandler)
-		privateTTRoutes.post("hunts", "create", use: huntPostHandler)
-		privateTTRoutes.post("hunts", huntIDParam, "delete", use: huntDeleteHandler)
-		privateTTRoutes.get("hunts", huntIDParam, "edit", use: huntEditHandler)
-		privateTTRoutes.post("hunts", huntIDParam, "edit", use: huntEditPostHandler)
-		privateTTRoutes.post("puzzles", puzzleIDParam, "edit", use: puzzleEditPostHandler)
+		privateTTRoutes.post("hunt", "create", use: huntPostHandler)
+		privateTTRoutes.post("hunt", huntIDParam, "delete", use: huntDeleteHandler)
+		privateTTRoutes.get("hunt", huntIDParam, "edit", use: huntEditHandler)
+		privateTTRoutes.post("hunt", huntIDParam, "edit", use: huntEditPostHandler)
+		privateTTRoutes.post("puzzle", puzzleIDParam, "edit", use: puzzleEditPostHandler)
 
 		// Mods, TwitarrTeam, and THO levels can all be promoted to, but they all demote back to Verified.
 		let privateTHORoutes = getPrivateRoutes(app, minAccess: .tho, path: "admin")

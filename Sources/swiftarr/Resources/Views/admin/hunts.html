@@ -25,7 +25,7 @@
 									#(hunt.title)
 								</div>
 								<div class="btn-group btn-group-sm flex-grow-0" role="group">
-									<a class="btn btn-primary" href="/admin/hunts/#(hunt.huntID)/edit">Edit</a>
+									<a class="btn btn-primary" href="/admin/hunt/#(hunt.huntID)/edit">Edit</a>
 									<button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
 								</div>
 							</div>
@@ -38,7 +38,7 @@
 					Adds a Puzzle Hunt
 				</div>
 			</div>
-			<form class="ajax" action="/admin/hunts/create" enctype="multipart/form-data" method="POST" id="createHuntForm">
+			<form class="ajax" action="/admin/hunt/create" enctype="multipart/form-data" method="POST" id="createHuntForm">
 				<div class="container-fluid">
                     <div class="row"> 
                         <textarea 
