@@ -255,6 +255,7 @@ extension KeyedEncodingContainer {
 public struct HuntPuzzlePatchData: Content {
 	var title: String?
 	var body: String?
+	var answer: String?
 	var unlockTime: ExplicitNull<Date>
 }
 

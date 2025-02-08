@@ -696,10 +696,11 @@ struct SiteAdminController: SiteControllerUtils {
 		struct PuzzleEditPostData: Content {
 			var title: String?
 			var body: String?
+			var answer: String?
 			var unlockTime: String?
 		}
 		let postStruct = try req.content.decode(PuzzleEditPostData.self)
-		var patchStruct = HuntPuzzlePatchData(title: postStruct.title, body: postStruct.body, unlockTime: .absent)
+		var patchStruct = HuntPuzzlePatchData(title: postStruct.title, body: postStruct.body, answer: postStruct.answer, unlockTime: .absent)
 		if let unlockTime = postStruct.unlockTime {
 			if unlockTime == "" {
 				patchStruct.unlockTime = .null

@@ -80,31 +80,33 @@ struct HuntController: APIRouteCollection {
 		let user = try req.auth.require(UserCacheData.self)
 		let rawSubmission = try req.content.decode(String.self, using: PlaintextDecoder())
 		let normalizedSubmission = rawSubmission.normalizePuzzleAnswer()
-		let puzzle = try await Puzzle.findFromParameter(puzzleIDParam, on: req)
-		let puzzleID = try puzzle.requireID()
-		if let alreadySubmitted = try await PuzzleCallIn.query(on: req.db)
-				.filter(\.$user.$id == user.userID)
-				.filter(\.$puzzle.$id == puzzleID)
-				.filter(\.$normalizedSubmission == normalizedSubmission)
-				.first() { 
-			return Response(status:.ok, body: Response.Body(data: try JSONEncoder().encode(HuntPuzzleCallInResultData(alreadySubmitted, puzzle))))
+		return try await req.db.transaction { transaction in
+			let puzzle = try await Puzzle.findFromParameter(puzzleIDParam, on: req, inTransaction: transaction)
+			let puzzleID = try puzzle.requireID()
+			if let alreadySubmitted = try await PuzzleCallIn.query(on: transaction)
+					.filter(\.$user.$id == user.userID)
+					.filter(\.$puzzle.$id == puzzleID)
+					.filter(\.$normalizedSubmission == normalizedSubmission)
+					.first() { 
+				return Response(status:.ok, body: Response.Body(data: try JSONEncoder().encode(HuntPuzzleCallInResultData(alreadySubmitted, puzzle))))
+			}
+			if let _ = try await PuzzleCallIn.query(on: transaction)
+					.filter(\.$user.$id == user.userID)
+					.filter(\.$puzzle.$id == puzzleID)
+					.filter(\.$result == .correct)  // unfortunately can't easily make a partial index
+					.first() {
+				throw Abort(.conflict, reason: "you have already solved this puzzle")
+			}
+			var callInResult: CallInResult = .incorrect
+			if puzzle.answer.normalizePuzzleAnswer() == normalizedSubmission {
+				callInResult = .correct
+			} else if let _ = puzzle.hints[normalizedSubmission] {
+				callInResult = .hint
+			}
+			let newCallIn = try PuzzleCallIn(user.userID, puzzle, rawSubmission, callInResult)
+			try await newCallIn.create(on: transaction)
+			return Response(status: .created, body: Response.Body(data: try JSONEncoder().encode(HuntPuzzleCallInResultData(newCallIn, puzzle))))
 		}
-		if let _ = try await PuzzleCallIn.query(on: req.db)
-				.filter(\.$user.$id == user.userID)
-				.filter(\.$puzzle.$id == puzzleID)
-				.filter(\.$result == .correct)  // unfortunately can't easily make a partial index
-				.first() {
-			throw Abort(.conflict, reason: "you have already solved this puzzle")
-		}
-		var callInResult: CallInResult = .incorrect
-		if puzzle.answer.normalizePuzzleAnswer() == normalizedSubmission {
-			callInResult = .correct
-		} else if let _ = puzzle.hints[normalizedSubmission] {
-			callInResult = .hint
-		}
-		let newCallIn = try PuzzleCallIn(user.userID, puzzle, rawSubmission, callInResult)
-		try await newCallIn.create(on: req.db)
-		return Response(status: .created, body: Response.Body(data: try JSONEncoder().encode(HuntPuzzleCallInResultData(newCallIn, puzzle))))
 	}
 	
 	func addHunt(_ req: Request) async throws -> HTTPStatus {
@@ -135,23 +137,38 @@ struct HuntController: APIRouteCollection {
 
 	func updatePuzzle(_ req: Request) async throws -> HTTPStatus {
 		let data = try req.content.decode(HuntPuzzlePatchData.self)
-		let puzzle = try await Puzzle.findFromParameter(puzzleIDParam, on: req)
-		if let body = data.body {
-			puzzle.body = body
+		return try await req.db.transaction { transaction in
+			let puzzle = try await Puzzle.findFromParameter(puzzleIDParam, on: req, inTransaction: transaction)
+			let puzzleID = try puzzle.requireID()
+			if let body = data.body {
+				puzzle.body = body
+			}
+			if let title = data.title {
+				puzzle.title = title
+			}
+			if let answer = data.answer {
+				let normAnswer = answer.normalizePuzzleAnswer()
+				if normAnswer != puzzle.answer.normalizePuzzleAnswer() {
+					try await PuzzleCallIn.query(on: transaction)
+							.filter(\.$puzzle.$id == puzzleID)
+							.filter(\.$normalizedSubmission == normAnswer)
+							.filter(\.$result != .correct)
+							.set(\.$result, to: .correct)
+							.update()
+				}
+				puzzle.answer = answer
+			}
+			switch data.unlockTime {
+				case .absent:
+					break
+				case .null:
+					puzzle.unlockTime = nil
+				case .present(let unlockTime):
+					puzzle.unlockTime = unlockTime
+			}
+			try await puzzle.save(on: transaction)
+			return .noContent
 		}
-		if let title = data.title {
-			puzzle.title = title
-		}
-		switch data.unlockTime {
-			case .absent:
-				break
-			case .null:
-				puzzle.unlockTime = nil
-			case .present(let unlockTime):
-				puzzle.unlockTime = unlockTime
-		}
-		try await puzzle.save(on: req.db)
-		return .noContent
 	}
 
 	func deleteHunt(_ req: Request) async throws -> HTTPStatus {

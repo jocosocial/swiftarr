@@ -38,10 +38,13 @@
                             <textarea id="#(puzzle.id)/body" name="body" value="#(puzzle.body)" class="form-control" rows="5">#(puzzle.body)</textarea>
                             <button type="submit" class="btn btn-primary">Edit</button>
                         </form>
-                        <div class="mb-3">
+                        <form class="mb-3 ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
                             <label for="#(puzzle.id)/answer" class="form-label">Answer</label>
-                            <input id="#(puzzle.id)/answer" type="text" disabled name="answer" value="#(puzzle.answer)" class="form-control">
-                        </div>
+                            <div class="input-group">
+                                <input id="#(puzzle.id)/answer" type="text" name="answer" value="#(puzzle.answer)" class="form-control">
+                                <button type="submit" class="btn btn-primary">Edit</button>
+                            </div>
+                        </form>
                         <form class="mb-3 ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
                             <label for="#(puzzle.id)/unlockTime" class="form-label">Unlock Time</label>
                             <div class="input-group">
