@@ -18,7 +18,7 @@
 			</div>
 			<div class="list-group">
                 #for(puzzle in hunt.puzzles):
-					<a href="/puzzle/#(puzzle.puzzleID)" class="list-group-item list-group-item-action#if(puzzle.answer): bg-success-subtle#endif">
+					<a href="/puzzle/#(puzzle.puzzleID)" class="list-group-item list-group-item-action#if(puzzle.answer):border border-success bg-success-subtle#endif">
 						<div class="container-fluid">
 							<div class="row">
 								<div class="col fw-bold">
