@@ -21,6 +21,7 @@ struct HuntController: APIRouteCollection {
 		let adminAuthGroup = huntRoutes.tokenRoutes(feature: .hunts, minAccess: .twitarrteam)
 		adminAuthGroup.post("create", use: addHunt)
 		adminAuthGroup.get(huntIDParam, "admin", use: getHuntAdmin)
+		adminAuthGroup.patch(huntIDParam, use: updateHunt)
 		adminAuthGroup.patch("puzzles", puzzleIDParam, use: updatePuzzle)
 		adminAuthGroup.delete(huntIDParam, use: deleteHunt)
 	}
@@ -117,6 +118,16 @@ struct HuntController: APIRouteCollection {
 			}
 		}
 		return .created
+	}
+
+	func updateHunt(_ req: Request) async throws -> HTTPStatus {
+		let data = try req.content.decode(HuntPatchData.self)
+		let hunt = try await Hunt.findFromParameter(huntIDParam, on: req)
+		if let description = data.description {
+			hunt.description = description
+		}
+		try await hunt.save(on: req.db)
+		return .noContent
 	}
 
 	func updatePuzzle(_ req: Request) async throws -> HTTPStatus {

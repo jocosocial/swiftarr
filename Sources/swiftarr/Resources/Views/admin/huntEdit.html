@@ -12,10 +12,11 @@
                     </nav>
                 </div>
             </div>
-            <div class="mb-3">
+            <form class="mb-3 ajax" action="/admin/hunts/#(id)/edit" enctype="multipart/form-data" method="POST">
                 <label for="#(id)/description" class="form-label">Description</label>
-                <textarea id="#(id)/description" disabled name="description" value="#(description)" class="form-control" rows="5">#(description)</textarea>
-            </div>
+                <textarea id="#(id)/description"  name="description" value="#(description)" class="form-control" rows="5">#(description)</textarea>
+                <button type="submit" class="btn btn-primary">Edit</button>
+            </form>
 			<ul class="list-group">
                 #for(puzzle in puzzles):
 					<li class="list-group-item list-group-item-action container-fluid">

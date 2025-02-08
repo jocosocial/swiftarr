@@ -189,6 +189,10 @@ extension HuntCreateData: RCFValidatable {
 	}
 }
 
+public struct HuntPatchData: Content {
+	var description: String?
+}
+
 public enum ExplicitNull<C: Codable & Sendable>: Codable, Sendable {
 	case absent
 	case null

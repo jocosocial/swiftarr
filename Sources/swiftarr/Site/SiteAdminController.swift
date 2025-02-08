@@ -100,6 +100,7 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.post("hunts", "create", use: huntPostHandler)
 		privateTTRoutes.post("hunts", huntIDParam, "delete", use: huntDeleteHandler)
 		privateTTRoutes.get("hunts", huntIDParam, "edit", use: huntEditHandler)
+		privateTTRoutes.post("hunts", huntIDParam, "edit", use: huntEditPostHandler)
 		privateTTRoutes.post("puzzles", puzzleIDParam, "edit", use: puzzleEditPostHandler)
 
 		// Mods, TwitarrTeam, and THO levels can all be promoted to, but they all demote back to Verified.
@@ -676,6 +677,15 @@ struct SiteAdminController: SiteControllerUtils {
         let ctx = try SingleHuntPageContext(req, try response.content.decode(HuntData.self))
         return try await req.view.render("admin/huntEdit", ctx)
     }
+
+	func huntEditPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let huntID = req.parameters.get(huntIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			return .badRequest
+		}
+		let postStruct = try req.content.decode(HuntPatchData.self)
+        let response = try await apiQuery(req, endpoint: "/hunts/\(huntID)", method: .PATCH, encodeContent: postStruct)
+		return response.status
+	}
 
 	func puzzleEditPostHandler(_ req: Request) async throws -> HTTPStatus {
 		guard let puzzleID = req.parameters.get(puzzleIDParam.paramString)?.percentEncodeFilePathEntry() else {
