@@ -9,7 +9,7 @@
                             <li class="breadcrumb-item"><a href="/admin/hunts">Puzzle Hunts</a></li>
                             <li class="breadcrumb-item active" aria-current="page">
                                 <form class="ajax d-inline-block" action="/admin/hunt/#(id)/edit" enctype="multipart/form-data" method="POST"><div class="input-group input-group-sm">
-                                    <input id="#(id)/title" type="text" name="title" value="#(title)" class="form-control">
+                                    <input id="#(id)/title" type="text" name="title" required value="#(title)" class="form-control">
                                     <button type="submit" class="btn btn-primary">Edit</button>
                                 </div>
                                 </form>
@@ -29,7 +29,7 @@
                         <form class="mb-3 ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
                             <label for="#(puzzle.id)/title" class="form-label">Title</label>
                             <div class="input-group">
-                                <input id="#(puzzle.id)/title" type="text" name="title" value="#(puzzle.title)" class="form-control">
+                                <input id="#(puzzle.id)/title" type="text" name="title" required value="#(puzzle.title)" class="form-control">
                                 <button type="submit" class="btn btn-primary">Edit</button>
                             </div>
                         </form>
@@ -41,7 +41,7 @@
                         <form class="mb-3 ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
                             <label for="#(puzzle.id)/answer" class="form-label">Answer</label>
                             <div class="input-group">
-                                <input id="#(puzzle.id)/answer" type="text" name="answer" value="#(puzzle.answer)" class="form-control">
+                                <input id="#(puzzle.id)/answer" type="text" name="answer" required value="#(puzzle.answer)" class="form-control">
                                 <button type="submit" class="btn btn-primary">Edit</button>
                             </div>
                         </form>
