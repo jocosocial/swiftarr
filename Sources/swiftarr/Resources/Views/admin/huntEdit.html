@@ -69,7 +69,7 @@
                                                 <form class="ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
                                                     <input type="hidden" name="hintName" value="#(hint.key)">
                                                     <div class="input-group input-group-sm">
-                                                        <input id="#(puzzle.id)/hints/#(hint.key)" required type="text" name="hintValue" value="#(hint.value)">
+                                                        <input id="#(puzzle.id)/hints/#(hint.key)" required type="text" name="hintValue" value="#(hint.value)" class="form-control">
                                                         <button type="submit" class="btn btn-primary">Edit</button>
                                                     </div>
                                                 </form>
@@ -79,11 +79,11 @@
                                     <tr>
                                         <form class="ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
                                             <td>
-                                                <input id="#(puzzle.id)/newHint/name" type="text" name="hintName" required placeholder="Called-in text">
+                                                <input id="#(puzzle.id)/newHint/name" type="text" name="hintName" required placeholder="Called-in text" class="form-control form-control-sm">
                                             </td>
                                             <td>
                                                 <div class="input-group input-group-sm">
-                                                    <input id="#(puzzle.id)/newHint/value" type="text" name="hintValue" required placeholder="The hint to give">
+                                                    <input id="#(puzzle.id)/newHint/value" type="text" name="hintValue" required placeholder="The hint to give" class="form-control">
                                                     <button type="submit" class="btn btn-primary">Add</button>
                                                 </div>
                                             </td>
