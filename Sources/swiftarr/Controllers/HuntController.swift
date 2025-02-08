@@ -126,6 +126,9 @@ struct HuntController: APIRouteCollection {
 		if let description = data.description {
 			hunt.description = description
 		}
+		if let title = data.title {
+			hunt.title = title
+		}
 		try await hunt.save(on: req.db)
 		return .noContent
 	}

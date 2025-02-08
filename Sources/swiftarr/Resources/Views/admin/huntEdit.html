@@ -6,8 +6,14 @@
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb mb-0">
 							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
-                            <li class="breadcrumb-item" aria-current="page"><a href="/admin/hunts">Puzzle Hunts</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">#(title)</li>
+                            <li class="breadcrumb-item"><a href="/admin/hunts">Puzzle Hunts</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">
+                                <form class="ajax d-inline-block" action="/admin/hunts/#(id)/edit" enctype="multipart/form-data" method="POST"><div class="input-group input-group-sm">
+                                    <input id="#(id)/title" type="text" name="title" value="#(title)" class="form-control">
+                                    <button type="submit" class="btn btn-primary">Edit</button>
+                                </div>
+                                </form>
+                            </li>
                         </ol>
                     </nav>
                 </div>

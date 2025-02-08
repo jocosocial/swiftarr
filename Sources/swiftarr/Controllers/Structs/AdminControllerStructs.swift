@@ -190,6 +190,7 @@ extension HuntCreateData: RCFValidatable {
 }
 
 public struct HuntPatchData: Content {
+	var title: String?
 	var description: String?
 }
 
