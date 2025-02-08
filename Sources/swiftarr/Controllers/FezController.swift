@@ -316,7 +316,7 @@ struct FezController: APIRouteCollection {
 		let pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first()
 		var fezData = try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
 		if let _ = fezData.members {
-			let (posts, paginator) = try await buildPostsForFez(fez, pivot: pivot, on: req, user: cacheUser)
+			let (posts, paginator) = try await buildPostsForFez(fez, pivot: pivot, on: req, user: cacheUser, as: effectiveUser)
 			fezData.members?.paginator = paginator
 			fezData.members?.posts = posts
 		}
@@ -682,6 +682,7 @@ struct FezController: APIRouteCollection {
 		try await fez.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
 		try await fez.$participants.detachAll(on: req.db).get()
 		try await fez.delete(on: req.db)
+		_ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
 		return .noContent
 	}
 
@@ -1058,7 +1059,7 @@ extension FezController {
 			guard user.accessLevel >= .twitarrteam else {
 				throw Abort(.badRequest, reason: "Must have TwitarrTeam access to post as @TwitarrTeam")
 			}
-			guard let ttUser = req.userCache.getUser(username: "TwitarrTeam") else {
+			guard let ttUser = req.userCache.getUser(username: PrivilegedUser.TwitarrTeam.rawValue) else {
 				throw Abort(.internalServerError, reason: "Cannot find @TwitarrTeam user")
 			}
 			creator = ttUser
@@ -1067,7 +1068,7 @@ extension FezController {
 			guard user.accessLevel >= .moderator else {
 				throw Abort(.badRequest, reason: "Must have moderator access to post as @moderator")
 			}
-			guard let modUser = req.userCache.getUser(username: "moderator") else {
+			guard let modUser = req.userCache.getUser(username: PrivilegedUser.moderator.rawValue) else {
 				throw Abort(.internalServerError, reason: "Cannot find @moderator user")
 			}
 			creator = modUser
@@ -1200,8 +1201,8 @@ extension FezController {
 	}
 
 	// Remember that there can be posts by authors who are not currently participants.
-	func buildPostsForFez(_ fez: FriendlyFez, pivot: FezParticipant?, on req: Request, user: UserCacheData) async throws
-		-> ([FezPostData], Paginator)
+	func buildPostsForFez(_ fez: FriendlyFez, pivot: FezParticipant?, on req: Request, 
+		user: UserCacheData, as effectiveUser: UserCacheData) async throws -> ([FezPostData], Paginator)
 	{
 		let readCount = pivot?.readCount ?? 0
 		let hiddenCount = pivot?.hiddenCount ?? 0
@@ -1227,6 +1228,22 @@ extension FezController {
 			// If the user has now read all the posts (except those hidden from them) mark this notification as viewed.
 			if pivot.readCount + pivot.hiddenCount >= fez.postCount {
 				try await markNotificationViewed(user: user, type: .chatUnreadMsg(fez.requireID(), fez.fezType), on: req)
+				// If the user is part of a privileged mailbox (currently TwitarrTeam and Moderator)
+				// the first user to read the message counts it as read for everyone. The pivot
+				// has already been updated to reflect this, but a Redis notification will exist
+				// until this block executes which will mark the conversation read for all other
+				// privileged users of that level.
+				if let effectiveUsername = PrivilegedUser(rawValue: effectiveUser.username) {
+					var cacheUsers: [UserCacheData] = []
+					switch effectiveUsername {
+						case .TwitarrTeam: cacheUsers = req.userCache.allUsersWithAccessLevel(.twitarrteam)
+						case .moderator: cacheUsers = req.userCache.allUsersWithAccessLevel(.moderator)
+						case .admin, .THO: break // No special mailboxes for them.
+					}
+					// Mark as read for everyone in the group except the current user. We already
+					// did that above. Very minor optimization.
+					try await markNotificationViewed(for: cacheUsers.filter { $0.userID != user.userID }, type: .chatUnreadMsg(fez.requireID(), fez.fezType), on: req)
+				}
 			}
 		}
 		return (postDatas, paginator)
@@ -1259,13 +1276,13 @@ extension FezController {
 			return user
 		}
 		var effectiveUser = user
-		if effectiveUserParam.lowercased() == "moderator", let modUser = req.userCache.getUser(username: "moderator") {
+		if effectiveUserParam.lowercased() == PrivilegedUser.moderator.queryParam, let modUser = req.userCache.getUser(username: PrivilegedUser.moderator.rawValue) {
 			guard user.accessLevel.hasAccess(.moderator) else {
 				throw Abort(.forbidden, reason: "Only moderators can access moderator seamail.")
 			}
 			effectiveUser = modUser
 		}
-		if effectiveUserParam.lowercased() == "twitarrteam", let ttUser = req.userCache.getUser(username: "TwitarrTeam")
+		if effectiveUserParam.lowercased() == PrivilegedUser.TwitarrTeam.queryParam, let ttUser = req.userCache.getUser(username: PrivilegedUser.TwitarrTeam.rawValue)
 		{
 			guard user.accessLevel.hasAccess(.twitarrteam) else {
 				throw Abort(.forbidden, reason: "Only TwitarrTeam members can access TwitarrTeam seamail.")
@@ -1282,12 +1299,12 @@ extension FezController {
 	func getEffectiveUser(user: UserCacheData, req: Request, fez: FriendlyFez) -> UserCacheData {
 		// If either of these 'special' users are fez members and the user has high enough access, we can see the
 		// members-only values of the fez as the 'special' user.
-		if user.accessLevel >= .twitarrteam, let ttUser = req.userCache.getUser(username: "TwitarrTeam"),
+		if user.accessLevel >= .twitarrteam, let ttUser = req.userCache.getUser(username: PrivilegedUser.TwitarrTeam.rawValue),
 			fez.participantArray.contains(ttUser.userID)
 		{
 			return ttUser
 		}
-		if user.accessLevel >= .moderator, let modUser = req.userCache.getUser(username: "moderator"),
+		if user.accessLevel >= .moderator, let modUser = req.userCache.getUser(username: PrivilegedUser.moderator.rawValue),
 			fez.participantArray.contains(modUser.userID)
 		{
 			return modUser
