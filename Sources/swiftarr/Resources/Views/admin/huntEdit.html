@@ -27,7 +27,7 @@
                 #for(puzzle in puzzles):
 					<li class="list-group-item list-group-item-action container-fluid">
                         <form class="mb-3 ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
-                            <label for="#(puzzle.id)/title" class="form-label">Title</label>
+                            <label for="#(puzzle.id)/title" class="form-label">Puzzle Title</label>
                             <div class="input-group">
                                 <input id="#(puzzle.id)/title" type="text" name="title" required value="#(puzzle.title)" class="form-control">
                                 <button type="submit" class="btn btn-primary">Edit</button>
