@@ -698,6 +698,8 @@ struct SiteAdminController: SiteControllerUtils {
 			var body: String?
 			var answer: String?
 			var unlockTime: String?
+			var hintName: String?
+			var hintValue: String?
 		}
 		let postStruct = try req.content.decode(PuzzleEditPostData.self)
 		var patchStruct = HuntPuzzlePatchData(title: postStruct.title, body: postStruct.body, answer: postStruct.answer, unlockTime: .absent)
@@ -712,6 +714,9 @@ struct SiteAdminController: SiteControllerUtils {
 			}
 		} else {
 			patchStruct.unlockTime = .absent
+		}
+		if let hintName = postStruct.hintName, let hintValue = postStruct.hintValue {
+			patchStruct.hints = [hintName: hintValue]
 		}
         let response = try await apiQuery(req, endpoint: "/hunts/puzzles/\(puzzleID)", method: .PATCH, encodeContent: patchStruct)
 		return response.status

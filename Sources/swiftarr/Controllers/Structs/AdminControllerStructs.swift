@@ -257,6 +257,9 @@ public struct HuntPuzzlePatchData: Content {
 	var body: String?
 	var answer: String?
 	var unlockTime: ExplicitNull<Date>
+	/// If present, any hints here will be added if nor already present, or updated.
+	/// There is no way to delete an existing hint.
+	var hints: [String: String]?
 }
 
 /// Returns the registration code associated with a user. Not all users have registration codes; e.g. asking for the reg code for 'admin' will return an error.

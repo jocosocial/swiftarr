@@ -158,6 +158,23 @@ struct HuntController: APIRouteCollection {
 				}
 				puzzle.answer = answer
 			}
+			if let hints = data.hints {
+				var addedHints: [String] = []
+				hints.forEach {
+					let normHint = $0.normalizePuzzleAnswer()
+					if puzzle.hints.updateValue($1, forKey: normHint) == nil {
+						addedHints.append(normHint)
+					}
+				}
+				if addedHints.count > 0 {
+					try await PuzzleCallIn.query(on: transaction)
+							.filter(\.$puzzle.$id == puzzleID)
+							.filter(\.$normalizedSubmission ~~ addedHints)
+							.filter(\.$result == .incorrect)
+							.set(\.$result, to: .hint)
+							.update()
+				}
+			}
 			switch data.unlockTime {
 				case .absent:
 					break

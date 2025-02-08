@@ -64,10 +64,31 @@
                                 <tbody>
                                     #for(hint in puzzle.hints):
                                         <tr>
-                                            <td>#(hint.key)</td>
-                                            <td>#(hint.value)</td>
+                                            <td><label for="#(puzz.id)/hints/#(hint.key)">#(hint.key)</label></td>
+                                            <td>
+                                                <form class="ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
+                                                    <input type="hidden" name="hintName" value="#(hint.key)">
+                                                    <div class="input-group input-group-sm">
+                                                        <input id="#(puzz.id)/hints/#(hint.key)" required type="text" name="hintValue" value="#(hint.value)">
+                                                        <button type="submit" class="btn btn-primary">Edit</button>
+                                                    </div>
+                                                </form>
+                                            </td>
                                         </tr>
                                     #endfor
+                                    <tr>
+                                        <form class="ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
+                                            <td>
+                                                <input id="#(puzz.id)/newHint/name" type="text" name="hintName" required placeholder="Called-in text">
+                                            </td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <input id="#(puzz.id)/newHint/value" type="text" name="hintValue" required placeholder="The hint to give">
+                                                    <button type="submit" class="btn btn-primary">Add</button>
+                                                </div>
+                                            </td>
+                                        </form>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
