@@ -259,6 +259,10 @@ struct PerformerController: APIRouteCollection {
 	/// Removes the callers shadow event organizer Performer from the given Event.
 	/// At this time this capability has not been added to the site UI. Those users will
 	/// still delete their entire profile to remove from an event.
+	///
+	/// If we decide to disallow having shadow `Performer` models exist in a state where
+	// they aren't attached to any events, we'll need to add code here to delete the
+	// `Performer` model when their last EventPerformer pivot is deleted.
 	func deleteSelfPerformerForEvent(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		guard let performer = try await Performer.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first() else {
@@ -272,12 +276,6 @@ struct PerformerController: APIRouteCollection {
 		}
 		guard let _ = try await Event.find(eventID, on: req.db) else {
 			throw Abort(.badRequest, reason: "Event ID doesn't match any event in database.")
-		}		 
-		let eventCount = try await EventPerformer.query(on: req.db)
-				.join(Performer.self, on: \EventPerformer.$performer.$id == \Performer.$id)
-				.filter(Performer.self, \.$user.$id == cacheUser.userID).count()
-		guard eventCount <= 5 else {
-			throw Abort(.badRequest, reason: "Twitarr doesn't let a single person be the organizer for more than 5 Shadow Events as an anti-brigading defense. If you're actually the organizer for all these events (not ATTENDING them, ORGANIZING them) let us know.")
 		}
 
 		let eventPerformerQuery = try EventPerformer.query(on: req.db)
@@ -438,6 +436,7 @@ struct PerformerController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Request parameter identifying Performer is missing.")
 		}
 		if let performer = try await Performer.query(on: req.db).filter(\.$id == performerID).first() {
+			try await EventPerformer.query(on: req.db).filter(\.$performer.$id == performer.requireID()).delete()
 			try await performer.delete(on: req.db)
 			return .ok
 		}
