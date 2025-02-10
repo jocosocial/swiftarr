@@ -146,7 +146,7 @@ public struct UserEventNotificationJob: AsyncScheduledJob {
 				infoStr += " in \(location)."
 			}
 			await context.application.notificationSockets.forwardToSockets(app: context.application, idList: fez.participantArray,
-					type: .joinedLFGStarting(fezID), info: infoStr)
+					type: .chatStarting(fezID, type: fez.fezType), info: infoStr)
 		}
 	}
 
