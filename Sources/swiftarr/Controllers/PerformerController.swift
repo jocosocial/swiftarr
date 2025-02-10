@@ -166,7 +166,13 @@ struct PerformerController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Twitarr doesn't let a single person be the organizer for more than 5 Shadow Events as an anti-brigading defense. If you're actually the organizer for all these events (not ATTENDING them, ORGANIZING them) let us know.")
 		}
 		let uploadData = try req.content.decode(PerformerUploadData.self)
-		var performer = try await Performer.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first() ?? Performer()
+		// This will attempt to look up the callers existing Performer record, even if it is deleted.
+		// If they have none then a blank one is created. This is to ensure that there is only ever
+		// one Performer per User.
+		var performer = try await Performer.query(on: req.db).filter(\.$user.$id == cacheUser.userID).withDeleted().first() ?? Performer()
+		if (performer.deletedAt != nil) {
+			try await performer.restore(on: req.db)
+		}
 		try await buildPerformerFromUploadData(performer: &performer, uploadData: uploadData, on: req)
 		performer.officialPerformer = false
 		performer.$user.id = cacheUser.userID
