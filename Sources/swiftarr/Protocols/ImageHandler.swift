@@ -213,7 +213,55 @@ extension APIRouteCollection {
 			return fullPath.lastPathComponent
 		}.get()
 	}
-	
+
+	// Generate a thumbnail for the given image (by full path). Currently used in `copyImage`
+	// as part of the bulk user import process. Could stand to be deduped with `processImage`
+	// above some day since most of the code came from there.
+	func regenerateThumbnail(for imageSource: URL, on req: Request) async throws {
+		let imageName = imageSource.lastPathComponent
+		return try await req.application.threadPool.runIfActive(eventLoop: req.eventLoop) {
+			let data = try Data(contentsOf: imageSource)
+
+			let imageTypes: [ImportableFormat] = [.jpg, .png, .gif, .webp, .tiff, .bmp, .wbmp]
+			var foundType: ImportableFormat? = nil
+			var foundImage: GDImage?
+			for type in imageTypes {
+				foundImage = try? GDImage(data: data, as: type) 
+				if foundImage != nil{
+					foundType = type
+					break
+				}
+			}
+			guard let image = foundImage, let imageType = foundType else {
+				throw GDError.invalidImage(reason: "No matching raster formatter for given image found")
+			}
+
+			let destinationDir = Settings.shared.userImagesRootPath
+					.appendingPathComponent(ImageSizeGroup.thumbnail.rawValue)
+					.appendingPathComponent(String(imageName.prefix(2)))
+			// Testing this requires wiping out the thumbnail directory.
+			if (!FileManager.default.fileExists(atPath: destinationDir.path)) {
+				try FileManager.default.createDirectory(at: destinationDir, withIntermediateDirectories: true)
+			}
+			let thumbPath = destinationDir.appendingPathComponent(imageName)
+
+			guard let thumbnail = image.resizedTo(height: Settings.shared.imageThumbnailSize) else {
+				throw Abort(.internalServerError, reason: "Error generating thumbnail image")
+			}
+
+			// We've modified SwiftGD to call methods in gd_jpeg_custom.c instead of the gd_jpeg.c in the GD library.
+			// The customized .c file has extra code to save the image orientation in the gdImage struct.
+			// It's definitely a hack, as polyAllocated is not for this purpose.
+			//
+			// I don't know if this is needed here as well since we've already processed
+			// the image the first time.
+			let origOrientation = image.internalImage.pointee.polyAllocated
+			thumbnail.internalImage.pointee.polyAllocated = origOrientation
+			let thumbnailData = try thumbnail.export(as: ExportableFormat(imageType))
+			try thumbnailData.write(to: thumbPath)
+		}.get()
+	}
+
 	/// Archives an image that is no longer needed other than for accountability tracking, by
 	/// removing the full-sized image and moving the thumbnail into the `archive/` subdirectory
 	/// of the provided base image directory.
