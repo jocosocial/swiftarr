@@ -33,6 +33,9 @@ struct SiteHuntController: SiteControllerUtils {
             init(_ req: Request, _ hunt: HuntData) {
                 trunk = .init(req, title: "\(hunt.title) | Hunt", tab: .hunts)
                 self.hunt = hunt
+                if let nextUnlockTime = hunt.nextUnlockTime {
+                    trunk.metaRefreshSeconds = Int(max(ceil(Date().distance(to: nextUnlockTime)), 2))
+                }
             }
         }
 		guard let huntID = req.parameters.get(huntIDParam.paramString)?.percentEncodeFilePathEntry() else {

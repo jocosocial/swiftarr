@@ -4,6 +4,7 @@ import Vapor
 // Leaf data used by all views. Mostly this is stuff in the navbar.
 struct TrunkContext: Encodable {
 	var title: String
+	var metaRefreshSeconds: Int?
 	var metaRedirectURL: String?
 
 	// current nav item
