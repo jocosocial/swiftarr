@@ -249,14 +249,6 @@ extension APIRouteCollection {
 				throw Abort(.internalServerError, reason: "Error generating thumbnail image")
 			}
 
-			// We've modified SwiftGD to call methods in gd_jpeg_custom.c instead of the gd_jpeg.c in the GD library.
-			// The customized .c file has extra code to save the image orientation in the gdImage struct.
-			// It's definitely a hack, as polyAllocated is not for this purpose.
-			//
-			// I don't know if this is needed here as well since we've already processed
-			// the image the first time.
-			let origOrientation = image.internalImage.pointee.polyAllocated
-			thumbnail.internalImage.pointee.polyAllocated = origOrientation
 			let thumbnailData = try thumbnail.export(as: ExportableFormat(imageType))
 			try thumbnailData.write(to: thumbPath)
 		}.get()
