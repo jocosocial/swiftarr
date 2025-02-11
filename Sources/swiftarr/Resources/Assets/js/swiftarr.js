@@ -441,6 +441,10 @@ async function submitAJAXForm(formElement, event) {
 		let response = await fetch(formElement.action, { method: 'POST', body: uploadBody });
 		if (response.status < 300) {
 			let successURL = formElement.dataset.successurl;
+			if (!successURL) {
+				location.reload();
+				return;
+			}
 			formElement.reset();
 			for (let elem of formElement.querySelectorAll('textarea,input.text')) {
 				elem.value = "";
@@ -451,12 +455,9 @@ async function submitAJAXForm(formElement, event) {
 				formElement.querySelector('.alert-success')?.classList.remove("d-none")
 				spinnerElem?.classList.add("d-none");
 			}
-			else if (successURL) {
+			else {
 				location.assign(successURL);
 				spinnerElem?.classList.add("d-none");
-			}
-			else {
-				location.reload();
 			}
 		}
 		else {
