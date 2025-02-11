@@ -819,6 +819,12 @@ extension HuntListItemData {
 	}
 }
 
+/// Used to return a single hunt in as much detail as the caller can see.
+/// For example, it only includes the currently unlocked puzzles, and puzzles
+/// only have their answer field set if the user is logged in and has solved them.
+/// Returned by:
+/// * `GET /api/v3/hunts/:huntID`
+/// * `GET /api/v2/hunts/:huntID/admin` (only usable by Twitarr team and above)
 public struct HuntData: Content {
 	var huntID: UUID
 	var title: String
@@ -857,10 +863,10 @@ public struct HuntPuzzleData: Content {
 	var puzzleID: UUID
 	var title: String
 	var body: String
-	/// The answer to this puzzle, if you have solved it or are an admin.
+	/// The answer to this puzzle, if you have solved it or are using the admin interface.
 	var answer: String?
 	var unlockTime: Date?
-	// Only set for admins.
+	// Only set if fetched via the admin interface
 	var hints: [String:String]?
 }
 
@@ -884,6 +890,9 @@ extension HuntPuzzleData {
 	}
 }
 
+/// A single puzzle, including (if you're logged in) all of your callin attempts on it.
+/// Returned by:
+/// * `GET /api/v2/hunts/puzzles/:puzzleID`
 public struct HuntPuzzleDetailData: Content {
 	var huntID: UUID
 	var huntTitle: String

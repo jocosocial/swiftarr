@@ -168,6 +168,8 @@ public struct EventPerformerValidationData: Content {
 	var errors: [String]
 }
 
+/// Used to create a hunt including all puzzles.
+/// Required by `POST /api/v3/hunts/create`
 public struct HuntCreateData: Content {
 	var title: String
 	var description: String
@@ -189,11 +191,16 @@ extension HuntCreateData: RCFValidatable {
 	}
 }
 
+/// Used to edit a hunt.
+/// nil fields are not modified.
+/// Required by: `PATCH /api/v3/hunts/:huntID`
 public struct HuntPatchData: Content {
 	var title: String?
 	var description: String?
 }
 
+/// A twist on Optional that, in a KeyedValueContainer, can distinguish between being
+/// unset entirely and being explicitly set to the nil value.
 public enum ExplicitNull<C: Codable & Sendable>: Codable, Sendable {
 	case absent
 	case null
@@ -252,6 +259,7 @@ extension KeyedEncodingContainer {
 /// ExplicitNull fields in this are optional in Puzzle.
 /// If absent in the JSON, not affected.
 /// If present and null, will unset the field.
+/// Required by: `PATCH /api/v3/hunts/puzzle/:puzzleID`
 public struct HuntPuzzlePatchData: Content {
 	var title: String?
 	var body: String?
