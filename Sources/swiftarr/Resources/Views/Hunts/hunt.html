@@ -1,52 +1,52 @@
 #extend("trunk"):
-    #export("body"):
-        <div class="container-md ms-0">
-            <div class="row align-items-center my-1">
-                <div class="col col-12">
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb mb-0">
-                            <li class="breadcrumb-item" aria-current="page"><a href="/hunts">Puzzle Hunts</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">#(hunt.title)</li>
-                        </ol>
-                    </nav>
-                </div>
-            </div>
-    		<div class="row mb-2">
-    			<div class="col col-12">
-    				#markdownTextTag(hunt.description)
+	#export("body"):
+		<div class="container-md ms-0">
+			<div class="row align-items-center my-1">
+				<div class="col col-12">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb mb-0">
+							<li class="breadcrumb-item" aria-current="page"><a href="/hunts">Puzzle Hunts</a></li>
+							<li class="breadcrumb-item active" aria-current="page">#(hunt.title)</li>
+						</ol>
+					</nav>
 				</div>
 			</div>
-            #if(count(hunt.puzzles) > 0):
-                <div class="list-group">
-                    #for(puzzle in hunt.puzzles):
-                        <a href="/puzzle/#(puzzle.puzzleID)" class="list-group-item list-group-item-action#if(puzzle.answer): bg-success-subtle#endif">
-                            <div class="container-fluid">
-                                <div class="row">
-                                    <div class="col fw-bold">
-                                        #(puzzle.title)
-                                    </div>
-                                </div>
-                                #if(puzzle.answer):
-                                    <div class="row">
-                                        <div class="col text-success text-uppercase">
-                                            #(puzzle.answer)
-                                        </div>
-                                    </div>
-                                #endif
-                            </div>
-                        </a>
-                    #endfor
-                </div>
-            #endif
-            #if(hunt.nextUnlockTime):
-                <div class="container-fluid">
-                    <div class="row">
-                        <div class="col text-muted">
-                            Next puzzle unlocks at #staticTime(hunt.nextUnlockTime)
-                        </div>
-                    </div>
-                </div>
-            #endif
+			<div class="row mb-2">
+				<div class="col col-12">
+					#markdownTextTag(hunt.description)
+				</div>
+			</div>
+			#if(count(hunt.puzzles) > 0):
+				<div class="list-group">
+					#for(puzzle in hunt.puzzles):
+						<a href="/puzzle/#(puzzle.puzzleID)" class="list-group-item list-group-item-action#if(puzzle.answer): bg-success-subtle#endif">
+							<div class="container-fluid">
+								<div class="row">
+									<div class="col fw-bold">
+										#(puzzle.title)
+									</div>
+								</div>
+								#if(puzzle.answer):
+									<div class="row">
+										<div class="col text-success text-uppercase">
+											#(puzzle.answer)
+										</div>
+									</div>
+								#endif
+							</div>
+						</a>
+					#endfor
+				</div>
+			#endif
+			#if(hunt.nextUnlockTime):
+				<div class="container-fluid">
+					<div class="row">
+						<div class="col text-muted">
+							Next puzzle unlocks at #staticTime(hunt.nextUnlockTime)
+						</div>
+					</div>
+				</div>
+			#endif
 		</div>
-    #endexport
+	#endexport
 #endextend

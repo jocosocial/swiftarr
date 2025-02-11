@@ -1,100 +1,100 @@
 #extend("trunk"):
-    #export("body"):
-        <div class="container-md ms-0">
-            <div class="row align-items-center my-1">
-                <div class="col col-12">
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb mb-0">
+	#export("body"):
+		<div class="container-md ms-0">
+			<div class="row align-items-center my-1">
+				<div class="col col-12">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb mb-0">
 							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
-                            <li class="breadcrumb-item"><a href="/admin/hunts">Puzzle Hunts</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">
-                                <form class="ajax d-inline-block" action="/admin/hunt/#(id)/edit" enctype="multipart/form-data" method="POST"><div class="input-group input-group-sm">
-                                    <input id="#(id)/title" type="text" name="title" required value="#(title)" class="form-control">
-                                    <button type="submit" class="btn btn-primary">Edit</button>
-                                </div>
-                                </form>
-                            </li>
-                        </ol>
-                    </nav>
-                </div>
-            </div>
-            <form class="mb-3 ajax" action="/admin/hunt/#(id)/edit" enctype="multipart/form-data" method="POST">
-                <label for="#(id)/description" class="form-label">Description</label>
-                <textarea id="#(id)/description"  name="description" value="#(description)" class="form-control" rows="5">#(description)</textarea>
-                <button type="submit" class="btn btn-primary">Edit</button>
-            </form>
+							<li class="breadcrumb-item"><a href="/admin/hunts">Puzzle Hunts</a></li>
+							<li class="breadcrumb-item active" aria-current="page">
+								<form class="ajax d-inline-block" action="/admin/hunt/#(id)/edit" enctype="multipart/form-data" method="POST"><div class="input-group input-group-sm">
+									<input id="#(id)/title" type="text" name="title" required value="#(title)" class="form-control">
+									<button type="submit" class="btn btn-primary">Edit</button>
+								</div>
+								</form>
+							</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<form class="mb-3 ajax" action="/admin/hunt/#(id)/edit" enctype="multipart/form-data" method="POST">
+				<label for="#(id)/description" class="form-label">Description</label>
+				<textarea id="#(id)/description"  name="description" value="#(description)" class="form-control" rows="5">#(description)</textarea>
+				<button type="submit" class="btn btn-primary">Edit</button>
+			</form>
 			<ul class="list-group">
-                #for(puzzle in puzzles):
+				#for(puzzle in puzzles):
 					<li class="list-group-item list-group-item-action container-fluid">
-                        <form class="mb-3 ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
-                            <label for="#(puzzle.id)/title" class="form-label">Puzzle Title</label>
-                            <div class="input-group">
-                                <input id="#(puzzle.id)/title" type="text" name="title" required value="#(puzzle.title)" class="form-control">
-                                <button type="submit" class="btn btn-primary">Edit</button>
-                            </div>
-                        </form>
-                        <form class="mb-3 ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
-                            <label for="#(puzzle.id)/body" class="form-label">Body</label>
-                            <textarea id="#(puzzle.id)/body" name="body" value="#(puzzle.body)" class="form-control" rows="5">#(puzzle.body)</textarea>
-                            <button type="submit" class="btn btn-primary">Edit</button>
-                        </form>
-                        <form class="mb-3 ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
-                            <label for="#(puzzle.id)/answer" class="form-label">Answer</label>
-                            <div class="input-group">
-                                <input id="#(puzzle.id)/answer" type="text" name="answer" required value="#(puzzle.answer)" class="form-control">
-                                <button type="submit" class="btn btn-primary">Edit</button>
-                            </div>
-                        </form>
-                        <form class="mb-3 ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
-                            <label for="#(puzzle.id)/unlockTime" class="form-label">Unlock Time</label>
-                            <div class="input-group">
-                                <input id="#(puzzle.id)/unlockTime" type="datetime-local" step="1" name="unlockTime" value="#if(puzzle.unlockTime):#localTime(puzzle.unlockTime)#endif" class="form-control">
-                                <button type="submit" class="btn btn-primary">Edit</button>
-                            </div>
-                        </form>
-                        <div class="mb-3">
-                            <label class="form-label">Hints</label>
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Input</th>
-                                        <th>Hint</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    #for(hint in puzzle.hints):
-                                        <tr>
-                                            <td><label for="#(puzzle.id)/hints/#(hint.key)">#(hint.key)</label></td>
-                                            <td>
-                                                <form class="ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
-                                                    <input type="hidden" name="hintName" value="#(hint.key)">
-                                                    <div class="input-group input-group-sm">
-                                                        <input id="#(puzzle.id)/hints/#(hint.key)" required type="text" name="hintValue" value="#(hint.value)" class="form-control">
-                                                        <button type="submit" class="btn btn-primary">Edit</button>
-                                                    </div>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    #endfor
-                                    <tr>
-                                        <form class="ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
-                                            <td>
-                                                <input id="#(puzzle.id)/newHint/name" type="text" name="hintName" required placeholder="Called-in text" class="form-control form-control-sm">
-                                            </td>
-                                            <td>
-                                                <div class="input-group input-group-sm">
-                                                    <input id="#(puzzle.id)/newHint/value" type="text" name="hintValue" required placeholder="The hint to give" class="form-control">
-                                                    <button type="submit" class="btn btn-primary">Add</button>
-                                                </div>
-                                            </td>
-                                        </form>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+						<form class="mb-3 ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
+							<label for="#(puzzle.id)/title" class="form-label">Puzzle Title</label>
+							<div class="input-group">
+								<input id="#(puzzle.id)/title" type="text" name="title" required value="#(puzzle.title)" class="form-control">
+								<button type="submit" class="btn btn-primary">Edit</button>
+							</div>
+						</form>
+						<form class="mb-3 ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
+							<label for="#(puzzle.id)/body" class="form-label">Body</label>
+							<textarea id="#(puzzle.id)/body" name="body" value="#(puzzle.body)" class="form-control" rows="5">#(puzzle.body)</textarea>
+							<button type="submit" class="btn btn-primary">Edit</button>
+						</form>
+						<form class="mb-3 ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
+							<label for="#(puzzle.id)/answer" class="form-label">Answer</label>
+							<div class="input-group">
+								<input id="#(puzzle.id)/answer" type="text" name="answer" required value="#(puzzle.answer)" class="form-control">
+								<button type="submit" class="btn btn-primary">Edit</button>
+							</div>
+						</form>
+						<form class="mb-3 ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
+							<label for="#(puzzle.id)/unlockTime" class="form-label">Unlock Time</label>
+							<div class="input-group">
+								<input id="#(puzzle.id)/unlockTime" type="datetime-local" step="1" name="unlockTime" value="#if(puzzle.unlockTime):#localTime(puzzle.unlockTime)#endif" class="form-control">
+								<button type="submit" class="btn btn-primary">Edit</button>
+							</div>
+						</form>
+						<div class="mb-3">
+							<label class="form-label">Hints</label>
+							<table class="table">
+								<thead>
+									<tr>
+										<th>Input</th>
+										<th>Hint</th>
+									</tr>
+								</thead>
+								<tbody>
+									#for(hint in puzzle.hints):
+										<tr>
+											<td><label for="#(puzzle.id)/hints/#(hint.key)">#(hint.key)</label></td>
+											<td>
+												<form class="ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
+													<input type="hidden" name="hintName" value="#(hint.key)">
+													<div class="input-group input-group-sm">
+														<input id="#(puzzle.id)/hints/#(hint.key)" required type="text" name="hintValue" value="#(hint.value)" class="form-control">
+														<button type="submit" class="btn btn-primary">Edit</button>
+													</div>
+												</form>
+											</td>
+										</tr>
+									#endfor
+									<tr>
+										<form class="ajax" action="/admin/puzzle/#(puzzle.id)/edit" enctype="multipart/form-data" method="POST">
+											<td>
+												<input id="#(puzzle.id)/newHint/name" type="text" name="hintName" required placeholder="Called-in text" class="form-control form-control-sm">
+											</td>
+											<td>
+												<div class="input-group input-group-sm">
+													<input id="#(puzzle.id)/newHint/value" type="text" name="hintValue" required placeholder="The hint to give" class="form-control">
+													<button type="submit" class="btn btn-primary">Add</button>
+												</div>
+											</td>
+										</form>
+									</tr>
+								</tbody>
+							</table>
+						</div>
 					</li>
 				#endfor
-            </ul>
+			</ul>
 		</div>
-    #endexport
+	#endexport
 #endextend
