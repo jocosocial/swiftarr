@@ -939,7 +939,7 @@ struct AdminController: APIRouteCollection {
 		var imageImportError: String?
 		do {
 			if let userImage = userToImport.userImage {
-				copiedUserImage = try await copyImage(userImage, verifyOnly: verifyOnly)
+				copiedUserImage = try await copyImage(userImage, verifyOnly: verifyOnly, on: req)
 			}
 		}
 		catch {
@@ -1071,7 +1071,7 @@ struct AdminController: APIRouteCollection {
 		var copiedUserImage: String?
 		do {
 			if let image = performerData.photo.filename {
-				copiedUserImage = try await copyImage(image, verifyOnly: verifyOnly)
+				copiedUserImage = try await copyImage(image, verifyOnly: verifyOnly, on: req)
 			}
 		}
 		catch {
@@ -1132,7 +1132,7 @@ struct AdminController: APIRouteCollection {
 	}
 
 	// Copy an image from the uploaded data bundle to the expected location on the filesystem.
-	func copyImage(_ image: String, verifyOnly: Bool) async throws -> String {
+	func copyImage(_ image: String, verifyOnly: Bool, on req: Request) async throws -> String {
 		let archiveSource = try uploadUserDirPath().appendingPathComponent("Twitarr_userfile/userImages", isDirectory: true)
 				.appendingPathComponent(image)
 		let serverImageDestDir = Settings.shared.userImagesRootPath.appendingPathComponent(ImageSizeGroup.full.rawValue)
@@ -1148,6 +1148,9 @@ struct AdminController: APIRouteCollection {
 				try FileManager.default.createDirectory(at: serverImageDestDir, withIntermediateDirectories: true)
 			}
 			try FileManager.default.copyItem(at: archiveSource, to: serverImageDest)
+		}
+		if !verifyOnly {
+			try await regenerateThumbnail(for: serverImageDest, on: req)
 		}
 		return image
 	}
