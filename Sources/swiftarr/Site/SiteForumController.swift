@@ -78,6 +78,7 @@ struct ForumsSearchPageContext: Encodable {
 	var sortOrders: [ForumsSortOrder]
 	var formData: SearchFormData?
 	var categoryData: CategoryData?
+	var sortDirection: String?
 
 	enum SearchType: String, Codable {
 		case owned  // Created by this user
@@ -86,6 +87,10 @@ struct ForumsSearchPageContext: Encodable {
 		case textSearch  // Searches title for string
 		case mute  // Muted forums by this user
 		case unread // Unread forums by this user
+	}
+
+	struct QueryParams: Content {
+		var order: String?
 	}
 
 	init(_ req: Request, forums: ForumSearchData, searchType: SearchType, filterDesc: String, formData: SearchFormData? = nil) throws {
@@ -114,6 +119,8 @@ struct ForumsSearchPageContext: Encodable {
 		}
 		self.formData = formData
 		filterDescription = filterDesc
+		let params: ForumsSearchPageContext.QueryParams = try req.query.decode(QueryParams.self)
+		sortDirection = params.order
 		if searchType == .recent {
 			sortOrders = []
 		}
@@ -357,12 +364,23 @@ struct SiteForumController: SiteControllerUtils {
 			var forums: CategoryData
 			var paginator: PaginatorContext
 			var sortOrders: [ForumsSortOrder]
+			var sortDirection: String?
+
+			struct QueryParams: Content {
+				var order: String?
+			}
 
 			init(_ req: Request, forums: CategoryData, start: Int, limit: Int) throws {
 				trunk = .init(req, title: "\(forums.title) | Forum Threads", tab: .forums)
 				self.forums = forums
+				let params = try req.query.decode(QueryParams.self)
+				sortDirection = params.order
+				var paginationSortParam = ""
+				if let direction = sortDirection {
+					paginationSortParam = "&order=\(direction)"
+				}
 				paginator = .init(start: start, total: Int(forums.paginator.total), limit: limit) { pageIndex in
-					"/forums/\(forums.categoryID)?start=\(pageIndex * limit)&limit=\(limit)"
+					"/forums/\(forums.categoryID)?start=\(pageIndex * limit)&limit=\(limit)\(paginationSortParam)"
 				}
 
 				sortOrders = [
