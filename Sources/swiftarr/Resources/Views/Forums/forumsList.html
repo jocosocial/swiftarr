@@ -31,6 +31,20 @@
 						</div>
 					</div>
 				#endif
+
+				<div class="col col-auto ps-2">
+					<div class="dropdown">
+						<button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="forumOrderMenu" data-bs-toggle="dropdown" data-selected="all" aria-expanded="false">
+							Order
+						</button>
+						<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="forumOrderMenu">
+							<li><button class="dropdown-item" type="button" data-action="sortForumDirection" data-selection="default">Default</button></li>
+							<li><hr class="dropdown-divider"></li>
+							<li><button class="dropdown-item #if(sortDirection == "ascending"):active#endif" type="button" data-action="sortForumDirection" data-selection="ascending">Ascending</button></li>
+							<li><button class="dropdown-item #if(sortDirection == "descending"):active#endif" type="button" data-action="sortForumDirection" data-selection="descending">Descending</button></li>
+						</ul>
+					</div>
+				</div>
 				
 			</div>
 			<div class="list-group">

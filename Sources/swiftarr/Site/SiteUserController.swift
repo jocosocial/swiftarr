@@ -456,7 +456,12 @@ struct SiteUserController: SiteControllerUtils {
 				try await apiQuery(req, endpoint: "/user/\(targetUserIDVal)/image", method: .DELETE)
 			}
 		}
-		else if let photo = profileStruct.avatarPhotoInput {
+		// https://github.com/jocosocial/swiftarr/issues/381
+		// Either we've had this bug for years, or something along the way (Swift 6 maybe)
+		// decoded the avatarPhotoInput into Data of Optional(0 bytes) which was truthy
+		// enough to trigger this conditional causing uploaded avatars to be wiped out if
+		// the user edited their profile.
+		else if let photo = profileStruct.avatarPhotoInput, !photo.isEmpty {
 			try await apiQuery(req, endpoint: "/user/image", method: .POST, encodeContent: ImageUploadData(nil, photo))
 		}
 		else if profileStruct.serverAvatarPhoto.hasPrefix("/api/v3/image/user/identicon") {

@@ -34,6 +34,10 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 			dropdownButtonSetup(btn);
 			btn.addEventListener("click", fezFilterDropdownTappedAction);
 			break;
+		case "sortForumDirection":
+			dropdownButtonSetup(btn);
+			btn.addEventListener("click", forumSortDirectionDropdownTappedAction);
+			break;
 	}
 }
 
@@ -646,6 +650,27 @@ function applyFezSearchFilters() {
 		}
 	}
 	window.location.href = window.location.href.split("?")[0] + queryString;
+}
+
+// MARK: - Forum Handlers
+
+function forumSortDirectionDropdownTappedAction(event) {
+	updateDropdownButton(event.target);
+	applyForumDirection();
+}
+
+function applyForumDirection() {
+	let orderSelection = document.getElementById("forumOrderMenu").dataset.selected;
+    let url = new URL(window.location.href);
+    let params = url.searchParams;
+
+    if (orderSelection === "default") {
+        params.delete("order");
+    } else {
+        params.set("order", orderSelection);
+    }
+
+    window.location.href = url.origin + url.pathname + (params.toString() ? "?" + params.toString() : "");
 }
 
 // Populates username completions for a partial username.
