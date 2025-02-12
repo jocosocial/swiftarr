@@ -15,13 +15,15 @@ extension Model where IDValue: LosslessStringConvertible {
 	///	- Parameter param: A PathComponent describing a path component of type .parameter
 	/// - Parameter req: The incoming request `Container`, which provides the `EventLoop` on
 	///   which the query must be run.
+	/// - Parameter transaction: The transaction to query the database in. If unset, uses req.db and doesn't run the query in a transaction.
 	/// - Returns: `[UUID]` containing all the user's associated IDs.
 	static func findFromParameter(
 		_ param: PathComponent,
 		on req: Request,
+		inTransaction transaction: (any Database)? = nil,
 		builder: ((QueryBuilder<Self>) -> Void)? = nil
 	) async throws -> Self {
-		return try await findFromParameter(param.description, on: req, builder: builder)
+		return try await findFromParameter(param.description, on: req, inTransaction: transaction, builder: builder)
 	}
 
 	/// Returns a `Model` that will match the ID given in a named request parameter.
@@ -31,11 +33,13 @@ extension Model where IDValue: LosslessStringConvertible {
 	///
 	///	- Parameter param: The name of a request parameter e.g. "user_id"
 	/// - Parameter req: The incoming request `Container`, which provides the `EventLoop` on which the query must be run.
+	/// - Parameter transaction: The transaction to query the database in. If unset, uses req.db and doesn't run the query in a transaction.
 	/// - Parameter builder:A block that runs during query construction; mostly lets callers add `.with()` clauses to the query.
 	/// - Returns: `[UUID]` containing all the user's associated IDs.
-	static func findFromParameter(_ param: String, on req: Request, builder: ((QueryBuilder<Self>) -> Void)? = nil)
+	static func findFromParameter(_ param: String, on req: Request, inTransaction transaction: (any Database)? = nil, builder: ((QueryBuilder<Self>) -> Void)? = nil)
 		async throws -> Self
 	{
+		let database = transaction ?? req.db
 		let paramName = param.hasPrefix(":") ? String(param.dropFirst()) : param
 		guard let paramVal = req.parameters.get(paramName) else {
 			throw Abort(.badRequest, reason: "Request parameter \(param) is missing.")
@@ -43,7 +47,7 @@ extension Model where IDValue: LosslessStringConvertible {
 		guard let objectID = IDValue(paramVal) else {
 			throw Abort(.badRequest, reason: "Request parameter \(param) with value \(paramVal) is malformed.")
 		}
-		let query = Self.query(on: req.db).filter(\._$id == objectID)
+		let query = Self.query(on: database).filter(\._$id == objectID)
 		builder?(query)
 		guard let result = try await query.first() else {
 			throw Abort(.notFound, reason: "no value found for identifier '\(paramVal)'")

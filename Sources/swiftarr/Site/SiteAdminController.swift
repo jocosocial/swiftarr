@@ -95,6 +95,14 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.post("userroles", userRoleParam, "addrole", userIDParam, use: addRoleToUser)
 		privateTTRoutes.post("userroles", userRoleParam, "removerole", userIDParam, use: removeRoleFromUser)
 
+		
+		privateTTRoutes.get("hunts", use: huntHandler)
+		privateTTRoutes.post("hunt", "create", use: huntPostHandler)
+		privateTTRoutes.post("hunt", huntIDParam, "delete", use: huntDeleteHandler)
+		privateTTRoutes.get("hunt", huntIDParam, "edit", use: huntEditHandler)
+		privateTTRoutes.post("hunt", huntIDParam, "edit", use: huntEditPostHandler)
+		privateTTRoutes.post("puzzle", puzzleIDParam, "edit", use: puzzleEditPostHandler)
+
 		// Mods, TwitarrTeam, and THO levels can all be promoted to, but they all demote back to Verified.
 		let privateTHORoutes = getPrivateRoutes(app, minAccess: .tho, path: "admin")
 		privateTHORoutes.get("mods", use: getModsHandler)
@@ -525,7 +533,7 @@ struct SiteAdminController: SiteControllerUtils {
 		return try await req.view.render("admin/serverRollup", ctx)
 	}
 
-// MARK: - TZ, Karaoke, Games
+// MARK: - TZ, Karaoke, Games, Hunts
 	// GET /admin/timezonechanges
 	//
 	// Shows the list of time zone changes that occur during the cruise.
@@ -590,6 +598,135 @@ struct SiteAdminController: SiteControllerUtils {
 	// probably via git push.
 	func boardGamesPostHandler(_ req: Request) async throws -> HTTPStatus {
 		try await apiQuery(req, endpoint: "/boardgames/reload", method: .POST)
+		return .ok
+	}
+
+	func huntHandler(_ req: Request) async throws -> View {
+		struct AdminHuntsContext: Encodable {
+			var trunk: TrunkContext
+			var hunts: HuntListData
+
+			init(_ req: Request, _ hunts: HuntListData) throws {
+				trunk = .init(req, title: "Hunts Admin", tab: .admin)
+				self.hunts = hunts
+			}
+		}
+		let response = try await apiQuery(req, endpoint: "/hunts")
+		let ctx = try AdminHuntsContext(req, try response.content.decode(HuntListData.self))
+		return try await req.view.render("admin/hunts", ctx)
+	}
+
+	func huntPostHandler(_ req: Request) async throws -> HTTPStatus {
+		struct HuntPostContent: Codable {
+			let huntJson: String
+		}
+		let postStruct = try req.content.decode(HuntPostContent.self)
+		guard let jsonData = postStruct.huntJson.data(using: .utf8) else {
+			return .badRequest
+		}
+		try await apiQuery(req, endpoint: "/hunts/create", method: .POST, encodeContent: try JSONDecoder.custom(dates: .iso8601).decode(HuntCreateData.self, from: jsonData))
+		return .ok
+	}
+
+    func huntEditHandler(_ req: Request) async throws -> View {
+		struct HintContext: Encodable {
+			var key: String
+			var value: String
+			init(_ element: [String:String].Element) {
+				key = element.key
+				value = element.value
+			}
+		}
+		struct PuzzleContext: Encodable {
+			var id: UUID
+			var title: String
+			var body: String
+			var answer: String
+			var unlockTime: Date?
+			var hints: [HintContext]
+			init(_ puzzle: HuntPuzzleData) throws {
+				id = puzzle.puzzleID
+				title = puzzle.title
+				body = puzzle.body
+				guard let answer = puzzle.answer else {
+					throw "answer must be set for admin"
+				}
+				self.answer = answer
+				unlockTime = puzzle.unlockTime
+				hints = puzzle.hints?.sorted(by: <).map({HintContext($0)}) ?? []
+			}
+		}
+        struct SingleHuntPageContext: Encodable {
+            var trunk: TrunkContext
+			var id: UUID
+			var title: String
+			var description: String
+			var puzzles: [PuzzleContext]
+            init(_ req: Request, _ hunt: HuntData) throws {
+                trunk = .init(req, title: "\(hunt.title) | Hunt Admin", tab: .admin)
+				id = hunt.huntID
+				title = hunt.title
+				description = hunt.description
+				puzzles = try hunt.puzzles.map({try PuzzleContext($0)})
+            }
+        }
+		guard let huntID = req.parameters.get(huntIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw "Invalid hunt ID"
+		}
+        let response = try await apiQuery(req, endpoint: "/hunts/\(huntID)/admin")
+        let ctx = try SingleHuntPageContext(req, try response.content.decode(HuntData.self))
+        return try await req.view.render("admin/huntEdit", ctx)
+    }
+
+	func huntEditPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let huntID = req.parameters.get(huntIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			return .badRequest
+		}
+		let postStruct = try req.content.decode(HuntPatchData.self)
+        let response = try await apiQuery(req, endpoint: "/hunts/\(huntID)", method: .PATCH, encodeContent: postStruct)
+		return response.status
+	}
+
+	func puzzleEditPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let puzzleID = req.parameters.get(puzzleIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			return .badRequest
+		}
+		// Needs to be slightly different from HuntPuzzlePatchData because we need to feed unlockTime through
+		// dateFromW3DatetimeString.
+		struct PuzzleEditPostData: Content {
+			var title: String?
+			var body: String?
+			var answer: String?
+			var unlockTime: String?
+			var hintName: String?
+			var hintValue: String?
+		}
+		let postStruct = try req.content.decode(PuzzleEditPostData.self)
+		var patchStruct = HuntPuzzlePatchData(title: postStruct.title, body: postStruct.body, answer: postStruct.answer, unlockTime: .absent)
+		if let unlockTime = postStruct.unlockTime {
+			if unlockTime == "" {
+				patchStruct.unlockTime = .null
+			} else {
+				guard let unlockDate = dateFromW3DatetimeString(unlockTime) else {
+					return .badRequest
+				}
+				patchStruct.unlockTime = .present(unlockDate)
+			}
+		} else {
+			patchStruct.unlockTime = .absent
+		}
+		if let hintName = postStruct.hintName, let hintValue = postStruct.hintValue {
+			patchStruct.hints = [hintName: hintValue]
+		}
+        let response = try await apiQuery(req, endpoint: "/hunts/puzzles/\(puzzleID)", method: .PATCH, encodeContent: patchStruct)
+		return response.status
+	}
+
+	func huntDeleteHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let huntID = req.parameters.get(huntIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			return .badRequest
+		}
+		try await apiQuery(req, endpoint: "/hunts/\(huntID)", method: .DELETE)
 		return .ok
 	}
 

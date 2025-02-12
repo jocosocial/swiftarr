@@ -4,6 +4,7 @@ import Vapor
 // Leaf data used by all views. Mostly this is stuff in the navbar.
 struct TrunkContext: Encodable {
 	var title: String
+	var metaRefreshSeconds: Int?
 	var metaRedirectURL: String?
 
 	// current nav item
@@ -22,6 +23,7 @@ struct TrunkContext: Encodable {
 		case admin
 		case time
 		case map
+		case hunts
 
 		case none
 	}
@@ -651,6 +653,8 @@ extension SiteControllerUtils {
 	var scheduleLogIDParam: PathComponent { PathComponent(":schedule_log_id") }
 	var performerIDParam: PathComponent { PathComponent(":performer_id") }
 	var personalEventIDParam: PathComponent { PathComponent(":personal_event_id") }
+	var huntIDParam: PathComponent { PathComponent(":hunt_id") }
+	var puzzleIDParam: PathComponent { PathComponent(":puzzle_id") }
 
 	@discardableResult func apiQuery<EncodableContent: Encodable>(
 		_ req: Request,

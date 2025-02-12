@@ -34,3 +34,18 @@ struct CreateCustomEnums: AsyncMigration {
 		try await database.enum("user_access_level").delete()
 	}
 }
+
+// This migration is for custom enum types added after 
+struct CreateCallInResultEnum : AsyncMigration {
+	func prepare(on database: Database) async throws {
+		_ = try await database.enum("call_in_result")
+			.case("incorrect")
+			.case("hint")
+			.case("correct")
+			.create()
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.enum("call_in_result").delete()
+	}
+}

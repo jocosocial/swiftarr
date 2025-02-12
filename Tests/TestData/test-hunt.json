@@ -1,0 +1,35 @@
+{
+    "title": "Test Hunt",
+    "description": "A basic hunt to demonstrate the feature.\n\nThe description field is rendered as markdown.\n\n* See?",
+    "puzzles": [
+        {
+            "title": "Guess a number",
+            "body": "I'm thinking of a number from one to ten.\n\nIf you're close, you'll get a hint.",
+            "answer": "Five",
+            "hints": {
+                "TWO": "Cold.",
+                "THREE": "Warm.",
+                "FOUR": "Red hot!",
+                "SIX": "Red hot!",
+                "SEVEN": "Warm.",
+                "EIGHT": "Cold.",
+                "1": "Spell it out please.",
+                "2": "Spell it out please.",
+                "3": "Spell it out please.",
+                "4": "Spell it out please.",
+                "5": "Spell it out please.",
+                "6": "Spell it out please.",
+                "7": "Spell it out please.",
+                "8": "Spell it out please.",
+                "9": "Spell it out please.",
+                "10": "Spell it out please."
+            }
+        }, {
+            "title": "Better Luck Next Decade",
+            "body": "I assume you set your clock ahead to see this.",
+            "answer": "Future",
+            "unlockTime": "2035-02-03T12:00:00Z",
+            "hints": {}
+        }
+    ]
+}
