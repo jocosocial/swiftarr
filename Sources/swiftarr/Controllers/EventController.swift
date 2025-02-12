@@ -158,7 +158,7 @@ struct EventController: APIRouteCollection {
 			event = try await Event.query(on: req.db).filter(\.$uid == paramVal).first()
 		}
 		guard let event = event else {
-			throw Abort(.badRequest, reason: "No event with this UID or database ID found.")
+			throw Abort(.notFound, reason: "No event with this UID or database ID found.")
 		}
 		if !Settings.shared.disabledFeatures.isFeatureDisabled(.performers) {
 			let _ = try await event.$performers.get(on: req.db)
