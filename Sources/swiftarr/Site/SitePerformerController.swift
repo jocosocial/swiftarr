@@ -64,15 +64,17 @@ struct SitePerformerController: SiteControllerUtils {
 		globalRoutes.get("performers", use: officialPerformersPageHandler).setUsedForPreregistration()
 		globalRoutes.get("performer", performerIDParam, use: performerPageHandler).setUsedForPreregistration()
 		globalRoutes.get("performers", "shadow", use: shadowPerformersPageHandler).setUsedForPreregistration()
-		
+
 		let privateRoutes = getPrivateRoutes(app, feature: .performers)
 		privateRoutes.get("performer", "shadow", "addtoevent", eventIDParam, use: addEventOrganizer).setUsedForPreregistration()
 		privateRoutes.post("performer", "shadow", "add", eventIDParam, use: postAddEventOrganizer).setUsedForPreregistration()
-		
+		privateRoutes.post("performer", "self", "delete", use: selfPerformerDeleteHandler).setUsedForPreregistration()
+
 		let ttRoutes = getPrivateRoutes(app, feature: .performers, minAccess: .twitarrteam)
 		ttRoutes.get("admin", "performer", "root", use: getPerformersRoot)
 		ttRoutes.get("admin", "performer", "add", use: upsertPerformer)
 		ttRoutes.post("admin", "performer", "add", use: postUpsertPerformer)
+		ttRoutes.post("admin", "performer", performerIDParam, "delete", use: performerDeleteHandler)
 		
 		ttRoutes.get("admin", "performer", "link", use: linkPerformersPage)
 		ttRoutes.post("admin", "performer", "link", "upload", use: postLinkPerformersUpload)
@@ -191,6 +193,13 @@ struct SitePerformerController: SiteControllerUtils {
 		try await apiQuery(req, endpoint: "/performer/forevent/\(eventID)", method: .POST, encodeContent: uploadData)
 		return .ok
 	}
+
+	// `POST /performer/self/delete`
+	//
+	func selfPerformerDeleteHandler(_ req: Request) async throws -> HTTPStatus {
+		let response = try await apiQuery(req, endpoint: "/performer/self", method: .DELETE)
+		return response.status
+	}
 	
 	// MARK:  TT Routes
 	
@@ -244,8 +253,8 @@ struct SitePerformerController: SiteControllerUtils {
 				self.performer = performer
 				self.performerImageURL = image
 				self.formAction = "/admin/performer/add"
-				if let _ = performer?.header.id {
-					self.deleteAction = "/admin/performer/delete"
+				if let performerID = performer?.header.id {
+					self.deleteAction = "/admin/performer/\(performerID)/delete"
 				}
 				let currentYear = Settings.shared.cruiseStartDateComponents.year ?? 2025
 				var years = performer?.yearsAttended ?? [currentYear]
@@ -345,6 +354,16 @@ struct SitePerformerController: SiteControllerUtils {
 	func postLinkPerformersApply(_ req: Request) async throws -> HTTPStatus {
 		try await apiQuery(req, endpoint: "/admin/performer/link/apply", method: .POST)
 		return .ok
+	}
+
+	// `POST /performer/:performer_ID/delete`
+	//
+	func performerDeleteHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let performerID = req.parameters.get(performerIDParam.paramString, as: UUID.self) else {
+			throw Abort(.badRequest, reason: "Request parameter identifying Performer is missing.")
+		}
+		let response = try await apiQuery(req, endpoint: "/admin/performer/\(performerID)", method: .DELETE)
+		return response.status
 	}
 }
 

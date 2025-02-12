@@ -186,3 +186,6 @@ associated AddedToChat field value increase.
 
 ## Jan 03, 2025
 * `/api/v3/boardgames/recommend` is now a `POST` rather than a `GET` with the same request body.
+
+## Feb 01, 2025
+* Added new `Performer` related endpoints: Delete performer `DELETE /api/v3/performer/:performer_ID`, Edit users own performer profile `POST /api/v3/performer/self`

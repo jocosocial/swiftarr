@@ -30,15 +30,19 @@ struct PerformerController: APIRouteCollection {
 		let tokenAuthGroup = performerRoutes.tokenRoutes(feature: .performers)
 		tokenAuthGroup.get("self", use: getSelfPerformer).setUsedForPreregistration()
 		tokenAuthGroup.post("forevent", eventIDParam, use: addSelfPerformerForEvent).setUsedForPreregistration()
+		tokenAuthGroup.post("self", use: editSelfPerformer).setUsedForPreregistration()
 		tokenAuthGroup.post("self", "delete", use: deleteSelfPerformer).setUsedForPreregistration()
 		tokenAuthGroup.delete("self", use: deleteSelfPerformer).setUsedForPreregistration()
-		
+		tokenAuthGroup.post("forevent", eventIDParam, "delete", use: deleteSelfPerformerForEvent).setUsedForPreregistration()
+		tokenAuthGroup.delete("forevent", eventIDParam, use: deleteSelfPerformerForEvent).setUsedForPreregistration()
+
 		// Endpoints available to TT and up
 		let ttAuthGroup = app.tokenRoutes(feature: .performers, minAccess: .twitarrteam, path: "api", "v3", "admin")
 		ttAuthGroup.post("performer", "upsert", use: upsertPerformer)
 		ttAuthGroup.post("performer", "link", "upload", use: uploadPerformerLinkSpreadsheet)
 		ttAuthGroup.get("performer", "link", "verify", use: performerLinkVerificationHandler)
 		ttAuthGroup.post("performer", "link", "apply", use: performerLinkApplyHandler)
+		ttAuthGroup.delete("performer", performerIDParam, use: deletePerformerHandler).setUsedForPreregistration()
 	}
 	
 // MARK: Getting Performer Data
@@ -95,7 +99,7 @@ struct PerformerController: APIRouteCollection {
 			return PerformerData()
 		}
 		let favorites = try await getFavorites(in: req, from: performer.events)
-		return try PerformerData(performer, favoriteEventIDs: favorites)
+		return try PerformerData(performer, favoriteEventIDs: favorites, user: cacheUser.makeHeader())
 	}
 	
 	/// `GET /api/v3/performer/:performer_id`
@@ -111,8 +115,8 @@ struct PerformerController: APIRouteCollection {
 		}
 		let favorites = try await getFavorites(in: req, from: performer.events)
 		var result = try PerformerData(performer, favoriteEventIDs: favorites)
-		// Mods and above can identify the Twitarr user who made the Performer.
-		if let currentUser = req.auth.get(UserCacheData.self), currentUser.accessLevel.hasAccess(.moderator), let userID = performer.$user.id {
+		// Mods and above can identify the Twitarr user who made the Performer, as can themselves.
+		if let currentUser = req.auth.get(UserCacheData.self), let userID = performer.$user.id, currentUser.accessLevel.hasAccess(.moderator) || currentUser.userID == userID {
 			result.user = try req.userCache.getHeader(userID)
 		}
 		return result
@@ -120,13 +124,13 @@ struct PerformerController: APIRouteCollection {
 	
 // MARK: Modifying Performer Data
 		
-	/// `POST /api/v3/performer/forEvent/:event_id`
+	/// `POST /api/v3/performer/forevent/:event_id`
 	///
 	/// Creates or updates a Performer profile for the current user, associating them with the given event if they're not already associated with it. This method is only for
 	/// shadow events, but can be called by any verified user. Each user may only have one Performer associated with it, so if this user already has a Perfomer profile
 	/// the new data updates it.
 	/// 
-	/// When associating a shadow event organizer a new event, callers should take care to call `/api/v3/events/performer/user/:user_id` to check if this user
+	/// When associating a shadow event organizer a new event, callers should take care to call `/api/v3/performer/self` to check if this user
 	/// has a profile already and if so, return their existing Performer fields--unless the user wants to edit them.
 	/// 
 	/// Does not currently use the `eventUIDs'`array in `PerformerUploadData`. This method could be modified to use this field, allowing multiple events to be 
@@ -162,7 +166,13 @@ struct PerformerController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Twitarr doesn't let a single person be the organizer for more than 5 Shadow Events as an anti-brigading defense. If you're actually the organizer for all these events (not ATTENDING them, ORGANIZING them) let us know.")
 		}
 		let uploadData = try req.content.decode(PerformerUploadData.self)
-		var performer = try await Performer.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first() ?? Performer()
+		// This will attempt to look up the callers existing Performer record, even if it is deleted.
+		// If they have none then a blank one is created. This is to ensure that there is only ever
+		// one Performer per User.
+		var performer = try await Performer.query(on: req.db).filter(\.$user.$id == cacheUser.userID).withDeleted().first() ?? Performer()
+		if (performer.deletedAt != nil) {
+			try await performer.restore(on: req.db)
+		}
 		try await buildPerformerFromUploadData(performer: &performer, uploadData: uploadData, on: req)
 		performer.officialPerformer = false
 		performer.$user.id = cacheUser.userID
@@ -180,25 +190,103 @@ struct PerformerController: APIRouteCollection {
 		}
 		return .ok
 	}
+
+	/// `POST /api/v3/performer/self`
+	///
+	/// Creates or updates a Performer profile for the current user. This method can be called
+	/// by any verified user. Each user may only have one Performer associated with it, so if
+	/// this user already has a Perfomer profile the new data updates it.
+	/// 
+	/// When updating a profile, callers should take care to call `/api/v3/performer/self` to
+	/// check if this user has a profile already and if so, return their existing Performer
+	/// fields--unless the user wants to edit them.
+	/// 
+	/// Does not currently use the `eventUIDs'`array in `PerformerUploadData`. This method
+	/// could be modified to use this field, allowing multiple events to be set for a performer
+	/// at once.
+	///
+	/// I think we should eventually make a `POST /api/v3/performer/:performer_ID` edit endpoint
+	/// that conditionally requires twitarrTeam authentication whether you're editing your own
+	/// profile or an official profile. There is some functionality duplicated with upsertPerformer
+	/// at `POST /api/v3/performer/upsert`.
+	///
+	/// - Parameter PerformerUploadData: JSON POST content.
+	/// - Returns: HTTP status.
+	func editSelfPerformer(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		guard let userReg = try await RegistrationCode.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first() else {
+			throw Abort(.badRequest, reason: "No registration code found for this user. Only users created with registration codes may make Performer profiles.")
+		}
+		// Discord-linked accounts *can* create Performer profiles, they just won't get transferred to the boat. Anyone with a Discord-linked account
+		// should eventually get a JoCo reg code to use for their 'real' account. If someone wants to try making a Performer profile early, they
+		// can get the UserRole, and we'll remind them it's just for testing.
+		guard !userReg.isDiscordUser || cacheUser.userRoles.contains(.performerselfeditor) else {
+			throw Abort(.badRequest, reason: "This account is linked to a Discord user and won't be transferred to the ship when we sail. You should get a registration code from JoCo that will work.")
+		}
+		guard Settings.shared.enablePreregistration || cacheUser.userRoles.contains(.performerselfeditor) else {
+			throw Abort(.forbidden, reason: "Editing your Performer profile is limited to pre-registration; see the Help Desk if you need to change something.")
+		}
+		let uploadData = try req.content.decode(PerformerUploadData.self)
+		var performer = try await Performer.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first() ?? Performer()
+		try await buildPerformerFromUploadData(performer: &performer, uploadData: uploadData, on: req)
+		performer.officialPerformer = false
+		performer.$user.id = cacheUser.userID
+		try await performer.save(on: req.db) // Updates or creates
+		return .ok
+	}
+
 	
 	/// `POST /api/v3/performer/self/delete`
-	/// `DELETE /api/v3/events/self/performer`
+	/// `DELETE /api/v3/performer/self/performer`
 	/// 
 	///  Deletes a shadow event organizer's Performer record and any of their EventPerformer records (linking their Performer to their Events).
-	///  We haven't created a way to delete individual EventPerformer pivots. If a user signs up as an organizer of an event they're not organizing (wrong event, or
-	///  a non-organizer didn't know what they were doing, or a troll), just have them delete the Performer (which also deletes all the pivots) and recreate it if necessary,
-	///  attaching it to the right event(s).
-	/// 
 	func deleteSelfPerformer(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		guard let performer = try await Performer.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first() else {
 			throw Abort(.badRequest, reason: "User does not have a performer profile.")
 		}
-		guard Settings.shared.enablePreregistration || cacheUser.userRoles.contains(.performerselfeditor) else {
+		guard Settings.shared.enablePreregistration || cacheUser.userRoles.contains(.performerselfeditor) || cacheUser.accessLevel.hasAccess(.moderator) else {
 			throw Abort(.forbidden, reason: "Editing your Performer profile is limited to pre-registration; see the Help Desk if you need to change something.")
 		}
 		try await EventPerformer.query(on: req.db).filter(\.$performer.$id == performer.requireID()).delete()
 		try await performer.delete(on: req.db)
+		return .ok
+	}
+
+	/// `POST /api/v3/performer/forevent/:event_ID/delete`
+	/// `DELETE /api/v3/performer/forevent/:event_ID`
+	/// 
+	/// Removes the callers shadow event organizer Performer from the given Event.
+	/// At this time this capability has not been added to the site UI. Those users will
+	/// still delete their entire profile to remove from an event.
+	///
+	/// If we decide to disallow having shadow `Performer` models exist in a state where
+	// they aren't attached to any events, we'll need to add code here to delete the
+	// `Performer` model when their last EventPerformer pivot is deleted.
+	func deleteSelfPerformerForEvent(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		guard let performer = try await Performer.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first() else {
+			return .noContent
+		}
+		guard Settings.shared.enablePreregistration || cacheUser.userRoles.contains(.performerselfeditor) || cacheUser.accessLevel.hasAccess(.moderator) else {
+			throw Abort(.forbidden, reason: "Editing your Performer profile is limited to pre-registration; see the Help Desk if you need to change something.")
+		}
+		guard let eventID = req.parameters.get(eventIDParam.paramString, as: UUID.self) else {
+			throw Abort(.badRequest, reason: "Request parameter identifying Event is missing.")
+		}
+		guard let _ = try await Event.find(eventID, on: req.db) else {
+			throw Abort(.badRequest, reason: "Event ID doesn't match any event in database.")
+		}
+
+		let eventPerformerQuery = try EventPerformer.query(on: req.db)
+			.filter(\.$performer.$id == performer.requireID())
+			.filter(\.$event.$id == eventID)
+
+		guard let eventPerformer = try await eventPerformerQuery.first() else {
+			return .noContent
+		}
+
+		try await eventPerformer.delete(on: req.db)
 		return .ok
 	}
 	
@@ -338,6 +426,21 @@ struct PerformerController: APIRouteCollection {
 		try await pivots.delete(on: req.db)
 		try await builtPerformerPivots.create(on: req.db)
 		return .ok
+	}
+
+	// `DELETE /api/v3/performer/:performer_ID`
+	//
+	// Delete a performer profile.
+	func deletePerformerHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let performerID = req.parameters.get(performerIDParam.paramString, as: UUID.self) else {
+			throw Abort(.badRequest, reason: "Request parameter identifying Performer is missing.")
+		}
+		if let performer = try await Performer.query(on: req.db).filter(\.$id == performerID).first() {
+			try await EventPerformer.query(on: req.db).filter(\.$performer.$id == performer.requireID()).delete()
+			try await performer.delete(on: req.db)
+			return .ok
+		}
+		return .noContent
 	}
 	
 	// MARK: Utilities

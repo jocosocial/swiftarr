@@ -39,7 +39,7 @@
 					the performer to any events (Users need to do that themselves).</p>
 			#endif
 			
-			<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST" data-successurl="/admin/performer/root">
+			<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST" data-successurl="/performers">
 				#if(performer.header.id != nil):
 					<input type="hidden" name="performerID" id="performerID" value="#(performer.header.id)">
 				#endif
@@ -215,7 +215,7 @@
 			
 			#if(deleteAction):
 				<hr>
-				<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST" data-successurl="/events">
+				<form class="ajax" action="#(deleteAction)" enctype="multipart/form-data" method="POST" data-successurl="/admin/performer/root">
 					<div class="row mt-2 justify-content-end">
 						<div class="col col-12">
 							Tapping Delete Profile will remove this performer's bio record, and all their pivots to Event records.

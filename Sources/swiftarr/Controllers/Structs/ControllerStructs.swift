@@ -1231,14 +1231,14 @@ public struct PerformerData: Content {
 	var yearsAttended: [Int]
 	/// The events this performer is going to be performing at.
 	var events: [EventData]
-	/// The user who  created this Performer. Only applies to Shadow Event organizers, and is only returned if the requester is a Moderator or higher.
+	/// The user who created this Performer. Only applies to Shadow Event organizers, and is only returned if the requester is a Moderator or higher or is themselves.
 	/// Although we track the User who created a Performer model for their shadow event for moderation purposes, the User behind the Performer
 	/// shouldn't be shown to everyone.
 	var user: UserHeader?
 }
 
 extension PerformerData {
-	init(_ performer: Performer, favoriteEventIDs: Set<UUID>) throws {
+	init(_ performer: Performer, favoriteEventIDs: Set<UUID>, user: UserHeader? = nil) throws {
 		header = try .init(performer)
 		pronouns = performer.pronouns
 		bio = performer.bio
@@ -1251,6 +1251,7 @@ extension PerformerData {
 		youtubeURL = performer.youtubeURL
 		self.events = try performer.events.map { try EventData($0, isFavorite: favoriteEventIDs.contains($0.requireID())) }
 		self.yearsAttended = performer.yearsAttended
+		self.user = user
 	}
 
 	// Empty performerData for users that don't have a Performer object
