@@ -186,3 +186,7 @@ associated AddedToChat field value increase.
 
 ## Jan 03, 2025
 * `/api/v3/boardgames/recommend` is now a `POST` rather than a `GET` with the same request body.
+
+## Jan 20, 2025
+* `MembersOnlyData` (part of `FezData`) has a new parameter `isArchived`.
+* New endpoints for `POST /api/v3/fez/:fez_ID/archive` and `DELETE /api/v3/fez/:fez_ID/archive`.

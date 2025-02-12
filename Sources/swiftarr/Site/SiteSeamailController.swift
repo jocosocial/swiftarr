@@ -11,9 +11,11 @@ struct SiteSeamailController: SiteControllerUtils {
 		var paginator: PaginatorContext
 		var query: SeamailQueryOptions
 		var queryDescription: String
+		var archived: Bool
 
 		init(_ req: Request, fezList: FezListData, fezzes: [FezData]) throws {
 			effectiveUser = req.query[String.self, at: "foruser"]
+			archived = req.query[Bool.self, at: "archived"] ?? false
 			let (title, tab) = titleAndTab(for: req)
 			trunk = .init(req, title: title, tab: tab)
 			self.fezList = fezList
@@ -93,6 +95,8 @@ struct SiteSeamailController: SiteControllerUtils {
 		privateRoutes.post("seamail", fezIDParam, "post", use: seamailThreadPostHandler)
 		privateRoutes.post("seamail", fezIDParam, "mute", use: seamailAddMutePostHandler)
 		privateRoutes.delete("seamail", fezIDParam, "mute", use: seamailRemoveMutePostHandler)
+		privateRoutes.post("seamail", fezIDParam, "archive", use: seamailAddArchivePostHandler)
+		privateRoutes.delete("seamail", fezIDParam, "archive", use: seamailRemoveArchivePostHandler)
 		privateRoutes.webSocket("seamail", fezIDParam, "socket", shouldUpgrade: shouldCreateMsgSocket, onUpgrade: createMsgSocket)
 	}
 
@@ -102,7 +106,7 @@ struct SiteSeamailController: SiteControllerUtils {
 	// Shows the root Seamail page, with a list of all conversations.
 	func seamailRootPageHandler(_ req: Request) async throws -> View {
 		let typeList = [URLQueryItem(name: "type", value: "closed"), URLQueryItem(name: "type", value: "open"),
-				URLQueryItem(name: "type", value: "privateEvent")]
+				URLQueryItem(name: "type", value: "privateEvent"), URLQueryItem(name: "archived", value: "false")]
 		let response = try await apiQuery(req, endpoint: "/fez/joined", query: typeList, passThroughQuery: true)
 		let fezList = try response.content.decode(FezListData.self)
 		// Re-sort fezzes so ones with new msgs are first. Keep most-recent-change sort within each group.
@@ -390,6 +394,28 @@ struct SiteSeamailController: SiteControllerUtils {
 		try await apiQuery(req, endpoint: "/fez/\(fezID)/mute/remove", method: .POST)
 		return .noContent
 	}
+
+	// POST /seamail/archive/:seamail_ID
+	//
+	// Adds a seamail to the user's archive list.
+	func seamailAddArchivePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id parameter.")
+		}
+		try await apiQuery(req, endpoint: "/fez/\(fezID)/archive", method: .POST)
+		return .created
+	}
+
+	// DELETE /seamail/archive/:seamail_ID
+	//
+	// Removes a seamail from the user's archive list.
+	func seamailRemoveArchivePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id parameter.")
+		}
+		try await apiQuery(req, endpoint: "/fez/\(fezID)/archive/remove", method: .POST)
+		return .noContent
+	}
 }
 
 // Returns the correct page title and tab name for the effective user.
@@ -413,6 +439,9 @@ private func titleAndTab(for req: Request) -> (String, TrunkContext.Tab) {
 		else {
 			title = "Seamail"
 			tab = .seamail
+			if let archived = req.query[Bool.self, at: "archived"], archived {
+				title = "Archived Seamail"
+			}
 		}
 	}
 	return (title, tab)

@@ -22,6 +22,7 @@ struct FezController: APIRouteCollection {
 		var search: String?
 		var hidePast: Bool?
 		var matchID: UUID?
+		var archived: Bool?
 
 		func getTypes() throws -> [FezType]? {
 			var includeTypes = try type.map { try FezType.fromAPIString($0) }
@@ -91,6 +92,9 @@ struct FezController: APIRouteCollection {
 		tokenAuthGroup.post(fezIDParam, "mute", use: muteAddHandler)
 		tokenAuthGroup.delete(fezIDParam, "mute", use: muteRemoveHandler)
 		tokenAuthGroup.post(fezIDParam, "mute", "remove", use: muteRemoveHandler)
+		tokenAuthGroup.post(fezIDParam, "archive", use: archiveAddHandler)
+		tokenAuthGroup.delete(fezIDParam, "archive", use: archiveRemoveHandler)
+		tokenAuthGroup.post(fezIDParam, "archive", "remove", use: archiveRemoveHandler)
 	}
 
 	// MARK: - tokenAuthGroup Handlers (logged in)
@@ -190,7 +194,8 @@ struct FezController: APIRouteCollection {
 	/// - `?search=STRING` - Only show fezzes whose title, info, or any post contains the given string.
 	/// - `?hidepast=BOOLEAN` - Hide fezzes that started more than one hour in the past. For this endpoint, this defaults to FALSE.
 	/// - `?matchID=UUID` - Returns a single LFG with the given ID.
-	/// - `?lfgtypes=BOOLEAN` - Shorthand to include/exliude all the LFG types (Activity, Gaming, Dining, etc.) Acts the same as using multiple `type=` or `exludetype=` params.
+	/// - `?lfgtypes=BOOLEAN` - Shorthand to include/exclude all the LFG types (Activity, Gaming, Dining, etc.) Acts the same as using multiple `type=` or `exludetype=` params.
+	/// - `?archived=BOOLEAN` - Show only archived Fezzes. Relevant for Seamail only.
 	///
 	/// Moderators and above can use the `foruser` query parameter to access pseudo-accounts:
 	///
@@ -502,8 +507,13 @@ struct FezController: APIRouteCollection {
 				}
 			}
 			else if participantUserID != cacheUser.userID {
-				if let pivot = try await getUserPivot(lfg: fez, userID: participantUserID, on: req.db), pivot.isMuted == true {
-					continue
+				if let pivot = try await getUserPivot(lfg: fez, userID: participantUserID, on: req.db) {
+					if pivot.isMuted == true {
+						continue
+					} else if pivot.isArchived {
+						pivot.isArchived = false
+						try await pivot.save(on: req.db)
+					}
 				}
 				participantNotifyList.append(participantUserID)
 			}
@@ -565,6 +575,7 @@ struct FezController: APIRouteCollection {
 				participantPivot.readCount -= 1
 				pivotNeedsSave = true
 			}
+			// If a post has been deleted, we don't care for the purposes of archived Fezzes.
 			if pivotNeedsSave {
 				try await participantPivot.save(on: req.db)
 			}
@@ -952,6 +963,39 @@ struct FezController: APIRouteCollection {
 		return .created
 	}
 
+	/// `POST /api/v3/fez/:fez_ID/archive`
+	///
+	/// ARchive the specified `Fez` for the current user.
+	///
+	/// - Parameter fez_ID: In the URL path.
+	/// - Returns: 201 Created on success; 200 OK if already archived.
+	func archiveAddHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		let effectiveUser = getEffectiveUser(user: cacheUser, req: req, fez: fez)
+		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
+			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
+		}
+		guard fez.fezType.isSeamailType else {
+			throw Abort(.badRequest, reason: "only seamails can be archived")
+		}
+		guard effectiveUser.userID == cacheUser.userID else {
+			throw Abort(.badRequest, reason: "privileged seamails cannot be archived")
+		}
+		guard let fezParticipant = try await fez.$participants.$pivots.query(on: req.db)
+				.filter(\.$user.$id == cacheUser.userID).first() else {
+			throw Abort(.forbidden, reason: "user is not a member of this fez")
+		}
+
+		if fezParticipant.isArchived == true {
+			return .ok
+		}
+		fezParticipant.isArchived = true
+		try await fezParticipant.save(on: req.db)
+		_ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
+		return .created
+	}
+
 	/// `POST /api/v3/fez/:fez_ID/mute/remove`
 	/// `DELETE /api/v3/fez/:fez_ID/mute`
 	///
@@ -976,6 +1020,41 @@ struct FezController: APIRouteCollection {
 			return .ok
 		}
 		fezParticipant.isMuted = nil
+		try await fezParticipant.save(on: req.db)
+		_ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
+		return .noContent
+	}
+
+	/// `POST /api/v3/fez/:fez_ID/archive/remove`
+	/// `DELETE /api/v3/fez/:fez_ID/archive`
+	///
+	/// Unarchive the specified `Fez` for the current user.
+	///
+	/// - Parameter fez_ID: In the URL path.
+	/// - Throws: 400 error if the forum was not archived.
+	/// - Returns: 204 No Content on success; 200 OK if already not archived.
+	func archiveRemoveHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		let effectiveUser = getEffectiveUser(user: cacheUser, req: req, fez: fez)
+		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
+			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
+		}
+		guard fez.fezType.isSeamailType else {
+			throw Abort(.badRequest, reason: "only seamails can be archived")
+		}
+		guard effectiveUser.userID == cacheUser.userID else {
+			throw Abort(.badRequest, reason: "privileged seamails cannot be archived")
+		}
+		guard let fezParticipant = try await fez.$participants.$pivots.query(on: req.db)
+				.filter(\.$user.$id == cacheUser.userID).first() else {
+			throw Abort(.forbidden, reason: "user is not a member of this fez")
+		}
+
+		if fezParticipant.isArchived != true {
+			return .ok
+		}
+		fezParticipant.isArchived = false
 		try await fezParticipant.save(on: req.db)
 		_ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
 		return .noContent
@@ -1038,6 +1117,9 @@ extension FezController {
 		if let matchID = urlQuery.matchID {
 			query.filter(\.$id == matchID)
 		}
+
+		query.filter(FezParticipant.self, \.$isArchived == urlQuery.archived ?? false)
+
 		let fezCount = try await query.count()
 		let pivots = try await query.copy().sort(FezParticipant.self, \.$isMuted, .descending)
 			.sort(FriendlyFez.self, \.$updatedAt, .descending).range(urlQuery.calcRange()).all()
@@ -1188,7 +1270,7 @@ extension FezController {
 			// appears with unread messages that cannot be cleared.
 			let postCount = fez.postCount - (pivot?.hiddenCount ?? 0)
 			fezData.members = FezData.MembersOnlyData(participants: participants, waitingList: waitingList, postCount: postCount,
-					readCount: pivot?.readCount ?? postCount, posts: posts, isMuted: pivot?.isMuted ?? false)
+					readCount: pivot?.readCount ?? postCount, posts: posts, isMuted: pivot?.isMuted ?? false, isArchived: pivot?.isArchived ?? false)
 		} else if fez.fezType.isPrivateEventType {
 			// We need to let non-members see private events they're not currently a member of (so they can report them), but
 			// they should only see a minimum amount of info on the event they're not in.

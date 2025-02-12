@@ -15,6 +15,7 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "muteForum": // Different than mute[User] due to code in spinnerButtonAction.
 		case "pinForum":
 		case "muteSeamail":
+		case "archiveSeamail":
 		case "unblock":
 		case "unfavorite":
 		case "unmute":
