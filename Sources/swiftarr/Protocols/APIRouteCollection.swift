@@ -204,9 +204,15 @@ extension APIRouteCollection {
 						try await req.redis.incrementAlertwordTwarrtInUserHash(word: alertword, userID: userID)
 					}
 				}
-			case .alertwordPost(let alertword, _):
+			case .alertwordPost(let alertword, let postID):
 				for userID in users {
 					group.addTask {
+						// Treat alertword notifications for the creator as read by incrementing both the 
+						// "total" and "new" counts in Redis. See `getNewAlertWordCounts` in AlertController.swift
+						// for what we do with those numbers.
+						if userID == creatorID {
+							try await req.redis.incrementAlertwordPostViewedInUserHash(for: .alertwordPost(alertword, postID), userID: userID)
+						}
 						try await req.redis.incrementAlertwordPostInUserHash(word: alertword, userID: userID)
 					}
 				}
@@ -228,9 +234,18 @@ extension APIRouteCollection {
 
 			if forwardToSockets {
 				// Send a message to all involved users with open websockets.
+				// Under certain circumstances it may be desirable to not send a websocket
+				// message of the event to it's creator. We do this by filtering out that user
+				// from the list of socket receivers. There is likely still some Redis
+				// updates to occur above so in effect the filtering has to happen twice.
+				var socketUsers = users
+				switch type {
+					case .alertwordPost: socketUsers = users.filter { $0 != creatorID }
+					default: break
+				}
 				await req.application.notificationSockets.forwardToSockets(
 					app: req.application,
-					idList: users,
+					idList: socketUsers,
 					type: type,
 					info: info
 				)
