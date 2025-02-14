@@ -253,7 +253,7 @@ public struct CurrentUserData: Content {
 	/// The current user's access level (role).
 	var accessLevel: UserAccessLevel
 	/// A list of the user's roles
-	var roles: [UserRoleType]?
+	var roles: [UserRoleType]
 }
 
 /// Used to return the day's theme.
