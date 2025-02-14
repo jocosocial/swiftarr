@@ -309,14 +309,16 @@ struct UserController: APIRouteCollection {
 	///
 	/// Returns the current user's `.id`, `.username` and whether they're currently logged in.
 	///
-	/// - Returns: `CurrentUserData` containing the current user's ID, username and logged in status.
+	/// - Returns: `CurrentUserData` containing the current user's ID, username, logged in status, access level, and roles.
 	func whoamiHandler(_ req: Request) throws -> CurrentUserData {
 		let user = try req.auth.require(UserCacheData.self)
 		let currentUserData = CurrentUserData(
 			userID: user.userID,
 			username: user.username,
 			// if there's a BasicAuthorization header, not logged in
-			isLoggedIn: req.headers.basicAuthorization != nil ? false : true
+			isLoggedIn: req.headers.basicAuthorization != nil ? false : true,
+			accessLevel: user.accessLevel,
+			roles: Array(user.userRoles)
 		)
 		return currentUserData
 	}

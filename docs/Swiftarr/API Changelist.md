@@ -186,3 +186,6 @@ associated AddedToChat field value increase.
 
 ## Jan 03, 2025
 * `/api/v3/boardgames/recommend` is now a `POST` rather than a `GET` with the same request body.
+
+## Feb 13, 2025
+* `/api/v3/user/whoami` now includes `accessLevel` and `roles` for the current user
