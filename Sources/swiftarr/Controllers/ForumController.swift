@@ -1906,6 +1906,7 @@ extension ForumController {
 							users: validUserIDs,
 							type: .alertwordPost(word, postID),
 							info: infoStr,
+							creatorID: post.$author.id,
 							on: req
 						)
 					}

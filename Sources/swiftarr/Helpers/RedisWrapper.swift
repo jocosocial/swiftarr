@@ -99,6 +99,10 @@ extension RedisClient {
 		_ = try await hincrby(incAmount, field: "alertwordPost-\(word)", in: userHashRedisKey(userID: userID)).get()
 	}
 
+	func incrementAlertwordPostViewedInUserHash(for notification: NotificationType, userID: UUID, incAmount: Int = 1) async throws {
+		_ = try await hincrby(incAmount, field: notification.redisViewedFieldName(), in: userHashRedisKey(userID: userID)).get()
+	}
+
 	func setNextEventInUserHash(date: Date?, eventID: UUID?, userID: UUID) async throws {
 		if let date = date, let eventID = eventID {
 			let value = "\(date.timeIntervalSince1970) \(eventID)"
