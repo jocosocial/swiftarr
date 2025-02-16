@@ -187,5 +187,8 @@ associated AddedToChat field value increase.
 ## Jan 03, 2025
 * `/api/v3/boardgames/recommend` is now a `POST` rather than a `GET` with the same request body.
 
-## Feb 12, 2025
+## Feb 13, 2025
+* `/api/v3/user/whoami` now includes `accessLevel` and `roles` for the current user
+
+## Feb 15, 2025
 * Added new `Performer` delete endpoint `DELETE /api/v3/performer/:performer_ID` (for moderators)

@@ -250,6 +250,10 @@ public struct CurrentUserData: Content {
 	let username: String
 	/// Whether the user is currently logged in.
 	var isLoggedIn: Bool
+	/// The current user's access level (role).
+	var accessLevel: UserAccessLevel
+	/// A list of the user's roles
+	var roles: [UserRoleType]
 }
 
 /// Used to return the day's theme.
