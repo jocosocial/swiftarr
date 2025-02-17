@@ -189,3 +189,6 @@ associated AddedToChat field value increase.
 
 ## Feb 13, 2025
 * `/api/v3/user/whoami` now includes `accessLevel` and `roles` for the current user
+
+## Feb 15, 2025
+* Added new `Performer` delete endpoint `DELETE /api/v3/performer/:performer_ID` (for moderators)
