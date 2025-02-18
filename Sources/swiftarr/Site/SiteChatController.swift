@@ -352,7 +352,8 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			var newPosts: [SocketFezPostData]  // Posts user hasn't read.
 			var post: MessagePostContext  // New post area
 			var paginator: PaginatorContext  // For > 50 posts in thread.
-			var breadcrumbLink: String		
+			var breadcrumbLink: String
+			var enablePhotos: Bool // Whether to show the elements allowing photo upload.	
 
 			init(_ req: Request, fez: FezData) throws {
 				let cacheUser = try req.auth.require(UserCacheData.self)
@@ -394,6 +395,8 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 						"/fez/\(fez.fezID)?start=\(pageIndex * limit)&limit=\(limit)"
 					}
 				}
+				// Only allow photos in LFGs
+				self.enablePhotos = fez.fezType.isLFGType
 			}
 		}
 		let ctx = try FezPageContext(req, fez: fez)
