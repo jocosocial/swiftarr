@@ -684,6 +684,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(RenameWhereAndWhen(), to: .psql)
 		app.migrations.add(AddFoodDrinkCategory(), to: .psql)
 		app.migrations.add(CreateMicroKaraokeUser(), to: .psql)
+		app.migrations.add(RemoveCovidCategory(), to: .psql)
 		
 		// DON'T add schema-modification migrations down here. Appending migrations that modify a table's schema at the end will
 		// break migrations that use Fluent to populate that table with data, as Fluent only models the current db schema.

@@ -1679,7 +1679,9 @@ extension ForumController {
 				lastPoster: lastPosterHeader,
 				isFavorite: forceIsFavorite ?? thisForumReaderPivot?.isFavorite ?? false,
 				isMuted: forceIsMuted ?? thisForumReaderPivot?.isMuted ?? false,
-				event: joinedEvent
+				// https://github.com/jocosocial/swiftarr/issues/314
+				// If the joined event has been deleted, we do not want to include its ID in the forum list data.
+				event: joinedEvent?.deletedAt == nil ? joinedEvent : nil
 			)
 		}
 		return returnListData
@@ -1904,6 +1906,7 @@ extension ForumController {
 							users: validUserIDs,
 							type: .alertwordPost(word, postID),
 							info: infoStr,
+							creatorID: post.$author.id,
 							on: req
 						)
 					}

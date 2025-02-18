@@ -178,4 +178,10 @@ enum NotificationType {
 		case .microKaraokeSongReady(let songID): return String(songID)
 		}
 	}
+
+	// Helper function to determine which type of notification to generate for a Chat type.
+	static func chatStarting(_ id: UUID, type: FezType) -> NotificationType {
+		if (type.isPrivateEventType) { return .personalEventStarting(id) }
+		return .joinedLFGStarting(id)
+	}
 }
