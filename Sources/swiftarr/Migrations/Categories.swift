@@ -169,3 +169,42 @@ struct AddFoodDrinkCategory: AsyncMigration {
 		try await Category.query(on: database).filter(\.$title == "Food & Drink").delete()
 	}
 }
+
+struct RemoveCovidCategory: AsyncMigration {
+	/// Required by `Migration` protocol. Removes the Covid category.
+	///
+	/// - Parameter database: A connection to the database, provided automatically.
+	/// - Returns: Void.
+	///
+	func prepare(on database: Database) async throws {
+		guard let sourceCategory = try await Category.query(on: database).filter(\.$title == "Covid").first() else {
+			return
+		}
+		guard let destinationCategory = try await Category.query(on: database).filter(\.$title == "Mods Only Dumpster Fire").first() else {
+			throw Abort(.internalServerError, reason: "Could not find essential forum category")
+		}
+		// Move any Covid forums to the Mods Only Dumpster Fire category.
+		// Also update the count value that we store in the database.
+		let forumsQuery = try Forum.query(on: database).filter(\.$category.$id == sourceCategory.requireID())
+		let count: Int = try await forumsQuery.count();
+		try await forumsQuery.set(\.$category.$id, to: destinationCategory.requireID()).update()
+		destinationCategory.forumCount += Int32(count)
+		try await destinationCategory.save(on: database)
+		try await sourceCategory.delete(on: database)
+	}
+
+	/// Undoes this migration, re-adds the Covid category if it got deleted.
+	///
+	/// - Parameter database: The database connection.
+	/// - Returns: Void.
+	func revert(on database: Database) async throws {
+		guard let category = try await Category.query(on: database).filter(\.$title == "Covid").withDeleted().first() else {
+			throw Abort(.internalServerError, reason: "Could not find soft-deleted forum category. Are you reverting a real database?")
+		}
+		try await category.restore(on: database)
+		// This doesn't know which forums were moved so that part of the migration cannot be un-done.
+		category.forumCount = 0
+		try await category.save(on: database)
+		return
+	}
+}
