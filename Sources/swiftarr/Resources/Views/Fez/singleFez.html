@@ -177,7 +177,6 @@
 										</div>
 									</div>
 									<div class="alert alert-danger mt-3 #if(post.postErrorString == ""):d-none#endif" role="alert">#(post.postErrorString)</div>				
-									#if(enablePhotos):
 									<div class="row mb-2 justify-content-between gx-1">
 										<div class="col col-6 col-md-4 col-lg-3">
 											<div class="card">
@@ -211,16 +210,6 @@
 											<small>Please remember to abide by the <a href="/codeOfConduct">Code of Conduct</a></small>
 										</div>
 									</div>
-									#else:
-									<div class="row mb-2">
-										<div class="col">
-											<small>Please remember to abide by the<br><a href="/codeOfConduct">Code of Conduct</a></small>
-										</div>
-										<div class="col col-auto">
-											<button type="submit" class="btn btn-primary">Post<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
-										</div>
-									</div>
-									#endif
 									#if(trunk.userIsMod && !post.isEdit):
 										<div class="row justify-content-end mt-2">
 											<div class="col col-auto form-check">
