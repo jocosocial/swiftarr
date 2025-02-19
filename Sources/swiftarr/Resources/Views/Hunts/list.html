@@ -1,0 +1,30 @@
+#extend("trunk"):
+	#export("body"):
+		<div class="container-md ms-0">
+			<div class="row align-items-center my-1">
+				<div class="col col-auto">
+					<b>Puzzle Hunts</b>
+				</div>
+				<div class="col">
+				</div>
+			</div>
+			<div class="list-group">
+				#if(count(hunts.hunts) == 0):
+					<div class="list-group-item text-muted">
+						No puzzle hunts have been created.
+					</div>
+				#else:#for(hunt in hunts.hunts):
+					<a href="/hunt/#(hunt.huntID)" class="list-group-item list-group-item-action">
+						<div class="container-fluid">
+							<div class="row">
+								<div class="col fw-bold">
+									#(hunt.title)
+								</div>
+							</div>
+						</div>
+					</a>
+				#endfor#endif
+			</div>
+		</div>
+	#endexport
+#endextend

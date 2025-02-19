@@ -168,6 +168,108 @@ public struct EventPerformerValidationData: Content {
 	var errors: [String]
 }
 
+/// Used to create a hunt including all puzzles.
+/// Required by `POST /api/v3/hunts/create`
+public struct HuntCreateData: Content {
+	var title: String
+	var description: String
+	var puzzles: [HuntPuzzleCreateData]
+}
+
+public struct HuntPuzzleCreateData: Content {
+	var title: String
+	var body: String
+	var unlockTime: Date?
+	var answer: String
+	var hints: [String:String]
+}
+
+extension HuntCreateData: RCFValidatable {
+	func runValidations(using decoder: ValidatingDecoder) throws {
+		let tester = try decoder.validator(keyedBy: CodingKeys.self)
+		tester.validate(!puzzles.isEmpty, forKey: .puzzles, or: "Puzzles cannot be empty")
+	}
+}
+
+/// Used to edit a hunt.
+/// nil fields are not modified.
+/// Required by: `PATCH /api/v3/hunts/:huntID`
+public struct HuntPatchData: Content {
+	var title: String?
+	var description: String?
+}
+
+/// A twist on Optional that, in a KeyedValueContainer, can distinguish between being
+/// unset entirely and being explicitly set to the nil value.
+public enum ExplicitNull<C: Codable & Sendable>: Codable, Sendable {
+	case absent
+	case null
+	case present(C)
+
+	public init(from decoder: any Decoder) throws {
+		let single = try decoder.singleValueContainer()
+		if single.decodeNil() {
+			self = .null
+		} else {
+			self = .present(try single.decode(C.self))
+		}
+	}
+
+	public func encode(to encoder: any Encoder) throws {
+		switch self {
+			case .absent:
+				return
+			case .null:
+        		var container = encoder.singleValueContainer()
+				try container.encodeNil()
+			case .present(let value):
+        		try value.encode(to: encoder)
+		}
+	}
+}
+
+extension KeyedDecodingContainer {
+  	func decode<T>(_ type: ExplicitNull<T>.Type, forKey key: Key) throws -> ExplicitNull<T> {
+		if !contains(key) {
+			return .absent
+		}
+		if try decodeNil(forKey: key) {
+			return .null
+		}
+		return .present(try decode(T.self, forKey: key))
+ 	}
+}
+
+extension KeyedEncodingContainer {
+	mutating func encode<T>(_ explicit: ExplicitNull<T>, forKey key: Key) throws {
+		switch explicit {
+			case .absent:
+				return
+			case .null:
+				try encodeNil(forKey: key)
+			case .present(let value):
+				try encode(value, forKey: key)
+		}
+	}
+}
+
+/// Used to modify a puzzle.
+/// Optional fields in this are required fields in Puzzle;
+/// if not nil, the value in the puzzle will be modified.
+/// ExplicitNull fields in this are optional in Puzzle.
+/// If absent in the JSON, not affected.
+/// If present and null, will unset the field.
+/// Required by: `PATCH /api/v3/hunts/puzzle/:puzzleID`
+public struct HuntPuzzlePatchData: Content {
+	var title: String?
+	var body: String?
+	var answer: String?
+	var unlockTime: ExplicitNull<Date>
+	/// If present, any hints here will be added if nor already present, or updated.
+	/// There is no way to delete an existing hint.
+	var hints: [String: String]?
+}
+
 /// Returns the registration code associated with a user. Not all users have registration codes; e.g. asking for the reg code for 'admin' will return an error.
 public struct RegistrationCodeUserData: Content {
 	// User accounts associated with the reg code. First item in the array is the primary account.

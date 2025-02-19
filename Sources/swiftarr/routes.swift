@@ -17,6 +17,7 @@ public func routes(_ app: Application) throws {
 		EventController(),
 		FezController(),
 		ForumController(),
+		HuntController(),
 		ImageController(),
 		KaraokeController(),
 		TestController(),
@@ -53,6 +54,7 @@ public func routes(_ app: Application) throws {
 		SitePhotostreamController(),
 		SitePerformerController(),
 		SitePrivateEventController(),
+		SiteHuntController(),
 	]
 	try siteControllers.forEach { try $0.registerRoutes(app) }
 }
