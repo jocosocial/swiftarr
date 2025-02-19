@@ -50,6 +50,7 @@ public enum SwiftarrFeature: String, Content, CaseIterable, Sendable {
 	case performers  // Official and Shadow performers; gallery, bio pages, links inside Event cells.
 	case personalevents  // Personal event schedule
 	case registration // User account creation. This is independent of .users above.
+	case hunts  // Puzzle hunts, quizzes, etc.
 
 	case all
 

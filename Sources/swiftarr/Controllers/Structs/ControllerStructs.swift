@@ -795,6 +795,158 @@ public struct ForumSearchData: Content {
 	var forumThreads: [ForumListData]
 }
 
+/// Used to return a list of hunts.
+/// We probably don't have enough of them to require a paginator for now.
+/// Returned by:
+/// * `GET /api/v3/hunts`
+public struct HuntListData: Content {
+	var hunts: [HuntListItemData]
+}
+
+extension HuntListData {
+	init(_ hunts: [Hunt]) throws {
+		self.hunts = try hunts.map { try HuntListItemData($0) }
+	}
+}
+
+public struct HuntListItemData: Content {
+	var huntID: UUID
+	var title: String
+	var description: String
+}
+
+extension HuntListItemData {
+	init(_ hunt: Hunt) throws {
+		huntID = try hunt.requireID()
+		title = hunt.title
+		description = hunt.description
+	}
+}
+
+/// Used to return a single hunt in as much detail as the caller can see.
+/// For example, it only includes the currently unlocked puzzles, and puzzles
+/// only have their answer field set if the user is logged in and has solved them.
+/// Returned by:
+/// * `GET /api/v3/hunts/:huntID`
+/// * `GET /api/v2/hunts/:huntID/admin` (only usable by Twitarr team and above)
+public struct HuntData: Content {
+	var huntID: UUID
+	var title: String
+	var description: String
+	/// For solvers, only contains puzzles which are unlocked
+	var puzzles: [HuntPuzzleData]
+	/// If any puzzles are locked, the time of the next one to unlock.
+	var nextUnlockTime: Date?
+}
+
+extension HuntData {
+	init(_ hunt: Hunt, _ puzzles: [Puzzle]) throws {
+		huntID = try hunt.requireID()
+		title = hunt.title
+		description = hunt.description
+		let now = Date()
+		self.puzzles = []
+		self.puzzles.reserveCapacity(puzzles.count)
+		for puzzle in puzzles {
+			if let unlockTime = puzzle.unlockTime, unlockTime > now {
+				nextUnlockTime = unlockTime
+				break
+			}
+			self.puzzles.append(try HuntPuzzleData(puzzle))
+		}
+	}
+	init(forAdmin hunt: Hunt, _ puzzles: [Puzzle]) throws {
+		huntID = try hunt.requireID()
+		title = hunt.title
+		description = hunt.description
+		self.puzzles = try puzzles.map({try HuntPuzzleData(forAdmin: $0)})
+	}
+}
+
+public struct HuntPuzzleData: Content {
+	var puzzleID: UUID
+	var title: String
+	var body: String
+	/// The answer to this puzzle, if you have solved it or are using the admin interface.
+	var answer: String?
+	var unlockTime: Date?
+	// Only set if fetched via the admin interface
+	var hints: [String:String]?
+}
+
+extension HuntPuzzleData {
+	init(_ puzzle: Puzzle) throws {
+		puzzleID = try puzzle.requireID()
+		title = puzzle.title
+		body = puzzle.body
+		unlockTime = puzzle.unlockTime
+		if let callIn = try? puzzle.joined(PuzzleCallIn.self), let _ = try? callIn.requireID() {
+			answer = puzzle.answer
+		}
+	}
+	init(forAdmin puzzle: Puzzle) throws {
+		puzzleID = try puzzle.requireID()
+		title = puzzle.title
+		body = puzzle.body
+		unlockTime = puzzle.unlockTime
+		answer = puzzle.answer
+		hints = puzzle.hints
+	}
+}
+
+/// A single puzzle, including (if you're logged in) all of your callin attempts on it.
+/// Returned by:
+/// * `GET /api/v2/hunts/puzzles/:puzzleID`
+public struct HuntPuzzleDetailData: Content {
+	var huntID: UUID
+	var huntTitle: String
+	var puzzleID: UUID
+	var title: String
+	var body: String
+	/// Will be sorted in ascending order by creationTime
+	/// The puzzle is solved if any of these have "correct" set.
+	/// It should be the last one, since we won't let you call in any more once
+	/// you solve the puzzle.
+	var callIns: [HuntPuzzleCallInResultData]
+}
+
+extension HuntPuzzleDetailData {
+	init(_ puzzle: Puzzle, _ callIns: [PuzzleCallIn]) throws {
+		huntID = puzzle.$hunt.id
+		huntTitle = puzzle.hunt.title
+		puzzleID = try puzzle.requireID()
+		title = puzzle.title
+		body = puzzle.body
+		self.callIns = callIns.map { HuntPuzzleCallInResultData($0, puzzle) }
+	}
+}
+
+public struct HuntPuzzleCallInResultData: Content {
+	var creationTime: Date
+	/// What the user called in, without normalization
+	var rawSubmission: String
+	/// If the callin was correct, this will be the canonical form of the answer.
+	/// (The answer checker ignores case and spacing.)
+	var correct: String?
+	/// If the answer wasn't correct but was something we thought you might
+	/// call in, like a partial result, an instruction, or a request for a
+	/// hint, this will be a nudge in the right direction.
+	var hint: String?
+	// If neither correct nor hint are set, the callin is incorrect.
+}
+
+extension HuntPuzzleCallInResultData {
+	init(_ callIn: PuzzleCallIn, _ puzzle: Puzzle) {
+		creationTime = callIn.createdAt ?? Date()
+		rawSubmission = callIn.rawSubmission
+		switch callIn.result {
+			case .correct: correct = puzzle.answer
+			case .hint: hint = puzzle.hints[callIn.normalizedSubmission]
+			case .incorrect: break
+		}
+	}
+}
+
 /// Used to upload an image file or refer to an already-uploaded image. Either `filename` or `image` should always be set.
 /// If both are set, `filename` is ignored and `image` is processed and saved with a new name. A more Swift-y way to do this
 /// would be an Enum with associated values, except Codable support becomes a pain and makes it difficult to understand
