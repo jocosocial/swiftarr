@@ -461,7 +461,7 @@ struct FezController: APIRouteCollection {
 		guard fez.fezType != .personalEvent else {
 			throw Abort(.badRequest, reason: "Personal Events don't have posts.")
 		}
-		guard fez.fezType.isLFGType || data.images.count == 0 else {
+		guard ![.closed, .open].contains(fez.fezType) || data.images.count == 0 else {
 			throw Abort(.badRequest, reason: "Private conversations can't contain photos.")
 		}
 		guard data.images.count <= 1 else {
