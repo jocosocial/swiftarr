@@ -94,8 +94,8 @@ struct SiteEventsController: SiteControllerUtils {
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app, feature: .schedule)
-		privateRoutes.post("events", eventIDParam, "favorite", use: eventsAddRemoveFavoriteHandler)
-		privateRoutes.delete("events", eventIDParam, "favorite", use: eventsAddRemoveFavoriteHandler)
+		privateRoutes.post("events", eventIDParam, "favorite", use: eventsAddRemoveFavoriteHandler).setUsedForPreregistration()
+		privateRoutes.delete("events", eventIDParam, "favorite", use: eventsAddRemoveFavoriteHandler).setUsedForPreregistration()
 		privateRoutes.get("events", "personal", personalEventIDParam, "calendarevent.ics", use: personalEventDownloadICSHandler)
 	}
 
