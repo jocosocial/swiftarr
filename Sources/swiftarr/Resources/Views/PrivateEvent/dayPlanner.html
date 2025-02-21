@@ -72,14 +72,16 @@
 		</table>
 	</div>
 	<div class="container-fluid">
-		<div class="row justify-content-between mb-2">
-			<div class="col">
-				<a class="btn btn-primary btn-sm" href="/privateevent/list">Private Event List</a>
+		#if(!trunk.preregistrationApplies):
+			<div class="row justify-content-between mb-2">
+				<div class="col">
+					<a class="btn btn-primary btn-sm" href="/privateevent/list">Private Event List</a>
+				</div>
+				<div class="col col-auto">
+					<a class="btn btn-primary btn-sm" href="/privateevent/create">New Private Event</a>
+				</div>
 			</div>
-			<div class="col col-auto">
-				<a class="btn btn-primary btn-sm" href="/privateevent/create">New Private Event</a>
-			</div>
-		</div>
+		#endif
 		<ul class="list-group">
 			<li class="list-group-item active">
 				<b>About Day Planner</b>
