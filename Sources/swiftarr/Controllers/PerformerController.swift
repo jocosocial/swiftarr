@@ -489,6 +489,8 @@ struct PerformerController: APIRouteCollection {
 	}
 	
 	// Converts a day of week and time string into a Date object for a date during the cruise week.
+	// For example, "Wed", "11:00am" becomes a date of "March 5, 2025 11:00 AM EST" for the 2025 cruise year.
+	// These dates match what's stored for Event times, allowing us to match on Date equality.
 	func weekdayAndTimeToDate(weekday day: String, startTime: String) throws -> Date {
 		guard var weekday = Calendar.current.shortWeekdaySymbols.firstIndex(of: day) else {
 			throw "Couldn't convert '\(day)' into a 0-6 day of week index."
