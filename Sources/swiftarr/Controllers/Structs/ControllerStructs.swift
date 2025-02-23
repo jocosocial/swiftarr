@@ -156,7 +156,7 @@ public struct BoardgameData: Content {
 extension BoardgameData {
 	init(game: Boardgame, isFavorite: Bool = false) throws {
 		self.gameID = try game.requireID()
-		self.gameName = game.gameName
+		self.gameName = game.bggGameName ?? game.gameName
 		self.yearPublished = game.yearPublished
 		self.gameDescription = game.gameDescription
 		self.gameTypes = game.gameTypes
