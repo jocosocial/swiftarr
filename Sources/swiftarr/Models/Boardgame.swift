@@ -74,7 +74,7 @@ final class Boardgame: Model, Searchable, @unchecked Sendable {
 	///   - jsonGame: Game value decoded from the BoardGamesList JSON file..
 	init(jsonGame: JsonGamesListGame) {
 		self.gameName = jsonGame.gameName
-		self.bggGameName = jsonGame.bggGameName
+		self.bggGameName = jsonGame.bggGameName ?? jsonGame.gameName
 		self.yearPublished = jsonGame.yearPublished
 		self.gameDescription = jsonGame.gameDescription
 		self.gameTypes = jsonGame.gameTypes ?? []
