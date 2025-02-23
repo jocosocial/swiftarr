@@ -272,7 +272,7 @@ struct PerformerController: APIRouteCollection {
 		guard let fileData = buffer.getData(at: 0, length: buffer.readableBytes) else {
 			throw Abort(.badRequest, reason: "Could not read performer/event links file.")
 		}
-		var (events, errors) = try parsePerformerLinksExcelDoc(from: fileData)
+		var (events, errors) = try parsePerformerLinksTextFile(from: fileData)
 		let performers = events.reduce(Set<String>()) { $0.union($1.performerNames) }
 		let dbEvents = try await Event.query(on: req.db).all()
 		let dbPerformers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).all()
@@ -327,7 +327,7 @@ struct PerformerController: APIRouteCollection {
 		guard let fileData = buffer.getData(at: 0, length: buffer.readableBytes) else {
 			throw Abort(.badRequest, reason: "Could not read performer/event links file.")
 		}
-		let (events, _) = try parsePerformerLinksExcelDoc(from: fileData)
+		let (events, _) = try parsePerformerLinksTextFile(from: fileData)
 		let dbEvents = try await Event.query(on: req.db).all()
 		let dbPerformers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).all()
 		var builtPerformerPivots = [EventPerformer]()
@@ -404,6 +404,36 @@ struct PerformerController: APIRouteCollection {
 		performer.officialPerformer = uploadData.isOfficialPerformer
 	}
 	
+	// Parses a text file that links performers to their events.
+	// File should 4 tab-delimited fields; the last field is a list of semicolon-delimited performer names
+	// Example input data:
+	//		Tue	1:30pm	Anti-Gravity Derby	Storm DiCostanzo; Thera Heller
+	func parsePerformerLinksTextFile(from fileData: Data) throws -> ([PerformerLinksData], [String]) {
+		var events = [PerformerLinksData]()
+		var errors = [String]()
+		let fileContents = String(data: fileData, encoding: .utf8)
+		let scanner = Scanner(string: fileContents!)
+		var lineNum = 0
+		while !scanner.isAtEnd, let thisLine = scanner.scanUpToCharacters(from: CharacterSet.newlines) {
+			lineNum += 1
+			let tabFields = thisLine.split(separator: "\t", maxSplits: 8, omittingEmptySubsequences: false)
+			guard tabFields.count >= 4 else {
+				errors.append("Line \(lineNum): Expected at least 4 tab-separated fields but found \(tabFields.count)")
+				continue
+			}
+			do {
+				let eventTime = try weekdayAndTimeToDate(weekday: tabFields[0].string, startTime: tabFields[1].string)
+				let performerNames = tabFields[3].split(separator: ";").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+				events.append(PerformerLinksData(eventTime: eventTime, eventName: tabFields[2].string, performerNames: performerNames))
+			}
+			catch {
+				errors.append("Line \(lineNum): \(error) Skipping row.")
+			}
+			
+		}
+		return (events, errors)
+	}
+
 	// Uses CoreXLSX to parse the given Excel document, returning an array of `PerformerLinksData` containing identifying information
 	// for events along with an array of the performers at the event. Does not return all the fields for the Events; this method isn't 
 	// set up to be used as a general importer for Event data. 
@@ -412,7 +442,7 @@ struct PerformerController: APIRouteCollection {
 	// has; the UIDs make it possible to determine that an event has changed time and title but is still the same event so people following
 	// it still follow it. 2) Single Source of Truth--we have hourly automatic updates set up for Sched's info, if we update events manually
 	// from the spreadsheet we could end up auto-reverting on the next automatic update.
-	func parsePerformerLinksExcelDoc(from fileData: Data) throws -> ([PerformerLinksData], [String]){
+	func parsePerformerLinksExcelDoc(from fileData: Data) throws -> ([PerformerLinksData], [String]) {
 		var events = [PerformerLinksData]()
 		var errors = [String]()
 		var foundFullScheduleSheet = false
@@ -441,43 +471,14 @@ struct PerformerController: APIRouteCollection {
 							let day = cellValue(in: row, col: dayCol, sharedStrings: sharedStrings),
 							let startTime = cellValue(in: row, col: startCol, sharedStrings: sharedStrings), 
 							let eventName = cellValue(in: row, col: eventNameCol, sharedStrings: sharedStrings) {
-						guard var weekday = Calendar.current.shortWeekdaySymbols.firstIndex(of: day) else {
-							errors.append("In Row \(row.reference): Couldn't convert '\(day)' into a 0-6 day of week index. Skipping row.")
-							continue
+						do {
+							let eventTime = try weekdayAndTimeToDate(weekday: day, startTime: startTime)
+							let performerNames = featuring.split(separator: ";").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+							events.append(PerformerLinksData(eventTime: eventTime, eventName: eventName, performerNames: performerNames))
 						}
-						weekday += 1 // 1...7
-						// The "Start" cell can have the value "All Day" instead of a time. These events transform into 7:00AM until Midnight, local time.
-						var hours = 7
-						var minutes = 0
-						if startTime != "All Day" {
-							let startTimeComponents = startTime.split(separator: ":")
-							guard startTimeComponents.count == 2, let hoursInt = Int(startTimeComponents[0]), (1...12).contains(hoursInt),
-									let minutesInt = Int(startTimeComponents[1].prefix(2)),
-									(0...59).contains(minutesInt), startTimeComponents[1].lowercased().hasSuffix("am") ||
-									startTimeComponents[1].lowercased().hasSuffix("pm") else {
-								errors.append("In Row \(row.reference): Couldn't convert '\(startTime)' into ints for hours and minutes. Skipping row.")
-								continue
-							}
-							hours = (hoursInt % 12) + (startTimeComponents[1].lowercased().hasSuffix("pm") ? 12 : 0)
-							minutes = minutesInt
+						catch {
+							errors.append("In Row \(row.reference): \(error) Skipping row.")
 						}
-						
-						let portCalendar = Settings.shared.getPortCalendar()
-						let timeOfDayComponents = DateComponents(calendar: portCalendar, timeZone: portCalendar.timeZone, 
-								hour: hours, minute: minutes, weekday: weekday)
-						guard let approxEventTime = portCalendar.nextDate(after: Settings.shared.cruiseStartDate(), matching: timeOfDayComponents, 
-								matchingPolicy: .nextTime) else {
-							errors.append("In Row \(row.reference): Couldn't create Date object by offsetting CruiseStartDate by '\(day)' and '\(startTime)'. Skipping row.")
-							continue
-						}
-						let cruiseCalendar = Settings.shared.calendarForDate(approxEventTime)
-						guard let eventTime = cruiseCalendar.nextDate(after: Settings.shared.cruiseStartDate(), matching: timeOfDayComponents, 
-								matchingPolicy: .nextTime) else {
-							errors.append("In Row \(row.reference): Couldn't create Date object by offsetting CruiseStartDate by '\(day)' and '\(startTime)'. Skipping row.")
-							continue
-						}
-						let performerNames = featuring.split(separator: ";").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-						events.append(PerformerLinksData(eventTime: eventTime, eventName: eventName, performerNames: performerNames))
 					}
 				}
 			}
@@ -485,6 +486,44 @@ struct PerformerController: APIRouteCollection {
 		if sheetCount > 1 { errors.insert("Document contains multiple worksheets; THO's Full Schedule doc isn't supposed to?", at: 0) }
 		if !foundFullScheduleSheet { errors.insert("Didn't find sheet named 'Full Schedule'", at: 0) }
 		return (events, errors)
+	}
+	
+	// Converts a day of week and time string into a Date object for a date during the cruise week.
+	// For example, "Wed", "11:00am" becomes a date of "March 5, 2025 11:00 AM EST" for the 2025 cruise year.
+	// These dates match what's stored for Event times, allowing us to match on Date equality.
+	func weekdayAndTimeToDate(weekday day: String, startTime: String) throws -> Date {
+		guard var weekday = Calendar.current.shortWeekdaySymbols.firstIndex(of: day) else {
+			throw "Couldn't convert '\(day)' into a 0-6 day of week index."
+		}
+		weekday += 1 // 1...7
+		// The "Start" cell can have the value "All Day" instead of a time. These events transform into 7:00AM until Midnight, local time.
+		var hours = 7
+		var minutes = 0
+		if startTime != "All Day" {
+			let startTimeComponents = startTime.split(separator: ":")
+			guard startTimeComponents.count == 2, let hoursInt = Int(startTimeComponents[0]), (1...12).contains(hoursInt),
+					let minutesInt = Int(startTimeComponents[1].prefix(2)),
+					(0...59).contains(minutesInt), startTimeComponents[1].lowercased().hasSuffix("am") ||
+					startTimeComponents[1].lowercased().hasSuffix("pm") else {
+				throw "Couldn't convert '\(startTime)' into ints for hours and minutes."
+			}
+			hours = (hoursInt % 12) + (startTimeComponents[1].lowercased().hasSuffix("pm") ? 12 : 0)
+			minutes = minutesInt
+		}
+		
+		let portCalendar = Settings.shared.getPortCalendar()
+		let timeOfDayComponents = DateComponents(calendar: portCalendar, timeZone: portCalendar.timeZone, 
+				hour: hours, minute: minutes, weekday: weekday)
+		guard let approxEventTime = portCalendar.nextDate(after: Settings.shared.cruiseStartDate(), matching: timeOfDayComponents, 
+				matchingPolicy: .nextTime) else {
+			throw "Couldn't create Date object by offsetting CruiseStartDate by '\(day)' and '\(startTime)'."
+		}
+		let cruiseCalendar = Settings.shared.calendarForDate(approxEventTime)
+		guard let eventTime = cruiseCalendar.nextDate(after: Settings.shared.cruiseStartDate(), matching: timeOfDayComponents, 
+				matchingPolicy: .nextTime) else {
+			throw "Couldn't create Date object by offsetting CruiseStartDate by '\(day)' and '\(startTime)'."
+		}
+		return eventTime
 	}
 	
 	// Returns the worksheet column most likely to contain the data field we're looking for. Examines the header row for a column with the
