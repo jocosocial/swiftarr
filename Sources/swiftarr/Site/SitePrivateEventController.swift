@@ -185,7 +185,7 @@ struct SitePrivateEventController: SiteControllerUtils {
 	func registerRoutes(_ app: Application) throws {
 		// Routes that the user needs to be logged in to access.
 		let globalRoutes = getGlobalRoutes(app, feature: .personalevents, path: "dayplanner")
-		globalRoutes.get("", use: showDayPlanner).destination("the day planner")
+		globalRoutes.get("", use: showDayPlanner).destination("the day planner").setUsedForPreregistration()
 		
 		let globalPERoutes = getGlobalRoutes(app, feature: .personalevents, path: "privateevent")
 		globalPERoutes.get(fezIDParam, use: privateEventPageHandler).destination("private event")
@@ -214,10 +214,17 @@ struct SitePrivateEventController: SiteControllerUtils {
 			queryParams.append(URLQueryItem(name: "cruiseday", value: "\(cruiseDay)"))
 		}
 		let eventsResponse = try await apiQuery(req, endpoint: "/events/favorites", query: queryParams)
-		let lfgResponse = try await apiQuery(req, endpoint: "/fez/joined", query: queryParams +
-				[URLQueryItem(name: "excludetype", value: "open"), URLQueryItem(name: "excludetype", value: "closed")])
 		let events = try eventsResponse.content.decode([EventData].self)
-		let lfgs = try lfgResponse.content.decode(FezListData.self)
+
+		var lfgs: FezListData?
+		if Settings.shared.enablePreregistration == false {
+			let lfgResponse = try await apiQuery(req, endpoint: "/fez/joined", query: queryParams +
+					[URLQueryItem(name: "excludetype", value: "open"), URLQueryItem(name: "excludetype", value: "closed")])
+			lfgs = try lfgResponse.content.decode(FezListData.self)
+		} else {
+			lfgs = nil
+		}
+
 		struct DayPlannerPageContext: Encodable {
 			var trunk: TrunkContext
 			var dayStart: Date
@@ -227,7 +234,7 @@ struct SitePrivateEventController: SiteControllerUtils {
 			let nextDayLink: String?
 			var rows: [TableRow]
 
-			init(_ req: Request, cruiseDay: Int, events: [EventData], lfgs: FezListData) {
+			init(_ req: Request, cruiseDay: Int, events: [EventData], lfgs: FezListData?) {
 				trunk = .init(req, title: "Day Planner", tab: .home)
 				let cal = Settings.shared.getPortCalendar()
 				dayStart = cal.date(byAdding: .day, value: cruiseDay - 1, to: Settings.shared.cruiseStartDate()) ?? Date()
@@ -249,8 +256,11 @@ struct SitePrivateEventController: SiteControllerUtils {
 				}
 			}
 			
-			func generateAVDs(events: [EventData], lfgs: FezListData, dayStart: Date, dayEnd: Date) -> [AppointmentVisualData] {
-				var appointments = events.map { AppointmentVisualData(event: $0) } + lfgs.fezzes.compactMap { AppointmentVisualData(lfg: $0) }
+			func generateAVDs(events: [EventData], lfgs: FezListData?, dayStart: Date, dayEnd: Date) -> [AppointmentVisualData] {
+				var appointments = events.map { AppointmentVisualData(event: $0) }
+				if (lfgs != nil) {
+					appointments += lfgs!.fezzes.compactMap { AppointmentVisualData(lfg: $0) }
+				}
 				appointments = appointments.compactMap { $0.adjustStartEndTimes(dayStart: dayStart, dayEnd: dayEnd) }
 				var group = [AppointmentVisualData]()
 				var columnEndTimes = [Date]()
