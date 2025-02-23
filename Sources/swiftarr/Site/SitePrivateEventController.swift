@@ -205,21 +205,24 @@ struct SitePrivateEventController: SiteControllerUtils {
 	func showDayPlanner(_ req: Request) async throws -> View {
 		let dayOfWeek = Settings.shared.calendarForDate(Date()).component(.weekday, from: Date())
 		var cruiseDay: Int
-		var queryParams = [URLQueryItem]()
+		var eventParams = [URLQueryItem]()
+		var lfgParams = [URLQueryItem]()
 		if let day = req.query[Int.self, at: "cruiseday"] {
 			cruiseDay = day
 		}
 		else {
 			cruiseDay = (7 + dayOfWeek - Settings.shared.cruiseStartDayOfWeek) % 7 + 1
-			queryParams.append(URLQueryItem(name: "cruiseday", value: "\(cruiseDay)"))
 		}
-		let eventsResponse = try await apiQuery(req, endpoint: "/events/favorites", query: queryParams)
+		eventParams.append(URLQueryItem(name: "cruiseday", value: "\(cruiseDay)"))
+		lfgParams.append(URLQueryItem(name: "cruiseday", value: "\(cruiseDay-1)"))
+
+		let eventsResponse = try await apiQuery(req, endpoint: "/events/favorites", query: eventParams, passThroughQuery: false)
 		let events = try eventsResponse.content.decode([EventData].self)
 
 		var lfgs: FezListData?
 		if Settings.shared.enablePreregistration == false {
-			let lfgResponse = try await apiQuery(req, endpoint: "/fez/joined", query: queryParams +
-					[URLQueryItem(name: "excludetype", value: "open"), URLQueryItem(name: "excludetype", value: "closed")])
+			let lfgResponse = try await apiQuery(req, endpoint: "/fez/joined", query: lfgParams +
+					[URLQueryItem(name: "excludetype", value: "open"), URLQueryItem(name: "excludetype", value: "closed")], passThroughQuery: false)
 			lfgs = try lfgResponse.content.decode(FezListData.self)
 		} else {
 			lfgs = nil
