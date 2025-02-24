@@ -14,7 +14,7 @@ struct AdminController: APIRouteCollection {
 		let adminRoutes = app.grouped("api", "v3", "admin")
 		
 		// Open routes with no auth requirements
-		adminRoutes.get("timezonechanges", use: timeZoneChangeHandler)
+		adminRoutes.get("timezonechanges", use: timeZoneChangeHandler).setUsedForPreregistration()
 
 		// endpoints available to TwitarrTeam and above
 		let ttAuthGroup = adminRoutes.tokenRoutes(minAccess: .twitarrteam)

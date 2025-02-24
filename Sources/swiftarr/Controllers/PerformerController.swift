@@ -510,16 +510,13 @@ struct PerformerController: APIRouteCollection {
 			hours = (hoursInt % 12) + (startTimeComponents[1].lowercased().hasSuffix("pm") ? 12 : 0)
 			minutes = minutesInt
 		}
-		
+		// Events are stored in the db as if they were occurring in the Port timezone, because that's how Sched manages them
+		// and we have to convert the the current TZ on use anyway (the Time Zone Change table could get updated if the boat changes plans).
+		// So, to match dates with existing events, evaluate the day and time (e.g. "Mon", "1:00pm") in the Port TZ.
 		let portCalendar = Settings.shared.getPortCalendar()
 		let timeOfDayComponents = DateComponents(calendar: portCalendar, timeZone: portCalendar.timeZone, 
 				hour: hours, minute: minutes, weekday: weekday)
-		guard let approxEventTime = portCalendar.nextDate(after: Settings.shared.cruiseStartDate(), matching: timeOfDayComponents, 
-				matchingPolicy: .nextTime) else {
-			throw "Couldn't create Date object by offsetting CruiseStartDate by '\(day)' and '\(startTime)'."
-		}
-		let cruiseCalendar = Settings.shared.calendarForDate(approxEventTime)
-		guard let eventTime = cruiseCalendar.nextDate(after: Settings.shared.cruiseStartDate(), matching: timeOfDayComponents, 
+		guard let eventTime = portCalendar.nextDate(after: Settings.shared.cruiseStartDate(), matching: timeOfDayComponents, 
 				matchingPolicy: .nextTime) else {
 			throw "Couldn't create Date object by offsetting CruiseStartDate by '\(day)' and '\(startTime)'."
 		}
