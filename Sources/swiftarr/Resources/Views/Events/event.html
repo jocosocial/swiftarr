@@ -48,7 +48,7 @@
 			</div>
 			<div class="col col-auto btn-group btn-group-sm mt-1" role="group" aria-label="Event actions">
 				#if(trunk.userIsLoggedIn):
-					#if(event.eventType == "Shadow Event"):
+					#if(event.eventType == "Shadow Event" || event.eventType == "Workshop"):
 						#if(trunk.preregistrationMode || contains(trunk.userRoles, "performerselfeditor")):
 							<a class="btn btn-outline-primary" href="/performer/shadow/addtoevent/#(event.eventID)">Set Organizer</a>
 						#endif

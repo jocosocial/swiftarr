@@ -153,9 +153,16 @@ struct PerformerController: APIRouteCollection {
 		guard let eventID = req.parameters.get(eventIDParam.paramString, as: UUID.self) else {
 			throw Abort(.badRequest, reason: "Request parameter identifying Event is missing.")
 		}
-		guard let _ = try await Event.find(eventID, on: req.db) else {
+		guard let event = try await Event.find(eventID, on: req.db) else {
 			throw Abort(.badRequest, reason: "Event ID doesn't match any event in database.")
-		}		 
+		}
+		guard event.eventType == .shadow || event.eventType == .workshop else {
+			throw Abort(.badRequest, reason: "Shadow Cruise Organizers can only claim Shadow or Workshop events.")
+		}
+		let currentPerformers = try await event.$performers.get(on: req.db)
+		guard !currentPerformers.contains(where: { $0.officialPerformer == true }) else {
+			throw Abort(.badRequest, reason: "Shadow Cruise Organizers can't claim events that already have an official Performer.")
+		}
 		let eventCount = try await EventPerformer.query(on: req.db)
 				.join(Performer.self, on: \EventPerformer.$performer.$id == \Performer.$id)
 				.filter(Performer.self, \.$user.$id == cacheUser.userID).count()

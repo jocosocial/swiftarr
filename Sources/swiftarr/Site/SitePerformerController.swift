@@ -135,7 +135,7 @@ struct SitePerformerController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Missing event ID parameter.")
 		}
 		let event = try await apiQuery(req, endpoint: "/events/\(eventID)").content.decode(EventData.self)
-		if event.eventType != "Shadow Event" {
+		if !["Shadow Event", "Workshop"].contains(event.eventType) {
 			throw Abort(.badRequest, reason: "The referenced event is not a Shadow Event; you can't use this form to modify it.")
 		}
 		let performer = try await apiQuery(req, endpoint: "/performer/self").content.decode(PerformerData.self)
