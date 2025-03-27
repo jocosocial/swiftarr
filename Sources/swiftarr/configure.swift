@@ -288,14 +288,6 @@ struct SwiftarrConfigurator {
 		if let databaseURL = Environment.get("DATABASE_URL") {
 			postgresConfig = try SQLPostgresConfiguration(url: databaseURL)
 			postgresConfig.coreConfiguration.tls = connectionConfig
-			app.databases.use(
-				.postgres(
-					configuration: postgresConfig,
-					maxConnectionsPerEventLoop: 1,
-					connectionPoolTimeout: databaseTimeout
-				),
-				as: .psql
-			)
 		}
 		else {
 			// Gather the DB access info with hostname+user+pw, apply defaults if env vars not present.
@@ -320,6 +312,9 @@ struct SwiftarrConfigurator {
 				database: postgresDB,
 				tls: connectionConfig
 			)
+		}
+		if app.environment == .production, [nil, "", "password"].contains(postgresConfig.coreConfiguration.password) {
+			throw "Production environment cannot have a nil or default password for the PostgreSQL database."
 		}
 		app.databases.use(
 			.postgres(
@@ -347,23 +342,23 @@ struct SwiftarrConfigurator {
 			connectionRetryTimeout: .seconds(1)
 		)
 
+		var redisConfig: RedisConfiguration
 		if let redisString = Environment.get("REDIS_URL"), let redisURL = URL(string: redisString) {
-			app.redis.configuration = try RedisConfiguration(url: redisURL, pool: redisPoolOptions)
+			redisConfig = try RedisConfiguration(url: redisURL, pool: redisPoolOptions)
 		}
 		else {
 			let redisHostname = Environment.get("REDIS_HOSTNAME") ?? "localhost"
 			let redisPort = (app.environment == .testing) ? Int(Environment.get("REDIS_PORT") ?? "6380")! : 6379
-			var redisPassword: String? = Environment.get("REDIS_PASSWORD") ?? "password"
+			var redisPassword: String? = Environment.get("REDIS_PASSWORD") ?? nil
 			if redisPassword == "" {
 				redisPassword = nil
 			}
-			app.redis.configuration = try RedisConfiguration(
-				hostname: redisHostname,
-				port: redisPort,
-				password: redisPassword,
-				pool: redisPoolOptions
-			)
+			redisConfig = try RedisConfiguration(hostname: redisHostname, port: redisPort, password: redisPassword, pool: redisPoolOptions)
 		}
+		if app.environment == .production, [nil, "", "password"].contains(redisConfig.password) {
+			throw "Production environment cannot have a nil or default password for the Redis database."
+		}
+		app.redis.configuration = redisConfig
 	}
 
 	// Loads stored setting values from Redis. Must be called after app.boot, because Redis isn't ready until then.
