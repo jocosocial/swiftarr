@@ -22,5 +22,7 @@ jobs:
       run: scripts/stack.sh -e production up -d
     - name: Wait For Healthy
       run: scripts/stack.sh -e production exec web bash -c "WAIT_HOSTS=\${SWIFTARR_IP}:\${SWIFTARR_PORT} /wait"
+    - name: Dump Logs
+      run: scripts/stack.sh -e production logs web
     - name: Test For Health
       run: .github/workflows/check_health.sh -e production
