@@ -26,7 +26,7 @@ These install steps assume you have git and Xcode already, and are installing wi
 
 ### Using Homebrew
 
-1. Install Postgres. `brew install postgres`
+1. Install Postgres. `brew install postgresql@17`
 2. Install Redis: `brew install redis`. 
 3. Install GD: I used `brew install gd`.
 4. `brew services run` or `brew services start` to launch the databases
