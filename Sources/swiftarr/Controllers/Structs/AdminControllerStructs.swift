@@ -170,13 +170,13 @@ public struct EventPerformerValidationData: Content {
 
 /// Used to create a hunt including all puzzles.
 /// Required by `POST /api/v3/hunts/create`
-public struct HuntCreateData: Content {
+public struct HuntCreateData: Content, Sendable {
 	var title: String
 	var description: String
 	var puzzles: [HuntPuzzleCreateData]
 }
 
-public struct HuntPuzzleCreateData: Content {
+public struct HuntPuzzleCreateData: Content, Sendable {
 	var title: String
 	var body: String
 	var unlockTime: Date?
@@ -194,7 +194,7 @@ extension HuntCreateData: RCFValidatable {
 /// Used to edit a hunt.
 /// nil fields are not modified.
 /// Required by: `PATCH /api/v3/hunts/:huntID`
-public struct HuntPatchData: Content {
+public struct HuntPatchData: Content, Sendable {
 	var title: String?
 	var description: String?
 }
@@ -260,7 +260,7 @@ extension KeyedEncodingContainer {
 /// If absent in the JSON, not affected.
 /// If present and null, will unset the field.
 /// Required by: `PATCH /api/v3/hunts/puzzle/:puzzleID`
-public struct HuntPuzzlePatchData: Content {
+public struct HuntPuzzlePatchData: Content, Sendable {
 	var title: String?
 	var body: String?
 	var answer: String?
