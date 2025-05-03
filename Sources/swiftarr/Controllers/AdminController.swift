@@ -1,5 +1,6 @@
 import FluentSQL
 import Vapor
+import Crypto
 
 /// The collection of `/api/v3/admin` route endpoints and handler functions related to admin tasks.
 ///
@@ -18,6 +19,14 @@ struct AdminController: APIRouteCollection {
 
 		// endpoints available to TwitarrTeam and above
 		let ttAuthGroup = adminRoutes.tokenRoutes(minAccess: .twitarrteam)
+        
+		// OAuth client management endpoints
+		ttAuthGroup.get("oauth", "clients", use: getOAuthClientsHandler)
+		ttAuthGroup.get("oauth", "client", oauthClientIDParam, use: getOAuthClientHandler)
+		ttAuthGroup.get("oauth", "client", oauthClientIDParam, "grants", "count", use: getOAuthClientGrantCountHandler)
+		ttAuthGroup.post("oauth", "client", "create", use: createOAuthClientHandler)
+		ttAuthGroup.post("oauth", "client", oauthClientIDParam, "update", use: updateOAuthClientHandler)
+		ttAuthGroup.post("oauth", "client", oauthClientIDParam, "delete", use: deleteOAuthClientHandler)
 		ttAuthGroup.post("schedule", "update", use: scheduleUploadPostHandler)
 		ttAuthGroup.get("schedule", "verify", use: scheduleChangeVerificationHandler)
 		ttAuthGroup.post("schedule", "update", "apply", use: scheduleChangeApplyHandler)
@@ -1186,6 +1195,199 @@ struct AdminController: APIRouteCollection {
 		init(_ string: String) {
 			str = string
 		}
+	}
+    
+	// MARK: - OAuth Client Management
+	
+	/// `GET /api/v3/admin/oauth/clients`
+	///
+	/// Returns a list of all OAuth clients registered with this server, with grant counts.
+	///
+	/// - Returns: Array of `OAuthClientDataWithGrants`.
+	func getOAuthClientsHandler(_ req: Request) async throws -> [OAuthClientDataWithGrants] {
+		// First, fetch all clients
+		let clients = try await OAuthClient.query(on: req.db)
+			.sort(\.$name, .ascending)
+			.all()
+		
+		// For each client, we need to count the grants
+		var clientsWithCounts: [OAuthClientDataWithGrants] = []
+		
+		for client in clients {
+			let grantCount = try await OAuthGrant.query(on: req.db)
+				.filter(\.$client.$id == client.id!)
+				.count()
+			
+			let clientData = try OAuthClientData(client)
+			let clientWithGrants = OAuthClientDataWithGrants(
+				client: clientData,
+				grantCount: grantCount
+			)
+			
+			clientsWithCounts.append(clientWithGrants)
+		}
+		
+		return clientsWithCounts
+	}
+	
+	/// `GET /api/v3/admin/oauth/client/:oauth_client_id`
+	///
+	/// Returns details for a specific OAuth client.
+	///
+	/// - Returns: `OAuthClientData`.
+	func getOAuthClientHandler(_ req: Request) async throws -> OAuthClientData {
+		guard let clientIDString = req.parameters.get(oauthClientIDParam.paramString),
+			  let clientID = UUID(clientIDString) else {
+			throw Abort(.badRequest, reason: "Invalid OAuth client ID")
+		}
+		
+		guard let client = try await OAuthClient.query(on: req.db)
+			.filter(\.$id == clientID)
+			.first() else {
+			throw Abort(.notFound, reason: "OAuth client not found")
+		}
+		
+		return try OAuthClientData(client)
+	}
+	
+	/// `POST /api/v3/admin/oauth/client/create`
+	///
+	/// Creates a new OAuth client.
+	///
+	/// - Parameter requestBody: `OAuthClientCreateData`
+	/// - Returns: `OAuthClientData` with the created client details.
+	func createOAuthClientHandler(_ req: Request) async throws -> OAuthClientData {
+		let data = try req.content.decode(OAuthClientCreateData.self)
+		
+		// Generate secure random client ID and secret using base58 encoding
+		let clientId = try OIDCHelper.generateSecureRandomString(length: 24)
+		let clientSecret = try OIDCHelper.generateSecureRandomString(length: 32)
+		
+		// Process URL fields to convert empty strings to nil
+		let privacyPolicyUrl = data.privacyPolicyUrl?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true ? nil : data.privacyPolicyUrl
+		let logoUrl = data.logoUrl?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true ? nil : data.logoUrl
+		let backgroundUrl = data.backgroundUrl?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true ? nil : data.backgroundUrl
+		
+		// Create the OAuth client
+		let client = OAuthClient(
+			clientId: clientId,
+			clientSecret: clientSecret,
+			name: data.name,
+			description: data.description,
+			website: data.website,
+			privacyPolicyUrl: privacyPolicyUrl,
+			logoUrl: logoUrl,
+			backgroundUrl: backgroundUrl,
+			redirectURIs: data.redirectURIs.joined(separator: ","),
+			grantTypes: data.grantTypes.joined(separator: ","),
+			responseTypes: data.responseTypes.joined(separator: ","),
+			scopes: data.scopesString,
+			isConfidential: data.isConfidential,
+			isEnabled: true
+		)
+		
+		try await client.save(on: req.db)
+		return try OAuthClientData(client)
+	}
+	
+	
+	/// `POST /api/v3/admin/oauth/client/:oauth_client_id/update`
+	///
+	/// Updates an existing OAuth client.
+	///
+	/// - Parameter requestBody: `OAuthClientUpdateData`
+	/// - Returns: `OAuthClientData` with the updated client details.
+	func updateOAuthClientHandler(_ req: Request) async throws -> OAuthClientData {
+		guard let clientIDString = req.parameters.get(oauthClientIDParam.paramString),
+			  let clientID = UUID(clientIDString) else {
+			throw Abort(.badRequest, reason: "Invalid OAuth client ID")
+		}
+		
+		guard let client = try await OAuthClient.query(on: req.db)
+			.filter(\.$id == clientID)
+			.first() else {
+			throw Abort(.notFound, reason: "OAuth client not found")
+		}
+		
+		let data = try req.content.decode(OAuthClientUpdateData.self)
+		
+		// Process URL fields to convert empty strings to nil
+		let privacyPolicyUrl = data.privacyPolicyUrl?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true ? nil : data.privacyPolicyUrl
+		let logoUrl = data.logoUrl?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true ? nil : data.logoUrl
+		let backgroundUrl = data.backgroundUrl?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true ? nil : data.backgroundUrl
+		
+		// Update client properties
+		client.name = data.name
+		client.description = data.description
+		client.website = data.website
+		client.privacyPolicyUrl = privacyPolicyUrl
+		client.logoUrl = logoUrl
+		client.backgroundUrl = backgroundUrl
+		client.redirectURIs = data.redirectURIs.joined(separator: ",")
+		client.grantTypes = data.grantTypes.joined(separator: ",")
+		client.responseTypes = data.responseTypes.joined(separator: ",")
+		client.scopes = data.scopesString
+		client.isConfidential = data.isConfidential
+		client.isEnabled = data.isEnabled
+		
+		try await client.save(on: req.db)
+		return try OAuthClientData(client)
+	}
+	
+	/// `POST /api/v3/admin/oauth/client/:oauth_client_id/delete`
+	///
+	/// Deletes an OAuth client.
+	///
+	/// - Returns: HTTP status 204 No Content if successful.
+	func deleteOAuthClientHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let clientIDString = req.parameters.get(oauthClientIDParam.paramString),
+			  let clientID = UUID(clientIDString) else {
+			throw Abort(.badRequest, reason: "Invalid OAuth client ID")
+		}
+		
+		guard let client = try await OAuthClient.query(on: req.db)
+			.filter(\.$id == clientID)
+			.first() else {
+			throw Abort(.notFound, reason: "OAuth client not found")
+		}
+		
+		// First delete associated tokens and codes
+		try await OAuthToken.query(on: req.db)
+			.filter(\.$client.$id == clientID)
+			.delete()
+		
+		try await OAuthCode.query(on: req.db)
+			.filter(\.$client.$id == clientID)
+			.delete()
+		
+		// Then delete the client
+		try await client.delete(on: req.db)
+		
+		return .noContent
+	}
+	
+	/// `GET /api/v3/admin/oauth/client/:oauth_client_id/grants/count`
+	///
+	/// Returns the number of users who have granted permissions to this OAuth client.
+	///
+	/// - Returns: Integer representing the count of grants
+	func getOAuthClientGrantCountHandler(_ req: Request) async throws -> Int {
+		guard let clientIDString = req.parameters.get(oauthClientIDParam.paramString),
+			  let clientID = UUID(clientIDString) else {
+			throw Abort(.badRequest, reason: "Invalid OAuth client ID")
+		}
+		
+		// Find the client
+		guard let client = try await OAuthClient.find(clientID, on: req.db) else {
+			throw Abort(.notFound, reason: "OAuth client not found")
+		}
+		
+		// Count the grants for this client
+		let grantCount = try await OAuthGrant.query(on: req.db)
+			.filter(\.$client.$id == clientID)
+			.count()
+		
+		return grantCount
 	}
 }
 

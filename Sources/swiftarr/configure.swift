@@ -9,6 +9,7 @@ import QueuesRedisDriver
 import Redis
 import Vapor
 import gd
+import JWT
 
 /// # Launching Swiftarr
 ///
@@ -36,6 +37,8 @@ import gd
 ///
 /// * SWIFTARR_USER_IMAGES:  Root directory for storing user-uploaded images. These images are referenced by filename in the db.
 /// * SWIFTARR_EXTERNAL_URL: Externally-visible URL to get to the server. The server uses this to create URLs pointing to itself.
+/// * SWIFTARR_JWT_PRIVATE_KEY: Path to a PEM file containing the private key used for signing JWT tokens.
+/// * SWIFTARR_JWT_KID: Key ID to use in the JWT header. Defaults to "swiftarr-key-1" if not specified.
 
 // The configurator object doesn't persist; it'll be destroyed soon after configure() ends.
 struct SwiftarrConfigurator {
@@ -88,6 +91,9 @@ struct SwiftarrConfigurator {
 		// for use until its 'didBoot' lifecycle handler has run, and I don't like opaque ordering dependencies.
 		// As a lifecycle handler, our 'didBoot' callback got put in a list with Redis's, and we had to hope Vapor called them first.
 		try await app.initializeUserCache(app)
+		
+		// Initialize the OIDC helper
+		await OIDCHelper.initialize()
 
 		// Add custom commands
 		configureCommands(app)
@@ -645,6 +651,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateHuntSchema(), to: .psql)
 		app.migrations.add(CreatePuzzleSchema(), to: .psql)
 		app.migrations.add(CreatePuzzleCallInSchema(), to: .psql)
+		app.migrations.add(CreateOAuthSchema(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 

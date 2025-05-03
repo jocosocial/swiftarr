@@ -36,6 +36,7 @@ services:
     volumes:
       - "../Sources/swiftarr/seeds:/app/swiftarr_swiftarr.resources/seeds:ro"
       - images:/app/images
+      - ./jwt-keys:/app/jwt-keys:ro
 
 volumes:
   images:

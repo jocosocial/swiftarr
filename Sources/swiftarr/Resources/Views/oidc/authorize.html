@@ -1,0 +1,142 @@
+#extend("trunk"):
+    #export("body"):
+    <div class="container pt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                #if(client.backgroundUrl):
+                <style>
+                    .oauth-card {
+                        background-image: url('#(client.backgroundUrl)');
+                        background-size: cover;
+                        background-position: center;
+                        background-repeat: no-repeat;
+                    }
+                    .oauth-card .card-body, .oauth-card .card-header, .oauth-card .card-footer {
+                        background-color: rgba(255, 255, 255, 0.9);
+                    }
+                </style>
+                <div class="card oauth-card">
+                #else:
+                <div class="card">
+                #endif
+                    <div class="card-header">
+                        <h3 class="text-center mb-0">Authorization Request</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-4">
+                            #if(client.logoUrl):
+                            <div class="mb-3">
+                                <img src="#(client.logoUrl)" alt="#(client.name) logo" style="max-height: 100px; max-width: 100%;">
+                            </div>
+                            #endif
+                            <h4>#(client.name)</h4>
+                            <p class="text-muted">#(client.description)</p>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <p>The application <strong>#(client.name)</strong> is requesting access to your account.</p>
+                            <p class="mb-0">Granting access will allow this application to:</p>
+                        </div>
+                        
+                        <ul class="list-group mb-4">
+                            #for(scope in scopeDetails):
+                                <li class="list-group-item">
+                                    <div title="#(scope.description)">
+                                        <strong>#(scope.displayName):</strong> #(scope.description)
+                                    </div>
+                                </li>
+                            #endfor
+                        </ul>
+                        
+                        <form id="authForm" method="POST" action="/oidc/authorize">
+                            <input type="hidden" name="queryParams" value="#(queryParams)">
+                            <input type="hidden" id="decision" name="decision" value="">
+                            
+                            <div class="d-flex justify-content-between mb-3">
+                                <button type="button" onclick="submitDecision('decline')" class="btn btn-outline-secondary">
+                                    Decline
+                                </button>
+                                <button type="button" onclick="submitDecision('accept')" class="btn btn-primary">
+                                    Accept
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <div id="loading" style="display: none;" class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p>Processing your authorization decision...</p>
+                        </div>
+                        
+                        <script>
+                            async function submitDecision(decision) {
+                                try {
+                                    // Show loading state
+                                    document.getElementById('loading').style.display = 'block';
+                                    document.getElementById('authForm').style.display = 'none';
+                                    
+                                    // Set the decision value
+                                    document.getElementById('decision').value = decision;
+                                    
+                                    // Get form data
+                                    const form = document.getElementById('authForm');
+                                    const formData = new FormData(form);
+                                    
+                                    // Submit the form using fetch instead of normal form submission
+									const response = await fetch(form.action, {
+										method: 'POST',
+										body: formData,
+										credentials: 'include' // we need cookies
+									});
+									
+									if (response.ok) {
+										// Parse the JSON response which now contains the redirectTo URL
+										const data = await response.json();
+										
+										if (data.redirectTo) {
+											console.log('Redirecting to:', data.redirectTo);
+											window.location.href = data.redirectTo;
+										} else {
+											console.error('No redirectTo URL found in response');
+											alert('Error processing authorization: Missing redirect URL');
+											document.getElementById('loading').style.display = 'none';
+											document.getElementById('authForm').style.display = 'block';
+										}
+									} else {
+										console.error('Error response:', response.status);
+										try {
+											const errorText = await response.text();
+											console.log('Error details:', errorText);
+										} catch (e) {
+											console.log('Could not read error response');
+										}
+										
+										alert(`Error processing authorization. Status: ${response.status}`);
+										document.getElementById('loading').style.display = 'none';
+                                        document.getElementById('authForm').style.display = 'block';
+                                    }
+                                } catch (error) {
+                                    console.error('Error submitting form:', error);
+                                    alert('Error processing authorization. Please try again.');
+                                    document.getElementById('loading').style.display = 'none';
+                                    document.getElementById('authForm').style.display = 'block';
+                                }
+                            }
+                        </script>
+                        
+                        #if(client.privacyPolicyUrl):
+                        <div class="text-center">
+                            <a href="#(client.privacyPolicyUrl)" target="_blank" class="small">View Privacy Policy</a>
+                        </div>
+                        #endif
+                    </div>
+                    <div class="card-footer text-muted text-center">
+                        <small>You will be redirected to: <code>#(client.website)</code></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    #endexport
+#endextend

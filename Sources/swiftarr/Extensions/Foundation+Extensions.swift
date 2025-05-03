@@ -126,3 +126,15 @@ extension Substring {
 		String(self)
 	}
 }
+
+/// Extension for Data to provide Base64URL encoding for JWKS and PKCE
+extension Data {
+    /// Encodes data to Base64URL format (RFC 7515 Appendix C)
+    /// Base64URL differs from standard Base64 in that it omits padding and uses different characters for the last two values
+    func base64URLEncodedString() -> String {
+        return base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
+}

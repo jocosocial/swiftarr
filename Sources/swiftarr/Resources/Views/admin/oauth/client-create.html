@@ -1,0 +1,127 @@
+#extend("trunk"):
+    #export("body"):
+    <div class="container-md ms-0">
+        <div class="row justify-content-between align-items-center my-2">
+            <div class="col col-auto">
+                <h3>Create OAuth Client</h3>
+            </div>
+            <div class="col col-auto">
+                <a href="/admin/oauth" class="btn btn-secondary">Back to Clients</a>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="POST" action="/admin/oauth/client/create">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                        <div class="form-text">The name of the client application</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                        <div class="form-text">A description of the client application's purpose</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="website" class="form-label">Website</label>
+                        <input type="url" class="form-control" id="website" name="website" required>
+                        <div class="form-text">The client application's website URL</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="privacyPolicyUrl" class="form-label">Privacy Policy URL</label>
+                        <input type="url" class="form-control" id="privacyPolicyUrl" name="privacyPolicyUrl">
+                        <div class="form-text">URL to the client's privacy policy (optional)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="logoUrl" class="form-label">Logo URL</label>
+                        <input type="url" class="form-control" id="logoUrl" name="logoUrl">
+                        <div class="form-text">URL to the client's logo image (optional)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="backgroundUrl" class="form-label">Background Image URL</label>
+                        <input type="url" class="form-control" id="backgroundUrl" name="backgroundUrl">
+                        <div class="form-text">URL to a background image for the authorization page (optional)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="redirectURIs" class="form-label">Redirect URIs</label>
+                        <textarea class="form-control" id="redirectURIs" name="redirectURIs" rows="3" required></textarea>
+                        <div class="form-text">One URI per line. These are the authorized redirect URIs for the OAuth flow.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Grant Types</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="grantTypes[]" value="authorization_code" id="grantAuthorizationCode" checked>
+                            <label class="form-check-label" for="grantAuthorizationCode">
+                                Authorization Code
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="grantTypes[]" value="refresh_token" id="grantRefreshToken" checked>
+                            <label class="form-check-label" for="grantRefreshToken">
+                                Refresh Token
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="grantTypes[]" value="client_credentials" id="grantClientCredentials">
+                            <label class="form-check-label" for="grantClientCredentials">
+                                Client Credentials
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Response Types</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="responseTypes[]" value="code" id="responseCode" checked>
+                            <label class="form-check-label" for="responseCode">
+                                Code
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Scopes</label>
+                        #for(scope in scopes):
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="scopes[]" value="#(scope.id)" id="scope#(scope.id)" #if(scope.id == "openid"): checked disabled #endif>
+                            <label class="form-check-label" for="scope#(scope.id)">
+                                #(scope.name) #if(scope.id == "openid"): (required) #endif
+                                <small class="d-block text-muted">#(scope.description)</small>
+                            </label>
+                        </div>
+                        #endfor
+                        <!-- Hidden field to ensure openid scope is always included -->
+                        <input type="hidden" name="scopes[]" value="openid">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Client Type</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="isConfidential" value="true" id="typeConfidential" checked>
+                            <label class="form-check-label" for="typeConfidential">
+                                Confidential (can securely store secrets)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="isConfidential" value="false" id="typePublic">
+                            <label class="form-check-label" for="typePublic">
+                                Public (cannot securely store secrets)
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Create Client</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    #endexport
+#endextend

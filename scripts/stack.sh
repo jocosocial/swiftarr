@@ -53,5 +53,12 @@ fi
 envfile="./Sources/swiftarr/seeds/Private Swiftarr Config/${environment}.env"
 echo "Using env file at ${envfile}"
 
+# Create jwt-keys directory in the git root
+JWT_KEYS_DIR="./scripts/jwt-keys"
+if [ ! -d "$JWT_KEYS_DIR" ]; then
+  echo "Generating JWT keys for OpenID Connect..."
+  ./scripts/generate-jwt-keys.sh -d "$JWT_KEYS_DIR"
+fi
+
 docker compose --project-name "${stackname}" --env-file "${envfile}" --file "${filename}" "${@}"
 cd $CURRENT_DIR

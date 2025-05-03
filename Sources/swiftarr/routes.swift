@@ -20,6 +20,7 @@ public func routes(_ app: Application) throws {
 		HuntController(),
 		ImageController(),
 		KaraokeController(),
+		OIDCController(),
 		TestController(),
 		TwitarrController(),
 		UserController(),
@@ -55,6 +56,7 @@ public func routes(_ app: Application) throws {
 		SitePerformerController(),
 		SitePrivateEventController(),
 		SiteHuntController(),
+		SiteOIDCController(),
 	]
 	try siteControllers.forEach { try $0.registerRoutes(app) }
 }
