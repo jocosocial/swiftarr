@@ -64,6 +64,7 @@ protocol APIRouteCollection: APICollection {
 
 extension APIRouteCollection {
 
+	var oauthClientIDParam: PathComponent { PathComponent(":oauth_client_id") }
 	var categoryIDParam: PathComponent { PathComponent(":category_id") }
 	var twarrtIDParam: PathComponent { PathComponent(":twarrt_id") }
 	var forumIDParam: PathComponent { PathComponent(":forum_id") }

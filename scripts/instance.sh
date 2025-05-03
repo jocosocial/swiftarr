@@ -24,5 +24,13 @@ GIT_ROOT=$(git rev-parse --show-toplevel)
 pushd $GIT_ROOT
 COMPOSE_PROJECT_NAME="swiftarr_instance"
 COMPOSE_FILE="scripts/docker-compose-instance.yml"
+
+# Create jwt-keys directory in the git root
+JWT_KEYS_DIR="./jwt-keys"
+if [ ! -d "$JWT_KEYS_DIR" ]; then
+  echo "Generating JWT keys for OpenID Connect..."
+  ./scripts/generate-jwt-keys.sh -d "$JWT_KEYS_DIR"
+fi
+
 docker compose -p ${COMPOSE_PROJECT_NAME} -f ${COMPOSE_FILE} "$@"
 popd  # not really required for subshells, but good practice anyway

@@ -1,0 +1,66 @@
+#extend("trunk"):
+    #export("body"):
+    <div class="container-md ms-0">
+        <div class="row justify-content-between align-items-center my-2">
+            <div class="col col-auto">
+                <h3>OAuth Clients</h3>
+            </div>
+            <div class="col col-auto">
+                <a href="/admin/oauth/client/create" class="btn btn-primary">Create New Client</a>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <p>
+                    OAuth clients are applications that can authenticate users through Swiftarr's OpenID Connect (OIDC) service.
+                    This allows third-party applications to verify user identity without requiring users to share their credentials.
+                </p>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Client ID</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>User Grants</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    #if(clientsWithGrants):
+                        #for(clientWithGrants in clientsWithGrants):
+                            <tr>
+                                <td><a href="/admin/oauth/client/#(clientWithGrants.client.id)">#(clientWithGrants.client.name)</a></td>
+                                <td><code>#(clientWithGrants.client.clientId)</code></td>
+                                <td>#if(clientWithGrants.client.isConfidential):Confidential#else:Public#endif</td>
+                                <td>
+                                    #if(clientWithGrants.client.isEnabled):
+                                        <span class="badge bg-success">Enabled</span>
+                                    #else:
+                                        <span class="badge bg-danger">Disabled</span>
+                                    #endif
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">#(clientWithGrants.grantCount)</span> users
+                                </td>
+                                <td>
+                                    <a href="/admin/oauth/client/#(clientWithGrants.client.id)" class="btn btn-sm btn-outline-primary">View</a>
+                                </td>
+                            </tr>
+                        #endfor
+                    #else:
+                        <tr>
+                            <td colspan="6" class="text-center">No OAuth clients registered</td>
+                        </tr>
+                    #endif
+                </tbody>
+            </table>
+        </div>
+    </div>
+    #endexport
+#endextend

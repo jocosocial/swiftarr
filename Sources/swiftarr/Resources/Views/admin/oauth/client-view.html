@@ -1,0 +1,408 @@
+#extend("trunk"):
+    #export("body"):
+    <div class="container-md ms-0">
+        <div class="row justify-content-between align-items-center my-2">
+            <div class="col col-auto">
+                <h3>OAuth Client: #(client.name)</h3>
+            </div>
+            <div class="col col-auto">
+                <a href="/admin/oauth" class="btn btn-secondary">Back to Clients</a>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Client Details</span>
+                        <div>
+                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editClientModal">
+                                Edit
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteClientModal">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h5>Client Information</h5>
+                            <dl class="row">
+                                <dt class="col-sm-3">Name</dt>
+                                <dd class="col-sm-9">#(client.name)</dd>
+                                
+                                <dt class="col-sm-3">Description</dt>
+                                <dd class="col-sm-9">#(client.description)</dd>
+                                
+                                <dt class="col-sm-3">Website</dt>
+                                <dd class="col-sm-9"><a href="#(client.website)" target="_blank">#(client.website)</a></dd>
+                                
+                                <dt class="col-sm-3">Privacy Policy</dt>
+                                <dd class="col-sm-9">
+                                    #if(client.privacyPolicyUrl):
+                                    <a href="#(client.privacyPolicyUrl)" target="_blank">#(client.privacyPolicyUrl)</a>
+                                    #else:
+                                    N/A
+                                    #endif
+                                </dd>
+                                
+                                <dt class="col-sm-3">Logo URL</dt>
+                                <dd class="col-sm-9">
+                                    #if(client.logoUrl):
+                                    <a href="#(client.logoUrl)" target="_blank">#(client.logoUrl)</a>
+                                    #else:
+                                    N/A
+                                    #endif
+                                </dd>
+                                
+                                <dt class="col-sm-3">Background URL</dt>
+                                <dd class="col-sm-9">
+                                    #if(client.backgroundUrl):
+                                    <a href="#(client.backgroundUrl)" target="_blank">#(client.backgroundUrl)</a>
+                                    #else:
+                                    N/A
+                                    #endif
+                                </dd>
+                                
+                                <dt class="col-sm-3">User Grants</dt>
+                                <dd class="col-sm-9">
+                                    <span class="badge bg-info">#(grantCount)</span> users have authorized this client
+                                </dd>
+                                
+                                <dt class="col-sm-3">Status</dt>
+                                <dd class="col-sm-9">
+                                    #if(client.isEnabled):
+                                        <span class="badge bg-success">Enabled</span>
+                                    #else:
+                                        <span class="badge bg-danger">Disabled</span>
+                                    #endif
+                                </dd>
+                                
+                                <dt class="col-sm-3">Type</dt>
+                                <dd class="col-sm-9">
+                                    #if(client.isConfidential):
+                                        Confidential (can securely store secrets)
+                                    #else:
+                                        Public (cannot securely store secrets)
+                                    #endif
+                                </dd>
+                                
+                                <dt class="col-sm-3">Created</dt>
+                                <dd class="col-sm-9">#date(client.createdAt, "yyyy-MM-dd HH:mm:ss")</dd>
+                                
+                                <dt class="col-sm-3">Last Updated</dt>
+                                <dd class="col-sm-9">#date(client.updatedAt, "yyyy-MM-dd HH:mm:ss")</dd>
+                            </dl>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h5>OAuth Credentials</h5>
+                            <div class="alert alert-warning">
+                                These credentials are sensitive. Do not share them with unauthorized parties.
+                            </div>
+                            <dl class="row">
+                                <dt class="col-sm-3">Client ID</dt>
+                                <dd class="col-sm-9"><code>#(client.clientId)</code></dd>
+                                
+                                <dt class="col-sm-3">Client Secret</dt>
+                                <dd class="col-sm-9">
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="clientSecret" value="#(client.clientSecret)" readonly>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="toggleSecret()">Show</button>
+                                    </div>
+                                </dd>
+                            </dl>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h5>OAuth Configuration</h5>
+                            <dl class="row">
+                                <dt class="col-sm-3">Redirect URIs</dt>
+                                <dd class="col-sm-9">
+                                    <ul class="list-group">
+                                        #for(uri in client.redirectURIs):
+                                            <li class="list-group-item"><code>#(uri)</code></li>
+                                        #endfor
+                                    </ul>
+                                </dd>
+                                
+                                <dt class="col-sm-3">Grant Types</dt>
+                                <dd class="col-sm-9">
+                                    <ul class="list-group">
+                                        #for(grant in client.grantTypes):
+                                            <li class="list-group-item"><code>#(grant)</code></li>
+                                        #endfor
+                                    </ul>
+                                </dd>
+                                
+                                <dt class="col-sm-3">Response Types</dt>
+                                <dd class="col-sm-9">
+                                    <ul class="list-group">
+                                        #for(type in client.responseTypes):
+                                            <li class="list-group-item"><code>#(type)</code></li>
+                                        #endfor
+                                    </ul>
+                                </dd>
+                                
+                                <dt class="col-sm-3">Scopes</dt>
+                                <dd class="col-sm-9">
+                                    <ul class="list-group">
+                                        #for(scope in client.scopes):
+                                            <li class="list-group-item">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div>
+                                                        <code>#(scope)</code>
+                                                        #for(scopeInfo in scopes):
+                                                            #if(scopeInfo.id == scope):
+                                                                <div><strong>#(scopeInfo.name)</strong></div>
+                                                                <small class="text-muted">#(scopeInfo.description)</small>
+                                                            #endif
+                                                        #endfor
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        #endfor
+                                    </ul>
+                                </dd>
+                                
+                                <dt class="col-sm-3">Privacy Policy URL</dt>
+                                <dd class="col-sm-9">
+                                    #if(client.privacyPolicyUrl):
+                                    <code>#(client.privacyPolicyUrl)</code>
+                                    #else:
+                                    N/A
+                                    #endif
+                                </dd>
+                                
+                                <dt class="col-sm-3">Logo URL</dt>
+                                <dd class="col-sm-9">
+                                    #if(client.logoUrl):
+                                    <code>#(client.logoUrl)</code>
+                                    #else:
+                                    N/A
+                                    #endif
+                                </dd>
+                                
+                                <dt class="col-sm-3">Background URL</dt>
+                                <dd class="col-sm-9">
+                                    #if(client.backgroundUrl):
+                                    <code>#(client.backgroundUrl)</code>
+                                    #else:
+                                    N/A
+                                    #endif
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <span>OpenID Connect Endpoints</span>
+                    </div>
+                    <div class="card-body">
+                        <dl>
+                            <dt>Authorization Endpoint</dt>
+                            <dd><code>/oidc/authorize</code></dd>
+                            
+                            <dt>Token Endpoint</dt>
+                            <dd><code>/oidc/token</code></dd>
+                            
+                            <dt>UserInfo Endpoint</dt>
+                            <dd><code>/oidc/userinfo</code></dd>
+                            
+                            <dt>JWKS Endpoint</dt>
+                            <dd><code>/oidc/jwks</code></dd>
+                            
+                            <dt>Discovery Document</dt>
+                            <dd><code>/.well-known/openid-configuration</code></dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Edit Client Modal -->
+        <div class="modal fade" id="editClientModal" tabindex="-1" aria-labelledby="editClientModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <form method="POST" action="/admin/oauth/client/#(client.id)/update">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editClientModalLabel">Edit OAuth Client</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Name</label>
+                                <input type="text" class="form-control" id="name" name="name" value="#(client.name)" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="3" required>#(client.description)</textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="website" class="form-label">Website</label>
+                                <input type="url" class="form-control" id="website" name="website" value="#(client.website)" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="privacyPolicyUrl" class="form-label">Privacy Policy URL</label>
+                                <input type="url" class="form-control" id="privacyPolicyUrl" name="privacyPolicyUrl" value="#(client.privacyPolicyUrl)">
+                                <div class="form-text">URL to the client's privacy policy (optional)</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="logoUrl" class="form-label">Logo URL</label>
+                                <input type="url" class="form-control" id="logoUrl" name="logoUrl" value="#(client.logoUrl)">
+                                <div class="form-text">URL to the client's logo image (optional)</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="backgroundUrl" class="form-label">Background Image URL</label>
+                                <input type="url" class="form-control" id="backgroundUrl" name="backgroundUrl" value="#(client.backgroundUrl)">
+                                <div class="form-text">URL to a background image for the authorization page (optional)</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="redirectURIs" class="form-label">Redirect URIs</label>
+								<textarea class="form-control" id="redirectURIs" name="redirectURIs" rows="3" required>#for(uri in client.redirectURIs):#(uri)#endfor</textarea>
+                                <div class="form-text">One URI per line</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Grant Types</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="grantTypes[]" value="authorization_code" id="editGrantAuthorizationCode" 
+                                        #if(contains(client.grantTypes, "authorization_code")):checked#endif>
+                                    <label class="form-check-label" for="editGrantAuthorizationCode">
+                                        Authorization Code
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="grantTypes[]" value="refresh_token" id="editGrantRefreshToken"
+                                        #if(contains(client.grantTypes, "refresh_token")):checked#endif>
+                                    <label class="form-check-label" for="editGrantRefreshToken">
+                                        Refresh Token
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="grantTypes[]" value="client_credentials" id="editGrantClientCredentials"
+                                        #if(contains(client.grantTypes, "client_credentials")):checked#endif>
+                                    <label class="form-check-label" for="editGrantClientCredentials">
+                                        Client Credentials
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Response Types</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="responseTypes[]" value="code" id="editResponseCode"
+                                        #if(contains(client.responseTypes, "code")):checked#endif>
+                                    <label class="form-check-label" for="editResponseCode">
+                                        Code
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Scopes</label>
+                                #for(scope in scopes):
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="scopes[]" value="#(scope.id)" 
+                                          id="editScope#(scope.id)" 
+                                          #if(scope.id == "openid"): checked disabled #elseif(contains(client.scopes, scope.id)): checked #endif>
+                                    <label class="form-check-label" for="editScope#(scope.id)">
+                                        #(scope.name) #if(scope.id == "openid"): (required) #endif
+                                        <small class="d-block text-muted">#(scope.description)</small>
+                                    </label>
+                                </div>
+                                #endfor
+                                <!-- Hidden field to ensure openid scope is always included -->
+                                <input type="hidden" name="scopes[]" value="openid">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Client Type</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="isConfidential" value="true" id="editTypeConfidential"
+                                        #if(client.isConfidential):checked#endif>
+                                    <label class="form-check-label" for="editTypeConfidential">
+                                        Confidential (can securely store secrets)
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="isConfidential" value="false" id="editTypePublic"
+                                        #if(!client.isConfidential):checked#endif>
+                                    <label class="form-check-label" for="editTypePublic">
+                                        Public (cannot securely store secrets)
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="isEnabled" value="true" id="statusEnabled"
+                                        #if(client.isEnabled):checked#endif>
+                                    <label class="form-check-label" for="statusEnabled">
+                                        Enabled
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="isEnabled" value="false" id="statusDisabled"
+                                        #if(!client.isEnabled):checked#endif>
+                                    <label class="form-check-label" for="statusDisabled">
+                                        Disabled
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Delete Client Modal -->
+        <div class="modal fade" id="deleteClientModal" tabindex="-1" aria-labelledby="deleteClientModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteClientModalLabel">Delete OAuth Client</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete the OAuth client <strong>#(client.name)</strong>?</p>
+                        <p class="text-danger">This action cannot be undone. All associated tokens will be revoked.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <form method="POST" action="/admin/oauth/client/#(client.id)/delete">
+                            <button type="submit" class="btn btn-danger">Delete Client</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function toggleSecret() {
+            const secretField = document.getElementById('clientSecret');
+            const type = secretField.getAttribute('type') === 'password' ? 'text' : 'password';
+            secretField.setAttribute('type', type);
+            
+            const button = secretField.nextElementSibling;
+            button.textContent = type === 'password' ? 'Show' : 'Hide';
+        }
+    </script>
+    #endexport
+#endextend

@@ -198,6 +198,7 @@ final class Settings: Encodable, @unchecked Sendable {
 
 	/// Base URL that the web UI uses to call API level endpoints.
 	@SettingsValue var apiUrlComponents: URLComponents = URLComponents(string: "http://localhost:8081/api/v3")!
+	@SettingsValue var urlComponents: URLComponents = URLComponents(string: "http://localhost:8081/")!
 
 	/// Enable caching the `UserNotificationData` in the users session data in `NotificationMiddleware`.
 	/// Disabling this can be useful for debugging the site UI in real time.

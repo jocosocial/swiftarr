@@ -694,7 +694,8 @@ extension SiteControllerUtils {
 		method: HTTPMethod = .GET,
 		defaultHeaders: HTTPHeaders? = nil,
 		passThroughQuery: Bool = true,
-		beforeSend: (inout ClientRequest) throws -> Void = { _ in }
+		beforeSend: (inout ClientRequest) throws -> Void = { _ in },
+		useApiBaseComponent: Bool = true,
 	) async throws -> ClientResponse {
 		// Step 1: Make sure we add the Token Auth header to the API request. The user's auth token is saved in their
 		// session data.
@@ -706,7 +707,12 @@ extension SiteControllerUtils {
 		headers.add(name: "X-Swiftarr-Client", value: "swiftarr")
 
 		// Step 2: Generate URLComponents, extract a 'clean' path, append the 'clean' path for the endpoint.
-		var urlComponents = Settings.shared.apiUrlComponents
+		var urlComponents: URLComponents;
+		if useApiBaseComponent {
+			urlComponents = Settings.shared.apiUrlComponents
+		} else {
+			urlComponents = Settings.shared.urlComponents
+		}
 		guard let apiPathURL = URL(string: urlComponents.path),
 			let endpointComponents = URLComponents(string: endpoint)
 		else {
