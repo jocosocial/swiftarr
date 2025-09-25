@@ -2,10 +2,11 @@ import FluentSQL
 import Vapor
 
 fileprivate struct EventsQueryStruct: Content {
-	var search: String?
+	var search: String?			// Text search in event's title and description fields
 	var type: String?
 	var day: String?			// 3 letter abbreviation for a day of the week
-	var cruiseday: Int?			
+	var cruiseday: Int?			// Day of cruise; embark day is day 0
+	var location: String?		// Text search in event's location field
 }
 
 fileprivate struct EventPageContext: Encodable {
@@ -122,10 +123,6 @@ struct SiteEventsController: SiteControllerUtils {
 		var filterString = "Events"
 		let queryStruct = try req.query.decode(EventsQueryStruct.self)
 		
-		if let searchParam = queryStruct.search {
-			components.queryItems?.append(URLQueryItem(name: "search", value: searchParam))
-			filterString = "Events matching \"\(searchParam)\""
-		}
 		if let weekdayParam = queryStruct.day {
 			components.queryItems?.append(URLQueryItem(name: "day", value: weekdayParam))
 			var dayOfWeek: Int
@@ -140,12 +137,23 @@ struct SiteEventsController: SiteControllerUtils {
 			default: dayOfWeek = 7
 			}
 			dayOfCruise = (7 + dayOfWeek - Settings.shared.cruiseStartDayOfWeek) % 7 + 1
+			filterString += " on \(Calendar.current.weekdaySymbols[(dayOfWeek - 1).clamped(to: 0...6)])"
 		}
 		else if let cruisedayParam = queryStruct.cruiseday {
 			components.queryItems?.append(URLQueryItem(name: "cruiseday", value: String(cruisedayParam)))
 			dayOfCruise = cruisedayParam
+			filterString += " on day \(dayOfCruise)"
 		}
-		else if components.queryItems?.isEmpty == true {
+		if let locationParam = queryStruct.location {
+			components.queryItems?.append(URLQueryItem(name: "location", value: locationParam))
+			filterString += " in \"\(locationParam)\""
+		}
+		if let searchParam = queryStruct.search {
+			components.queryItems?.append(URLQueryItem(name: "search", value: searchParam))
+			filterString += " matching \"\(searchParam)\""
+		}
+		// Default filter is today's events; only use if no other filter got applied.
+		if components.queryItems?.isEmpty == true {
 			let cal = Settings.shared.calendarForDate(Date())
 			// For the purpose of events, 'days' start and end at 3 AM. To enable "Late Day Flip" where
 			// the schedule continues showing "Wednesday" until "3AM Thursday" we can adjust the current time

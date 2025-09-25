@@ -1,0 +1,92 @@
+#extend("trunk"):
+    #export("body"):
+    	#if(!trunk.metaRedirectURL):
+    	<div class="container-md ms-0 my-1">
+			<nav>
+				<div class="nav nav-tabs" id="nav-tab" role="tablist">
+					#if(count(events.performerAttached) > 0):
+						<button class="nav-link #if(activeTab == "performer"):active#endif" id="performer-tab" data-bs-toggle="tab" data-bs-target="#performer-content" type="button" role="tab" aria-controls="performer-content" aria-selected="true">Performer</button>
+					#endif
+					#if(count(events.matchingRoom) > 0):
+						<button class="nav-link #if(activeTab == "room"):active#endif" id="room-tab" 
+								data-bs-toggle="tab" data-bs-target="#room-content" type="button" role="tab" 
+								aria-controls="room-content" aria-selected="#if(activeTab == "room"):true#else:false#endif">Room</button>
+					#endif
+					<button class="nav-link #if(activeTab == "all"):active#endif" id="all-tab" 
+							data-bs-toggle="tab" data-bs-target="#all-content" type="button" role="tab" 
+							aria-controls="all-content" aria-selected="#if(activeTab == "all"):true#else:false#endif">All</button>
+					#if(count(events.existingFeedback) > 0):
+						<button class="nav-link" id="edit-tab" data-bs-toggle="tab" data-bs-target="#edit-content" type="button" role="tab" aria-controls="edit-content" aria-selected="false">Edit</button>
+					#endif
+				</div>
+			</nav>
+			<div class="tab-content" id="nav-tabContent">
+				<div class="tab-pane fade #if(activeTab == "performer"):show active#endif" id="performer-content" role="tabpanel" aria-labelledby="performer-tab" tabindex="0">
+					<div class="alert alert-info mt-2" role="alert">
+						This shows events where you're listed as the performer. Tap any entry to give feedback.
+					</div>
+					<ul class="container-md mx-0 px-0 list-group" data-listtype="event" data-cruisestart="#(cruiseStartDate)" data-cruiseend="#(cruiseEndDate)">
+						#if(count(events.performerAttached) == 0):
+							<li class="list-group-item bg-transparent">
+								<span class="text-center"><h6>No events match the filters</h6>
+							</li>
+						#else:
+							#for(event in events.performerAttached):
+								#extend("/Feedback/event")
+							#endfor
+						#endif
+					</ul>
+				</div>
+				<div class="tab-pane fade #if(activeTab == "room"):show active#endif" id="room-content" role="tabpanel" aria-labelledby="room-tab" tabindex="0">
+					<div class="alert alert-info mt-2" role="alert">
+						This shows events that happened recently in #if(roomName):#(roomName)#else:this room#endif. Tap any entry to give feedback.
+					</div>
+					<ul class="container-md mx-0 px-0 list-group" data-listtype="event" data-cruisestart="#(cruiseStartDate)" data-cruiseend="#(cruiseEndDate)">
+						#if(count(events.matchingRoom) == 0):
+							<li class="list-group-item bg-transparent">
+								<span class="text-center"><h6>No events match the filters</h6>
+							</li>
+						#else:
+							#for(event in events.matchingRoom):
+								#extend("/Feedback/event")
+							#endfor
+						#endif
+					</ul>
+				</div>
+				<div class="tab-pane fade #if(activeTab == "all"):show active#endif" id="all-content" role="tabpanel" aria-labelledby="all-tab" tabindex="0">
+					<div class="alert alert-info mt-2" role="alert">
+						This shows all shadow events that have already happened, most recent first. Tap any entry to give feedback.
+					</div>
+					<ul class="container-md mx-0 px-0 list-group" data-listtype="event" data-cruisestart="#(cruiseStartDate)" data-cruiseend="#(cruiseEndDate)">
+						#if(count(events.events) == 0):
+							<li class="list-group-item bg-transparent">
+								<span class="text-center"><h6>No events match the filters</h6>
+							</li>
+						#else:
+							#for(event in events.events):
+								#extend("/Feedback/event")
+							#endfor
+						#endif
+					</ul>
+				</div>
+				<div class="tab-pane fade" id="edit-content" role="tabpanel" aria-labelledby="edit-tab" tabindex="0">
+					<div class="alert alert-info mt-2" role="alert">
+						This shows feedback you've already submitted. Tap any entry to edit your feedback report.
+					</div>
+					<ul class="container-md mx-0 px-0 list-group" data-listtype="event" data-cruisestart="#(cruiseStartDate)" data-cruiseend="#(cruiseEndDate)">
+						#if(count(events.existingFeedback) == 0):
+							<li class="list-group-item bg-transparent">
+								<span class="text-center"><h6>No events match the filters</h6>
+							</li>
+						#else:
+							#for(event in events.existingFeedback):
+								#extend("/Feedback/event")
+							#endfor
+						#endif
+					</ul>
+				</div>
+			</div>
+		</div>
+		#endif
+    #endexport
+#endextend

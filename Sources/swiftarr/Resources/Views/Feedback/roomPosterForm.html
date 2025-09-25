@@ -1,0 +1,76 @@
+#extend("trunk"):
+    #export("body"):
+		<div class="container-md">
+			<div class="row my-3" >
+				<h4>Shadow Event Room Names</h4>
+			</div>
+			
+			<div class="row mb-3">
+				<div class="col">
+					This page is used to print out a set of Event Feedback Request sheets, to be posted in rooms aboard the ship
+					that are used to host Shadow Events. Shadow Event hosts can then scan the QR code on the sheet and provide feedback
+					on how their event went.
+				</div>
+			</div>
+			<div class="row mb-3">
+				<div class="col">
+					Each sheet printed has the name of the room on it, and the QR code on each sheet is specific to that room. That is,
+					the QR Code's URL has the form: 
+					<a href= "https://twitarr.com/eventfeedback?room=Rolling%20Stone%20Lounge">https://twitarr.com/eventfeedback?room=Rolling%20Stone%20Lounge</a>
+				</div>
+			</div>
+			<div class="row mb-3">
+				<div class="col">
+					All this URL does is present the user a filtered list of events; only events happening in the given room are shown. They
+					can still view a full list of all shadow events if their event doesn't appear in the filtered list.
+				</div>
+			</div>
+			
+			<form class="" action="#(formAction)" enctype="multipart/form-data" method="POST" data-successurl="#(successURL)" id="feedbackForm">
+				<div class="mb-3">
+					<label for="roomNames" class="form-label"><b>Room Names to Print</b></label>
+					<textarea 
+							class="form-control" 
+							maxlength="2000"
+							data-maxlines="25" 
+							data-lengthlabel="roomNamesLimitsLabel" 
+							rows="20" 
+							name="roomNames" 
+							id="roomNames" 
+							placeholder="">#(rooms)</textarea>
+					<div class="input-group-text input-group-sm justify-content-end py-0" id="roomNamesLimitsLabel"></div>
+				</div>
+				
+				<div class="alert alert-danger mt-3 d-none" role="alert">
+				</div>				
+				<div class="row mb-2">
+					<div class="col col-auto">
+						<button type="submit" class="btn btn-primary">Print <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+					</div>
+				</div>
+			</form>
+			<ul class="list-group mt-3">
+				<li class="list-group-item active">
+					<b>Notes on This Form</b>
+				</li>
+				<li class="list-group-item bg-transparent">
+					You may want to remove any locations from the list where it won't make sense to post a feedback form. For example,
+					the Caribbean cruises often have shadow events in Half Moon Cay, but THO is unlikely to post a sign there. 
+				</li>
+				<li class="list-group-item bg-transparent">
+					Be careful about modifying room names on this form. The names are pulled from Sched.com's output, 
+					and get used to filter a search of the Event table. Simply changing "Lower Main Dining Room" to "Main Dining"
+					may cause the room filter to not produce any results.
+				</li>
+				<li class="list-group-item bg-transparent">
+					If you want to (re)print just one page, you can just delete every line except the one you want and then tap Print.
+				</li>
+				<li class="list-group-item bg-transparent">
+					If you are printing on the boat, you may have to Print->Save to PDF, switch Wi-Fi networks to the one the printer's on,
+					and then print the PDF file. This is because your browser may need to fetch images from the server while printing, 
+					but your computer (probably) can't see the server and the printer at the same time.
+				</li>
+			</ul>
+		</div>
+    #endexport
+#endextend

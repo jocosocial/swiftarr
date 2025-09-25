@@ -385,6 +385,169 @@ extension EventData {
 	}
 }
 
+/// Delivered to POST `/api/v3/feedback` 
+/// 
+/// Contains the information from a Event Feedback Reporting form.
+public struct EventFeedbackData: Content, Sendable {
+	/// This is the UID of the Event, from Sched's .ics export--NOT the ID key for the event in Twitarr.
+	var eventUID: String?
+	/// The title of the event being reported on. Currently this field is pre-filled with data from the Event and not user-modifiable.
+	/// In the future, if feedback is expanded to events not on the official Sched.com list, this could be a standard form field.
+	var eventTitle: String
+	/// Where the event took place, for purposes of identifying the event. Currently this will always be a copy of the Event.location field,
+	/// as feedback is currently always tied to Event objects.
+	var eventLocation: String
+	/// The start time of the event, to help identify the event.
+	var eventTime: Date
+	/// The name of the shadow event host who's reporting this feedback.
+	var hostName: String
+	/// The host's estimate of the attendance. Typed as a string so the hosts can enter "over 50 people" or similar.
+	/// Don't try to do math on this field's contents.
+	var attendance: String	
+	/// The 'How did it go?' text entry field.
+	var recapString: String
+	/// The 'Any issues?' text entry field.
+	var issuesString: String
+}
+
+/// THO-level calls to collect feedback reports; also for users to get their own feedback record (for updating their feedback).
+/// 
+/// Returned by: `GET /api/v3/feedback/id/:event_id`
+/// Returned by: `GET /api/v3/feedback/uid/:event_uid`
+/// Returned by: `GET /api/v3/admin/feedback/reports`
+/// Returned by: `GET /api/v3/admin/feedback/report/:report_id`
+public struct EventFeedbackReport: Content, Sendable {
+	/// The database ID for this report; used for referencing or manipulating it later. May be nil in the case where no 
+	/// report has been filed and this entity contains default values for several fields.
+	var id: UUID?
+	/// Twitarr user that wrote the report. 
+	var reportingUser: UserHeader
+	/// The time of the most recent update to this report
+	var reportModDate: Date?
+
+	// The event being reported on
+	var event: EventData?
+	// Usually the same as fields in the Event. But, users might edit the fields, and eventually we may add feedback forms
+	// not attached to events.
+	var eventTitle: String
+	var eventLocation: String
+	var eventTime: Date
+	
+	// Self-reported name of the reporter (may have been prefilled, but comes from form submission).
+	var hostName: String
+	/// Reporter's estimate of the event attendance
+	var attendance: String	
+	/// Reporter's notes on how the event went generally
+	var recapString: String
+	/// Any issues the reporter chose to share
+	var issuesString: String
+	/// For TwitarrTeam and above. NULL for normal users
+	var adminFields: AdminFields?
+	
+	struct AdminFields: Content, Sendable {
+		/// Will be TRUE if an admin has marked this feedback as containing something actionable.
+		var actionable: Bool
+		/// Number of users that have followed the event
+		var followCount: Int
+		/// Forum ID of the event's forum thread
+		var forumID: UUID?
+		/// Number of forum posts about this event
+		var forumPostCount: Int
+	}
+}
+
+extension EventFeedbackReport {
+	init(_ report: EventFeedback, author: UserHeader) throws {
+		let event = try report.joined(Event.self)
+		// else {
+		//	throw Abort(.badRequest, reason: "EventFeedbackReport requires an Event")
+		//}
+		let timeZoneChanges = Settings.shared.timeZoneChanges
+		self.id = report.id
+		self.reportingUser = author
+		self.reportModDate = report.updatedAt ?? Date()
+		self.event = try EventData(event, isFavorite: false)
+		self.eventTitle = report.eventName
+		self.eventLocation = report.eventLocation
+		self.eventTime = timeZoneChanges.portTimeToDisplayTime(report.eventStartTime)
+		self.hostName = report.responderName
+		self.attendance = report.attendance
+		self.recapString = report.recapField
+		self.issuesString = report.issuesField
+	}
+	
+	// Creates an 'empty' feedback report, with the event and user info prefilled, bu none of the feedback fields.
+	init(author: UserHeader, event: Event, realName: String?) throws {
+		self.id = nil
+		self.reportingUser = author
+		self.reportModDate = nil
+		self.event = try EventData(event, isFavorite: false)
+		self.eventTitle = event.title
+		self.eventLocation = event.location
+		self.eventTime = event.startTime
+		self.hostName = realName ?? author.displayName ?? ""
+		self.attendance = ""
+		self.recapString = ""
+		self.issuesString = ""
+	}
+}
+
+extension EventFeedbackReport.AdminFields {
+	init() {
+		actionable = false
+		followCount = 0
+		forumPostCount = 0
+	}
+}
+
+/// Returned by `/GET /api/v3/feedback/eventlist`
+/// 
+/// Returns several arrays of EventData, designed to make it as easy as possible for the user to locate
+/// the event they hosted and want to give feedback. Currently we return a full events list of all eligible events
+/// and 3 optional filtered lists, each showing a subset of the full list that is likely to contain the event the user
+/// wants to give feedback on.
+/// 
+/// In each EventData array, events are sorted by descending start time and filtered to 
+/// 	- only show `shadow` and `workshop` events
+/// 	- only show events that *started* in the past.
+/// The same event can be found in multiple arrays.
+/// 
+/// If this structure gets any more complicated we may change the API to return a single list sorted via a points strategy.
+public struct EventFeedbackSelectionData: Content, Sendable {
+	/// Events the user has already given feedback on, and could update their answers.
+	var existingFeedback: [EventData]
+	/// If the user has an attached Performer record, events for that performer
+	var performerAttached: [EventData]
+	/// If the request indicated a Room filter, events that occurred in that room 
+	var matchingRoom: [EventData]
+	/// All events eligible for feedback
+	var events: [EventData]
+}
+
+extension EventFeedbackSelectionData {
+	init() {
+		existingFeedback = []
+		performerAttached = []
+		matchingRoom = []
+		events = []
+	}
+}
+
+/// Returns statistics on shadow events and shadow even feedback reports. 
+/// 
+/// Returned by `GET /api/v3/admin/feedback/stats`
+public struct EventFeedbackStats: Content, Sendable {
+	/// How many events of type 'shadow' or 'workshop' are on the Sched.com events list
+	var totalShadowEvents: Int
+	/// How many shadow events have completed (Date() > event.endTime).
+	var completedShadowEvents: Int
+	/// How many feedback reports we're received. The same event may get multiple reports.
+	var totalFeedbackReports: Int
+	/// How many shadow events have at least one report. uniqueEventsWithFeedback / completedShadowEvents is the response percentage.
+	var uniqueEventsWithFeedback: Int
+	///
+	
+}
 /// Used to create or update a `FriendlyFez`.
 ///
 /// Required by:

@@ -2,6 +2,7 @@ import FluentSQL
 import Foundation
 import Vapor
 import gd
+import QRCodeSwift
 
 struct ImageController: APIRouteCollection {
 
@@ -18,6 +19,7 @@ struct ImageController: APIRouteCollection {
 		userImageRoutes.get("user", "identicon", userIDParam, use: getUserIdenticonHandler).setUsedForPreregistration()
 		userImageRoutes.get("user", "full", userIDParam, use: getUserAvatarHandler).setUsedForPreregistration()
 		userImageRoutes.get("user", "thumb", userIDParam, use: getUserAvatarHandler).setUsedForPreregistration()
+		userImageRoutes.get("qrcode", use: generateQRCode).setUsedForPreregistration()
 
 		// Moderator-only endpoints
 		let tokenAuthGroup = imageRoutes.tokenRoutes(feature: .images, minAccess: .moderator)
@@ -152,6 +154,49 @@ struct ImageController: APIRouteCollection {
 		headers.contentType = HTTPMediaType.fileExtension("png")
 		headers.cacheControl = .init(isPublic: true, maxAge: 3600 * 24)
 		let body = Response.Body(data: imageData)
+		return Response(status: .ok, headers: headers, body: body)
+	}
+
+	/// `GET /api/v3/image/qrcode`
+	/// 
+	/// Creates a QR Code image on the fly and returns it as a PNG. The 'string' URL query parameter is required.
+	/// 
+	/// Because this method creates the output image every time it's called and doesn't currently do any caching, this method probably
+	/// shouldn't be used for high traffic pages. That is, don't put <img> tags pointing here onto pages that get lots of hits.
+	/// We can add caching later if we need it.
+	/// 
+	/// **URL Query Parameters:**
+	/// - string=STRING		String to encode as the QR Code's value.
+	/// 
+	/// - Returns: A 400x400 pixel PNG file of a QR Code.
+	func generateQRCode(_ req: Request) async throws -> Response {
+		guard let urlString = (req.query[String.self, at: "string"]) else {
+			throw Abort(.badRequest, reason: "QR Generation requires a string to generate in the 'string' query parameter.")
+		}
+		let code = try QRCode(urlString)
+		let xSize = Int32(code.imageCodes[0].count)
+		let ySize = Int32(code.imageCodes.count)
+		guard let srcImage = GDImage(width: Int(xSize), height: Int(ySize), type: .palette) else {
+			throw Abort(.internalServerError, reason: "Could not allocate image for QR Code.")
+		}
+		let white = gdImageColorAllocate(srcImage.internalImage, 0xFF, 0xFF, 0xFF)
+		let black = gdImageColorAllocate(srcImage.internalImage, 0, 0, 0)
+		for y: Int32 in 0..<ySize {
+			for x: Int32 in 0..<xSize {
+				gdImageSetPixel(srcImage.internalImage, x, y, code.imageCodes[Int(y)][Int(x)] ? black : white)
+			}
+		}
+		let dstImage = srcImage.resizedTo(width: 400, height: 400, applySmoothing: false)!
+		let pngData = try dstImage.export(as: .png)
+		var headers: HTTPHeaders = [:]
+		// Check if file has been cached already and return NotModified response if the etags match
+		headers.replaceOrAdd(name: .eTag, value: "W/\"1\"")
+		if "W/\"1\"" == req.headers.first(name: .ifNoneMatch) {
+			return Response(status: .notModified)
+		}
+		headers.contentType = HTTPMediaType.fileExtension("png")
+		headers.cacheControl = .init(isPublic: true, maxAge: 3600 * 24)
+		let body = Response.Body(data: pngData)
 		return Response(status: .ok, headers: headers, body: body)
 	}
 

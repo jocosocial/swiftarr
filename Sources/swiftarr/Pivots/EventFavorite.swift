@@ -15,7 +15,7 @@ final class EventFavorite: Model, @unchecked Sendable {
 	/// The associated `User` who favorited the game.
 	@Parent(key: "user") var user: User
 
-	/// The associated `Boardgame` that was favorited.
+	/// The associated `Event` that was favorited.
 	@Parent(key: "event") var event: Event
 
 	// MARK: Initialization

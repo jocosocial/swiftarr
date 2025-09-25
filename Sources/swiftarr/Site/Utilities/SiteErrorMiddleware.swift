@@ -90,8 +90,9 @@ public final class SiteErrorMiddleware: AsyncMiddleware {
 
 		// variables to determine
 		let status: HTTPResponseStatus
-		let reason: String
+		var reason: String
 		var fieldErrors: [String: String]?
+		var jsonError: ErrorResponse? = nil
 
 		// inspect the error type
 		switch error {
@@ -115,6 +116,11 @@ public final class SiteErrorMiddleware: AsyncMiddleware {
 			reason = resp.reason
 			status = HTTPResponseStatus(statusCode: Int(resp.status))
 			fieldErrors = resp.fieldErrors
+		case let resp as ErrorResponse:
+			// For site-level errors that are going to get parsed by Javascript client-side, instead of displaying an error HTML page.
+			reason = resp.reason
+			status = HTTPResponseStatus(statusCode: Int(resp.status))
+			jsonError = resp
 		default:
 			// if not release mode, and error is debuggable, provide debug info
 			// otherwise, deliver a generic 500 to avoid exposing any sensitive error info
@@ -125,33 +131,36 @@ public final class SiteErrorMiddleware: AsyncMiddleware {
 		// Report the error to logger.
 		req.logger.report(error: error)
 
-		// Append field errors onto the error string
-		var errorStr = reason
-		if let fieldErrors = fieldErrors {
-			for (field, err) in fieldErrors {
-				errorStr.append("<br>\(field): \(err)")
-			}
+		if let err = jsonError {
+			return Response(status: status, body: .init(data: try JSONEncoder().encode(err)))				
 		}
+		else {
+			struct ErrorPageContext: Encodable {
+				var trunk: TrunkContext
+				var status: UInt
+				var statusText: String
+				var errorString: String
+				var linkDesc: String?			// If login fixes the error, where login takes you.
 
-		struct ErrorPageContext: Encodable {
-			var trunk: TrunkContext
-			var status: UInt
-			var statusText: String
-			var errorString: String
-			var linkDesc: String?			// If login fixes the error, where login takes you.
-
-			init(_ req: Request, status: HTTPResponseStatus, errorStr: String) {
-				trunk = .init(req, title: "Error", tab: .none)
-				self.status = status.code
-				self.statusText = "\(status.code) \(status.reasonPhrase)"
-				errorString = errorStr
-				if status == .unauthorized, let desc = req.route?.userInfo["destination"] as? String? {
-					linkDesc = desc 
+				init(_ req: Request, status: HTTPResponseStatus, errorStr: String) {
+					trunk = .init(req, title: "Error", tab: .none)
+					self.status = status.code
+					self.statusText = "\(status.code) \(status.reasonPhrase)"
+					errorString = errorStr
+					if status == .unauthorized, let desc = req.route?.userInfo["destination"] as? String? {
+						linkDesc = desc 
+					}
 				}
 			}
+			// Append field errors onto the error string
+			if let fieldErrors = fieldErrors {
+				for (field, err) in fieldErrors {
+					reason.append("<br>\(field): \(err)")
+				}
+			}
+			let ctx = ErrorPageContext(req, status: status, errorStr: reason)
+			return try await req.view.render("error", ctx).encodeResponse(status: status, for: req)
 		}
-		let ctx = ErrorPageContext(req, status: status, errorStr: errorStr)
-		return try await req.view.render("error", ctx).encodeResponse(status: status, for: req)
 	}
 
 	init(environment: Environment) {

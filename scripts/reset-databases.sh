@@ -12,8 +12,8 @@ then
 	# Find install location
 	if test -f "/usr/local/opt/postgresql/bin/dropdb"; then
 		POSTGRES_DIR="/usr/local/opt/postgresql/bin"
-	elif test -f "/opt/homebrew/opt/postgresql/bin/dropdb"; then
-		POSTGRES_DIR="/opt/homebrew/opt/postgresql/bin"
+	elif test -f "/opt/homebrew/opt/postgresql@17/bin/dropdb"; then
+		POSTGRES_DIR="/opt/homebrew/opt/postgresql@17/bin"
 	else
 		echo "Couldn't find postgres install location"
 		exit 1

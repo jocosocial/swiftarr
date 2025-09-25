@@ -1,0 +1,98 @@
+#extend("trunk"):
+    #export("body"):
+		<div class="container-md">
+			<div class="container-fluid bg-transparent mb-3">				
+				<div class="alert alert-info mt-3" role="alert">
+					This form is for the people who host a shadow event to give feedback to JoCo about how their event went.<br>
+					Please don't use this to give feedback about events you attended.
+				</div>
+							
+				<div class="mb-2">
+					<b>Feedback for "#(existing.event.title)"</b>
+					<hr>
+				</div>				
+				
+				<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST" data-successurl="#(successURL)" id="feedbackForm">
+					<input type="hidden" name="eventUID" id="eventUID" value="#(existing.event.uid)">
+					<input type="hidden" name="eventTitle" id="eventTitle" value="#(existing.eventTitle)">
+					<input type="hidden" name="eventLocation" id="eventLocation" value="#(existing.eventLocation)">
+					<input type="hidden" name="eventTime" id="eventTime" value="#(existing.eventTime)">
+					
+					<div class="mb-3">
+						<label for="reporterName" class="form-label">Your Name</label>
+						<div class="input-group">
+							<input type="text" class="form-control" name="reporterName" id="reporterName" 
+									maxlength="80" value="#(existing.hostName)">
+						</div>
+					</div>
+					
+					<div class="mb-3">
+						<label for="attendance" class="form-label">Attendance Estimate</label>
+						<div class="input-group">
+							<input type="text" class="form-control" name="attendance" id="attendance" 
+									maxlength="40" data-lengthlabel="attendanceLimitsLabel" value="#(existing.attendance)">
+							<div class="input-group-text input-group-sm py-0" id="attendanceLimitsLabel"></div>
+						</div>
+					</div>
+					
+					<div class="mb-3">
+						<label for="recapString" class="form-label">How did everything go?</label>
+						<textarea 
+								class="form-control" 
+								maxlength="2000"
+								data-maxlines="25" 
+								data-lengthlabel="recapLimitsLabel" 
+								rows="5" 
+								name="recapString" 
+								id="recapString" 
+								placeholder="">#(existing.recapString)</textarea>
+						<div class="input-group-text input-group-sm justify-content-end py-0" id="recapLimitsLabel"></div>
+					</div>
+					
+					<div class="mb-3">
+						<label for="issuesString" class="form-label">Any issues?</label>
+						<textarea 
+								class="form-control" 
+								maxlength="2000"
+								data-maxlines="25" 
+								data-lengthlabel="issuesLimitsLabel" 
+								rows="5" 
+								name="issuesString" 
+								id="issuesString" 
+								placeholder="">#(existing.issuesString)</textarea>
+						<div class="input-group-text input-group-sm justify-content-end py-0" id="issuesLimitsLabel"></div>
+					</div>
+
+					<div class="alert alert-danger mt-3 d-none" role="alert">
+					</div>				
+					<div class="row mb-2">
+						<div class="col">
+							<small>Please remember to abide by the <a href="/codeOfConduct">Code of Conduct</a></small>
+						</div>
+						<div class="col col-auto">
+							<button type="submit" class="btn btn-primary">Submit <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+						</div>
+					</div>
+				</form>
+				<ul class="list-group mt-3">
+					<li class="list-group-item active">
+						<b>Notes on This Form</b>
+					</li>
+					<li class="list-group-item bg-transparent">
+						If your event was the sort that had lots of people coming and going while it was running, we're most interested in 
+						the largest number of people that were there at any one time. 
+						The total number of people who showed up is useful too, if you want to include it.
+					</li>
+					<li class="list-group-item bg-transparent">
+						For the "How did everything go?" question, if you were a reporter covering this event for the JoCo Daily News,
+						what you you say about it?
+					</li>
+					<li class="list-group-item bg-transparent">
+						For the "Issues" question: did the AV equipment work? Was there too much noise from nearby areas? Did extreme
+						boatiness get in the way of your event? (No really. If this happens we want to know).
+					</li>
+				</ul>
+			</div>
+		</div>
+    #endexport
+#endextend

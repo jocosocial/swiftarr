@@ -43,6 +43,7 @@ struct EventController: APIRouteCollection {
 	/// - ?time=DATE			Returns events whose startTime is earlier (or equal) to DATE and endTime is later than DATE. Note that this will often include 'all day' events.
 	/// - ?type=[official, shadow]	Only returns events matching the selected type.
 	/// - ?search=STRING		Returns events whose title or description contain the given string.
+	/// - ?location=STRING		Returns events whose room name contains the given string.
 	///
 	/// The `?day=STRING` query parameter is intended to make it easy to get schedule events returned even when the cruise is not occurring, for ease of testing.
 	/// The day and date parameters actually return events from 3AM local time on the given day until 3AM the next day--some events start after midnight and tend to get lost by those
@@ -50,7 +51,7 @@ struct EventController: APIRouteCollection {
 	///
 	/// All the above parameters filter the set of `EventData` objects that get returned. Onlly one of [cruiseday, day, date, time] may be used.
 	///
-	/// - Returns: An array of  `EventData` containing filtered events.
+	/// - Returns: An array of `EventData` containing filtered events.
 	func eventsHandler(_ req: Request) async throws -> [EventData] {
 		struct QueryOptions: Content {
 			var cruiseday: Int?
@@ -59,6 +60,7 @@ struct EventController: APIRouteCollection {
 			var time: Date?
 			var type: String?
 			var search: String?
+			var location: String?
 		}
 		let options = try req.query.decode(QueryOptions.self)
 		let query = Event.query(on: req.db).sort(\.$startTime, .ascending)
@@ -74,6 +76,12 @@ struct EventController: APIRouteCollection {
 				or.fullTextFilter(\.$title, search)
 				or.fullTextFilter(\.$info, search)
 			}
+		}
+		if var location = options.location {
+			// postgres "_" and "%" are wildcards, so escape for literals
+			location = location.replacingOccurrences(of: "_", with: "\\_").replacingOccurrences(of: "%", with: "\\%")
+					.trimmingCharacters(in: .whitespacesAndNewlines)
+			query.filter(\.$location ~~ location)
 		}
 		if let eventType = options.type {
 			if eventType == "shadow" {

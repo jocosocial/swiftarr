@@ -57,6 +57,9 @@ final class Event: Model, Searchable, @unchecked Sendable {
 	/// The organizers or performers for the event
 	@Siblings(through: EventPerformer.self, from: \.$event, to: \.$performer) var performers: [Performer]
 	
+	/// Results from feedback forms that hosts of shadow events fill out after running their event
+	@Children(for: \.$event) var feedback: [EventFeedback]
+
 	// MARK: Initialization
 
 	// Used by Fluent

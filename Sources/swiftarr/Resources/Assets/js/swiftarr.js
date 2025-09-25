@@ -37,6 +37,12 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 			dropdownButtonSetup(btn);
 			btn.addEventListener("click", forumSortDirectionDropdownTappedAction);
 			break;
+		case "copyText":
+			if (window.isSecureContext) {
+				btn.addEventListener("click", copyToClipboard);
+				btn.classList.remove("d-none");
+			}
+			break;
 	}
 }
 
@@ -266,6 +272,12 @@ function updateDropdownButton(menuItemBtn) {
 	} else {
 		dropdownBtn.classList.remove("active");
 	}
+}
+
+function copyToClipboard() {
+	let contents = document.getElementById(event.target.dataset.copyTarget).innerText;
+	navigator.clipboard.writeText(contents);
+	event.target.innerHTML="Copied";
 }
 
 // MARK: - messagePostForm Handlers

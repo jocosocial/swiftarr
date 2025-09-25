@@ -82,7 +82,7 @@ final class Settings: Encodable, @unchecked Sendable {
 	
 	/// The URL to use when checking for automatic schedule updates. Genearlly a sched.com URL of the form `https://jococruise2024.sched.com/all.ics`
 	/// Should always point to an URL that returns an iCalendar formatted file.
-	@StoredSettingsValue("scheduleUpdateURL", defaultValue: "http://jococruise2024.sched.com/all.ics") var scheduleUpdateURL: String
+	@StoredSettingsValue("scheduleUpdateURL", defaultValue: "http://jococruise2025.sched.com/all.ics") var scheduleUpdateURL: String
 
 	// MARK: Limits
 	/// The maximum number of alt accounts per primary user account.

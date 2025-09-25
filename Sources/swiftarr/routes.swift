@@ -29,6 +29,7 @@ public func routes(_ app: Application) throws {
 		PhotostreamController(),
 		PerformerController(),
 		PersonalEventController(),
+		EventFeedbackController(),
 	]
 	try apiControllers.forEach { try $0.registerRoutes(app) }
 
@@ -55,6 +56,7 @@ public func routes(_ app: Application) throws {
 		SitePerformerController(),
 		SitePrivateEventController(),
 		SiteHuntController(),
+		SiteEventFeedbackController(),
 	]
 	try siteControllers.forEach { try $0.registerRoutes(app) }
 }

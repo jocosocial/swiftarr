@@ -1,0 +1,33 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0">
+    		<div class="row justify-content-between align-items-center my-1">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Shadow Event Feedback</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<ul class="list-group">
+				<li class="list-group-item active">
+					<b>Admin Actions</b>
+				</li>
+				<a class="list-group-item list-group-item-action" href="/admin/eventfeedback/roomposters">
+					<b>Print Room Signs</b>: Print a sign for each room where shadow events will be held.
+				</a>
+				<a class="list-group-item list-group-item-action" href="/admin/eventfeedback/reports">
+					<b>View Feedback Responses</b>: View reports from shadow event hosts.
+				</a>
+				<a class="list-group-item list-group-item-action" href="/admin/eventfeedback/reports/table">
+					<b>Feedback Table</b>: View reports on a single page, as a table.
+				</a>
+				<a class="list-group-item list-group-item-action" href="/admin/eventfeedback/reports/download">
+					<b>Download</b>: Download all the reports as a CSV file.
+				</a>
+			</ul>
+		</div>
+	#endexport
+#endextend

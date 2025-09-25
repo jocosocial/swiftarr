@@ -1,0 +1,68 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0">
+    		<div class="row justify-content-between align-items-center my-1">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item"><a href="/admin/eventfeedback">Shadow Event Feedback</a></li>
+							#if(locationFilter):
+								<li class="breadcrumb-item"><a href="/admin/eventfeedback/reports">Reports</a></li>
+								<li class="breadcrumb-item active" aria-current="page">Filter: #(locationFilter)</li>
+							#elseif(userFilter):
+								<li class="breadcrumb-item"><a href="/admin/eventfeedback/reports">Reports</a></li>
+								<li class="breadcrumb-item active" aria-current="page">Filter: User "#(userFilter)"</li>
+							#else:
+								<li class="breadcrumb-item active" aria-current="page">Reports</li>
+							#endif
+						</ol>
+					</nav>
+				</div>
+			</div>
+			#if(locationFilter == null && userFilter == null):
+				<table class="table">
+					<thead>
+						<tr>
+							<th scope="col" colspan="2" class="table-secondary">Stats</th>
+						</tr>
+					</thead>
+					<tr>
+						<th scope="row">Total Shadow Events on Sched</th>
+						<td>#(stats.totalShadowEvents)
+					</tr>
+					<tr>
+						<th scope="row">Completed Shadow Events</th>
+						<td>#(stats.completedShadowEvents)
+					</tr>
+					<tr>
+						<th scope="row">Feedback Received</th>
+						<td>#(stats.totalFeedbackReports)
+					</tr>
+					<tr>
+						<th scope="row">Unique Events with Feedback</th>
+						<td>#(stats.uniqueEventsWithFeedback)
+					</tr>
+					<tr>
+						<th scope="row">Response Rate</th>
+						<td>#(responsePercentage)
+					</tr>
+				</table>
+			#endif
+			<div>
+				<h5>Reports</h5>
+			</div>
+			<div class="list-group">
+				#for(report in reports):
+					<a class="list-group-item list-group-item-action" 
+							href="/admin/eventfeedback/report/#(report.id)">
+						<b>Event:</b> #(report.eventTitle)<br>
+						<b>By:</b> #(report.hostName)<br>
+						<b>Filed:</b> #relativeTime(report.reportModDate)<br>
+						#if(report.adminFields.actionable):<span class="text-danger">Actionable</span>#endif
+					</a>
+				#endfor
+			</ul>
+		</div>
+	#endexport
+#endextend

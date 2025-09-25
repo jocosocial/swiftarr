@@ -7,18 +7,29 @@ let package = Package(
 		.macOS(.v13)
 	],
 	dependencies: [
+		// Vapor is the server package underlying Twitarr
 		.package(url: "https://github.com/vapor/vapor.git", from: "4.99.3"),
+		// Fluent is an SQL db access package and ORM layer that works with several SQL dbs; we use Postgres underneath it.
 		.package(url: "https://github.com/vapor/fluent.git", from: "4.9.0"),
 		.package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.8.0"),
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.65.0"),
+        // Redis is a key-value style non-SQL db we use for various kinds of caches
 		.package(url: "https://github.com/vapor/redis.git", from: "4.10.0"),
-		.package(url: "https://github.com/vapor/leaf.git", from: "4.3.0"),
+		// Vapor Queues is like Ruby's Sidekiq, or ... cron. We use it to manage time-triggered jobs.
 		.package(url: "https://github.com/vapor/queues-redis-driver.git", from: "1.1.1"),
-		.package(url: "https://github.com/swift-server/swift-prometheus.git", from: "2.0.0-alpha"),
+		// Leaf is an HTML templating engine, used to build the HTML front end.
+		.package(url: "https://github.com/vapor/leaf.git", from: "4.3.0"),
+		// Prometheus is a monitoring package
+		.package(url: "https://github.com/swift-server/swift-prometheus.git", from: "2.0.0"),
+		// Ink is a Markdown parser that can output HTML
 		.package(url: "https://github.com/johnsundell/ink.git", from: "0.6.0"),
+		// Zip compress/decompress
 		.package(url: "https://github.com/weichsel/ZIPFoundation.git", .upToNextMajor(from: "0.9.0")),
+		// Excel file parser. I forked this repo from /CoreOffice to fix a few bugs.
 		.package(url: "https://github.com/challfry/CoreXLSX.git", .upToNextMinor(from: "0.14.1")),
+		// SwiftSoup is a HTML parser we use to scrape webpages.
 	    .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.6.0"),
+	    // Cross-platform QR Code generator. Linux doesn't have access to Core Image
+		.package(url: "https://github.com/ApolloZhu/swift_qrcodejs.git", from: "2.2.2"),
 	],
 	targets: [
 		.systemLibrary(name: "gd", pkgConfig: "gdlib", providers: [.apt(["libgd-dev"]), .brew(["gd"]), .yum(["gd-devel"])]),
@@ -32,8 +43,6 @@ let package = Package(
 				.product(name: "Redis", package: "redis"),
 				.product(name: "Leaf", package: "leaf"),
                 .product(name: "Vapor", package: "vapor"),
-                .product(name: "NIOCore", package: "swift-nio"),
-                .product(name: "NIOPosix", package: "swift-nio"),
 				.product(name: "QueuesRedisDriver", package: "queues-redis-driver"),
 				.product(name: "Prometheus", package: "swift-prometheus"),
 				.product(name: "Ink", package: "ink"),
@@ -43,6 +52,7 @@ let package = Package(
 				"jpeg",
 				"gdOverrides",
 				"ZIPFoundation",
+				.product(name: "QRCodeSwift", package: "swift_qrcodejs"),
 			],
 			resources: [
 				.copy("Resources"),

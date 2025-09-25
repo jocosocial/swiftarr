@@ -1,5 +1,5 @@
 {
-  "originHash" : "2ed775d8528a95e12cbe1c2e0fc86c6513483f021c36686a13e1d78c43a98d14",
+  "originHash" : "fd1a0be11fbb1f51d5216a4e6a9ef07dd58c8da143d15dd2d86ece8c0d642c95",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -332,6 +332,15 @@
       "state" : {
         "revision" : "c8a44d836fe7913603e246acab7c528c2e780168",
         "version" : "1.4.0"
+      }
+    },
+    {
+      "identity" : "swift_qrcodejs",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ApolloZhu/swift_qrcodejs.git",
+      "state" : {
+        "revision" : "374dc7f7b9e76c6aeb393f6a84590c6d387e1ecb",
+        "version" : "2.2.2"
       }
     },
     {

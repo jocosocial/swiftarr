@@ -1,0 +1,21 @@
+body { 
+	margin: 0;
+}
+@page {
+	size: letter portrait;
+    margin: 0mm;
+}
+@media print {
+    .page { break-after: page; }
+}
+.page {
+	margin: 1in;
+}
+
+.centerBlock {
+    margin: 0;
+    text-align: center;
+    overflow: hidden;
+    position: relative;
+    box-sizing: border-box;
+}
