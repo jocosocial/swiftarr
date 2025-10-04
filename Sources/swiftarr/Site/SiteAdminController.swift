@@ -16,6 +16,8 @@ extension ServerRollupData.CountType {
 			case .lfgPost: return "LFG Posts"
 			case .seamail: return "Seamails"
 			case .seamailPost: return "Seamail Posts"
+			case .privateEvent: return "Private Events"
+			case .personalEvent: return "Personal Events"
 			case .forum: return "Forum Threads"
 			case .forumPost: return "Forum Posts"
 			case .forumPostEdit: return "Forum Post Edits"

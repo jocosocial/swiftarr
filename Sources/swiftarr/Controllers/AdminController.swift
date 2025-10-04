@@ -271,15 +271,17 @@ struct AdminController: APIRouteCollection {
 					.photoStream: StreamPhoto.query(on: req.db).count(),
 
 					// LFGs and Seamails
-					.lfg: FriendlyFez.query(on: req.db).filter(\.$fezType !~ [.open, .closed]).count(),
+					.lfg: FriendlyFez.query(on: req.db).filter(\.$fezType ~~ FezType.lfgTypes).count(),
 					.lfgParticipant: FezParticipant.query(on: req.db)
 							.join(FriendlyFez.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
-							.filter(FriendlyFez.self, \.$fezType !~ [.open, .closed]).count(),
+							.filter(FriendlyFez.self, \.$fezType  ~~ FezType.lfgTypes).count(),
 					.lfgPost: FezPost.query(on: req.db).join(FriendlyFez.self, on: \FezPost.$fez.$id == \FriendlyFez.$id)
-							.filter(FriendlyFez.self, \.$fezType !~ [.open, .closed]).count(),
-					.seamail: FriendlyFez.query(on: req.db).filter(\.$fezType ~~ [.open, .closed]).count(),
+							.filter(FriendlyFez.self, \.$fezType ~~ FezType.lfgTypes).count(),
+					.seamail: FriendlyFez.query(on: req.db).filter(\.$fezType ~~ FezType.seamailTypes).count(),
 					.seamailPost: FezPost.query(on: req.db).join(FriendlyFez.self, on: \FezPost.$fez.$id == \FriendlyFez.$id)
-							.filter(FriendlyFez.self, \.$fezType ~~ [.open, .closed]).count(),
+							.filter(FriendlyFez.self, \.$fezType ~~ FezType.seamailTypes).count(),
+					.privateEvent: FriendlyFez.query(on: req.db).filter(\.$fezType == FezType.privateEvent).count(),
+					.personalEvent: FriendlyFez.query(on: req.db).filter(\.$fezType == FezType.personalEvent).count(),
 
 					// Forums
 					.forum: Forum.query(on: req.db).count(),

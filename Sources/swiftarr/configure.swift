@@ -640,7 +640,6 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreatePerformerSchema(), to: .psql)
 		app.migrations.add(CreateEventPerformerSchema(), to: .psql)
 		app.migrations.add(StreamPhotoSchemaV2(), to: .psql)
-		app.migrations.add(CreatePersonalEventSchema(), to: .psql)
 		app.migrations.add(AddDeletedTimestampToFezParticipantSchema(), to: .psql)
 		app.migrations.add(CreateHuntSchema(), to: .psql)
 		app.migrations.add(CreatePuzzleSchema(), to: .psql)

@@ -339,7 +339,9 @@ struct ServerRollupData: Content {
 		case lfgParticipant 
 		case lfgPost
 		case seamail
-		case seamailPost 
+		case seamailPost
+		case privateEvent
+		case personalEvent
 
 		// Forums
 		case forum 
