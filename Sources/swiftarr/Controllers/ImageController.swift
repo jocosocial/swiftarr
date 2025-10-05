@@ -13,7 +13,7 @@ struct ImageController: APIRouteCollection {
 		let imageRoutes = app.grouped("api", "v3", "image")
 
 		// open access endpoints
-		let userImageRoutes = imageRoutes.flexRoutes(feature: .images)
+		let userImageRoutes = imageRoutes.addFlexAuth().grouped(DisabledAPISectionMiddleware(feature: .images))
 		userImageRoutes.get("full", imageFilenameParam, use: getImage_FullHandler).setUsedForPreregistration()
 		userImageRoutes.get("thumb", imageFilenameParam, use: getImage_ThumbnailHandler).setUsedForPreregistration()
 		userImageRoutes.get("user", "identicon", userIDParam, use: getUserIdenticonHandler).setUsedForPreregistration()

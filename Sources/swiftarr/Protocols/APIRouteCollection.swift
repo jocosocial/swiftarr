@@ -34,7 +34,6 @@ extension RoutesBuilder {
 	func flexRoutes(feature: SwiftarrFeature? = nil, path: PathComponent...) -> RoutesBuilder {
 		var builder = self.addFlexAuth().grouped(path)
 			.grouped([
-				UserCacheData.TokenAuthenticator(),
 				MinUserAccessLevelMiddleware(requireAuth: false),
 			])
 		if let feature = feature {
