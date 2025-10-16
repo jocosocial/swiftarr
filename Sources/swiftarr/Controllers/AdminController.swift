@@ -783,7 +783,9 @@ struct AdminController: APIRouteCollection {
 				.filter(\.$verification != nil)
 				.join(RegistrationCode.self, on: \User.$id == \RegistrationCode.$user.$id)
 				.filter(RegistrationCode.self, \RegistrationCode.$isDiscordUser == false)
-				.with(\.$favoriteEvents)
+				.with(\.$favoriteEvents.$pivots) { favoriteEvent in
+					favoriteEvent.with(\.$event)
+				}
 				.with(\.$roles)
 				.with(\.$performer) { performer in
 					performer.with(\.$events)
@@ -1051,9 +1053,17 @@ struct AdminController: APIRouteCollection {
 						verification.otherErrors.append(err)
 					}
 					// Import the user's favorited events
-					let matchedEvents = try await Event.query(on: req.db).filter(\.$uid ~~ userToImport.favoriteEvents).all()
+					let eventList = Set(userToImport.favoriteEvents + userToImport.photographerEvents)
+					let matchedEvents = try await Event.query(on: req.db).filter(\.$uid ~~ eventList).all()
 					for event in matchedEvents {
-						try await event.$favorites.attach(addedUser, on: req.db)
+						try await event.$favorites.attach(addedUser, on: req.db) { pivot in
+							pivot.favorite = userToImport.favoriteEvents.contains(event.uid)
+							pivot.photographer = userToImport.photographerEvents.contains(event.uid)
+							// "Shouldn't" occur, but let's disallow pivots where neither favorite nor photographer are true.
+							if !(pivot.favorite || pivot.photographer) {
+								pivot.favorite = true
+							}
+						}
 					}
 					_ = try await storeNextFollowedEvent(userID: newUserID, on: req)
 				}				

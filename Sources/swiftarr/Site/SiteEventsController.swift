@@ -98,6 +98,10 @@ struct SiteEventsController: SiteControllerUtils {
 		privateRoutes.post("events", eventIDParam, "favorite", use: eventsAddRemoveFavoriteHandler).setUsedForPreregistration()
 		privateRoutes.delete("events", eventIDParam, "favorite", use: eventsAddRemoveFavoriteHandler).setUsedForPreregistration()
 		privateRoutes.get("events", "personal", personalEventIDParam, "calendarevent.ics", use: personalEventDownloadICSHandler)
+		privateRoutes.post("events", eventIDParam, "photographer", use: eventsAddRemovePhotographerHandler).setUsedForPreregistration()
+		privateRoutes.delete("events", eventIDParam, "photographer", use: eventsAddRemovePhotographerHandler).setUsedForPreregistration()
+		privateRoutes.post("events", eventIDParam, "needsphotographer", use: eventsAddRemoveNeedsPhotographerHandler).setUsedForPreregistration()
+		privateRoutes.delete("events", eventIDParam, "needsphotographer", use: eventsAddRemoveNeedsPhotographerHandler).setUsedForPreregistration()
 	}
 
 	// MARK: - Events
@@ -276,6 +280,26 @@ struct SiteEventsController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Missing event ID parameter.")
 		}
 		let response = try await apiQuery(req, endpoint: "/events/\(eventID)/favorite", method: req.method)
+		return response.status
+	}
+	
+	// Glue code that calls the API to mark an event as being photographed by the current user. Returns 201/204 on success.
+	// Method only available to users with the Shutternaut user role.
+	func eventsAddRemovePhotographerHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let eventID = req.parameters.get(eventIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing event ID parameter.")
+		}
+		let response = try await apiQuery(req, endpoint: "/events/\(eventID)/photographer", method: req.method)
+		return response.status
+	}
+	
+	// Glue code that calls the API to mark an event as needing a photographer. Returns 201/204 on success.
+	// Method only available to users with the Shutternaut Manager user role.
+	func eventsAddRemoveNeedsPhotographerHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let eventID = req.parameters.get(eventIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing event ID parameter.")
+		}
+		let response = try await apiQuery(req, endpoint: "/events/\(eventID)/needsphotographer", method: req.method)
 		return response.status
 	}
 }

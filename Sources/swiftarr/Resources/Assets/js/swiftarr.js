@@ -9,6 +9,8 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "love":
 		case "favorite":
 		case "follow":
+		case "needsphotographer":
+		case "imphotographer":
 		case "reload":
 		case "block":
 		case "mute":
@@ -47,14 +49,16 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 }
 
 // Updates button state for buttons that perform a data-action
-function setActionButtonsState(tappedButton, state) {
+function setActionButtonsState(tappedButton, state, isRadioButton) {
 	if (!tappedButton) { return }
 	let spinnerElem = tappedButton.labels[0]?.querySelector(".spinner-border") ??
 		tappedButton.querySelector(".spinner-border");
 	if (state) {
 		setTimeout(() => {
 			for (let btn of tappedButton.parentElement.children) {
-				btn.disabled = false;
+				if (btn.dataset.keepdisabled != "true") {
+					btn.disabled = false;
+				}
 			}
 			spinnerElem?.classList.add("d-none");
 		}, 1000);
@@ -62,7 +66,7 @@ function setActionButtonsState(tappedButton, state) {
 	else {
 		for (let btn of tappedButton.parentElement.children) {
 			btn.disabled = true;
-			if (btn.checked && btn != tappedButton) {
+			if (isRadioButton && btn.checked && btn != tappedButton) {
 				btn.checked = false;
 			}
 		}
@@ -86,7 +90,7 @@ async function spinnerButtonAction() {
 	let req = new Request(path, { method: actionStr });
 	let errorDiv = document.getElementById(tappedButton.dataset.errordiv);
 	errorDiv?.classList.add("d-none")
-	setActionButtonsState(tappedButton, false);
+	setActionButtonsState(tappedButton, false, ["like", "laugh", "love"].includes(tappedButton.dataset.action));
 	try {
 		var response = await fetch(req);
 		if (response.ok) {
@@ -96,6 +100,7 @@ async function spinnerButtonAction() {
 			// https://stackoverflow.com/questions/57477805/why-do-i-get-fetch-failed-loading-when-it-actually-worked
 			await response.text();
 
+			let eventLI = tappedButton.closest('[data-eventid]');
 			switch (tappedButton.dataset.action) {
 				case "like":
 				case "laugh":
@@ -109,6 +114,21 @@ async function spinnerButtonAction() {
 						tappedButton.closest('[data-eventfavorite]').querySelector('.event-favorite-icon').classList.remove('d-none');
 					} else {
 						tappedButton.closest('[data-eventfavorite]').querySelector('.event-favorite-icon').classList.add('d-none');
+					}
+					break;
+				case "needsphotographer":
+					eventLI.dataset.needsphotographer = tappedButton.checked ? "true" : "false";
+					break;
+				case "imphotographer":
+					eventLI.dataset.imphotographer = tappedButton.checked ? "true" : "false";
+					if (tappedButton.checked) {
+						eventLI.querySelector('.event-photographer-icon').classList.remove('d-none');
+						eventLI.querySelector('.event-photographer-avatar').classList.remove('d-none');
+						eventLI.dataset.photographercount += 1;
+					} else {
+						eventLI.querySelector('.event-photographer-icon').classList.add('d-none');
+						eventLI.querySelector('.event-photographer-avatar').classList.add('d-none');
+						eventLI.dataset.photographercount -= 1;
 					}
 					break;
 				case "reload":
@@ -608,6 +628,7 @@ function eventFilterDropdownTappedAction(event) {
 function filterEvents() {
 	let onlyFollowing = document.getElementById("eventFollowingFilter").classList.contains("active")
 	let category = document.getElementById("eventFilterMenu").dataset.selected;
+	let shutternaut = document.getElementById("shutternautMenu").dataset.selected;
 	let dayCheckboxes = document.getElementById("cruiseDayButtonGroup").querySelectorAll('input');
 	let selectedDays = [];
 	for (let checkbox of dayCheckboxes) {
@@ -616,9 +637,20 @@ function filterEvents() {
 		}
 	}
 	for (let listItem of document.querySelectorAll('[data-eventid]')) {
+		var shutternautHide = false;
+		switch (shutternaut) {
+			case "all": break;
+			case "needsPhotographer": 
+				shutternautHide = listItem.dataset.needsphotographer == "false" || listItem.dataset.photographercount > 0; 
+			break;
+			case "hasphotographer": shutternautHide = listItem.dataset.photographercount == 0; break;
+			case "nophotographer": shutternautHide = listItem.dataset.photographercount > 0; break;
+			case "imphotographer": shutternautHide = listItem.dataset.imphotographer == "false"; break;
+		}		
 		let hideEvent = (onlyFollowing && listItem.dataset.eventfavorite == "false") ||
 			(category && category != "all" && category != listItem.dataset.eventcategory) ||
-			(selectedDays.length > 0 && !selectedDays.includes(listItem.dataset.cruiseday))
+			(selectedDays.length > 0 && !selectedDays.includes(listItem.dataset.cruiseday)) ||
+			shutternautHide;
 		if ((hideEvent && listItem.classList.contains("show")) || (!hideEvent && !listItem.classList.contains("show"))) {
 			bootstrap.Collapse.getOrCreateInstance(listItem).toggle();
 		}

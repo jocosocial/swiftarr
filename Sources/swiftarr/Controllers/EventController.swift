@@ -25,6 +25,14 @@ struct EventController: APIRouteCollection {
 		tokenAuthGroup.post(eventIDParam, "favorite", "remove", use: favoriteRemoveHandler).setUsedForPreregistration()
 		tokenAuthGroup.delete(eventIDParam, "favorite", use: favoriteRemoveHandler).setUsedForPreregistration()
 		tokenAuthGroup.get("favorites", use: favoritesHandler).setUsedForPreregistration()
+		
+		// Shutternaut event scheduling--for 'nauts to schedule which events they'll be photographing
+		tokenAuthGroup.post(eventIDParam, "needsphotographer", use: needsPhotographerHandler).setUsedForPreregistration()
+		tokenAuthGroup.post(eventIDParam, "needsphotographer", "remove", use: needsPhotographerHandler).setUsedForPreregistration()
+		tokenAuthGroup.delete(eventIDParam, "needsphotographer", use: needsPhotographerHandler).setUsedForPreregistration()
+		tokenAuthGroup.post(eventIDParam, "photographer", use: photographerAddHandler).setUsedForPreregistration()
+		tokenAuthGroup.post(eventIDParam, "photographer", "remove", use: photographerRemoveHandler).setUsedForPreregistration()
+		tokenAuthGroup.delete(eventIDParam, "photographer", use: photographerRemoveHandler).setUsedForPreregistration()
 	}
 
 	// MARK: - Open Access Handlers
@@ -36,14 +44,24 @@ struct EventController: APIRouteCollection {
 	/// Retrieve a list of scheduled events. By default, this retrieves the entire event schedule.
 	///
 	/// **URL Query Parameters:**
-	/// - cruiseday=INT		Embarkation day is day 1, value should be  less than or equal to `Settings.shared.cruiseLengthInDays`, which will be 8 for the 2022 cruise.
-	/// - day=STRING			3 letter day of week abbreviation e.g. "TUE" .Returns events for that day *of the cruise in 2022* "SAT" returns events for embarkation day while
-	/// 					the current date is earlier than embarkation day, then it returns events for disembarkation day.
-	/// - ?date=DATE			Returns events occurring on the given day. Empty list if there are no cruise events on that day.
-	/// - ?time=DATE			Returns events whose startTime is earlier (or equal) to DATE and endTime is later than DATE. Note that this will often include 'all day' events.
+	/// - cruiseday=INT				Embarkation day is day 1, value should be  less than or equal to `Settings.shared.cruiseLengthInDays`, which will be 8 for the 2022 cruise.
+	/// - day=STRING				3 letter day of week abbreviation e.g. "TUE" .Returns events for that day *of the cruise in 2022* "SAT" returns events for embarkation day while
+	/// 								the current date is earlier than embarkation day, then it returns events for disembarkation day.
+	/// - ?date=DATE				Returns events occurring on the given day. Empty list if there are no cruise events on that day.
+	/// - ?time=DATE				Returns events whose startTime is earlier (or equal) to DATE and endTime is later than DATE. Note that this will often include 'all day' events.
 	/// - ?type=[official, shadow]	Only returns events matching the selected type.
-	/// - ?search=STRING		Returns events whose title or description contain the given string.
-	/// - ?location=STRING		Returns events whose room name contains the given string.
+	/// - ?search=STRING			Returns events whose title or description contain the given string.
+	/// - ?location=STRING			Returns events whose room name contains the given string.
+	/// - ?following=TRUE			Returns events the user is following, aka favorited.
+	/// - ?dayplanner=TRUE			Returns events that should appear in the user's day planner. Currently this includes events
+	/// 								the user's following and events they signed up to photograph.
+	/// 
+	/// **Query Parameters for Shutternauts Only**
+	/// - needsPhotographer=BOOL	Returns events that a ShutternautManager has marked as needing a photograher.
+	/// - hasPhotographer=BOOL		Returns events that have a photographer assigned, including self-assigns
+	/// 
+	/// Needing a photographer and having one are orthogonal values--filtering for 'needsPhotograher' will return events that already
+	/// have a photographer assigned.
 	///
 	/// The `?day=STRING` query parameter is intended to make it easy to get schedule events returned even when the cruise is not occurring, for ease of testing.
 	/// The day and date parameters actually return events from 3AM local time on the given day until 3AM the next day--some events start after midnight and tend to get lost by those
@@ -61,6 +79,10 @@ struct EventController: APIRouteCollection {
 			var type: String?
 			var search: String?
 			var location: String?
+			var following: Bool?
+			var dayplanner: Bool?
+			var needsPhotographer: Bool?
+			var hasPhotographer: Bool?
 		}
 		let options = try req.query.decode(QueryOptions.self)
 		let query = Event.query(on: req.db).sort(\.$startTime, .ascending)
@@ -142,9 +164,58 @@ struct EventController: APIRouteCollection {
 		if let start = searchStartTime, let end = searchEndTime {
 			query.filter(\.$startTime >= start).filter(\.$startTime < end)
 		}
+		
+		let user = req.auth.get(UserCacheData.self)
+		if let user {
+			if options.following == true {
+				query.join(EventFavorite.self, on: \Event.$id == \EventFavorite.$event.$id)
+						.filter(EventFavorite.self, \.$user.$id == user.userID)
+						.filter(EventFavorite.self, \.$favorite == true)
+			}
+			if options.dayplanner == true {
+				query.join(EventFavorite.self, on: \Event.$id == \EventFavorite.$event.$id)
+						.filter(EventFavorite.self, \.$user.$id == user.userID)
+			}
+			if user.userRoles.contains(.shutternaut) || user.userRoles.contains(.shutternautmanager) {
+				if let np = options.needsPhotographer {
+					query.filter(\.$needsPhotographer == np)
+				}
+				if options.hasPhotographer == true {
+					query.join(EventFavorite.self, on: \Event.$id == \EventFavorite.$event.$id)
+							.filter(EventFavorite.self, \.$photographer == true)
+				}
+				else if options.hasPhotographer == false {
+					query.join(EventFavorite.self, on: \Event.$id == \EventFavorite.$event.$id, method: .left)
+							.filter(\.$needsPhotographer == true)
+							.filter(EventFavorite.self, \EventFavorite.$id == .null)
+				}
+			}
+			else if options.needsPhotographer != nil || options.hasPhotographer != nil {
+				throw Abort(.badRequest, reason: "Only Shutternauts can view photograper event data")
+			}
+		}
+		else if options.following == true || options.dayplanner == true {
+			throw Abort(.badRequest, reason: "Must be logged in to view favorite events or the dayplanner")
+		}
+		else if options.needsPhotographer != nil || options.hasPhotographer != nil {
+			throw Abort(.badRequest, reason: "Must be logged in as a Shutternaut to view photograper event data")
+		}
 		let events = try await query.all()
 		let favoriteEventIDs = try await getFavorites(in: req, from: events)
-		let result = try events.map { try EventData($0, isFavorite: favoriteEventIDs.contains($0.requireID())) }
+		let photographedEvents = try await getShutternautsForEvents(in: req, from: events)
+		var builtEventIDs: Set<UUID> = []
+		let result: [EventData] = try events.compactMap { 
+			guard try builtEventIDs.insert($0.requireID()).inserted else {
+				return nil
+			}
+			var resultEvent = try EventData($0, isFavorite: favoriteEventIDs.contains($0.requireID()))
+			if let user, user.userRoles.contains(.shutternaut) || user.userRoles.contains(.shutternautmanager) {
+				let photographers = try photographedEvents[$0.requireID()] ?? []
+				resultEvent.shutternautData = .init(needsPhotographer: $0.needsPhotographer, photographers: photographers,
+						userIsPhotographer: photographers.contains { $0.userID == user.userID })
+			}
+			return resultEvent
+		}
 		return result
 	}
 
@@ -171,13 +242,18 @@ struct EventController: APIRouteCollection {
 		if !Settings.shared.disabledFeatures.isFeatureDisabled(.performers) {
 			let _ = try await event.$performers.get(on: req.db)
 		}
-		
-		var isFavorite = false
+		var result = try EventData(event, isFavorite: false)
 		if let user = req.auth.get(UserCacheData.self) {
-			isFavorite = try await EventFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
-				.filter(\.$event.$id == event.requireID()).first() != nil
+			result.isFavorite = try await EventFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
+					.filter(\.$event.$id == event.requireID()).first() != nil
+			if user.userRoles.contains(.shutternaut) || user.userRoles.contains(.shutternautmanager) {
+				let photographers = try await EventFavorite.query(on: req.db).filter(\.$event.$id == event.requireID())
+						.filter(\.$photographer == true).all().map { try req.userCache.getHeader($0.$user.id) }
+				result.shutternautData = .init(needsPhotographer: event.needsPhotographer, photographers: photographers,
+						userIsPhotographer: photographers.contains { $0.userID == user.userID })
+			}
 		}
-		return try EventData(event, isFavorite: isFavorite)
+		return result
 	}
 
 	// MARK: - tokenAuthGroup Handlers (logged in)
@@ -191,16 +267,21 @@ struct EventController: APIRouteCollection {
 	/// - Parameter eventID: in URL path
 	/// - Returns: 201 Created on success; 200 OK if already favorited.
 	func favoriteAddHandler(_ req: Request) async throws -> HTTPStatus {
-		let cacheUser = try req.auth.require(UserCacheData.self)
-		guard let user = try await User.find(cacheUser.userID, on: req.db) else {
-			throw Abort(.internalServerError, reason: "User in cache but not found in User table")
-		}
+		let user = try req.auth.require(UserCacheData.self)
 		let event = try await Event.findFromParameter(eventIDParam, on: req)
-		if try await event.$favorites.isAttached(to: user, on: req.db) {
-			return .ok
+		if let fav = try await EventFavorite.query(on: req.db).filter(\.$event.$id == event.requireID())
+				.filter(\.$user.$id == user.userID).first() {
+			if fav.favorite {
+				return .ok
+			}
+			fav.favorite = true
+			try await fav.save(on: req.db)
+			_ = try await storeNextFollowedEvent(userID: user.userID, on: req)
+			return .created
 		}
-		try await event.$favorites.attach(user, on: req.db)
-		_ = try await storeNextFollowedEvent(userID: cacheUser.userID, on: req)
+		let newFav = try EventFavorite(user.userID, event)
+		try await newFav.save(on: req.db)
+		_ = try await storeNextFollowedEvent(userID: user.userID, on: req)
 		return .created
 	}
 
@@ -213,17 +294,23 @@ struct EventController: APIRouteCollection {
 	/// - Throws: 400 error if the event was not favorited.
 	/// - Returns: 204 No Content on success; 200 OK if event is already not favorited.
 	func favoriteRemoveHandler(_ req: Request) async throws -> HTTPStatus {
-		let cacheUser = try req.auth.require(UserCacheData.self)
+		let user = try req.auth.require(UserCacheData.self)
 		guard let eventID = req.parameters.get(eventIDParam.paramString, as: UUID.self) else {
 			throw Abort(.badRequest, reason: "Invalid event ID parameter")
 		}
-		if let favoriteEvent = try await EventFavorite.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
-			.filter(\.$event.$id == eventID).first()
-		{
-			try await favoriteEvent.delete(on: req.db)
-			_ = try await storeNextFollowedEvent(userID: cacheUser.userID, on: req)
-			return .noContent
-		}
+		if let favoriteEvent = try await EventFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
+				.filter(\.$event.$id == eventID).first() {
+			let wasFavorited = favoriteEvent.favorite
+			if favoriteEvent.photographer {
+				favoriteEvent.favorite = false
+				try await favoriteEvent.save(on: req.db)
+			}
+			else {
+				try await favoriteEvent.delete(on: req.db)
+			}
+			_ = try await storeNextFollowedEvent(userID: user.userID, on: req)
+			return wasFavorited ? .noContent : .ok
+		} 
 		return .ok
 	}
 
@@ -231,13 +318,101 @@ struct EventController: APIRouteCollection {
 	///
 	/// Retrieve the `Event`s the user has favorited, sorted by `.startTime`.
 	///
-	/// - Returns: An array of  `EventData` containing the user's favorite events.
+	/// - Returns: An array of `EventData` containing the user's favorite events.
 	func favoritesHandler(_ req: Request) async throws -> [EventData] {
 		let user = try req.auth.require(UserCacheData.self)
 		let events = try await Event.query(on: req.db)
-			.join(EventFavorite.self, on: \Event.$id == \EventFavorite.$event.$id)
-			.filter(EventFavorite.self, \.$user.$id == user.userID).sort(\.$startTime, .ascending).all()
-		return try events.map { try EventData($0, isFavorite: true) }
+				.join(EventFavorite.self, on: \Event.$id == \EventFavorite.$event.$id)
+				.filter(EventFavorite.self, \.$user.$id == user.userID)
+				.filter(EventFavorite.self, \.$favorite == true)
+				.sort(\.$startTime, .ascending)
+				.all()
+		let photographedEvents = try await getShutternautsForEvents(in: req, from: events)
+		return try events.map { 
+			var resultEvent = try EventData($0, isFavorite: true)
+			if user.userRoles.contains(.shutternaut) || user.userRoles.contains(.shutternautmanager) {
+				let photographers = try photographedEvents[$0.requireID()] ?? []
+				resultEvent.shutternautData = .init(needsPhotographer: $0.needsPhotographer, photographers: photographers,
+						userIsPhotographer: photographers.contains { $0.userID == user.userID })
+			}
+			return resultEvent
+		}
+	}
+		
+	/// `POST /api/v3/events/:event_ID/needsphotographer`
+	/// `POST /api/v3/events/:event_ID/needsphotographer/remove`
+	/// `DELETE /api/v3/events/:event_ID/needsphotographer`
+	///
+	/// Sets or clears the `needsPhotographer` flag on the given event. May only be called by members of the `shutternautManager` group.
+	///
+	/// - Parameter eventID: in URL path
+	/// - Returns: 200 OK if flag is set/cleared successfully.
+	func needsPhotographerHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		guard cacheUser.userRoles.contains(.shutternautmanager) else {
+			throw Abort(.forbidden, reason: "Only Shutternaut Managers may set/clear this")
+		}
+		let event = try await Event.findFromParameter(eventIDParam, on: req)
+		event.needsPhotographer = !(req.method == .DELETE || req.url.path.hasSuffix("remove"))
+		try await event.save(on: req.db)
+		return .ok
+	}
+
+	/// `POST /api/v3/events/ID/photographer`
+	///
+	/// Marks the current user as attending the given event as a photographer. Only callable by members of the `shutternaut` group.
+	/// This method is how shutternauts can self-report that they're going to be covering an event and taking pictures.
+	///
+	/// - Parameter eventID: in URL path
+	/// - Returns: 201 Created on success; 200 OK if already marked as photographing the given event.
+	func photographerAddHandler(_ req: Request) async throws -> HTTPStatus {
+		let user = try req.auth.require(UserCacheData.self)
+		let event = try await Event.findFromParameter(eventIDParam, on: req)
+		if let fav = try await EventFavorite.query(on: req.db).filter(\.$event.$id == event.requireID())
+				.filter(\.$user.$id == user.userID).first() {
+			if fav.photographer {
+				return .ok
+			}
+			fav.photographer = true
+			try await fav.save(on: req.db)
+			_ = try await storeNextFollowedEvent(userID: user.userID, on: req)
+			return .created
+		}
+		let newFav = try EventFavorite(user.userID, event)
+		newFav.favorite = false
+		newFav.photographer = true
+		try await newFav.save(on: req.db)
+		_ = try await storeNextFollowedEvent(userID: user.userID, on: req)
+		return .created
+	}
+
+	/// `POST /api/v3/events/ID/photographer/remove`
+	/// `DELETE /api/v3/events/ID/photographer`
+	///
+	/// Remove the specified `Event` from the user's list of events they'll be photographing. 
+	/// Only callable by members of the `shutternaut` group.
+	///
+	/// - Parameter eventID: in URL path
+	/// - Returns: 204 No Content on success; 200 OK if event is already not marked.
+	func photographerRemoveHandler(_ req: Request) async throws -> HTTPStatus {
+		let user = try req.auth.require(UserCacheData.self)
+		guard let eventID = req.parameters.get(eventIDParam.paramString, as: UUID.self) else {
+			throw Abort(.badRequest, reason: "Invalid event ID parameter")
+		}
+		if let favoriteEvent = try await EventFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
+				.filter(\.$event.$id == eventID).first() {
+			let wasPhotog = favoriteEvent.photographer
+			if favoriteEvent.favorite {
+				favoriteEvent.photographer = false
+				try await favoriteEvent.save(on: req.db)
+			}
+			else {
+				try await favoriteEvent.delete(on: req.db)
+			}
+			_ = try await storeNextFollowedEvent(userID: user.userID, on: req)
+			return wasPhotog ? .noContent : .ok
+		} 
+		return .ok
 	}
 	
 	// MARK: Utilities
@@ -246,10 +421,23 @@ struct EventController: APIRouteCollection {
 		guard let cacheUser = req.auth.get (UserCacheData.self) else {
 			return Set()
 		}
-		let query = EventFavorite.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
+		let query = EventFavorite.query(on: req.db).filter(\.$user.$id == cacheUser.userID).filter((\.$favorite == true))
 		if let events = events {
 			try query.filter(\.$event.$id ~~ events.map { try $0.requireID() })
 		}
 		return try await Set(query.all().map { $0.$event.id })
+	}
+	
+	func getShutternautsForEvents(in req: Request, from events: [Event]) async throws -> [UUID : [UserHeader]] {
+		guard let user = req.auth.get (UserCacheData.self), 
+				user.userRoles.contains(.shutternaut) || user.userRoles.contains(.shutternautmanager) else {
+			return [:]
+		}
+		let eventIDs = try events.map { try $0.requireID() }
+		let shutternauts = try await EventFavorite.query(on: req.db).filter(\.$event.$id ~~ eventIDs).filter(\.$photographer == true).all()
+		let result = try shutternauts.reduce(into: [UUID: [UserHeader]]()) { result, favorite in
+			result[favorite.$event.id, default: []].append(try req.userCache.getHeader(favorite.$user.id))
+		}
+		return result
 	}
 }

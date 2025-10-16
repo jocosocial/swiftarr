@@ -82,6 +82,7 @@ struct SitePrivateEventController: SiteControllerUtils {
 		case schedule			// Blue
 		case lfg				// Green
 		case personalEvent		// Purple?
+		case photographer		// Gray
 		case blankItem
 	}
 	
@@ -117,13 +118,18 @@ struct SitePrivateEventController: SiteControllerUtils {
 			title = event.title
 			startTime = event.startTime
 			endTime = event.endTime
-			if event.title.range(of: "Gold Team", options: .caseInsensitive) != nil {
+			if event.shutternautData?.userIsPhotographer == true {
+				// photographing's color takes precedence over red/gold or followed events
+				color = .photographer
+			}
+			else if event.title.range(of: "Gold Team", options: .caseInsensitive) != nil {
 				color = .goldTeam
 			}
 			else if event.title.range(of: "Red Team", options: .caseInsensitive) != nil {
 				color = .redTeam
 			}
 			else {
+				// User favorited the event
 				color = .schedule
 			}
 			link = "/events/\(event.eventID)"
@@ -186,6 +192,7 @@ struct SitePrivateEventController: SiteControllerUtils {
 		// Routes that the user needs to be logged in to access.
 		let globalRoutes = getGlobalRoutes(app, feature: .personalevents, path: "dayplanner")
 		globalRoutes.get("", use: showDayPlanner).destination("the day planner").setUsedForPreregistration()
+		globalRoutes.get("shutternauts", use: showDayPlanner).destination("the Shutternaut day planner").setUsedForPreregistration()
 		
 		let globalPERoutes = getGlobalRoutes(app, feature: .personalevents, path: "privateevent")
 		globalPERoutes.get(fezIDParam, use: privateEventPageHandler).destination("private event")
@@ -198,7 +205,8 @@ struct SitePrivateEventController: SiteControllerUtils {
 		privateRoutes.get("list", use: peListHandler)
 	}
 	
-	// GET /dayplanner
+	// GET /dayplanner						The user's events, LFGs, private events, personal events
+	// GET /dayplanner/shutternauts			Events any Shutternaut has signed up to photograph. Only usable by Shutternauts.
 	//
 	/// **URL Query Parameters:**
 	/// - cruiseday=INT		Embarkation day is day 1, value should be  less than or equal to `Settings.shared.cruiseLengthInDays`, which will be 8 for the 2022 cruise.
@@ -213,19 +221,24 @@ struct SitePrivateEventController: SiteControllerUtils {
 		else {
 			cruiseDay = (7 + dayOfWeek - Settings.shared.cruiseStartDayOfWeek) % 7 + 1
 		}
+		let shutternautSharedSchedule = req.url.path == "/dayplanner/shutternauts"
+					
 		eventParams.append(URLQueryItem(name: "cruiseday", value: "\(cruiseDay)"))
 		lfgParams.append(URLQueryItem(name: "cruiseday", value: "\(cruiseDay-1)"))
-
-		let eventsResponse = try await apiQuery(req, endpoint: "/events/favorites", query: eventParams, passThroughQuery: false)
+		if shutternautSharedSchedule {
+			eventParams.append(URLQueryItem(name: "hasPhotographer", value: "true"))
+		}
+		else {
+			eventParams.append(URLQueryItem(name: "dayplanner", value: "true"))
+		}
+		let eventsResponse = try await apiQuery(req, endpoint: "/events", query: eventParams, passThroughQuery: false)
 		let events = try eventsResponse.content.decode([EventData].self)
 
-		var lfgs: FezListData?
-		if Settings.shared.enablePreregistration == false {
+		var lfgs: FezListData? = nil
+		if !shutternautSharedSchedule && !Settings.shared.enablePreregistration {
 			let lfgResponse = try await apiQuery(req, endpoint: "/fez/joined", query: lfgParams +
 					[URLQueryItem(name: "excludetype", value: "open"), URLQueryItem(name: "excludetype", value: "closed")], passThroughQuery: false)
 			lfgs = try lfgResponse.content.decode(FezListData.self)
-		} else {
-			lfgs = nil
 		}
 
 		struct DayPlannerPageContext: Encodable {
@@ -236,6 +249,7 @@ struct SitePrivateEventController: SiteControllerUtils {
 			let previousDayLink: String?
 			let nextDayLink: String?
 			var rows: [TableRow]
+			var shutternautSharedSchedule: Bool
 
 			init(_ req: Request, cruiseDay: Int, events: [EventData], lfgs: FezListData?) {
 				trunk = .init(req, title: "Day Planner", tab: .home)
@@ -246,10 +260,12 @@ struct SitePrivateEventController: SiteControllerUtils {
 				let dateFormatter = DateFormatter()
 				dateFormatter.dateFormat = "EEEE, MMMM d"
 				dateFormatter.timeZone = Settings.shared.timeZoneChanges.tzAtTime(dayStart)
-				previousDayLink = cruiseDay <= 1 ? nil : "/dayplanner?cruiseday=\(cruiseDay - 1)"
-				nextDayLink = cruiseDay >= Settings.shared.cruiseLengthInDays ? nil : "/dayplanner?cruiseday=\(cruiseDay + 1)"
+				let currentPath = req.url.path
+				previousDayLink = cruiseDay <= 1 ? nil : "\(currentPath)?cruiseday=\(cruiseDay - 1)"
+				nextDayLink = cruiseDay >= Settings.shared.cruiseLengthInDays ? nil : "\(currentPath)?cruiseday=\(cruiseDay + 1)"
 				rows = []
 				titleText = dateFormatter.string(from: dayStart)
+				shutternautSharedSchedule = req.url.path == "/dayplanner/shutternauts"
 				let avds = generateAVDs(events: events, lfgs: lfgs, dayStart: dayStart, dayEnd: dayEnd)
 				rows = generateTableRows(forCruiseDay: cruiseDay, avds: avds)
 				// for testing the red horizontal rule 'Current Time' indicator

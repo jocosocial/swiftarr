@@ -669,6 +669,8 @@ struct DinnerTeamTag: LeafTag {
 // isEmpty() throws an error if presented with nil, and is not a great choice for optional strings.
 // Note that we can't distinguish between a value that was nil in the context before it got serialized and a variable name
 // that wasn't ever in the context (like a typo).
+//
+// Usage: #notEmpty(value)
 struct NotEmptyTag: LeafTag {
     func render(_ ctx: LeafContext) throws -> LeafData {
 		try ctx.requireParameterCount(1)
@@ -682,5 +684,23 @@ struct NotEmptyTag: LeafTag {
             throw "unable to check for empty value unexpected data"
         }
         return .bool(!str.isEmpty)
+    }
+}
+
+// Have I become that guy? Is inserting obvious references to forty year old Gibson books still cool? 
+// Anyway, unlike Leaf's #count(), this returns 0 if the parameter isn't an array or dict. Most useful
+// when the parameter is an optional that may be nil.
+//
+// Usage: #countOrZero(value)
+struct CountZeroTag: LeafTag {
+    func render(_ ctx: LeafContext) throws -> LeafData {
+        try ctx.requireParameterCount(1)
+        if let array = ctx.parameters[0].array {
+            return LeafData.int(array.count)
+        } else if let dictionary = ctx.parameters[0].dictionary {
+            return LeafData.int(dictionary.count)
+        } else {
+            return .int(0)
+        }
     }
 }

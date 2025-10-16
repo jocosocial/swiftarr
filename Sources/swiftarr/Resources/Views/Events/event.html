@@ -7,6 +7,9 @@
 		data-bs-toggle="true"
 		data-eventid="#(event.eventID)"
 		data-eventfavorite=#if(event.isFavorite == true):"true"#else:"false"#endif
+		data-imphotographer=#if(event.shutternautData && event.shutternautData.userIsPhotographer == true):"true"#else:"false"#endif
+		data-needsphotographer=#if(event.shutternautData && event.shutternautData.needsPhotographer == true):"true"#else:"false"#endif
+		data-photographercount=#countOrZero(event.shutternautData.photographers)
 		data-eventcategory="#(event.eventType)"
 		data-cruiseday="#cruiseDayIndex(event.startTime)"
 		data-starttime="#(event.startTime)"
@@ -15,6 +18,7 @@
 		<div class="row">
 			<div class="col">
 				<span class="event-favorite-icon #if(!event.isFavorite):d-none#endif">⭐</span>
+				<span class="event-photographer-icon #if(event.shutternautData == nil ||  !event.shutternautData.userIsPhotographer):d-none#endif">📸</span>
 				<b>#(event.title)</b>
 			</div>
 		</div>
@@ -46,6 +50,26 @@
 						#endfor
 				#endif
 			</div>
+			<div class="col-12 ms-4">
+				#if(countOrZero(event.shutternautData.photographers) > 0):
+					<b>Photographers:</b>
+					#for(photographer in event.shutternautData.photographers):
+						<div class="ms-4 mb-1#if(trunk.userID == photographer.userID): event-photographer-avatar#endif">
+							#avatar(photographer) #userByline(photographer)
+						</div>
+					#endfor
+					#if(event.shutternautData && !event.shutternautData.userIsPhotographer):
+						<div class="event-photographer-avatar d-none">
+							<div class="ms-4 mb-1">#(trunk.username)</div>
+						</div>
+					#endif
+				#elseif(contains(trunk.userRoles, "shutternaut") || contains(trunk.userRoles, "shutternautmanager")):
+					<div class="event-photographer-avatar d-none">
+						<b>Photographers:</b>
+						<div class="ms-4 mb-1">#(trunk.username)</div>
+					</div>
+				#endif
+			</div>
 			<div class="col col-auto btn-group btn-group-sm mt-1" role="group" aria-label="Event actions">
 				#if(trunk.userIsLoggedIn):
 					#if(event.eventType == "Shadow Event" || event.eventType == "Workshop"):
@@ -72,6 +96,35 @@
 					</label>
 				#endif
 			</div>
+			#if(contains(trunk.userRoles, "shutternaut") || contains(trunk.userRoles, "shutternautmanager")):
+				<div class="col col-auto btn-group btn-group-sm mt-1" role="group" aria-label="Shutternaut actions">
+					#if(contains(trunk.userRoles, "shutternautmanager") || (event.shutternautData && event.shutternautData.needsPhotographer)):
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="needsphotographer"
+								data-actionpath="/events/#(event.eventID)/needsphotographer"
+								data-istoggle="true"
+								data-errordiv="#(event.eventID)_errorDisplay"
+								id="#(event.eventID)_needsphotographer"
+								#if(event.shutternautData && event.shutternautData.needsPhotographer):checked#endif
+								#if(!contains(trunk.userRoles, "shutternautmanager")): disabled data-keepdisabled="true"#endif>
+						<label class="btn btn-outline-secondary" for="#(event.eventID)_needsphotographer">
+							Needs Photographer
+							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+							<span class="visually-hidden">Loading...</span>
+						</label>
+					#endif
+					<input type="checkbox" class="btn-check" autocomplete="off" data-action="imphotographer"
+							data-actionpath="/events/#(event.eventID)/photographer"
+							data-istoggle="true"
+							data-errordiv="#(event.eventID)_errorDisplay"
+							id="#(event.eventID)_photographer"
+							#if(event.shutternautData && event.shutternautData.userIsPhotographer):checked#endif>
+					<label class="btn btn-outline-secondary" for="#(event.eventID)_photographer">
+						Photographer
+						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+						<span class="visually-hidden">Loading...</span>
+					</label>
+				</div>
+			#endif
 		</div>
 		<div class="row">
 			<div class="col text-end text-danger d-none" id="#(event.eventID)_errorDisplay">

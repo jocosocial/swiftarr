@@ -331,6 +331,16 @@ public struct ErrorResponse: Codable, Error {
 ///
 /// See `EventController.eventsHandler(_:)`, `EventController.favoritesHandler(_:)`.
 public struct EventData: Content {
+	// Optional sub-struct that only gets filled out for users with the Shutternaut role.
+	public struct ShutternautEventData: Content {
+		/// TRUE if a ShutternautManager has marked this event as needing to get photographed by someone.
+		var needsPhotographer: Bool
+		/// Shutternauts that have signed up to photograph this event.
+		var photographers: [UserHeader]
+		/// TRUE if the current user is in the `photographers` array.
+		var userIsPhotographer: Bool
+	}
+	
 	/// The event's ID. This is the Swiftarr database record for this event.
 	var eventID: UUID
 	/// The event's UID. This is the VCALENDAR/ICS File/sched.com identifier for this event--what calendar software uses to correllate whether 2 events are the same event.
@@ -359,6 +369,8 @@ public struct EventData: Content {
 	var isFavorite: Bool
 	/// The performers who will be at the event.
 	var performers: [PerformerHeaderData]
+	/// Optional data returned if the requestor is a member of the Shutternauts group. NULL for all other users.
+	var shutternautData: ShutternautEventData?
 }
 
 extension EventData {
@@ -366,6 +378,8 @@ extension EventData {
 	///
 	/// The startTime, endTime, and timeZone are the corrected Date values for the event, given the time zone the ship was/will be in at the event start time.
 	/// The Performers field will be filled in if Performers are eager loaded using `.with(\.$performers)` or similar. Else it's [].
+	/// 
+	/// This initializer doesn't fill in the `shutternautData` optional sub-struct. This should only be filled in for Shutternaut members.
 	init(_ event: Event, isFavorite: Bool = false) throws {
 		let timeZoneChanges = Settings.shared.timeZoneChanges
 		eventID = try event.requireID()

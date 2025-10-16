@@ -72,7 +72,7 @@
 		</table>
 	</div>
 	<div class="container-fluid">
-		#if(!trunk.preregistrationApplies):
+		#if(!trunk.preregistrationApplies && !shutternautSharedSchedule):
 			<div class="row justify-content-between mb-2">
 				<div class="col">
 					<a class="btn btn-primary btn-sm" href="/privateevent/list">Private Event List</a>
@@ -83,26 +83,49 @@
 			</div>
 		#endif
 		<ul class="list-group">
-			<li class="list-group-item active">
-				<b>About Day Planner</b>
-			</li>
-			<li class="list-group-item bg-transparent">
-				This page shows you a calendar style view of events you're following, LFGs you've created or joined, and Private Events
-				you've created or been invited to. 
-			</li>
-			<li class="list-group-item bg-transparent">
-				Team Events are <span class="goldTeam">Gold</span> and <span class="redTeam">Red</span>,<br>
-				Other Schedule Events are <span class="schedule">Blue</span>,<br>
-				LFGs are <span class="lfg">green</span>,<br>
-				Private Events are <span class="personalEvent">purple</span>.
-			</li>
-			<li class="list-group-item bg-transparent">
-				Tap on an item to view more information about it.
-			</li>
-			<li class="list-group-item bg-transparent">
-				Private Events let you create a calendar item for yourself, plus you can invite others to join you. It can also create
-				a group chat for discussing your event. Everyone invited can see the event in their Day Planner.
-			</li>
+			#if(shutternautSharedSchedule):
+				<li class="list-group-item active">
+					<b>About Shutternaut Shared Schedule</b>
+				</li>
+				<li class="list-group-item bg-transparent">
+					This page shows you a calendar style view of all the Events that any Shutternaut has signed up to
+					photograph.
+				</li>
+				<li class="list-group-item bg-transparent">
+					Events you're photographing are <span class="photographer">gray</span>,<br>
+					Events covered by others are <span class="schedule">blue</span>.<br>
+				</li>
+				<li class="list-group-item bg-transparent">
+					Tap on an event to view more information about it, including who's photographing the event.
+				</li>
+				<li class="list-group-item bg-transparent">
+					Use the Schedule page to find events to cover, and to mark yourself as covering/not covering an event.
+				</li>
+			#else:
+				<li class="list-group-item active">
+					<b>About Day Planner</b>
+				</li>
+				<li class="list-group-item bg-transparent">
+					This page shows you a calendar style view of events you're following, LFGs you've created or joined, and Private Events
+					you've created or been invited to. 
+				</li>
+				<li class="list-group-item bg-transparent">
+					Team Events are <span class="goldTeam">Gold</span> and <span class="redTeam">Red</span>,<br>
+					Other Schedule Events are <span class="schedule">blue</span>,<br>
+					LFGs are <span class="lfg">green</span>,<br>
+					Private Events are <span class="personalEvent">purple</span>.<br>
+					#if(contains(trunk.userRoles, "shutternaut") || contains(trunk.userRoles, "shutternautmanager")):
+						Events you're photographing are <span class="photographer">gray</span>.<br>
+					#endif
+				</li>
+				<li class="list-group-item bg-transparent">
+					Tap on an item to view more information about it.
+				</li>
+				<li class="list-group-item bg-transparent">
+					Private Events let you create a calendar item for yourself, plus you can invite others to join you. It can also create
+					a group chat for discussing your event. Everyone invited can see the event in their Day Planner.
+				</li>
+			#endif
 		</ul>
 	</div>
 	#endexport

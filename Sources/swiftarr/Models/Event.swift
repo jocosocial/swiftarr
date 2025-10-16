@@ -35,6 +35,10 @@ final class Event: Model, Searchable, @unchecked Sendable {
 
 	/// The type of event. (sched.com "CATEGORIES")
 	@Field(key: "eventType") var eventType: EventType
+	
+	/// The Shutternaut Manager can set this flag to indicate to Shutternauts that this event ought to be photographed.
+	/// Shutternauts can filter for this and self-assign to cover the event.
+	@Field(key: "needsPhotographer") var needsPhotographer: Bool
 
 	/// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
@@ -91,6 +95,7 @@ final class Event: Model, Searchable, @unchecked Sendable {
 		self.location = location
 		self.eventType = eventType
 		self.uid = uid
+		self.needsPhotographer = false
 		self.$forum.id = nil
 		self.$forum.value = nil
 	}
@@ -104,6 +109,7 @@ extension Event: ContentFilterable {
 	}
 }
 
+/// Migration to create the Event table
 struct CreateEventSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		try await database.schema("event")
@@ -125,5 +131,18 @@ struct CreateEventSchema: AsyncMigration {
 
 	func revert(on database: Database) async throws {
 		try await database.schema("event").delete()
+	}
+}
+
+/// Migration to add the 'needsPhotographer' bool to Event records.
+struct UpdateEventSchema_NeedsPhotographer: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("event")
+			.field("needsPhotographer", .bool, .required, .sql(.default(false)))
+			.update()
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema("event").deleteField("needsPhotographer").update()
 	}
 }

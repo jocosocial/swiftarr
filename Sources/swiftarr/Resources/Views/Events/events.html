@@ -75,7 +75,28 @@
 				<div class="col btn-group btn-group-sm col-auto" role="group" aria-label="Event Filters">
 					<button class="btn btn-outline-primary #if(!trunk.userIsLoggedIn):d-none#endif" type="button" data-bs-toggle="button" data-action="eventFiltersChanged" id="eventFollowingFilter">Following</button>
 				</div>
-			</div>
+			</div>				
+			#if(contains(trunk.userRoles, "shutternaut") || contains(trunk.userRoles, "shutternautmanager")):
+    			<div class="row mb-1 align-items-center">
+					<div class="col">
+						<b>Shutternauts:</b>
+						<div class="dropdown d-inline">
+							<button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="shutternautMenu" data-bs-toggle="dropdown" data-selected="all" aria-expanded="false">
+								Show All
+							</button>
+							<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="shutternautMenu" id="shutternautMenuItems">
+								<li><button class="dropdown-item active" type="button" data-action="filterEventType" data-selection="all">Show All</button></li>
+	 							<li><hr class="dropdown-divider"></li>
+								<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="needsPhotographer">Needs Photographer</button></li>
+								<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="hasphotographer">Has Photographer</button></li>
+								<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="nophotographer">Doesn't Have Photographer</button></li>
+								<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="imphotographer">I'm the Photographer</button></li>
+							</ul>
+						</div>
+					</div>
+				</div>
+			#endif
+
     		<div class="row">
 				<div class="col btn-group btn-group-sm" role="group" aria-label="Event Filters" id="cruiseDayButtonGroup">
 					#if(useAllDays):

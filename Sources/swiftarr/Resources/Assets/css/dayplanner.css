@@ -46,6 +46,7 @@ table.dayplanner .currentTimeLine {
 table.dayplanner .redTeam,
 table.dayplanner .goldTeam,
 table.dayplanner .schedule,
+table.dayplanner .photographer,
 table.dayplanner .lfg,
 table.dayplanner .personalEvent {
 	display: block;
@@ -85,6 +86,13 @@ table.dayplanner .goldTeam:active {
 }
 table.dayplanner .schedule:active {
 	background-color: #6463FF;
+}
+
+.photographer {
+	background-color: #444444C0;
+}
+table.dayplanner .photographer:active {
+	background-color: #444444;
 }
 
 .lfg {

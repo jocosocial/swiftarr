@@ -240,11 +240,11 @@
 				</div>
 			</div>
 				
-			#if(trunk.userIsLoggedIn && !trunk.preregistrationApplies):
-				#if(contains(trunk.userRoles, "shutternautmanager") || trunk.userIsMod || trunk.userIsTwitarrTeam):
+			#if(trunk.userIsLoggedIn):
+				#if(contains(trunk.userRoles, "shutternautmanager") || contains(trunk.userRoles, "shutternaut") || trunk.userIsTwitarrTeam):
 					<div class="row mt-2">
 						<div class="col">
-							<h4><b>Site Management:</b></h4>
+							<h4><b>Shutternauts:</b></h4>
 						</div>
 					</div>
 					<div class="row mb-2">
@@ -253,6 +253,20 @@
 								#if(contains(trunk.userRoles, "shutternautmanager")):
 									<li class="list-group-item"><a href="/userrole/shutternaut/manage">Manage Shutternauts</a></li>
 								#endif
+								<li class="list-group-item"><a href="/dayplanner/shutternauts">Shutternaut Shared Calendar</a></li>
+							</ul>
+						</div>
+					</div>
+				#endif
+				#if(trunk.userIsMod || trunk.userIsTwitarrTeam && !trunk.preregistrationApplies):
+					<div class="row mt-2">
+						<div class="col">
+							<h4><b>Site Management:</b></h4>
+						</div>
+					</div>
+					<div class="row mb-2">
+						<div class="col">
+							<ul class="list-group">
 								#if(trunk.userIsMod):
 									<li class="list-group-item align-items-center">
 										<a href="/moderator">Moderator Pages</a>

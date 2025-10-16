@@ -541,6 +541,8 @@ struct UserSaveRestoreData: Content, Sendable {
 	let roles: [UserRoleType]
 	/// Event UIDs, the thing in the ICS file spec--NOT database IDs!
 	let favoriteEvents: [String]
+	/// Event UIDs the user has signed up to photograph
+	let photographerEvents: [String]
 	/// For shadow event organizers, their associated Performer data (which contains the event UIDs for the events 'they're running).
 	let performer: PerformerUploadData?
 	// karaoke, game favorites?
@@ -575,7 +577,8 @@ extension UserSaveRestoreData {
 		preferredPronoun = user.preferredPronoun
 		roomNumber = user.roomNumber
 		dinnerTeam = user.dinnerTeam
-		favoriteEvents = user.favoriteEvents.map { $0.uid }
+		favoriteEvents = user.$favoriteEvents.pivots.compactMap { $0.favorite ? $0.event.uid : nil }
+		photographerEvents = user.$favoriteEvents.pivots.compactMap { $0.photographer ? $0.event.uid : nil }
 		if let perf = user.performer {
 			performer = try? PerformerUploadData(perf)
 		}

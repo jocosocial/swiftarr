@@ -537,6 +537,7 @@ struct SwiftarrConfigurator {
 		app.leaf.tags["dinnerTeamTag"] = DinnerTeamTag()
 		app.leaf.tags["lfgLabel"] = LFGLabelTag()
 		app.leaf.tags["notEmpty"] = NotEmptyTag()
+		app.leaf.tags["countOrZero"] = CountZeroTag()
 	}
 
 	func configureQueues(_ app: Application) throws {
@@ -645,6 +646,8 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreatePuzzleSchema(), to: .psql)
 		app.migrations.add(CreatePuzzleCallInSchema(), to: .psql)
 		app.migrations.add(CreateEventFeedbackSchema(), to: .psql)
+		app.migrations.add(UpdateEventSchema_NeedsPhotographer(), to: .psql)
+		app.migrations.add(UpdateEventFavoriteSchema_Photographer(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 
