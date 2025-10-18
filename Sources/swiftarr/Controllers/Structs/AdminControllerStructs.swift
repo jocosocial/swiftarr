@@ -51,6 +51,8 @@ public struct BulkUserUpdateVerificationData: Content {
 	var userCounts: BulkUserUpdateCounts
 	/// Counts for Performer import. Includes both official and shadow performers.
 	var performerCounts: BulkUserUpdateCounts
+	/// Counts for Events that were marked as needing photographers by the Shutternaut Manager.
+	var needsPhotographerCounts: BulkUserUpdateCounts
 
 	/// Cases where the server has a registered user with the same regcode as the update file, but the usernames differ.
 	/// This may mean the user preregistered and then (somehow) registered on-boat with a different username before the bulk import happened.
@@ -70,6 +72,7 @@ extension BulkUserUpdateVerificationData {
 		changesApplied = !forVerification
 		userCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
 		performerCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
+		needsPhotographerCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
 		regCodeConflicts = []
 		usernameConflicts = []
 		errorNotImported = []
@@ -311,6 +314,8 @@ public struct SaveRestoreData: Content {
 	var users: [UserSaveRestoreData]
 	/// Array of official performers to save and restore.
 	var performers: [PerformerUploadData]
+	/// Array of event UIDs that need photographers.
+	var needsPhotographer: [String]
 }
 
 /// An array of totals for various database entities. Each value in the array is essentially a `SQL SELECT COUNT() FROM <table>`,

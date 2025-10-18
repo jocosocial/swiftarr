@@ -794,7 +794,8 @@ struct AdminController: APIRouteCollection {
 		let userData = users.compactMap { UserSaveRestoreData(user: $0) }
 		let performers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).with(\.$events).all()
 		let performerData = try performers.map { try PerformerUploadData($0) }
-		let dto = SaveRestoreData(users: userData, performers: performerData)
+		let needsPhotographerEvents = try await Event.query(on: req.db).filter(\.$needsPhotographer == true).all().map { $0.uid }
+		let dto = SaveRestoreData(users: userData, performers: performerData, needsPhotographer: needsPhotographerEvents)
 		let data = try JSONEncoder().encode(dto)
 		let userfile = sourceDirectoryURL.appendingPathComponent("userfile.json", isDirectory: true)
 		try data.write(to: userfile, options: .atomic)
@@ -918,6 +919,9 @@ struct AdminController: APIRouteCollection {
 		}
 		for performer in importData.performers {
 			await importPerformer(req, performerData: performer, verifyOnly: verifyOnly, verification: &verification)
+		}
+		for needsPhotog in importData.needsPhotographer {
+			await importNeedPhotographer_Event(req, eventUID: needsPhotog, verifyOnly: verifyOnly, verification: &verification)
 		}
 		return verification
 	}
@@ -1140,6 +1144,32 @@ struct AdminController: APIRouteCollection {
 		catch {
 			verification.otherErrors.append("Error when importing Performer \"\(performerData.name)\": \(error.localizedDescription)")
 			verification.performerCounts.errorCount += 1
+		}
+	}
+	
+	// Imports a single "Needs Photographer" flag, which is a field in the Event model. This fn works on a single Event
+	// at a time due to the way verification works. Even then, this could work as a single fn that takes the array of Event UIDs,
+	// but this makes the fn work the same way as the other importers.
+	func importNeedPhotographer_Event(_ req: Request, eventUID: String, verifyOnly: Bool, 
+			verification: inout BulkUserUpdateVerificationData) async {
+		do {
+			verification.needsPhotographerCounts.totalRecordsProcessed += 1
+			guard let event = try await Event.query(on: req.db).filter(\Event.$uid == eventUID).first() else {
+				throw ImportError("Event not found in database.")
+			}
+			if event.needsPhotographer {
+				verification.needsPhotographerCounts.duplicateCount += 1
+				return
+			}
+			event.needsPhotographer = true
+			if !verifyOnly {
+				try await event.save(on: req.db)
+			}
+			verification.needsPhotographerCounts.importedCount += 1
+		}
+		catch {
+			verification.needsPhotographerCounts.errorCount += 1
+			verification.otherErrors.append("Error when importing Needs Photographer flag for event with UID \(eventUID): \(error.localizedDescription)")
 		}
 	}
 
