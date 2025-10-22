@@ -46,7 +46,7 @@ struct PhotostreamController: APIRouteCollection {
 			photoCount = try await StreamPhoto.query(on: req.db).filter(\.$moderationStatus !~ [.autoQuarantined, .quarantined]).count()
 		}
 		let photos = try await StreamPhoto.query(on: req.db).filter(\.$moderationStatus !~ [.autoQuarantined, .quarantined])
-				.sort(\.$id, .descending).offset(start).limit(limit).with(\.$atEvent).all()
+				.sort(\.$id, .descending).offset(start).limit(limit).with(\.$atEvent, withDeleted: true).all()
 		let imageData = try photos.map { 
 			let authorHeader = try  req.userCache.getHeader($0.$author.id)
 			return try PhotostreamImageData(streamPhoto: $0, author: authorHeader) 

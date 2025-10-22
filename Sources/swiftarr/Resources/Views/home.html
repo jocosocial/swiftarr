@@ -197,7 +197,7 @@
 																<img src="/api/v3/image/thumb/#(photo.image)" class="swiftarr-post-image" alt="Photostream Image">
 															</button>
 															#if(photo.event != nil):
-																<h5 class="text-truncate"><a href="/events">#(photo.event.title)</a></h5>
+																<h5 class="text-truncate"><a href="/events/#(photo.event.eventID)">#(photo.event.title)</a></h5>
 															#else:
 																<h5>#(photo.location)</h5>
 															#endif

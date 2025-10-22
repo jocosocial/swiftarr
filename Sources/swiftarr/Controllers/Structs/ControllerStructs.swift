@@ -1691,7 +1691,12 @@ extension PhotostreamImageData {
 		self.image = streamPhoto.image
 		self.author = author
 		if let event = streamPhoto.atEvent {
-			self.event = try EventData(event)
+			if let deletedAt = event.deletedAt, deletedAt < Date() {
+				self.location = PhotoStreamBoatLocation.onBoat.rawValue
+			}
+			else {
+				self.event = try EventData(event)
+			}
 		}
 		else if let location = streamPhoto.boatLocation?.rawValue {
 			self.location = location
