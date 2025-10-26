@@ -301,15 +301,15 @@ extension Settings {
 	// Common accessor for getting a comparison reference date to an Event or LFG.
 	// Often in the code we use Date() to get the current time, but this can sometimes cause
 	// strange behavior because we occasionally pretend to be in the cruise week.
-	func getScheduleReferenceDate(_ settingType: EventNotificationSetting) -> Date {
+	func getScheduleReferenceDate(_ settingType: EventNotificationSetting, from date: Date = Date()) -> Date {
 		// The reference date is calculated as either:
 		// 1) The current date (as in what the server is experiencing right now).
 		// 2) The current time/day transposed within the cruise week (when we pretend it is).
 		var filterDate: Date
 		if (settingType == .cruiseWeek) {
-			filterDate = Settings.shared.getDateInCruiseWeek()
+			filterDate = Settings.shared.getDateInCruiseWeek(from: date)
 		} else {
-			filterDate = Settings.shared.getCurrentFilterDate()
+			filterDate = Settings.shared.getCurrentFilterDate(from: date)
 		}
 		return filterDate
 	}

@@ -17,11 +17,12 @@ protocol APICollection {}
 extension APICollection {
 	// Get the next followed event for the user.
 	func getNextFollowedEvent(userID: UUID, db: Database) async throws -> Event? {
-		let filterDate: Date = Settings.shared.getScheduleReferenceDate(
-			Settings.shared.upcomingEventNotificationSetting
-		)
+		let filterDate: Date = Settings.shared.getScheduleReferenceDate(Settings.shared.upcomingEventNotificationSetting)
+		// Event times get stored in the TZ we embark from (Port Time), but are really 'floating dates' with no TZ similar to DateComponents.
+		// If we're not in the port TZ, we have to offset the date to make the SQL search work.
+		let portDate = Settings.shared.timeZoneChanges.displayTimeToPortTime(filterDate)
 		let nextFavoriteEvent = try await Event.query(on: db)
-			.filter(\.$startTime > filterDate)
+			.filter(\.$startTime > portDate)
 			.sort(\.$startTime, .ascending)
 			.join(EventFavorite.self, on: \Event.$id == \EventFavorite.$event.$id)
 			.filter(EventFavorite.self, \.$user.$id == userID)
