@@ -1,7 +1,7 @@
 # Builder image
 # 
 # This sets up the environment used to build swiftarr.
-FROM docker.io/library/swift:6.0-jammy as builder
+FROM docker.io/library/swift:6.2-jammy as builder
 
 ARG env
 
