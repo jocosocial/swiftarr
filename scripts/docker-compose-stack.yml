@@ -1,7 +1,6 @@
 services:
-
   postgres:
-    image: docker.io/bitnami/postgresql:14
+    image: docker.io/bitnami/postgresql:latest
     env_file:
       - "../Sources/swiftarr/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
     volumes:
@@ -10,7 +9,7 @@ services:
       - ${DATABASE_PORT}:5432
 
   redis:
-    image: docker.io/bitnami/redis:6.2
+    image: docker.io/bitnami/redis:latest
     env_file:
       - "../Sources/swiftarr/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
     volumes:
