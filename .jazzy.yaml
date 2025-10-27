@@ -39,6 +39,7 @@ custom_categories:
       - Configuration
       - MacOS Installation
       - Linux Installation
+      - Windows Installation
       - Docker Installation
       - Database Migration
 
