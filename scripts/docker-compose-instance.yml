@@ -1,7 +1,6 @@
 services:
-
   postgres:
-    image: docker.io/bitnami/postgresql:14
+    image: docker.io/bitnami/postgresql:latest
     environment:
       POSTGRESQL_DATABASE: swiftarr
       POSTGRESQL_USERNAME: swiftarr
@@ -14,7 +13,7 @@ services:
       - postgres_data:/bitnami/postgresql
 
   redis:
-    image: docker.io/bitnami/redis:6.2
+    image: docker.io/bitnami/redis:latest
     ports:
       - 6379:6379
     environment:
@@ -23,7 +22,7 @@ services:
       - redis_data:/bitnami/redis/data
 
   postgres-test:
-    image: docker.io/bitnami/postgresql:14
+    image: docker.io/bitnami/postgresql:latest
     environment:
       POSTGRESQL_DATABASE: swiftarr-test
       POSTGRESQL_USERNAME: swiftarr
@@ -34,7 +33,7 @@ services:
       - postgres_test_data:/bitnami/postgresql
 
   redis-test:
-    image: docker.io/bitnami/redis:6.2
+    image: docker.io/bitnami/redis:latest
     ports:
       - 6380:6379
     environment:
@@ -43,18 +42,18 @@ services:
       - redis_test_data:/bitnami/redis/data
 
   prometheus:
-    image: docker.io/bitnami/prometheus:2.48.0
+    image: docker.io/bitnami/prometheus:latest
     ports:
       - 9090:9090
     volumes:
       - ./Prometheus/prometheus.yml:/opt/bitnami/prometheus/conf/prometheus.yml:ro
       - ./Prometheus/alerts.yml:/opt/bitnami/prometheus/conf/alerts.yml:ro
     command:
-      - '--web.enable-admin-api'
-      - '--config.file=/opt/bitnami/prometheus/conf/prometheus.yml'
+      - "--web.enable-admin-api"
+      - "--config.file=/opt/bitnami/prometheus/conf/prometheus.yml"
 
   alertmanager:
-    image: docker.io/bitnami/alertmanager:0.26.0
+    image: docker.io/bitnami/alertmanager:latest
     ports:
       - 9093:9093
     volumes:

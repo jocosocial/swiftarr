@@ -51,6 +51,10 @@ Run
 
 Images
 ------
+As of 2025-10-27:
+
+Bitnami (specifically their new corporate parent Broadcom) obliterated the open source community around their images. Only the `latest` tag is now available. For development use this is fine but can lead to significant swings in underlying tool version. I wish there was an easier solution but none of the other images are both 1) updated recently and 2) present an easy entrypoint for devs.
+
 As of 2022-07-31:
 
 We desire to support both AMD64 and ARM64 architectures since this offers interoperability between M*-Mac
@@ -60,3 +64,5 @@ who publish excellent images, do [not yet support ARM64 images](https://github.c
 often add (like setting Redis credentials, etc). Canonical started publishing a bunch of images that offer both
 ARM64 support and convenience wrappers but they're still stamped Beta. Until Bitnami improves their ecosystem we're
 gonna use the Ubuntu images.
+
+Historical note: They did improve their ecosystem about a year later and we went back.
