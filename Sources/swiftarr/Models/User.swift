@@ -92,8 +92,8 @@ final class User: Model, @unchecked Sendable {
 	/// An optional dinner team.
 	@OptionalField(key: "dinnerTeam") var dinnerTeam: DinnerTeam?
 
-	/// An optional Discord handle.
-	@OptionalField(key: "discordHandle") var discordHandle: String?
+	/// An optional Discord username.
+	@OptionalField(key: "discordUsername") var discordUsername: String?
 
 	/// Users that this user has muted. Muting removes twarrts, forums, forumPosts, and LFGs authored by muted users from API results.
 	/// Here as an array instead of a to-many child relation because the primary operation is to use the list of all muted user IDs as a query filter, and
@@ -324,13 +324,13 @@ struct UpdateUserDinnerTeamMigration: AsyncMigration {
 struct UpdateUserDiscordHandleMigration: AsyncMigration {
 	func prepare(on database: Database) async throws {
 		try await database.schema("user")
-			.field("discordHandle", .string)
+			.field("discordUsername", .string)
 			.update()
 	}
 
 	func revert(on database: Database) async throws {
 		try await database.schema("user")
-			.deleteField("discordHandle")
+			.deleteField("discordUsername")
 			.update()
 	}
 }

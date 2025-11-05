@@ -25,7 +25,7 @@ struct ProfileFormContent: Content {
 	var message: String
 	var about: String
 	var dinnerTeam: String
-	var discordHandle: String?
+	var discordUsername: String?
 }
 
 struct AddWordFormStruct: Decodable {
@@ -448,7 +448,7 @@ struct SiteUserController: SiteControllerUtils {
 			message: profileStruct.message,
 			about: profileStruct.about,
 			dinnerTeam: DinnerTeam(rawValue: profileStruct.dinnerTeam) ?? nil,
-			discordHandle: profileStruct.discordHandle
+			discordUsername: profileStruct.discordUsername
 		)
 		try await apiQuery(req, endpoint: path, method: .POST, encodeContent: postContent)
 		if let targetUserIDVal = targetUserID {
