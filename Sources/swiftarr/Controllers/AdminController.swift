@@ -1003,6 +1003,7 @@ struct AdminController: APIRouteCollection {
 				newUser.roomNumber = userToImport.roomNumber
 				newUser.displayName = userToImport.displayName
 				newUser.dinnerTeam = userToImport.dinnerTeam
+				newUser.discordHandle = userToImport.discordHandle
 				newUser.buildUserSearchString()
 				if verifyOnly {
 					return .imported(nil)

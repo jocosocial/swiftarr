@@ -36,6 +36,9 @@
 					#if(profile.dinnerTeam):
 						Dinner Team: <b>#dinnerTeamTag(profile.dinnerTeam)</b><br>
 					#endif
+					#if(profile.discordHandle && profile.discordHandle != ""):
+						Discord Handle: <b>#(profile.discordHandle)</b><br>
+					#endif
 				</div>
 			</div>
 			#if(profile.about != ""):
