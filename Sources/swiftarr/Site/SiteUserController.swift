@@ -25,6 +25,7 @@ struct ProfileFormContent: Content {
 	var message: String
 	var about: String
 	var dinnerTeam: String
+	var discordUsername: String?
 }
 
 struct AddWordFormStruct: Decodable {
@@ -435,7 +436,7 @@ struct SiteUserController: SiteControllerUtils {
 			path = "/user/\(targetUserIDVal)/profile"
 			targetUserID = targetUserIDVal
 		}
-		let profileStruct = try req.content.decode(ProfileFormContent.self)
+		let profileStruct: ProfileFormContent = try req.content.decode(ProfileFormContent.self)
 		let postContent = UserProfileUploadData(
 			header: nil,
 			displayName: profileStruct.displayName,
@@ -446,7 +447,8 @@ struct SiteUserController: SiteControllerUtils {
 			email: profileStruct.email,
 			message: profileStruct.message,
 			about: profileStruct.about,
-			dinnerTeam: DinnerTeam(rawValue: profileStruct.dinnerTeam) ?? nil
+			dinnerTeam: DinnerTeam(rawValue: profileStruct.dinnerTeam) ?? nil,
+			discordUsername: profileStruct.discordUsername
 		)
 		try await apiQuery(req, endpoint: path, method: .POST, encodeContent: postContent)
 		if let targetUserIDVal = targetUserID {
