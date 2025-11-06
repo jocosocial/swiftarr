@@ -192,3 +192,6 @@ associated AddedToChat field value increase.
 
 ## Feb 15, 2025
 * Added new `Performer` delete endpoint `DELETE /api/v3/performer/:performer_ID` (for moderators)
+
+## Nov 05, 2025
+* Added `discordUsername` to `ProfilePublicData`.
