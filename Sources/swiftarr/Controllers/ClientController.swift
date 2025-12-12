@@ -228,7 +228,14 @@ struct ClientController: APIRouteCollection {
 	///
 	/// - Returns: `ClientSettingsData` containing cruise and server configuration.
 	func settingsHandler(_ req: Request) async throws -> ClientSettingsData {
-		return ClientSettingsData()
+		var installationID = "unknown"
+		if let sqldb = req.db as? SQLDatabase {
+			if let row = try await sqldb.raw("SELECT system_identifier FROM pg_control_system()").first() {
+				let id = try row.decode(column: "system_identifier", as: Int64.self)
+				installationID = String(id)
+			}
+		}
+		return ClientSettingsData(installationID: installationID)
 	}
 }
 

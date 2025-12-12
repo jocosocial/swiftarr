@@ -2753,10 +2753,14 @@ public struct ClientSettingsData: Content {
 	var scheduleUpdateURL: String
 	/// The name of the shipboard Wifi network
 	var shipWifiSSID: String?
+	/// If TRUE, users can create accounts, log in, and edit their profile before the cruise in a restricted pre-registration mode.
+	var enablePreregistration: Bool
+	/// Unique identifier for this Postgres database installation (from pg_control_system())
+	var installationID: String
 }
 
 extension ClientSettingsData {
-	init() {
+	init(installationID: String) {
 		self.canonicalHostnames = Settings.shared.canonicalHostnames
 		self.cruiseStartDate = Settings.shared.cruiseStartDate()
 		self.cruiseLengthInDays = Settings.shared.cruiseLengthInDays
@@ -2765,6 +2769,8 @@ extension ClientSettingsData {
 		self.portTimeZoneOffset = Settings.shared.portTimeZone.secondsFromGMT()
 		self.scheduleUpdateURL = Settings.shared.scheduleUpdateURL
 		self.shipWifiSSID = Settings.shared.shipWifiSSID
+		self.enablePreregistration = Settings.shared.enablePreregistration
+		self.installationID = installationID
 	}
 }
 
