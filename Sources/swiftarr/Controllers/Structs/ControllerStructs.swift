@@ -1953,6 +1953,8 @@ public struct ProfilePublicData: Content {
 	var note: String?
 	/// Whether the requesting user has favorited this user.
 	var isFavorite: Bool
+	/// An optional Discord username.
+	var discordUsername: String?
 }
 
 extension ProfilePublicData {
@@ -1969,6 +1971,7 @@ extension ProfilePublicData {
 			self.realName = ""
 			self.roomNumber = ""
 			self.dinnerTeam = nil
+			self.discordUsername = nil
 			self.note = note
 		}
 		else if requesterAccessLevel == .banned {
@@ -1979,6 +1982,7 @@ extension ProfilePublicData {
 			self.realName = ""
 			self.roomNumber = ""
 			self.dinnerTeam = nil
+			self.discordUsername = nil
 		}
 		else {
 			self.about = user.about ?? ""
@@ -1988,6 +1992,7 @@ extension ProfilePublicData {
 			self.realName = user.realName ?? ""
 			self.roomNumber = user.roomNumber ?? ""
 			self.dinnerTeam = user.dinnerTeam
+			self.discordUsername = user.discordUsername
 			self.note = note
 		}
 	}
@@ -2505,6 +2510,8 @@ public struct UserProfileUploadData: Content, Sendable {
 	var about: String?
 	/// An optional dinner team assignment.
 	var dinnerTeam: DinnerTeam?
+	/// An optional Discord username.
+	var discordUsername: String?
 }
 
 extension UserProfileUploadData {
@@ -2519,6 +2526,7 @@ extension UserProfileUploadData {
 		self.realName = user.realName
 		self.roomNumber = user.roomNumber
 		self.dinnerTeam = user.dinnerTeam
+		self.discordUsername = user.discordUsername
 	}
 }
 

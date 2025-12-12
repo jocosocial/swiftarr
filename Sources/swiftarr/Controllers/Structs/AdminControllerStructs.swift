@@ -542,6 +542,7 @@ struct UserSaveRestoreData: Content, Sendable {
 	let preferredPronoun: String?
 	let roomNumber: String?
 	let dinnerTeam: DinnerTeam?
+	let discordUsername: String?
 	let parentUsername: String?
 	let roles: [UserRoleType]
 	/// Event UIDs, the thing in the ICS file spec--NOT database IDs!
@@ -582,6 +583,7 @@ extension UserSaveRestoreData {
 		preferredPronoun = user.preferredPronoun
 		roomNumber = user.roomNumber
 		dinnerTeam = user.dinnerTeam
+		discordUsername = user.discordUsername
 		favoriteEvents = user.$favoriteEvents.pivots.compactMap { $0.favorite ? $0.event.uid : nil }
 		photographerEvents = user.$favoriteEvents.pivots.compactMap { $0.photographer ? $0.event.uid : nil }
 		if let perf = user.performer {

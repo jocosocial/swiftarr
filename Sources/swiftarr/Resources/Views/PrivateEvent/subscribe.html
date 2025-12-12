@@ -1,0 +1,33 @@
+#extend("trunk"):
+    #export("body"):
+	<div class="container-fluid">
+		<ul class="list-group">
+			<li class="list-group-item active">
+				<b>Subscribing to a Calendar</b>
+			</li>
+			<li class="list-group-item bg-transparent">
+				The button below will take you to your Calendar app and open a panel that lets you subscribe to your Day Planner calendar. 
+			</li>
+			<li class="list-group-item bg-transparent">
+				This will create a new calendar in your device's Calendar app, named "Joco Cruise #(currentYear): #(trunk.username)".
+				All the events on your Twitarr Day Planner will then show up in your Calendar app.
+			</li>
+			<li class="list-group-item bg-transparent">
+				The calendar app will then occasionally poll the Twitarr server for changes and updates.
+			</li>
+			<li class="list-group-item bg-transparent">
+				After the cruise, you can safely delete the cruise calendar from your Calendar app.
+			</li>
+			<li class="list-group-item bg-transparent">
+				<div class="container-md ms-0 my-3">
+					<div class="row">
+						<div class="col">
+							<a class="btn btn-primary btn-sm" href="#(webcalURL)">Subscribe To Day Planner</a>
+						</div>
+					</div>
+				</div>
+			</li>
+		</ul>
+	</div>
+	#endexport
+#endextend

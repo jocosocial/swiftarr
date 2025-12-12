@@ -192,6 +192,7 @@ struct SitePrivateEventController: SiteControllerUtils {
 		// Routes that the user needs to be logged in to access.
 		let globalRoutes = getGlobalRoutes(app, feature: .personalevents, path: "dayplanner")
 		globalRoutes.get("", use: showDayPlanner).destination("the day planner").setUsedForPreregistration()
+		globalRoutes.get("subscribe", use: dayplannerSubscribeExplainer).destination("the day planner subscription page")
 		globalRoutes.get("shutternauts", use: showDayPlanner).destination("the Shutternaut day planner").setUsedForPreregistration()
 		
 		let globalPERoutes = getGlobalRoutes(app, feature: .personalevents, path: "privateevent")
@@ -203,6 +204,17 @@ struct SitePrivateEventController: SiteControllerUtils {
 		privateRoutes.get(fezIDParam, "update", use: peUpdatePageHandler)
 		privateRoutes.post(fezIDParam, "update", use: peCreateOrUpdatePostHandler)
 		privateRoutes.get("list", use: peListHandler)
+
+		// This route is intended for calendar apps, allowing for subscriptions to iCal calendar feeds.
+		let calendaringRoute = app.grouped([
+				CalendarSessionFixerMiddleware(),  // Adds a path component to the session cookie after sessions.middleware sets it
+				app.sessions.middleware,  // Gets session data from Redis; sets cookie on responses
+				UserCacheData.SessionAuth(),  // Auths a UserCacheData based on the session data from Redis
+				UserCacheData.BasicAuth(),
+				Token.authenticator(),
+				DisabledSiteSectionMiddleware(feature: .personalevents),
+		])
+		calendaringRoute.get("dayplanner", usernameParam, "jocoDayPlanner.ics", use: calendarDownload)
 	}
 	
 	// GET /dayplanner						The user's events, LFGs, private events, personal events
@@ -455,5 +467,104 @@ struct SitePrivateEventController: SiteControllerUtils {
 		let eventList = try response.content.decode(FezListData.self)
 		let ctx = try PrivateEventListPageContext(req, fezList: eventList, fezzes: eventList.fezzes)
 		return try await req.view.render("PrivateEvent/privateEventList", ctx)
+	}
+	
+	// GET /dayplanner/subscribe
+	//
+	// Shows a page explaining to the user what calendar subscriptions do, with a button to actually subscribe to the
+	// Day Planner calendar.
+	//
+	// Notes on the webcal:// URL
+	//
+	// Using the 'webcal' scheme causes the link to open in Apple Calendar in a way that makes Calendar subscribe to the URL, 
+	// including asking the user for credentials. An http scheme causes the .ics file to be downloaded and then passed to Calendar, 
+	// where it ingests all the  events but does not subscribe for updates.
+	//
+	// On Mac, the webcal scheme will be treated as 'https', even though you get a 'connection not secure' dialog. So far, this is
+	// only an issue for local development builds. On iOS, the webcal scheme will fall back to http if https fails.
+	//
+	// In my limited testing, Google Calendar really wants to run its subscription serverside, via a google.com link with a "?cid=<url>"
+	// query item. This won't work on boat even if the user has internet access, as Google can't route to the boat's Twitarr server.
+	func dayplannerSubscribeExplainer(_ req: Request) async throws -> View {
+		guard let user = req.auth.get(UserCacheData.self),
+				let username = user.username.percentEncodeFilePathEntry() else {
+			throw Abort(.unauthorized, reason: "Must be logged in to subscribe to Day Planner Calendar.")
+		}
+
+		struct SubscribePageContext: Encodable {
+			var trunk: TrunkContext
+			var currentYear: String
+			var webcalURL: String
+			
+			init(_ req: Request, _ username: String) throws {
+				trunk = .init(req, title: "Day Planner Subscribe", tab: .home)
+				let yearFormatter = DateFormatter()
+				yearFormatter.setLocalizedDateFormatFromTemplate("y")
+				self.currentYear = yearFormatter.string(from: Settings.shared.cruiseStartDate())
+				var urlComponents = Settings.shared.canonicalServerURLComponents
+				urlComponents.scheme = "webcal"
+				urlComponents.path = "/dayplanner/\(username)/jocoDayPlanner.ics"
+				self.webcalURL = urlComponents.string ?? "webcal://twitarr.com/dayplanner/\(username)/jocoDayPlanner.ics"
+			}
+		}
+		let ctx = try SubscribePageContext(req, username)
+		return try await req.view.render("PrivateEvent/subscribe", ctx)
+	}
+	
+	// GET /dayplanner/:username/jocodayplanner.ics
+	//
+	// Builds and returns an .ics file with the calendar events that appear on the user's Day Planner.
+	// The file has the MIME type "text/calendar".
+	// This route will often be called by calendaring apps--not browsers.
+	//
+	// This route allows for login via basic auth and also supports sessions. I believe some calendaring apps don't support
+	// pulling data from private calendars and require users to make the calendars public. We're not doing that--don't make this
+	// route open to all without creds.
+	//
+	// Also, Google Calendar (the google-hosted web app) won't work with this, because the Google servers cannot see twittar.com.
+	func calendarDownload(_ req: Request) async throws -> Response {
+		// Calendar apps almost certainly use ETags or the 'If-Modified-Since' header, but we'd need to cache the last 
+		// change time to Redis and update everyone's change time whenever the schedule itself changes.
+		// Building the whole response just to compare it to a saved hash probably isn't worth it (the file isn't that big).
+		
+		// This route uses a custom middleware stack, and we can't use the regular .unauthorized response if we're not authed.
+		// For this route we have to add the WWW-Authenticate header to indicate how the client can retry with auth.
+		// (regular routes don't do this because they need to go to /login to auth).
+		guard let user = req.auth.get(UserCacheData.self) else {
+			req.session.destroy()
+			var apiHeaders = HTTPHeaders()
+			apiHeaders.add(name: "WWW-Authenticate", value: "Basic charset=\"UTF-8\"")
+			let resp = Response(status: .unauthorized, headers: apiHeaders)
+			return resp
+		}
+		guard let username = req.parameters.get(usernameParam.paramString)?.removingPercentEncoding, user.username == username else {
+			throw Abort(.unauthorized, reason: "Not logged in as the user for this calendar subscription.")
+		}
+		// If we basic auth'ed on this call (remember: it's the calendar app making the request, not a browser), we should
+		// create a session as if they called /login. That is, the calendar app can't know to use the /login route.
+		if let basicAuthHeader = req.headers.first(name: "Authorization"), basicAuthHeader.hasPrefix("Basic ") {
+			var loginHeaders = HTTPHeaders()
+			loginHeaders.add(name: "Authorization", value: basicAuthHeader)
+			let response = try await apiQuery(req, endpoint: "/auth/login", method: .POST, defaultHeaders: loginHeaders)
+			let tokenResponse = try response.content.decode(TokenStringData.self)
+			// on iOS, the user-agent from Calendar is: User-Agent: iOS/16.3.1 (20D67) dataaccessd/1.0
+			try await SiteLoginController().loginUser(with: tokenResponse, on: req, defaultDeviceType: "Calendaring App")
+		}
+
+		let eventResponse = try await apiQuery(req, endpoint: "/events", query: [URLQueryItem(name: "dayplanner", value: "true")])
+		let events = try eventResponse.content.decode([EventData].self)
+		let lfgResponse = try await apiQuery(req, endpoint: "/fez/joined", query:
+				[URLQueryItem(name: "excludetype", value: "open"), URLQueryItem(name: "excludetype", value: "closed")], passThroughQuery: false)
+		let lfgs = try lfgResponse.content.decode(FezListData.self)
+		let icsString = ICSHelper.buildICSFile(events: events, lfgs: lfgs.fezzes, username: user.username, contentType: .dayplanner)
+		let yearFormatter = DateFormatter()
+		yearFormatter.setLocalizedDateFormatFromTemplate("y")
+		let year = yearFormatter.string(from: Settings.shared.cruiseStartDate())
+		let cleanEventTitle = "JoCo Cruise \(year): \(user.username)"
+		let headers = HTTPHeaders([
+			("Content-Disposition", "attachment; filename=\"\(cleanEventTitle).ics\""),
+			("Content-Type", "text/calendar; charset=utf-8"),
+		])
+		return try await icsString.encodeResponse(status: .ok, headers: headers, for: req)
 	}
 }

@@ -65,14 +65,18 @@ fileprivate struct EventPageContext: Encodable {
 		if let user = req.auth.get(UserCacheData.self),
 			let username = user.username.percentEncodeFilePathEntry()
 		{
-			self.webcalURL =
-				"webcal://\(Settings.shared.canonicalHostnames.first ?? "")/events/subscribe/\(username)/following.ics"
+			var urlComponents = Settings.shared.canonicalServerURLComponents
+			urlComponents.scheme = "webcal"
+			urlComponents.path = "/events/subscribe/\(username)/following.ics"
+			self.webcalURL = urlComponents.string ?? "webcal://twitarr.com/events/subscribe/\(username)/following.ics"
 		}
 		else {
 			self.webcalURL = ""
 		}
 	}
 }
+
+// MARK: -
 
 struct SiteEventsController: SiteControllerUtils {
 
@@ -104,7 +108,6 @@ struct SiteEventsController: SiteControllerUtils {
 		privateRoutes.delete("events", eventIDParam, "needsphotographer", use: eventsAddRemoveNeedsPhotographerHandler).setUsedForPreregistration()
 	}
 
-	// MARK: - Events
 	/// `GET /events`
 	///
 	/// By default, shows a day's worth events. Always attempts to show events from a day on the actual cruise. Uses
@@ -212,7 +215,7 @@ struct SiteEventsController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/events/\(eventID)")
 		let event = try response.content.decode(EventData.self)
 		let username = req.auth.get(UserCacheData.self)?.username ?? ""
-		let icsString = ICSHelper.buildEventICS(events: [event], username: username)
+		let icsString = ICSHelper.buildScheduleEventICS(events: [event], username: username)
 		let cleanEventTitle = event.title.replacingOccurrences(of: "\"", with: "")
 		let headers = HTTPHeaders([("Content-Disposition", "attachment; filename=\"\(cleanEventTitle).ics\"")])
 		return try await icsString.encodeResponse(status: .ok, headers: headers, for: req)
@@ -228,17 +231,23 @@ struct SiteEventsController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/personalevents/\(eventID)")
 		let event = try response.content.decode(PersonalEventData.self)
 		let username = req.auth.get(UserCacheData.self)?.username ?? ""
-		let icsString = ICSHelper.buildPersonalEventICS(events: [event], username: username)
+		let icsString = ICSHelper.buildPersonalEventICS(personalEvents: [event], username: username)
 		let cleanEventTitle = event.title.replacingOccurrences(of: "\"", with: "")
 		let headers = HTTPHeaders([("Content-Disposition", "attachment; filename=\"\(cleanEventTitle).ics\"")])
 		return try await icsString.encodeResponse(status: .ok, headers: headers, for: req)
 	}
 
-	// `GET /events/following.ics`
+	// `GET /events/subscribe/:username/following.ics`
+	//
+	// Username must match creds.
 	//
 	// Returns a .ics file containing info on the events the user is following; suitable for opening in calendaring apps.
 	// When
 	func eventsDownloadFollowingHandler(_ req: Request) async throws -> Response {
+		// Calendar apps almost certainly use ETags or the 'If-Modified-Since' header, but we'd need to cache the last 
+		// change time to Redis and update everyone's change time whenever the schedule itself changes.
+		// Building the whole response just to compare it to a saved hash probably isn't worth it (the file isn't that big).
+	
 		// This part of the handler should probably be done in middleware. Implements the HTTP Basic Auth flow, including
 		// returning 401 Unauthorized with a response header indicating we'd accept basic auth, and using the Authorization
 		// header to log the user in.
@@ -265,7 +274,7 @@ struct SiteEventsController: SiteControllerUtils {
 
 		let response = try await apiQuery(req, endpoint: "/events/favorites")
 		let events = try response.content.decode([EventData].self)
-		let icsString = ICSHelper.buildEventICS(events: events, username: user.username)
+		let icsString = ICSHelper.buildScheduleEventICS(events: events, username: user.username)
 		let cleanEventTitle = "JoCo Cruise: \(user.username)"
 		let headers = HTTPHeaders([
 			("Content-Disposition", "attachment; filename=\"\(cleanEventTitle).ics\""),

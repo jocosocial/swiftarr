@@ -394,11 +394,6 @@ struct SwiftarrConfigurator {
 			app.http.server.configuration.hostname = "127.0.0.1"
 		}
 
-		// Make our chosen hostname a canonical hostname that Settings knows about
-		if !Settings.shared.canonicalHostnames.contains(app.http.server.configuration.hostname) {
-			Settings.shared.canonicalHostnames.append(app.http.server.configuration.hostname)
-		}
-
 		// Load the FQDNs that we expect Twitarr to be available from. This feeds into link processing to help
 		// ensure a smooth experience between users who enter the site via different hostnames. For example:
 		// http://joco.hollandamerica.com and https://twitarr.com are both expected to function and bring you
@@ -648,6 +643,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateEventFeedbackSchema(), to: .psql)
 		app.migrations.add(UpdateEventSchema_NeedsPhotographer(), to: .psql)
 		app.migrations.add(UpdateEventFavoriteSchema_Photographer(), to: .psql)
+		app.migrations.add(UpdateUserDiscordHandleMigration(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 
