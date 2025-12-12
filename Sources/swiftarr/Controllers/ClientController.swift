@@ -20,6 +20,7 @@ struct ClientController: APIRouteCollection {
 
 		// open access endpoints
 		clientRoutes.get("health", use: healthHandler)
+		clientRoutes.get("settings", use: settingsHandler)
 
 		// endpoints available only when logged in
 		let tokenAuthGroup = clientRoutes.tokenRoutes()
@@ -218,6 +219,16 @@ struct ClientController: APIRouteCollection {
 		let _ = try await User.query(on: req.db).first()
 
 		return HealthResponse()
+	}
+
+	/// `GET /api/v3/client/settings`
+	///
+	/// Returns publicly available configuration information about the current cruise/sailing.
+	/// This allows client apps to fetch environment configuration rather than hardcoding values.
+	///
+	/// - Returns: `ClientSettingsData` containing cruise and server configuration.
+	func settingsHandler(_ req: Request) async throws -> ClientSettingsData {
+		return ClientSettingsData()
 	}
 }
 
