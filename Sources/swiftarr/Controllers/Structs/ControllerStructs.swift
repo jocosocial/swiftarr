@@ -2732,6 +2732,48 @@ public struct HealthResponse: Content {
 	var error: Bool = false
 }
 
+/// Publicly available configuration information about the current cruise/sailing.
+/// This endpoint allows client apps to fetch environment configuration rather than hardcoding values.
+///
+/// Returned by: `GET /api/v3/client/settings`
+public struct ClientSettingsData: Content {
+	/// Canonical hostnames for the Twitarr server (e.g., "twitarr.com", "joco.hollandamerica.com")
+	var canonicalHostnames: [String]
+	/// The date the cruise embarks, at midnight in the port time zone
+	var cruiseStartDate: Date
+	/// Length of the cruise in days, including partial days (embarkation through disembarkation)
+	var cruiseLengthInDays: Int
+	/// The Foundation TimeZone identifier for the port of departure (e.g., "America/New_York")
+	var portTimeZoneID: String
+	/// The abbreviation for the port time zone (e.g., "EST", "EDT")
+	var portTimeZoneAbbrev: String
+	/// Seconds from GMT for the port time zone
+	var portTimeZoneOffset: Int
+	/// URL used for automated schedule updates (typically a sched.com iCalendar URL)
+	var scheduleUpdateURL: String
+	/// The name of the shipboard Wifi network
+	var shipWifiSSID: String?
+	/// If TRUE, users can create accounts, log in, and edit their profile before the cruise in a restricted pre-registration mode.
+	var enablePreregistration: Bool
+	/// Unique identifier for this Postgres database installation (from pg_control_system())
+	var installationID: String
+}
+
+extension ClientSettingsData {
+	init(installationID: String) {
+		self.canonicalHostnames = Settings.shared.canonicalHostnames
+		self.cruiseStartDate = Settings.shared.cruiseStartDate()
+		self.cruiseLengthInDays = Settings.shared.cruiseLengthInDays
+		self.portTimeZoneID = Settings.shared.portTimeZone.identifier
+		self.portTimeZoneAbbrev = Settings.shared.portTimeZone.abbreviation() ?? "EST"
+		self.portTimeZoneOffset = Settings.shared.portTimeZone.secondsFromGMT()
+		self.scheduleUpdateURL = Settings.shared.scheduleUpdateURL
+		self.shipWifiSSID = Settings.shared.shipWifiSSID
+		self.enablePreregistration = Settings.shared.enablePreregistration
+		self.installationID = installationID
+	}
+}
+
 // MARK: Personal Events
 ///
 /// Used to return a `PersonalEvent`'s data.

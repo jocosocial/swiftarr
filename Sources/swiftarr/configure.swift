@@ -407,9 +407,12 @@ struct SwiftarrConfigurator {
 			Settings.shared.canonicalHostnames = canonicalHostnamesStr.split(separator: ",").map { String($0) }
 			primaryHostAndPort = Settings.shared.canonicalHostnames.first ?? "localhost:\(port)"
 		}
-		else if !app.http.server.configuration.hostname.isEmpty {
-			Settings.shared.canonicalHostnames.append(app.http.server.configuration.hostname)
+		// Use a Set to collect hostnames and prevent duplicates, then convert back to array
+		var hostnameSet = Set(Settings.shared.canonicalHostnames)
+		if !app.http.server.configuration.hostname.isEmpty {
+			hostnameSet.insert(app.http.server.configuration.hostname)
 		}
+		Settings.shared.canonicalHostnames = Array(hostnameSet)
 		configLog.debug("Setting canonical hostnames: \(Settings.shared.canonicalHostnames)")
 
 		// canonicalServerURLComponents is used when the server needs to build an externally-visible URL pointing to itself.
