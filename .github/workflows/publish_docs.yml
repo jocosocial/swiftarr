@@ -4,34 +4,34 @@ on:
   pull_request:
   push:
     branches:
-    - master
+      - master
 jobs:
   Build:
     runs-on: macos-15
     steps:
-    - name: Install SourceKitten
-      run: brew install sourcekitten
-    - name: Install Jazzy
-      run: sudo gem install jazzy
-    # They don't support Swift 6 yet.
-    # https://github.com/swift-actions/setup-swift/issues/683
-    # - name: Install Swift
-    #   uses: swift-actions/setup-swift@v2
-    #   with:
-    #     swift-version: "5.10.0"
-    - name: Confirm Swift Version
-      run: swift --version
-    - name: Install Swiftarr Dependencies
-      run: brew install gd
-    - name: Checkout Swiftarr
-      uses: actions/checkout@v2
-    - name: Generate Docs
-      run: scripts/generatedocs.sh
-    - name: Upload Artifact
-      uses: actions/upload-pages-artifact@v3
-      with:
-        name: github-pages
-        path: docs/Output
+      - name: Install SourceKitten
+        run: brew install sourcekitten
+      - name: Install Jazzy
+        run: sudo gem install jazzy
+      # They don't support Swift 6 yet.
+      # https://github.com/swift-actions/setup-swift/issues/683
+      # - name: Install Swift
+      #   uses: swift-actions/setup-swift@v2
+      #   with:
+      #     swift-version: "5.10.0"
+      - name: Confirm Swift Version
+        run: swift --version
+      - name: Install Swiftarr Dependencies
+        run: brew install gd
+      - name: Checkout Swiftarr
+        uses: actions/checkout@v2
+      - name: Generate Docs
+        run: scripts/generatedocs.sh
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          name: github-pages
+          path: docs/Output
   deploy:
     if: github.repository == 'jocosocial/swiftarr' && github.ref == 'refs/heads/master'
     needs: Build
@@ -41,8 +41,8 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

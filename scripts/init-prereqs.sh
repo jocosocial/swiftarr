@@ -15,18 +15,18 @@ export DEBIAN_FRONTEND=noninteractive
 # libicu tends to rev pretty aggressively with different base images!
 apt-get -qq update
 apt-get install -y \
-  curl libatomic1 libicu70 libxml2 gnupg2 \
+  curl libatomic1 libicu74 libxml2 gnupg2 \
   libcurl4 libz-dev libbsd0 tzdata libgd3
 
 # Postgres client. Make sure to keep the repo in sync with whatever base image you're using.
 curl -sS https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add
-echo 'deb http://apt.postgresql.org/pub/repos/apt/ jammy-pgdg main' > /etc/apt/sources.list.d/pgdg.list
+echo 'deb http://apt.postgresql.org/pub/repos/apt/ noble-pgdg main' > /etc/apt/sources.list.d/pgdg.list
 apt-get -qq update
-apt-get install -y postgresql-client-14
+apt-get install -y postgresql-client-18
 
 # Wait tool. This will guarantee the database is available before allowing the container to proceed.
 # Hopefully this is not a bad idea.
-WAIT_VERSION=2.9.0
+WAIT_VERSION=2.12.1
 curl -sL -o /wait "https://github.com/ufoscout/docker-compose-wait/releases/download/${WAIT_VERSION}/wait"
 chmod +x /wait
 
