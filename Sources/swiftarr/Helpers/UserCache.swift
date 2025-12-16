@@ -20,7 +20,7 @@ import Vapor
 // to prevent a race where a new user immediately makes a call which processes before the cache is updated.
 // For all other updates, it's okay if eventual consistency is okay.
 
-public struct UserCacheData: Authenticatable, SessionAuthenticatable, Sendable{
+public struct UserCacheData: Authenticatable, SessionAuthenticatable, Sendable {
 	let userID: UUID
 	let username: String
 	let displayName: String?
@@ -66,7 +66,13 @@ public struct UserCacheData: Authenticatable, SessionAuthenticatable, Sendable{
 	}
 
 	func makeHeader() -> UserHeader {
-		return UserHeader(userID: userID, username: username, displayName: displayName, userImage: userImage, preferredPronoun: preferredPronoun)
+		return UserHeader(
+			userID: userID,
+			username: username,
+			displayName: displayName,
+			userImage: userImage,
+			preferredPronoun: preferredPronoun
+		)
 	}
 
 	func getUser(on db: Database) async throws -> User {
@@ -131,6 +137,29 @@ extension UserCacheData {
 			else {
 				return
 			}
+			if try await request.password.async.verify(basic.password, created: user.password) {
+				request.auth.login(cacheUser)
+			}
+		}
+	}
+
+	// UserCacheData.ServiceAccountBasicAuth authenticates only builtin service accounts (admin, prometheus, THO)
+	// using HTTP Basic Authentication with passwords only. This is intended for routes that should only be
+	// accessible to these service accounts, not regular users. Tokens are not accepted.
+	struct ServiceAccountBasicAuth: AsyncBasicAuthenticator {
+		func authenticate(basic: BasicAuthorization, for request: Request) async throws {
+			// Only allow service account usernames (case-insensitive check)
+			// Uses PrivilegedUser.serviceAccountsWithPasswords for centralized definition
+			guard PrivilegedUser.serviceAccountsWithPasswords.contains(basic.username.lowercased()) else {
+				return
+			}
+
+			guard let cacheUser = request.userCache.getUser(username: basic.username),
+				let user = try await User.query(on: request.db).filter(\.$id == cacheUser.userID).first()
+			else {
+				return
+			}
+
 			if try await request.password.async.verify(basic.password, created: user.password) {
 				request.auth.login(cacheUser)
 			}
@@ -250,7 +279,13 @@ extension Application {
 	func getUserHeader(_ username: String) -> UserHeader? {
 		let cacheLock = self.locks.lock(for: Application.UserCacheLockKey.self)
 		if let user = cacheLock.withLock({ Application.userCacheStorage.usersByName[username.lowercased()] }) {
-			return UserHeader(userID: user.userID, username: user.username, displayName: user.displayName, userImage: user.userImage, preferredPronoun: user.preferredPronoun)
+			return UserHeader(
+				userID: user.userID,
+				username: user.username,
+				displayName: user.displayName,
+				userImage: user.userImage,
+				preferredPronoun: user.preferredPronoun
+			)
 		}
 		return nil
 	}
@@ -403,7 +438,8 @@ extension Request {
 		}
 
 		public func updateUsers(_ uuids: [UUID]) async throws {
-			let cacheData = try await withThrowingTaskGroup(of: UserCacheData.self, returning: [UserCacheData].self) { group in
+			let cacheData = try await withThrowingTaskGroup(of: UserCacheData.self, returning: [UserCacheData].self) {
+				group in
 				for userID in uuids {
 					group.addTask { try await getUpdatedUserCacheData(userID) }
 				}

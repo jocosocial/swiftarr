@@ -23,6 +23,19 @@ extension RoutesBuilder {
 		])
 	}
 
+	/// For routes that require HTTP Basic Auth for builtin service accounts only (admin, prometheus, THO).
+	/// Only these service accounts can authenticate using passwords. Regular users cannot access these routes.
+	/// Tokens are not accepted. This is useful for administrative endpoints that should only be accessible
+	/// to service accounts.
+	func addServiceAccountBasicAuthRequirement() -> RoutesBuilder {
+		return self.grouped([
+			UserCacheData.ServiceAccountBasicAuth(),
+			UserCacheData.guardMiddleware(
+				throwing: Abort(.unauthorized, reason: "Service account authentication required.")
+			),
+		])
+	}
+
 	/// For routes that require a logged-in user. Applying this auth group to a route will make requests that don't have a valid token fail with a HTTP 401 error.
 	func addTokenAuthRequirement() -> RoutesBuilder {
 		return self.grouped([
@@ -34,7 +47,7 @@ extension RoutesBuilder {
 	func flexRoutes(feature: SwiftarrFeature? = nil, path: PathComponent...) -> RoutesBuilder {
 		var builder = self.addFlexAuth().grouped(path)
 			.grouped([
-				MinUserAccessLevelMiddleware(requireAuth: false),
+				MinUserAccessLevelMiddleware(requireAuth: false)
 			])
 		if let feature = feature {
 			builder = builder.grouped(DisabledAPISectionMiddleware(feature: feature))
@@ -91,8 +104,8 @@ extension APIRouteCollection {
 	var streamPhotoIDParam: PathComponent { PathComponent(":stream_photoID") }
 	var performerIDParam: PathComponent { PathComponent(":performer_id") }
 	var personalEventIDParam: PathComponent { PathComponent(":personal_event_id") }
-	var huntIDParam: PathComponent { PathComponent(":hunt_id" )}
-	var puzzleIDParam: PathComponent { PathComponent(":puzzle_id" )}
+	var huntIDParam: PathComponent { PathComponent(":hunt_id") }
+	var puzzleIDParam: PathComponent { PathComponent(":puzzle_id") }
 	var eventUIDParam: PathComponent { PathComponent(":event_uid") }
 	var feedbackIDParam: PathComponent { PathComponent(":feedback_id") }
 
@@ -164,7 +177,9 @@ extension APIRouteCollection {
 	// did something. In that situation, the creatorID can be used to avoid notifying one person.
 	//
 	// Adding a new notification will also send out an update to all relevant users who are listening on notification sockets.
-	func addNotifications(users: [UUID], type: NotificationType, info: String, creatorID: UUID? = nil, on req: Request) async throws {
+	func addNotifications(users: [UUID], type: NotificationType, info: String, creatorID: UUID? = nil, on req: Request)
+		async throws
+	{
 		try await withThrowingTaskGroup(of: Void.self) { group -> Void in
 			var forwardToSockets = true
 			// Members of `users` get push notifications
@@ -185,7 +200,14 @@ extension APIRouteCollection {
 				)
 
 			case .chatUnreadMsg(let msgID, let chatType):
-				stateChangeUsers = bookkeepNewChatMessage(req: req, msgID: msgID, chatType: chatType, users: users, group: &group, creatorID: creatorID)
+				stateChangeUsers = bookkeepNewChatMessage(
+					req: req,
+					msgID: msgID,
+					chatType: chatType,
+					users: users,
+					group: &group,
+					creatorID: creatorID
+				)
 
 			case .nextFollowedEventTime(let date, let id):
 				for userID in users {
@@ -210,11 +232,14 @@ extension APIRouteCollection {
 			case .alertwordPost(let alertword, let postID):
 				for userID in users {
 					group.addTask {
-						// Treat alertword notifications for the creator as read by incrementing both the 
+						// Treat alertword notifications for the creator as read by incrementing both the
 						// "total" and "new" counts in Redis. See `getNewAlertWordCounts` in AlertController.swift
 						// for what we do with those numbers.
 						if userID == creatorID {
-							try await req.redis.incrementAlertwordPostViewedInUserHash(for: .alertwordPost(alertword, postID), userID: userID)
+							try await req.redis.incrementAlertwordPostViewedInUserHash(
+								for: .alertwordPost(alertword, postID),
+								userID: userID
+							)
 						}
 						try await req.redis.incrementAlertwordPostInUserHash(word: alertword, userID: userID)
 					}
@@ -243,8 +268,8 @@ extension APIRouteCollection {
 				// updates to occur above so in effect the filtering has to happen twice.
 				var socketUsers = users
 				switch type {
-					case .alertwordPost: socketUsers = users.filter { $0 != creatorID }
-					default: break
+				case .alertwordPost: socketUsers = users.filter { $0 != creatorID }
+				default: break
 				}
 				await req.application.notificationSockets.forwardToSockets(
 					app: req.application,
@@ -298,8 +323,14 @@ extension APIRouteCollection {
 		return updateCountsUsers
 	}
 
-	func bookkeepNewChatMessage(req: Request, msgID: UUID, chatType: FezType, users: [UUID],
-			group: inout ThrowingTaskGroup<Void, Error>, creatorID: UUID? = nil) -> [UUID] {
+	func bookkeepNewChatMessage(
+		req: Request,
+		msgID: UUID,
+		chatType: FezType,
+		users: [UUID],
+		group: inout ThrowingTaskGroup<Void, Error>,
+		creatorID: UUID? = nil
+	) -> [UUID] {
 		var updateCountsUsers = users
 		// For seamail msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
 		// update counts list. This is so all team members have individual read counts.
@@ -307,7 +338,8 @@ extension APIRouteCollection {
 		// To avoid generating notifications for the user who created the new chat message,
 		// pass their ID in via the creatorID to omit them from generating the messages.
 		if let mod = req.userCache.getUser(username: "moderator"), users.contains(mod.userID) {
-			let modList = req.userCache.allUsersWithAccessLevel(.moderator).filter({ $0.userID != creatorID }).map { $0.userID }
+			let modList = req.userCache.allUsersWithAccessLevel(.moderator).filter({ $0.userID != creatorID })
+				.map { $0.userID }
 			updateCountsUsers.append(contentsOf: modList)
 			for modUserID in modList {
 				group.addTask {
@@ -316,7 +348,8 @@ extension APIRouteCollection {
 			}
 		}
 		if let ttUser = req.userCache.getUser(username: "TwitarrTeam"), users.contains(ttUser.userID) {
-			let ttList = req.userCache.allUsersWithAccessLevel(.twitarrteam).filter({ $0.userID != creatorID }).map { $0.userID }
+			let ttList = req.userCache.allUsersWithAccessLevel(.twitarrteam).filter({ $0.userID != creatorID })
+				.map { $0.userID }
 			updateCountsUsers.append(contentsOf: ttList)
 			for ttUserID in ttList {
 				group.addTask {
