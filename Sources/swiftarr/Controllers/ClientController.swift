@@ -27,10 +27,13 @@ struct ClientController: APIRouteCollection {
 		tokenAuthGroup.get("user", "updates", "since", ":date", use: userUpdatesHandler)
 		tokenAuthGroup.get("usersearch", use: userSearchHandler)
 
-		// Endpoints available with HTTP Basic auth. I'd prefer token auth for this, but setting that up looks difficult.
-		let basicAuthGroup = clientRoutes.addBasicAuthRequirement()
-		basicAuthGroup.get("metrics", use: prometheusMetricsSource)
-		basicAuthGroup.post("alert", use: prometheusAlertHandler)
+		// Endpoints available with HTTP Basic auth.
+		// This does not use .addBasicAuthRequirement() because it should exempt from the minimum access level requirement
+		// and only available to service accounts.
+		// https://github.com/jocosocial/swiftarr/issues/373
+		let saBasicAuthGroup = clientRoutes.addServiceAccountBasicAuthRequirement()
+		saBasicAuthGroup.get("metrics", use: prometheusMetricsSource)
+		saBasicAuthGroup.post("alert", use: prometheusAlertHandler)
 	}
 
 	// MARK: - tokenAuthGroup Handlers (logged in)
