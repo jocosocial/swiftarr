@@ -1,9 +1,9 @@
 import Fluent
 import FluentSQL
 import Metrics
+import Prometheus
 import Redis
 import Vapor
-import Prometheus
 
 /// The collection of `/api/v3/client/*` route endpoints and handler functions that provide
 /// bulk retrieval services for registered API clients.
@@ -130,13 +130,20 @@ struct ClientController: APIRouteCollection {
 	/// - Throws: 403 error if user is not a registered client.
 	/// - Returns: Data about what requests are being called, how long they take to complete, how the databases are doing, what the server's CPU utilization is,
 	/// plus a bunch of other metrics data. All the data is in some opaquish Prometheus format.
-	func prometheusMetricsSource(_ req: Request) async throws -> [UInt8] {
-		guard  let prom = MetricsSystem.factory as? PrometheusMetricsFactory else {
-			throw Abort(.internalServerError, reason: "Couldn't get Prometheus instance from MetricsSystem--Prometheus may not be configured.")
+	func prometheusMetricsSource(_ req: Request) async throws -> Response {
+		guard let prom = MetricsSystem.factory as? PrometheusMetricsFactory else {
+			throw Abort(
+				.internalServerError,
+				reason: "Couldn't get Prometheus instance from MetricsSystem--Prometheus may not be configured."
+			)
 		}
 		var buffer = [UInt8]()
 		prom.registry.emit(into: &buffer)
-		return buffer
+		let data = Data(buffer)
+		var headers = HTTPHeaders()
+		headers.contentType = .plainText
+		let body = Response.Body(data: data)
+		return Response(status: .ok, headers: headers, body: body)
 	}
 
 	/// `POST /api/v3/client/alert`
