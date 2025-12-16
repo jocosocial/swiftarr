@@ -42,22 +42,22 @@ services:
       - redis_test_data:/bitnami/redis/data
 
   prometheus:
-    image: docker.io/bitnami/prometheus:latest
+    image: quay.io/prometheus/prometheus:latest
     ports:
       - 9090:9090
     volumes:
-      - ./Prometheus/prometheus.yml:/opt/bitnami/prometheus/conf/prometheus.yml:ro
-      - ./Prometheus/alerts.yml:/opt/bitnami/prometheus/conf/alerts.yml:ro
+      - ./Prometheus/prometheus.yml:/etc/prometheus/conf/prometheus.yml:ro
+      - ./Prometheus/alerts.yml:/etc/prometheus/conf/alerts.yml:ro
     command:
       - "--web.enable-admin-api"
-      - "--config.file=/opt/bitnami/prometheus/conf/prometheus.yml"
+      - "--config.file=/etc/prometheus/conf/prometheus.yml"
 
   alertmanager:
-    image: docker.io/bitnami/alertmanager:latest
+    image: quay.io/prometheus/alertmanager:latest
     ports:
       - 9093:9093
     volumes:
-      - ./Prometheus/alertmanager.yml:/opt/bitnami/alertmanager/conf/config.yml:ro
+      - ./Prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
 
 volumes:
   postgres_data:
