@@ -35,6 +35,12 @@ enum ModeratorActionType: String, Codable {
 	case accessLevelQuarantined
 	/// The mod set the `userAccessLevel` of a user to `.verified`
 	case accessLevelVerified
+	/// The mod promoted a user to `.moderator`
+	case accessLevelModerator
+	/// The mod promoted a user to `.twitarrteam`
+	case accessLevelTwitarrTeam
+	/// The mod promoted a user to `.tho`
+	case accessLevelTHO
 	/// The mod set a temporary quarantine on the user.
 	case tempQuarantine
 	/// The mod cleared a temporary quarantine on the user.
