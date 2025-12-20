@@ -21,6 +21,9 @@
 							<button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="\#leaveFezModal">Leave</button>
 						#endif
 					#endif
+					#if(canEditTitle):
+						<a class="btn btn-outline-primary" href="/seamail/#(fez.fezID)/edit">Edit</a>
+					#endif
 					<input type="checkbox" class="btn-check" autocomplete="off" data-action="muteSeamail" 
 								data-actionpath="/seamail/#(fez.fezID)/mute"
 								data-istoggle="true"
