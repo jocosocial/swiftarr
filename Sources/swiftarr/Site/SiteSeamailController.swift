@@ -419,7 +419,7 @@ struct SiteSeamailController: SiteControllerUtils {
 	// Returns a view with a form for editing a seamail conversation.
 	func seamailEditViewHandler(_ req: Request) async throws -> View {
 		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw "Invalid seamail ID"
+			throw Abort(.badRequest, reason: "Invalid seamail ID")
 		}
 		let response = try await apiQuery(req, endpoint: "/fez/\(fezID)")
 		let fez = try response.content.decode(FezData.self)

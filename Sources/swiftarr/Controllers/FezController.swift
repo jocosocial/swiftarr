@@ -1281,23 +1281,23 @@ extension FezController {
 	/// - Throws: Abort(.forbidden) if any field other than title is being modified
 	func guardEditSeamail(fez: FriendlyFez, data: FezContentData) throws {
 		if data.info != fez.info {
-			throw Abort(.forbidden, reason: "Cannot change this field of a seamail chat.")
+			throw Abort(.badRequest, reason: "Cannot change this field of a seamail chat.")
 		}
 		if data.location != fez.location {
-			throw Abort(.forbidden, reason: "Cannot change this field of a seamail chat.")
+			throw Abort(.badRequest, reason: "Cannot change this field of a seamail chat.")
 		}
 		// Seamail types should not have start/end times
 		if data.startTime != nil {
-			throw Abort(.forbidden, reason: "Cannot change this field of a seamail chat.")
+			throw Abort(.badRequest, reason: "Cannot change this field of a seamail chat.")
 		}
 		if data.endTime != nil {
-			throw Abort(.forbidden, reason: "Cannot change this field of a seamail chat.")
+			throw Abort(.badRequest, reason: "Cannot change this field of a seamail chat.")
 		}
 		if data.minCapacity != fez.minCapacity {
-			throw Abort(.forbidden, reason: "Cannot change this field of a seamail chat.")
+			throw Abort(.badRequest, reason: "Cannot change this field of a seamail chat.")
 		}
 		if data.maxCapacity != fez.maxCapacity {
-			throw Abort(.forbidden, reason: "Cannot change this field of a seamail chat.")
+			throw Abort(.badRequest, reason: "Cannot change this field of a seamail chat.")
 		}
 	}
 
