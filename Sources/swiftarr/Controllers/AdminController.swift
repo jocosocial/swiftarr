@@ -437,6 +437,7 @@ struct AdminController: APIRouteCollection {
 	/// - Throws: badRequest if the target user isn't verified, or if they're temp quarantined.
 	/// - Returns: 200 OK if the user was made a mod.
 	func makeModeratorHandler(_ req: Request) async throws -> HTTPStatus {
+		let moderator = try req.auth.require(UserCacheData.self)
 		let targetUser = try await User.findFromParameter(userIDParam, on: req)
 		try guardNotSpecialAccount(targetUser)
 		if targetUser.accessLevel == .moderator {
@@ -456,7 +457,7 @@ struct AdminController: APIRouteCollection {
 		targetUser.accessLevel = .moderator
 		try await targetUser.save(on: req.db)
 		try await req.userCache.updateUser(targetUser.requireID())
-		// TODO: Might want to make the creation of a mod a ModeratorAction so it'll get tracked?
+		await targetUser.logIfModeratorAction(.accessLevelModerator, user: moderator, on: req)
 		return .ok
 	}
 
@@ -468,6 +469,7 @@ struct AdminController: APIRouteCollection {
 	/// - Throws: badRequest if the target user isn't a mod.
 	/// - Returns: 200 OK if the user was demoted successfully.
 	func demoteToVerifiedHandler(_ req: Request) async throws -> HTTPStatus {
+		let moderator = try req.auth.require(UserCacheData.self)
 		let targetUser = try await User.findFromParameter(userIDParam, on: req)
 		guard targetUser.accessLevel >= .moderator else {
 			throw Abort(
@@ -479,6 +481,7 @@ struct AdminController: APIRouteCollection {
 		targetUser.accessLevel = .verified
 		try await targetUser.save(on: req.db)
 		try await req.userCache.updateUser(targetUser.requireID())
+		await targetUser.logIfModeratorAction(.accessLevelVerified, user: moderator, on: req)
 		return .ok
 	}
 
@@ -500,6 +503,7 @@ struct AdminController: APIRouteCollection {
 	/// - Throws: badRequest if the target user isn't verified, or if they're temp quarantined.
 	/// - Returns: 200 OK if the user was made a mod.
 	func makeTwitarrTeamHandler(_ req: Request) async throws -> HTTPStatus {
+		let moderator = try req.auth.require(UserCacheData.self)
 		let targetUser = try await User.findFromParameter(userIDParam, on: req)
 		try guardNotSpecialAccount(targetUser)
 		if targetUser.accessLevel == .twitarrteam {
@@ -519,6 +523,7 @@ struct AdminController: APIRouteCollection {
 		targetUser.accessLevel = .twitarrteam
 		try await targetUser.save(on: req.db)
 		try await req.userCache.updateUser(targetUser.requireID())
+		await targetUser.logIfModeratorAction(.accessLevelTwitarrTeam, user: moderator, on: req)
 		return .ok
 	}
 
@@ -543,6 +548,7 @@ struct AdminController: APIRouteCollection {
 	/// - Throws: badRequest if the target user isn't verified, or if they're temp quarantined.
 	/// - Returns: 200 OK if the user was made a mod.
 	func makeTHOHandler(_ req: Request) async throws -> HTTPStatus {
+		let moderator = try req.auth.require(UserCacheData.self)
 		let targetUser = try await User.findFromParameter(userIDParam, on: req)
 		try guardNotSpecialAccount(targetUser)
 		if targetUser.accessLevel == .tho {
@@ -562,6 +568,7 @@ struct AdminController: APIRouteCollection {
 		targetUser.accessLevel = .tho
 		try await targetUser.save(on: req.db)
 		try await req.userCache.updateUser(targetUser.requireID())
+		await targetUser.logIfModeratorAction(.accessLevelTHO, user: moderator, on: req)
 		return .ok
 	}
 
