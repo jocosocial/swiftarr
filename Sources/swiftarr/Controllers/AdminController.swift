@@ -793,6 +793,9 @@ struct AdminController: APIRouteCollection {
 				.with(\.$favoriteEvents.$pivots) { favoriteEvent in
 					favoriteEvent.with(\.$event)
 				}
+				.with(\.$favorites) { favorite in
+					favorite.with(\.$favorite)
+				}
 				.with(\.$roles)
 				.with(\.$performer) { performer in
 					performer.with(\.$events)
@@ -923,6 +926,9 @@ struct AdminController: APIRouteCollection {
 		}
 		for newUser in importData.users where newUser.parentUsername != nil {
 			await importUser(req, userToImport: newUser, verifyOnly: verifyOnly, verification: &verification)
+		}
+		for userToImport in importData.users {
+			await importUserFavorites(req, userToImport: userToImport, verifyOnly: verifyOnly, verification: &verification)
 		}
 		for performer in importData.performers {
 			await importPerformer(req, performerData: performer, verifyOnly: verifyOnly, verification: &verification)
@@ -1084,6 +1090,51 @@ struct AdminController: APIRouteCollection {
 			catch {
 				verification.otherErrors.append(error.localizedDescription)
 			}
+		}
+	}
+	
+	// Imports favorite user relationships for a user. This must be called after all users have been imported
+	// so that the target favorite users exist in the database.
+	// If `verifyOnly` is set, no db changes occur, but `verification` gets filled in with any import errors.
+	func importUserFavorites(_ req: Request, userToImport: UserSaveRestoreData, verifyOnly: Bool, verification: inout BulkUserUpdateVerificationData) async {
+		do {
+			// Find the user by username
+			guard let user = try await User.query(on: req.db).filter(\.$username == userToImport.username).first() else {
+				// User wasn't imported, skip favorite processing
+				return
+			}
+			let userID = try user.requireID()
+			
+			// Import the user's favorited users
+			if !userToImport.favoriteUsers.isEmpty {
+				let matchedUsers = try await User.query(on: req.db).filter(\.$username ~~ userToImport.favoriteUsers).all()
+				if verifyOnly {
+					// Just verify - check if all favorite users exist
+					let favoriteUsernames = Set(userToImport.favoriteUsers)
+					let matchedUsernames = Set(matchedUsers.map { $0.username })
+					let missingUsers = favoriteUsernames.subtracting(matchedUsernames)
+					if !missingUsers.isEmpty {
+						verification.otherErrors.append("User \(userToImport.username) has favorite users that don't exist: \(missingUsers.joined(separator: ", "))")
+					}
+				}
+				else {
+					// Actually import the relationships
+					for favoriteUser in matchedUsers {
+						let favoriteUserID = try favoriteUser.requireID()
+						// Check if the relationship already exists to avoid duplicates
+						let existingFavorite = try await UserFavorite.query(on: req.db)
+							.filter(\UserFavorite.$user.$id == userID)
+							.filter(\UserFavorite.$favorite.$id == favoriteUserID)
+							.first()
+						if existingFavorite == nil {
+							try await UserFavorite(userID: userID, favoriteUserID: favoriteUserID).save(on: req.db)
+						}
+					}
+				}
+			}
+		}
+		catch {
+			verification.otherErrors.append("Error importing favorite users for \(userToImport.username): \(error.localizedDescription)")
 		}
 	}
 	

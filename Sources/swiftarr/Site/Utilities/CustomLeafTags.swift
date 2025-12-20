@@ -566,6 +566,7 @@ struct AvatarTag: UnsafeUnescapedLeafTag {
 /// Or: #userByline(userHeader, "css-class") to style the link
 /// Or: #userByline(userHeader, "short") to display a shorter link (only the username, no displayname).
 /// Or: #userByline(userHeader, "nolink") to display the username and displayname, without a link
+/// Or: #userByline(userHeader, "short-nolink") to display only the username without a link
 /// Or: #userByline(userHeader, "pronoun") to display the username and displayname with pronouns.
 struct UserBylineTag: UnsafeUnescapedLeafTag {
 	func render(_ ctx: LeafContext) throws -> LeafData {
@@ -593,6 +594,11 @@ struct UserBylineTag: UnsafeUnescapedLeafTag {
 			styling.append(" text-danger")
 		}
 		if nolinkStyle {
+			if shortStyle {
+				// short-nolink: only username, no link
+				return LeafData.string("<span class=\"\(styling)\">@\(username)</span>")
+			}
+			// nolink: display name and username, no link
 			if let displayName = userHeader["displayName"]?.string?.htmlEscaped() {
 				return LeafData.string("<span class=\"\(styling)\"><b>\(displayName)</b> @\(username)</span>")
 			}
