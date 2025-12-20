@@ -189,6 +189,7 @@ struct MessagePostContext: Encodable {
 		case forumPostEdit(PostDetailData)
 		case seamail
 		case seamailPost(FezData)
+		case seamailEdit(FezData)
 		case fezPost(FezData)
 		case announcement
 		case announcementEdit(AnnouncementData)
@@ -258,6 +259,14 @@ struct MessagePostContext: Encodable {
 			formAction = "/seamail/\(forSeamail.fezID)/post"
 			postSuccessURL = "/seamail/\(forSeamail.fezID)#afterposts"
 			photoFilenames = []
+		// For editing a seamail title
+		case .seamailEdit(let seamail):
+			forumTitle = seamail.title
+			formAction = "/seamail/\(seamail.fezID)/edit"
+			postSuccessURL = "/seamail/\(seamail.fezID)"
+			showForumTitle = true
+			onlyShowForumTitle = true
+			isEdit = true
 		// For posting in an existing Fez thread
 		case .fezPost(let forFez):
 			formAction = "/lfg/\(forFez.fezID)/post"

@@ -1116,13 +1116,19 @@ extension FezController {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// get fez
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
-		try cacheUser.guardCanModifyContent(fez, customErrorString: "User cannot modify LFG")
+		try cacheUser.guardCanModifyContent(fez, customErrorString: "User cannot modify chat")
 		guard data.fezType == fez.fezType || (fez.fezType.isLFGType && data.fezType.isLFGType) else {
 			throw Abort(.forbidden, reason: "Cannot change the type of a \(fez.fezType.lfgLabel) to \(data.fezType.label)")
 		}
 		if data.fezType == .personalEvent && !data.initialUsers.isEmpty {
 			throw Abort(.forbidden, reason: "Personal Events cannot have other users.")
 		}
+		
+		// For seamail types (closed/open), only allow editing the title
+		if fez.fezType.isSeamailType {
+			try guardEditSeamail(fez: fez, data: data)
+		}
+		
 		if data.title != fez.title || data.location != fez.location || data.info != fez.info {
 			let fezEdit = try FriendlyFezEdit(fez: fez, editorID: cacheUser.userID)
 			try await fez.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: req)
@@ -1266,6 +1272,33 @@ extension FezController {
 
 	func userCanViewMemberData(user: UserCacheData, fez: FriendlyFez) -> Bool {
 		return user.accessLevel.hasAccess(.moderator) || fez.participantArray.contains(user.userID)
+	}
+
+	/// Validates that only the title field is being edited for seamail types.
+	/// 
+	/// For seamail types (closed/open), only the title can be edited. All other fields must remain unchanged.
+	///
+	/// - Throws: Abort(.forbidden) if any field other than title is being modified
+	func guardEditSeamail(fez: FriendlyFez, data: FezContentData) throws {
+		if data.info != fez.info {
+			throw Abort(.forbidden, reason: "Cannot change this field of a seamail chat.")
+		}
+		if data.location != fez.location {
+			throw Abort(.forbidden, reason: "Cannot change this field of a seamail chat.")
+		}
+		// Seamail types should not have start/end times
+		if data.startTime != nil {
+			throw Abort(.forbidden, reason: "Cannot change this field of a seamail chat.")
+		}
+		if data.endTime != nil {
+			throw Abort(.forbidden, reason: "Cannot change this field of a seamail chat.")
+		}
+		if data.minCapacity != fez.minCapacity {
+			throw Abort(.forbidden, reason: "Cannot change this field of a seamail chat.")
+		}
+		if data.maxCapacity != fez.maxCapacity {
+			throw Abort(.forbidden, reason: "Cannot change this field of a seamail chat.")
+		}
 	}
 
 	// For both Moderator and TwittarTeam access levels, there's a special user account with the same name.
