@@ -549,13 +549,15 @@ struct UserSaveRestoreData: Content, Sendable {
 	let favoriteEvents: [String]
 	/// Event UIDs the user has signed up to photograph
 	let photographerEvents: [String]
+	/// Usernames of users this user has favorited
+	let favoriteUsers: [String]
 	/// For shadow event organizers, their associated Performer data (which contains the event UIDs for the events 'they're running).
 	let performer: PerformerUploadData?
 	// karaoke, game favorites?
 }
 
 extension UserSaveRestoreData {
-	/// For this to work: Must use `.with(\.$roles).with(\.$favoriteEvents).with(\.$performer).with(\.$performer.events)` in query
+	/// For this to work: Must use `.with(\.$roles).with(\.$favoriteEvents).with(\.$favorites).with(\.$performer).with(\.$performer.events)` in query
 	init?(user: User) {
 		guard var regCode = user.verification else {
 			return nil
@@ -586,6 +588,7 @@ extension UserSaveRestoreData {
 		discordUsername = user.discordUsername
 		favoriteEvents = user.$favoriteEvents.pivots.compactMap { $0.favorite ? $0.event.uid : nil }
 		photographerEvents = user.$favoriteEvents.pivots.compactMap { $0.photographer ? $0.event.uid : nil }
+		favoriteUsers = user.favorites.compactMap { $0.favorite.username }
 		if let perf = user.performer {
 			performer = try? PerformerUploadData(perf)
 		}
