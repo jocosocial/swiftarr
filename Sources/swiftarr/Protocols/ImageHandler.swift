@@ -90,14 +90,18 @@ extension APIRouteCollection {
 	}
 	
 	/// Creates a thumbnail from an image with proper orientation handling and exports it.
+	/// Silently skips thumbnail creation if resize fails (returns nil), matching the original behavior.
 	/// - Parameters:
 	///   - image: The source image to create a thumbnail from
 	///   - orientation: The original orientation value to preserve
 	///   - outputType: The format to export the thumbnail as
 	///   - thumbPath: The file path where the thumbnail should be saved
-	static func createThumbnail(from image: GDImage, preserving orientation: Int32, as outputType: ImportableFormat, to thumbPath: URL) throws {
+	///   - req: The incoming `Request`, used for logging
+	/// - Throws: Errors from export or file write operations
+	static func createThumbnail(from image: GDImage, preserving orientation: Int32, as outputType: ImportableFormat, to thumbPath: URL, on req: Request) throws {
 		guard let thumbnail = image.resizedTo(height: Settings.shared.imageThumbnailSize) else {
-			throw Abort(.internalServerError, reason: "Error generating thumbnail image")
+			req.logger.error("Failed to generate thumbnail: image.resizedTo returned nil for path \(thumbPath.path)")
+			return
 		}
 		// Put the orientation value into the polyAllocated field, so that our code in the customized gd_jpeg.c file
 		// can store the original image orientation back in the jpeg as exif data.
@@ -230,7 +234,7 @@ extension APIRouteCollection {
 			try imageData.write(to: fullPath)
 			
 			// save thumbnail
-			try Self.createThumbnail(from: image, preserving: origOrientation, as: outputType, to: thumbPath)
+			try Self.createThumbnail(from: image, preserving: origOrientation, as: outputType, to: thumbPath, on: req)
 			return fullPath.lastPathComponent
 		}.get()
 	}
@@ -252,7 +256,7 @@ extension APIRouteCollection {
 			}
 			let thumbPath = destinationDir.appendingPathComponent(imageName)
 
-			try Self.createThumbnail(from: image, preserving: origOrientation, as: imageType, to: thumbPath)
+			try Self.createThumbnail(from: image, preserving: origOrientation, as: imageType, to: thumbPath, on: req)
 		}.get()
 	}
 
