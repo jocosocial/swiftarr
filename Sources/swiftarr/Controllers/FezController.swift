@@ -1274,7 +1274,7 @@ extension FezController {
 		return user.accessLevel.hasAccess(.moderator) || fez.participantArray.contains(user.userID)
 	}
 
-	/// Validates that only the title field is being edited for seamail types.
+	/// Validates edits against a seamail.
 	/// 
 	/// For seamail types (closed/open), only the title can be edited. All other fields must remain unchanged.
 	///

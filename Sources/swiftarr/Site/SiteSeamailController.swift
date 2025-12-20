@@ -446,11 +446,11 @@ struct SiteSeamailController: SiteControllerUtils {
 	// Handles the POST that edits a seamail conversation.
 	func seamailEditHandler(_ req: Request) async throws -> HTTPStatus {
 		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw "While editing seamail: Invalid seamail ID"
+			throw Abort(.badRequest, reason: "Invalid seamail ID")
 		}
 		let formStruct = try req.content.decode(MessagePostFormContent.self)
 		guard let newTitle = formStruct.forumTitle else {
-			throw "While editing seamail, no new title specified."
+			throw Abort(.badRequest, reason: "No new title specified.")
 		}
 		
 		// Get current fez data to preserve other fields
