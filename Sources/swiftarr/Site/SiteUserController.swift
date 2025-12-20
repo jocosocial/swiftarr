@@ -103,9 +103,9 @@ struct SiteUserController: SiteControllerUtils {
 		privateRoutes.post("user", userIDParam, "unblock", use: unblockUserPostHandler)
 		privateRoutes.post("user", userIDParam, "mute", use: muteUserPostHandler)
 		privateRoutes.post("user", userIDParam, "unmute", use: unmuteUserPostHandler)
-		privateRoutes.post("user", userIDParam, "favorite", use: favoriteUserHandler)
-		privateRoutes.delete("user", userIDParam, "favorite", use: unfavoriteUserHandler)
-		privateRoutes.post("user", userIDParam, "unfavorite", use: unfavoriteUserHandler)
+		privateRoutes.post("user", userIDParam, "favorite", use: favoriteUserHandler).setUsedForPreregistration()
+		privateRoutes.delete("user", userIDParam, "favorite", use: unfavoriteUserHandler).setUsedForPreregistration()
+		privateRoutes.post("user", userIDParam, "unfavorite", use: unfavoriteUserHandler).setUsedForPreregistration()
 
 		privateRoutes.get("blocks", use: blocksPageHandler)
 		privateRoutes.get("alertwords", use: alertMuteWordsPageHandler)
@@ -114,7 +114,7 @@ struct SiteUserController: SiteControllerUtils {
 		privateRoutes.post("alertword", alertWordParam, "remove", use: removeAlertwordPostHandler)
 		privateRoutes.post("muteword", "add", use: addMutewordPostHandler)
 		privateRoutes.post("muteword", muteWordParam, "remove", use: removeMutewordPostHandler)
-		privateRoutes.get("favorites", use: favoritesPageHandler)
+		privateRoutes.get("favorites", use: favoritesPageHandler).setUsedForPreregistration()
 
 		// User Role Management, which for now means Shutternaut management
 		// These paths may well change to take the role as a parameter and become generic Role mgmt methods.
