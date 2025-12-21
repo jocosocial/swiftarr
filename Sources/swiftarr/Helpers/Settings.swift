@@ -103,16 +103,6 @@ final class Settings: Encodable, @unchecked Sendable {
 	/// Maximum number of images allowed per forum post.
 	@StoredSettingsValue("maxForumPostImages", defaultValue: 4) var maxForumPostImages: Int
 
-	/// Default maximum HTTP request body size in bytes. Used for routes that don't specify a custom limit.
-	/// Configured in configure.swift when the app http server starts.
-	/// Default: 10MB
-	@SettingsValue var defaultMaxBodySize: Int = 10 * 1024 * 1024
-
-	/// Maximum HTTP request body size in bytes for routes that upload images.
-	/// Configured in various route handlers that upload images.
-	/// Default: 60MB, used to be 30MB before we allowed Shutternauts to upload more.
-	@SettingsValue var imageMaxBodySize: Int = 60 * 1024 * 1024
-
 	/// How long a single user must wait between photostream uploads, in seconds.
 	@StoredSettingsValue("photostreamUploadRateLimit", defaultValue: 300) var photostreamUploadRateLimit: TimeInterval
 
@@ -219,6 +209,25 @@ final class Settings: Encodable, @unchecked Sendable {
 	/// feels more gross the more I say it.
 	@StoredSettingsValue("enableSiteNotificationDataCaching", defaultValue: true) var enableSiteNotificationDataCaching: Bool
 
+
+	// MARK: HTTP Server Settings
+
+	/// These are SettingsValues not StoredSettingsValues because they are accessed
+	/// before Redis settings are loaded. Some day it may be nice to make these at least
+	/// environmental so that they don't require a code change to adjust. Problem for
+	/// a future day. I already don't love the large (60MB) payload size given ship
+	/// WiFi constraints.
+	/// These were moved here during https://github.com/jocosocial/swiftarr/issues/419
+
+	/// Default maximum HTTP request body size in bytes. Used for routes that don't specify a custom limit.
+	/// Configured in configure.swift when the app http server starts.
+	/// Default: 10MB
+	@SettingsValue var defaultMaxBodySize: Int = 10 * 1024 * 1024
+
+	/// Maximum HTTP request body size in bytes for routes that upload images.
+	/// Configured in various route handlers that upload images.
+	/// Default: 60MB, used to be 30MB before we allowed Shutternauts to upload more.
+	@SettingsValue var imageMaxBodySize: Int = 60 * 1024 * 1024
 }
 
 /// Derivative directory paths. These are computed property getters that return a path based on a root path.
