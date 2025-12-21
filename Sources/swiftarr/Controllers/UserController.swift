@@ -377,10 +377,6 @@ struct UserController: APIRouteCollection {
 		}
 		try user.guardCanEditProfile(ofUser: targetUser)
 		try guardNotSpecialAccount(targetUser)
-		// clients are hard-coded
-		guard targetUser.accessLevel != .client else {
-			throw Abort(.forbidden, reason: "username change would break a client")
-		}
 		// see `UserUsernameData.validations()`
 		let data = try ValidatingJSONDecoder().decode(UserUsernameData.self, fromBodyOf: req)
 		// check for existing username (case-insensitive)
