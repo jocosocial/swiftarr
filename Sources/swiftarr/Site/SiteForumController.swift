@@ -36,7 +36,8 @@ struct ForumPageContext: Encodable {
 	init(_ req: Request, forum: ForumData, cat: [CategoryData], pinnedPosts: [PostData] = []) throws {
 		trunk = .init(req, title: "\(forum.title) | Forum Thread", tab: .forums)
 		self.forum = forum
-		self.post = .init(forType: .forumPost(forum.forumID.uuidString))
+		let userRoles = req.auth.get(UserCacheData.self)?.userRoles
+		self.post = .init(forType: .forumPost(forum.forumID.uuidString), userRoles: userRoles)
 		if cat.count > 0 {
 			category = cat[0]
 		}
@@ -423,7 +424,8 @@ struct SiteForumController: SiteControllerUtils {
 			init(_ req: Request, catID: String, cat: [CategoryData]) throws {
 				trunk = .init(req, title: "Create New Forum", tab: .forums)
 				self.categoryID = catID
-				self.post = .init(forType: .forum(catID))
+				let userRoles = req.auth.get(UserCacheData.self)?.userRoles
+				self.post = .init(forType: .forum(catID), userRoles: userRoles)
 				if cat.count > 0 {
 					category = cat[0]
 				}
@@ -720,7 +722,8 @@ struct SiteForumController: SiteControllerUtils {
 
 			init(_ req: Request, post: PostDetailData) throws {
 				trunk = .init(req, title: "Edit Forum Post", tab: .forums)
-				self.post = .init(forType: .forumPostEdit(post))
+				let userRoles = req.auth.get(UserCacheData.self)?.userRoles
+				self.post = .init(forType: .forumPostEdit(post), userRoles: userRoles)
 			}
 		}
 		var ctx = try ForumPostEditPageContext(req, post: post)

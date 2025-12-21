@@ -1070,6 +1070,7 @@ struct ForumController: APIRouteCollection {
 		// see `ForumCreateData.validations()`
 		try cacheUser.guardCanCreateContent()
 		let data = try ValidatingJSONDecoder().decode(ForumCreateData.self, fromBodyOf: req)
+		try guardForumPostImages(data.firstPost.images, for: cacheUser)
 		// check authorization to create
 		let category = try await Category.findFromParameter(categoryIDParam, on: req)
 		guard cacheUser.accessLevel.hasAccess(category.accessLevelToCreate) else {
@@ -1203,6 +1204,7 @@ struct ForumController: APIRouteCollection {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// see `PostContentData.validations()`
 		let newPostData = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
+		try guardForumPostImages(newPostData.images, for: cacheUser)
 		// get forum
 		let forum = try await Forum.findFromParameter(forumIDParam, on: req) { query in
 			query.with(\.$category)
@@ -1386,6 +1388,7 @@ struct ForumController: APIRouteCollection {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// see `PostContentData.validations()`
 		let newPostData = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
+		try guardForumPostImages(newPostData.images, for: cacheUser)
 		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
 			query.with(\.$forum) { forum in
 				forum.with(\.$category)
@@ -1500,6 +1503,15 @@ struct ForumController: APIRouteCollection {
 
 // Utilities for route methods
 extension ForumController {
+
+	/// Ensures the given user's images array doesn't exceed the allowed limit for forum posts.
+	/// Shutternauts are allowed up to 8 images, other users are limited by the `maxForumPostImages` setting.
+	func guardForumPostImages(_ images: [ImageUploadData], for user: UserCacheData) throws {
+		let maxImages = user.userRoles.contains(.shutternaut) ? 8 : Settings.shared.maxForumPostImages
+		guard images.count <= maxImages else {
+			throw Abort(.badRequest, reason: "posts are limited to \(maxImages) image attachments")
+		}
+	}
 
 	/// Ensures the given user has appropriate access to create or edit posts in the given forum. If editing a post, you must pass the post in the `editingPost` parameter.
 	func guardUserCanPostInForum(_ user: UserCacheData, in forum: Forum, editingPost: ForumPost? = nil) throws {

@@ -196,8 +196,15 @@ struct MessagePostContext: Encodable {
 		case themeEdit(DailyThemeData)
 	}
 
-	init(forType: InitType) {
+	init(forType: InitType, userRoles: Set<UserRoleType>? = nil) {
 		allowedImageTypes = Settings.shared.validImageInputTypes.joined(separator: ", ")
+		// Determine max images based on user role (shutternauts get 8, others get setting value)
+		let maxImages: Int
+		if let roles = userRoles, roles.contains(.shutternaut) {
+			maxImages = 8
+		} else {
+			maxImages = Settings.shared.maxForumPostImages
+		}
 		switch forType {
 		// For creating a new tweet
 		case .tweet:
@@ -239,13 +246,13 @@ struct MessagePostContext: Encodable {
 			formAction = "/forum/\(forumID)/create"
 			postSuccessURL = "/forum/\(forumID)"
 			showModPostOptions = true
-			// Initialize with empty slots based on maxForumPostImages setting
-			photoFilenames = Array(repeating: "", count: Settings.shared.maxForumPostImages)
+			// Initialize with empty slots based on user role
+			photoFilenames = Array(repeating: "", count: maxImages)
 		// For editing a post in a forum
 		case .forumPostEdit(let withForumPost):
 			messageText = withForumPost.text
 			photoFilenames = withForumPost.images ?? []
-			while photoFilenames.count < Settings.shared.maxForumPostImages {
+			while photoFilenames.count < maxImages {
 				photoFilenames.append("")
 			}
 			formAction = "/forumpost/edit/\(withForumPost.postID)"

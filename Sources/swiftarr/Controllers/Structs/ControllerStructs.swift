@@ -1777,7 +1777,8 @@ extension PostContentData: RCFValidatable {
 			forKey: .text,
 			or: "post length of \(text.count) is over the 2048 character limit"
 		)
-		tester.validate(images.count <= Settings.shared.maxForumPostImages, forKey: .images, or: "posts are limited to \(Settings.shared.maxForumPostImages) image attachments")
+		// Allow up to 8 images (theoretical max). Handlers will enforce role-based limits (shutternauts get 8, others get maxForumPostImages setting)
+		tester.validate(images.count <= 8, forKey: .images, or: "posts are limited to 8 image attachments")
 		let lines = text.replacingOccurrences(of: "\r\n", with: "\r").components(separatedBy: .newlines).count
 		tester.validate(lines <= 25, forKey: .text, or: "posts are limited to 25 lines of text")
 	}
