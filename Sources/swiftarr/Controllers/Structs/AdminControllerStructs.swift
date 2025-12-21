@@ -399,6 +399,8 @@ public struct SettingsAdminData: Content {
 	/// Max Image size in bytes. Images larger than this are rejected. The server separately enforces maximum x and y image dimensions, downsizing the
 	/// image if possible. Mostly this option is designed to reject very large gif images.
 	var maxImageSize: Int
+	/// Maximum number of images allowed per forum post.
+	var maxForumPostImages: Int
 	var forumAutoQuarantineThreshold: Int
 	var postAutoQuarantineThreshold: Int
 	var userAutoQuarantineThreshold: Int
@@ -422,6 +424,7 @@ extension SettingsAdminData {
 		self.maximumForums = settings.maximumForums
 		self.maximumForumPosts = settings.maximumForumPosts
 		self.maxImageSize = settings.maxImageSize
+		self.maxForumPostImages = settings.maxForumPostImages
 		self.forumAutoQuarantineThreshold = settings.forumAutoQuarantineThreshold
 		self.postAutoQuarantineThreshold = settings.postAutoQuarantineThreshold
 		self.userAutoQuarantineThreshold = settings.userAutoQuarantineThreshold
@@ -455,6 +458,7 @@ public struct SettingsUpdateData: Content {
 	var maximumForums: Int?
 	var maximumForumPosts: Int?
 	var maxImageSize: Int?
+	var maxForumPostImages: Int?
 	var forumAutoQuarantineThreshold: Int?
 	var postAutoQuarantineThreshold: Int?
 	var userAutoQuarantineThreshold: Int?

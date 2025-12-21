@@ -73,7 +73,7 @@ struct FezController: APIRouteCollection {
 		tokenAuthGroup.get("owner", use: ownerHandler)
 		tokenAuthGroup.get(fezIDParam, use: fezHandler)
 		tokenAuthGroup.post("create", use: createHandler)
-		tokenAuthGroup.on(.POST, fezIDParam, "post", body: .collect(maxSize: "30mb"), use: postAddHandler)
+		tokenAuthGroup.on(.POST, fezIDParam, "post", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: postAddHandler)
 		tokenAuthGroup.webSocket(fezIDParam, "socket", onUpgrade: createFezSocket)
 		tokenAuthGroup.post(fezIDParam, "cancel", use: cancelHandler)
 		tokenAuthGroup.post(fezIDParam, "join", use: joinHandler)

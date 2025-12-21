@@ -448,6 +448,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var maximumForums: Int
 			var maximumForumPosts: Int
 			var maxImageSize: Int
+			var maxForumPostImages: Int
 			var forumAutoQuarantineThreshold: Int
 			var postAutoQuarantineThreshold: Int
 			var userAutoQuarantineThreshold: Int
@@ -491,6 +492,7 @@ struct SiteAdminController: SiteControllerUtils {
 			maximumForums: postStruct.maximumForums,
 			maximumForumPosts: postStruct.maximumForumPosts,
 			maxImageSize: postStruct.maxImageSize * 1_048_576,
+			maxForumPostImages: postStruct.maxForumPostImages,
 			forumAutoQuarantineThreshold: postStruct.forumAutoQuarantineThreshold,
 			postAutoQuarantineThreshold: postStruct.postAutoQuarantineThreshold,
 			userAutoQuarantineThreshold: postStruct.userAutoQuarantineThreshold,
