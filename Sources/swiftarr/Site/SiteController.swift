@@ -233,6 +233,8 @@ struct MessagePostContext: Encodable {
 			postSuccessURL = "/forums/\(catID)"
 			showForumTitle = true
 			showModPostOptions = true
+			// Initialize with empty slots based on user role (same as forumPost since creating a forum includes creating the initial post)
+			photoFilenames = Array(repeating: "", count: maxImages)
 		// For editing a forum title
 		case .forumEdit(let forum):
 			forumTitle = forum.title
