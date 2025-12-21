@@ -11,45 +11,42 @@
 					</nav>
 				</div>
 			</div>
-			<ul class="list-group">
-				<li class="list-group-item active">
-					<b>Jobs</b>
-				</li>
-				<li class="list-group-item bg-transparent mb-3">				
-					<form class="ajax" action="/admin/notificationcheck" enctype="multipart/form-data" method="POST" data-successurl="reset" id="notificationcheckform">
-						<div class="container-fluid">
-							<div class="alert alert-danger mt-3 d-none" role="alert">
-							</div>		
-							<div class="row mb-2">
-								<div class="col col-auto gx-0">
-									<button type="submit" class="btn btn-primary">Run Notification Consistency Check<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
-								</div>
-							</div>
-						</div>
-						<div class="alert alert-success mt-3 d-none" role="alert">
-							Job submitted! Check the server log for more information.
-						</div>
-						This job runs nightly. You can trigger it manually here. It's somewhat load intensive so use with caution.
-					</form>
-				</li>
-				<li class="list-group-item bg-transparent mb-3">				
-					<form class="ajax" action="/admin/forumreaper" enctype="multipart/form-data" method="POST" data-successurl="reset" id="forumreaperform">
-						<div class="container-fluid">
-							<div class="alert alert-danger mt-3 d-none" role="alert">
-							</div>		
-							<div class="row mb-2">
-								<div class="col col-auto gx-0">
-									<button type="submit" class="btn btn-primary">Run Empty Forum Reaper<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
-								</div>
-							</div>
-						</div>
-						<div class="alert alert-success mt-3 d-none" role="alert">
-							Job submitted! Check the server log for more information.
-						</div>
-						This job runs hourly. You can trigger it manually here. It deletes forums with 0 posts.
-					</form>
-				</li>
-			</ul>
+			<table class="table">
+				<thead>
+					<tr>
+						<th scope="col">Title</th>
+						<th scope="col">Cadence</th>
+						<th scope="col">Description</th>
+						<th scope="col">Run</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>Notification Consistency Check</td>
+						<td>Nightly</td>
+						<td>Synchronizes notification data between Postgres and Redis to fix inconsistencies that can cause permanently unread seamails. Processes all users to recalculate unread counts and clean up stale data. Load intensive—processes every user in the system.</td>
+						<td>
+							<form class="ajax d-inline" action="/admin/notificationcheck" enctype="multipart/form-data" method="POST" data-successurl="reset" id="notificationcheckform">
+								<button type="submit" class="btn btn-primary btn-sm">Run<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+								<div class="alert alert-danger mt-2 d-none" role="alert"></div>
+								<div class="alert alert-success mt-2 d-none" role="alert">Job submitted! Check the server log for more information.</div>
+							</form>
+						</td>
+					</tr>
+					<tr>
+						<td>Empty Forum Reaper</td>
+						<td>Hourly</td>
+						<td>Finds and soft-deletes forums that have zero posts. Helps keep the forum list clean by removing empty threads. Deletions are logged to the moderator action log.</td>
+						<td>
+							<form class="ajax d-inline" action="/admin/forumreaper" enctype="multipart/form-data" method="POST" data-successurl="reset" id="forumreaperform">
+								<button type="submit" class="btn btn-primary btn-sm">Run<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+								<div class="alert alert-danger mt-2 d-none" role="alert"></div>
+								<div class="alert alert-success mt-2 d-none" role="alert">Job submitted! Check the server log for more information.</div>
+							</form>
+						</td>
+					</tr>
+				</tbody>
+			</table>
 		</div>
     #endexport
 #endextend
