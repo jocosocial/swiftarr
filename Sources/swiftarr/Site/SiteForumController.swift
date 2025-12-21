@@ -285,9 +285,9 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.delete("forumpost", postIDParam, "love", use: forumPostUnreactActionHandler)
 
 		privateRoutes.get("forums", categoryIDParam, "createForum", use: forumCreateViewHandler)
-		privateRoutes.post("forums", categoryIDParam, "createForum", use: forumCreateForumPostHandler)
+		privateRoutes.on(.POST, "forums", categoryIDParam, "createForum", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: forumCreateForumPostHandler)
 
-		privateRoutes.post("forum", forumIDParam, "create", use: forumPostPostHandler)
+		privateRoutes.on(.POST, "forum", forumIDParam, "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: forumPostPostHandler)
 		privateRoutes.get("forum", forumIDParam, "edit", use: forumEditViewHandler)
 		privateRoutes.post("forum", forumIDParam, "edit", use: forumEditTitlePostHandler)
 		privateRoutes.post("forum", forumIDParam, "delete", use: forumDeleteHandler)
@@ -309,7 +309,7 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.delete("forum", "pin", forumIDParam, use: forumRemovePinPostHandler)
 
 		privateRoutes.get("forumpost", "edit", postIDParam, use: forumPostEditPageHandler)
-		privateRoutes.post("forumpost", "edit", postIDParam, use: forumPostEditPostHandler)
+		privateRoutes.on(.POST, "forumpost", "edit", postIDParam, body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: forumPostEditPostHandler)
 		privateRoutes.post("forumpost", postIDParam, "delete", use: forumPostDeleteHandler)
 		privateRoutes.get("forumpost", "report", postIDParam, use: forumPostReportPageHandler)
 		privateRoutes.post("forumpost", "report", postIDParam, use: forumPostReportPostHandler)

@@ -24,7 +24,7 @@ struct ForumController: APIRouteCollection {
 		tokenAuthGroup.get("categories", categoryIDParam, use: categoryForumsHandler)
 
 		// Forums - CRUD first, then actions on forums
-		tokenAuthGroup.on(.POST, "categories", categoryIDParam, "create", body: .collect(maxSize: "30mb"), use: forumCreateHandler)
+		tokenAuthGroup.on(.POST, "categories", categoryIDParam, "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: forumCreateHandler)
 		tokenAuthGroup.get(forumIDParam, use: forumThreadHandler)  // Returns a forum thread by ID
 		tokenAuthGroup.get("post", postIDParam, "forum", use: postForumThreadHandler)  // Returns the forum a post is in.
 		tokenAuthGroup.get("forevent", ":event_id", use: eventForumThreadHandler)  // Returns the forum for an event
@@ -57,9 +57,9 @@ struct ForumController: APIRouteCollection {
 		tokenAuthGroup.get("unread", use: unreadHandler)
 
 		// Posts - CRUD first, then actions on posts
-		tokenAuthGroup.on(.POST, forumIDParam, "create", body: .collect(maxSize: "30mb"), use: postCreateHandler)
+		tokenAuthGroup.on(.POST, forumIDParam, "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: postCreateHandler)
 		tokenAuthGroup.get("post", postIDParam, use: postHandler)
-		tokenAuthGroup.on(.POST, "post", postIDParam, "update", body: .collect(maxSize: "30mb"), use: postUpdateHandler)
+		tokenAuthGroup.on(.POST, "post", postIDParam, "update", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: postUpdateHandler)
 		tokenAuthGroup.post("post", postIDParam, "delete", use: postDeleteHandler)
 		tokenAuthGroup.delete("post", postIDParam, use: postDeleteHandler)
 

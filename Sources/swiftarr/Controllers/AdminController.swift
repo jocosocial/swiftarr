@@ -37,8 +37,8 @@ struct AdminController: APIRouteCollection {
 
 		// endpoints available for THO and Admin only
 		let thoAuthGroup = adminRoutes.tokenRoutes(minAccess: .tho)
-		thoAuthGroup.on(.POST, "dailytheme", "create", body: .collect(maxSize: "30mb"), use: addDailyThemeHandler)
-		thoAuthGroup.on(.POST, "dailytheme", dailyThemeIDParam, "edit", body: .collect(maxSize: "30mb"), use: editDailyThemeHandler)
+		thoAuthGroup.on(.POST, "dailytheme", "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: addDailyThemeHandler)
+		thoAuthGroup.on(.POST, "dailytheme", dailyThemeIDParam, "edit", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: editDailyThemeHandler)
 		thoAuthGroup.post("dailytheme", dailyThemeIDParam, "delete", use: deleteDailyThemeHandler)
 		thoAuthGroup.delete("dailytheme", dailyThemeIDParam, use: deleteDailyThemeHandler)
 

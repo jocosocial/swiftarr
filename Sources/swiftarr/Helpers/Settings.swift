@@ -103,6 +103,12 @@ final class Settings: Encodable, @unchecked Sendable {
 	/// Maximum number of images allowed per forum post.
 	@StoredSettingsValue("maxForumPostImages", defaultValue: 4) var maxForumPostImages: Int
 
+	/// Default maximum HTTP request body size in bytes. Used for routes that don't specify a custom limit.
+	@SettingsValue var defaultMaxBodySize: Int = 10 * 1024 * 1024
+
+	/// Maximum HTTP request body size in bytes for routes that upload images.
+	@SettingsValue var imageMaxBodySize: Int = 30 * 1024 * 1024
+
 	/// How long a single user must wait between photostream uploads, in seconds.
 	@StoredSettingsValue("photostreamUploadRateLimit", defaultValue: 300) var photostreamUploadRateLimit: TimeInterval
 
@@ -247,7 +253,7 @@ extension Settings {
 		cal.timeZone = timeZoneChanges.tzAtTime(date)
 		return cal
 	}
-
+	
 	func getPortCalendar() -> Calendar {
 		var cal = Calendar(identifier: .gregorian)
 		cal.timeZone = portTimeZone
@@ -316,6 +322,7 @@ extension Settings {
 		}
 		return filterDate
 	}
+
 }
 
 protocol StoredSetting {
