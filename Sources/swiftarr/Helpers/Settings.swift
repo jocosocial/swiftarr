@@ -104,10 +104,14 @@ final class Settings: Encodable, @unchecked Sendable {
 	@StoredSettingsValue("maxForumPostImages", defaultValue: 4) var maxForumPostImages: Int
 
 	/// Default maximum HTTP request body size in bytes. Used for routes that don't specify a custom limit.
+	/// Configured in configure.swift when the app http server starts.
+	/// Default: 10MB
 	@SettingsValue var defaultMaxBodySize: Int = 10 * 1024 * 1024
 
 	/// Maximum HTTP request body size in bytes for routes that upload images.
-	@SettingsValue var imageMaxBodySize: Int = 30 * 1024 * 1024
+	/// Configured in various route handlers that upload images.
+	/// Default: 60MB, used to be 30MB before we allowed Shutternauts to upload more.
+	@SettingsValue var imageMaxBodySize: Int = 60 * 1024 * 1024
 
 	/// How long a single user must wait between photostream uploads, in seconds.
 	@StoredSettingsValue("photostreamUploadRateLimit", defaultValue: 300) var photostreamUploadRateLimit: TimeInterval
