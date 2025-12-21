@@ -556,8 +556,10 @@ struct SwiftarrConfigurator {
 		app.queues.schedule(UpdateScheduleJob()).hourly().at(5)
 		app.queues.schedule(UserEventNotificationJob()).minutely().at(0)
 		app.queues.schedule(UpdateRedisJob()).daily().at(.init(integerLiteral: Settings.shared.nightlyJobHour), 0)
+		app.queues.schedule(EmptyForumReaperJob()).hourly().at(0)
 		app.queues.add(OnDemandScheduleUpdateJob())
 		app.queues.add(OnDemandUpdateRedisJob())
+		app.queues.add(OnDemandEmptyForumReaperJob())
 		try app.queues.startInProcessJobs(on: .default)
 		try app.queues.startScheduledJobs()
 	}

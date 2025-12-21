@@ -34,6 +34,7 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.get("rollup", use: serverRollupCounts)
 
 		ttAuthGroup.post("notifications", "reload", use: triggerConsistencyJobHandler)
+		ttAuthGroup.post("forum", "reaper", use: triggerForumReaperJobHandler)
 
 		// endpoints available for THO and Admin only
 		let thoAuthGroup = adminRoutes.tokenRoutes(minAccess: .tho)
@@ -757,6 +758,16 @@ struct AdminController: APIRouteCollection {
 	/// - Returns: HTTP 200 OK.
 	func triggerConsistencyJobHandler(_ req: Request) async throws -> HTTPStatus {
 		try await req.queue.dispatch(OnDemandUpdateRedisJob.self, .init())
+		return .ok
+	}
+	
+	/// `POST /api/v3/admin/forum/reaper`
+	///
+	/// Trigger the EmptyForumReaper job to delete forums with 0 posts.
+	///
+	/// - Returns: HTTP 200 OK.
+	func triggerForumReaperJobHandler(_ req: Request) async throws -> HTTPStatus {
+		try await req.queue.dispatch(OnDemandEmptyForumReaperJob.self, .init())
 		return .ok
 	}
 	

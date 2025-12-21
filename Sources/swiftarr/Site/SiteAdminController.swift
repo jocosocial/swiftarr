@@ -77,6 +77,7 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.get("schedulelogview", scheduleLogIDParam, use: scheduleLogEntryViewer)
 		privateTTRoutes.post("schedulereload", use: scheduleReloadHandler)
 		privateTTRoutes.post("notificationcheck", use: notificationConsistencyCheckHandler)
+		privateTTRoutes.post("forumreaper", use: forumReaperHandler)
 
 		
 		privateTTRoutes.get("bulkuser", use: bulkUserRootViewHandler)
@@ -820,6 +821,11 @@ struct SiteAdminController: SiteControllerUtils {
 
 	func notificationConsistencyCheckHandler(_ req: Request) async throws -> HTTPStatus {
 		let _ = try await apiQuery(req, endpoint: "/admin/notifications/reload", method: .POST)
+		return .ok
+	}
+
+	func forumReaperHandler(_ req: Request) async throws -> HTTPStatus {
+		let _ = try await apiQuery(req, endpoint: "/admin/forum/reaper", method: .POST)
 		return .ok
 	}
 
