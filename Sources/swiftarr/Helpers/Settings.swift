@@ -323,6 +323,12 @@ extension Settings {
 		return filterDate
 	}
 
+	/// Returns the maximum number of images allowed for forum posts for the given user.
+	/// Shutternauts are allowed up to 8 images, other users are limited by the `maxForumPostImages` setting.
+	func getMaxForumPostImages(for user: UserCacheData) -> Int {
+		return user.userRoles.contains(.shutternaut) ? 8 : maxForumPostImages
+	}
+
 }
 
 protocol StoredSetting {

@@ -1078,7 +1078,7 @@ struct ForumController: APIRouteCollection {
 		}
 		try guardUserCanAccessCategory(cacheUser, category: category)
 		// process images
-		let imageFilenames = try await self.processImages(data.firstPost.images, usage: .forumPost, on: req)
+		let imageFilenames = try await self.processImages(data.firstPost.images, usage: .forumPost, maxImages: Settings.shared.getMaxForumPostImages(for: cacheUser), on: req)
 		// create forum
 		let effectiveAuthor = data.firstPost.effectiveAuthor(actualAuthor: cacheUser, on: req)
 		let forum = try Forum(title: data.title, category: category, creatorID: effectiveAuthor.userID, isLocked: false)
@@ -1216,7 +1216,7 @@ struct ForumController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "user cannot post in forum")
 		}
 		// process images
-		let filenames = try await self.processImages(newPostData.images, usage: .forumPost, on: req)
+		let filenames = try await self.processImages(newPostData.images, usage: .forumPost, maxImages: Settings.shared.getMaxForumPostImages(for: cacheUser), on: req)
 		// create post
 		let effectiveAuthor = newPostData.effectiveAuthor(actualAuthor: cacheUser, on: req)
 		let forumPost = try ForumPost(
@@ -1399,7 +1399,7 @@ struct ForumController: APIRouteCollection {
 		// ensure user has write access, the post can be modified by them, and the forum isn't locked.
 		try guardUserCanPostInForum(cacheUser, in: post.forum, editingPost: post)
 		// process images
-		let filenames = try await self.processImages(newPostData.images, usage: .forumPost, on: req)
+		let filenames = try await self.processImages(newPostData.images, usage: .forumPost, maxImages: Settings.shared.getMaxForumPostImages(for: cacheUser), on: req)
 		// update if there are changes
 		let normalizedText = newPostData.text.replacingOccurrences(of: "\r\n", with: "\r")
 		if post.text != normalizedText || post.images != filenames {
@@ -1507,7 +1507,7 @@ extension ForumController {
 	/// Ensures the given user's images array doesn't exceed the allowed limit for forum posts.
 	/// Shutternauts are allowed up to 8 images, other users are limited by the `maxForumPostImages` setting.
 	func guardForumPostImages(_ images: [ImageUploadData], for user: UserCacheData) throws {
-		let maxImages = user.userRoles.contains(.shutternaut) ? 8 : Settings.shared.maxForumPostImages
+		let maxImages = Settings.shared.getMaxForumPostImages(for: user)
 		guard images.count <= maxImages else {
 			throw Abort(.badRequest, reason: "posts are limited to \(maxImages) image attachments")
 		}
