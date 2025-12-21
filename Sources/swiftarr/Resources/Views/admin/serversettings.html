@@ -91,6 +91,10 @@
 						<label for="maxImageSize">Maximum image size</label>
 						<input type="number" id="maxImageSize" name="maxImageSize" min="1" max="1000" value="#(settings.maxImageSize / 1048576)" #if(!enableFields):disabled#endif> MB
 					</li>
+					<li class="list-group-item">
+						<label for="maxForumPostImages">Maximum images per forum post</label>
+						<input type="number" id="maxForumPostImages" name="maxForumPostImages" min="0" max="8" value="#(settings.maxForumPostImages)" #if(!enableFields):disabled#endif>
+					</li>
 				</ul>
 				<ul class="list-group mt-2">
 					<li class="list-group-item active">

@@ -739,14 +739,8 @@ struct SiteForumController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Missing post_id parameter.")
 		}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
-		let images: [ImageUploadData] = [
-			ImageUploadData(postStruct.serverPhoto1, postStruct.localPhoto1),
-			ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
-			ImageUploadData(postStruct.serverPhoto3, postStruct.localPhoto3),
-			ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4),
-		]
-		.compactMap { $0 }
-		let postContent = PostContentData(text: postStruct.postText ?? "", images: images)
+		// Use buildPostContentData() which handles all photo fields dynamically
+		let postContent = postStruct.buildPostContentData()
 		try await apiQuery(req, endpoint: "/forum/post/\(postID)/update", method: .POST, encodeContent: postContent)
 		return .created
 	}

@@ -100,6 +100,9 @@ final class Settings: Encodable, @unchecked Sendable {
 	/// Largest image we allow to be uploaded, in bytes.
 	@StoredSettingsValue("maxImageSize", defaultValue: 20 * 1024 * 1024) var maxImageSize: Int
 
+	/// Maximum number of images allowed per forum post.
+	@StoredSettingsValue("maxForumPostImages", defaultValue: 4) var maxForumPostImages: Int
+
 	/// How long a single user must wait between photostream uploads, in seconds.
 	@StoredSettingsValue("photostreamUploadRateLimit", defaultValue: 300) var photostreamUploadRateLimit: TimeInterval
 
