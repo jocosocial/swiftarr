@@ -199,5 +199,5 @@ associated AddedToChat field value increase.
 ## Dec 13, 2025
 * New open-access endpoint `GET /api/v3/client/settings` returns cruise configuration data (`ClientSettingsData`) including canonical hostnames, cruise start date, cruise length, port timezone info, schedule URL, ship WiFi SSID, pre-registration status, and database installation ID. Allows client apps to fetch environment configuration dynamically instead of hardcoding values in bundled env files.
 
-## Dec 20, 2025
+## Dec 21, 2025
 * New forum thread mark-as-read endpoint `POST /api/v3/forum/ID/markRead`
