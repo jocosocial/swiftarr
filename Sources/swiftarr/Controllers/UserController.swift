@@ -95,8 +95,8 @@ struct UserController: APIRouteCollection {
 		tokenAuthGroup.get("whoami", use: whoamiHandler)
 		tokenAuthGroup.post("verify", use: verifyHandler)
 		tokenAuthGroup.post("password", use: passwordHandler).setUsedForPreregistration()
-		tokenAuthGroup.post("username", use: usernameHandler)
-		tokenAuthGroup.post(userIDParam, "username", use: usernameHandler)
+		tokenAuthGroup.post("username", use: usernameHandler).setUsedForPreregistration()
+		tokenAuthGroup.post(userIDParam, "username", use: usernameHandler) // No prereg for mod endpoint
 		tokenAuthGroup.post("add", use: addHandler)
 
 		tokenAuthGroup.on(.POST, "image", body: .collect(maxSize: "30mb"), use: imageHandler)
