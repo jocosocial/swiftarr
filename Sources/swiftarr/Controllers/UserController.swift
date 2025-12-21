@@ -356,7 +356,7 @@ struct UserController: APIRouteCollection {
 	/// while `/api/v3/user/:userID/username` allows moderators to change the username of the indicated user.
 	///
 	/// - Parameter requestBody: `UserUsernameData` containing the user's desired new username.
-	/// - Throws: 400 error if the username is an invalid format.
+	/// - Throws: 400 error if the username is an invalid format. Or is special.
 	///   403 error if you change username more than once per 20 hours (to prevent abuse).
 	///   409 error if the username is not available.
 	/// - Returns: 201 Created on success.
