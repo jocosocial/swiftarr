@@ -357,7 +357,7 @@ struct UserController: APIRouteCollection {
 	///
 	/// - Parameter requestBody: `UserUsernameData` containing the user's desired new username.
 	/// - Throws: 400 error if the username is an invalid format.
-	///   403 error if you change username more than once per 20 hours (to prevent abuse). Or if the user is a `.client`.
+	///   403 error if you change username more than once per 20 hours (to prevent abuse).
 	///   409 error if the username is not available.
 	/// - Returns: 201 Created on success.
 	func usernameHandler(_ req: Request) async throws -> HTTPStatus {
