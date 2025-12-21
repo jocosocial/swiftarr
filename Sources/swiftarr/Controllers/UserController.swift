@@ -383,10 +383,12 @@ struct UserController: APIRouteCollection {
 		}
 		// see `UserUsernameData.validations()`
 		let data = try ValidatingJSONDecoder().decode(UserUsernameData.self, fromBodyOf: req)
-		// check for existing username
-		guard try await User.query(on: req.db).filter(\.$username, .custom("ilike"), data.username).first() == nil
-		else {
-			throw Abort(.conflict, reason: "username '\(data.username)' is not available")
+		// check for existing username (case-insensitive)
+		if let existingUser = try await User.query(on: req.db).filter(\.$username, .custom("ilike"), data.username).first() {
+			// Allow case-only changes: if the found user is the same user, allow the change
+			guard existingUser.id == targetUser.id else {
+				throw Abort(.conflict, reason: "username '\(data.username)' is not available")
+			}
 		}
 		// Check for recent name change; throw if the user has a profileEdit in the last 20 hours where the username doesn't match.
 		if targetUser.id == user.id {
