@@ -65,6 +65,7 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.get("serversettings", use: settingsViewHandler)
 		privateTTRoutes.post("serversettings", use: settingsPostHandler)
 		privateTTRoutes.get("rollup", use: rollupHandler)
+		privateTTRoutes.get("jobs", use: jobsViewHandler)
 
 		privateTTRoutes.get("timezonechanges", use: timeZonesViewHandler)
 		privateTTRoutes.post("serversettings", "reloadtzfile", use: settingsReloadTZFilePostHandler)
@@ -534,6 +535,21 @@ struct SiteAdminController: SiteControllerUtils {
 		}
 		let ctx = RollupContext(trunk: .init(req, title: "Server Counts", tab: .admin), tableRows: rows)
 		return try await req.view.render("admin/serverRollup", ctx)
+	}
+
+	// GET /admin/jobs
+	//
+	// Shows a page for manually triggering admin jobs.
+	func jobsViewHandler(_ req: Request) async throws -> View {
+		struct JobsViewContext: Encodable {
+			var trunk: TrunkContext
+
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "Admin Jobs", tab: .admin)
+			}
+		}
+		let ctx = try JobsViewContext(req)
+		return try await req.view.render("admin/jobs", ctx)
 	}
 
 // MARK: - TZ, Karaoke, Games, Hunts
