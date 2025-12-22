@@ -824,18 +824,40 @@ document.getElementById('imageCarouselModal')?.addEventListener('show.bs.modal',
 window.addEventListener('DOMContentLoaded', function () {
 	if (document.getElementById('browserTimeDisplay')) {
 		browserTime = new Date();
+		// Format to match server-side Swift DateFormatter localized output
+		// Server uses template "MMMM dd hh:mm a zzzz" which localizes to "MMMM dd 'at' hh:mm a zzzz" (long timezone)
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/formatToParts
 		var formatter = new Intl.DateTimeFormat('en-us', {
 			month: 'long',
 			day: '2-digit',
-			hour: 'numeric', // Swift is supposed to give 2-digit but it isn't working. At least this matches.
+			hour: '2-digit', // Match server's hh (2-digit hour)
 			minute: '2-digit',
 			hour12: true,
-			timeZoneName: 'long'
+			timeZoneName: 'long' // Match server's localized long timezone name
 		});
-		// I don't know how to get the DateTimeFormat to not spit out "Date at Time". This will at least match
-		// the formatting coming out of Swiftarr.
-		document.getElementById('browserTimeDisplay').innerHTML = formatter.format(browserTime).replace(" at ", ", ")
+		// Build format string to match server's localized output
+		// Example: "December 20 at 11:47 AM Eastern Standard Time"
+		var parts = formatter.formatToParts(browserTime);
+		var month = '', day = '', hour = '', minute = '', dayPeriod = '', timeZoneName = '';
+		for (var i = 0; i < parts.length; i++) {
+			var part = parts[i];
+			if (part.type === 'month') {
+				month = part.value;
+			} else if (part.type === 'day') {
+				day = part.value;
+			} else if (part.type === 'hour') {
+				hour = part.value;
+			} else if (part.type === 'minute') {
+				minute = part.value;
+			} else if (part.type === 'dayPeriod') {
+				dayPeriod = part.value;
+			} else if (part.type === 'timeZoneName') {
+				timeZoneName = part.value;
+			}
+		}
+		// Format: "MMMM dd at hh:mm a zzzz" (with "at" and long timezone name)
+		var formattedTime = month + ' ' + day + ' at ' + hour + ':' + minute + ' ' + dayPeriod + ' ' + timeZoneName;
+		document.getElementById('browserTimeDisplay').innerHTML = formattedTime;
 	}
 })
 
