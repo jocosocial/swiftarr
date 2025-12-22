@@ -96,7 +96,7 @@
 					</label>
 				#endif
 			</div>
-			#if((contains(trunk.userRoles, "shutternaut") || contains(trunk.userRoles, "shutternautmanager")) && !trunk.userIsTwitarrTeam):
+			#if(contains(trunk.userRoles, "shutternaut") || contains(trunk.userRoles, "shutternautmanager")):
 				<div class="col col-auto btn-group btn-group-sm mt-1" role="group" aria-label="Shutternaut actions">
 					#if(contains(trunk.userRoles, "shutternautmanager") || (event.shutternautData && event.shutternautData.needsPhotographer)):
 						<input type="checkbox" class="btn-check" autocomplete="off" data-action="needsphotographer"
