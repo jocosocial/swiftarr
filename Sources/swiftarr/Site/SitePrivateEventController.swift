@@ -218,7 +218,7 @@ struct SitePrivateEventController: SiteControllerUtils {
 	}
 	
 	// GET /dayplanner						The user's events, LFGs, private events, personal events
-	// GET /dayplanner/shutternauts			Events any Shutternaut has signed up to photograph. Only usable by Shutternauts.
+	// GET /dayplanner/shutternauts			Events any Shutternaut has signed up to photograph. Usable by Shutternauts and TwitarrTeam.
 	//
 	/// **URL Query Parameters:**
 	/// - cruiseday=INT		Embarkation day is day 1, value should be  less than or equal to `Settings.shared.cruiseLengthInDays`, which will be 8 for the 2022 cruise.
