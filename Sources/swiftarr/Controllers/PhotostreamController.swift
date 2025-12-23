@@ -30,6 +30,8 @@ struct PhotostreamController: APIRouteCollection {
 	/// **URL Query Parameters:**
 	/// * `?start=INT` - Moderators only. The index into the sorted list of photos to start returning results. 0 for most recent photo.
 	/// * `?limit=INT` - Moderators only. The max # of entries to return. Defaults to 30.
+	/// * `?eventID=UUID` - Filter results to photos tagged with the specified event ID.
+	/// * `?locationName=STRING` - Filter results to photos tagged with the specified location name.
 	/// 
 	/// - Returns: `PhotostreamListData`, a paginated array of `PhotostreamImageData`
 	func photostreamHandler(_ req: Request) async throws -> PhotostreamListData {
@@ -43,10 +45,46 @@ struct PhotostreamController: APIRouteCollection {
 		if user.accessLevel.hasAccess(.moderator) {
 			start = req.query[Int.self, at: "start"] ?? 0
 			limit = req.query[Int.self, at: "limit"] ?? 30
-			photoCount = try await StreamPhoto.query(on: req.db).filter(\.$moderationStatus !~ [.autoQuarantined, .quarantined]).count()
 		}
-		let photos = try await StreamPhoto.query(on: req.db).filter(\.$moderationStatus !~ [.autoQuarantined, .quarantined])
-				.sort(\.$id, .descending).offset(start).limit(limit).with(\.$atEvent, withDeleted: true).all()
+		
+		// Get filter parameters
+		let eventID = req.query[UUID.self, at: "eventID"]
+		let locationName = req.query[String.self, at: "locationName"]
+		
+		// Validate that only one filter is provided, not both
+		if eventID != nil && locationName != nil {
+			throw Abort(.badRequest, reason: "Cannot filter by both eventID and locationName at the same time. Please specify only one filter.")
+		}
+		
+		// Build base query
+		var query = StreamPhoto.query(on: req.db).filter(\.$moderationStatus !~ [.autoQuarantined, .quarantined])
+		
+		// Apply filters
+		if let eventID = eventID {
+			query = query.filter(\.$atEvent.$id == eventID)
+		}
+		if let locationName = locationName {
+			if let boatLocation = PhotoStreamBoatLocation(rawValue: locationName) {
+				query = query.filter(\.$boatLocation == boatLocation)
+			} else {
+				// Invalid location name, return empty results
+				return PhotostreamListData(photos: [], paginator: Paginator(total: 0, start: start, limit: limit))
+			}
+		}
+		
+		// Get total count for pagination (mods only)
+		if user.accessLevel.hasAccess(.moderator) {
+			photoCount = try await query.count()
+		}
+		
+		// Fetch photos with pagination
+		let photos = try await query
+			.sort(\.$id, .descending)
+			.offset(start)
+			.limit(limit)
+			.with(\.$atEvent, withDeleted: true)
+			.all()
+		
 		let imageData = try photos.map { 
 			let authorHeader = try  req.userCache.getHeader($0.$author.id)
 			return try PhotostreamImageData(streamPhoto: $0, author: authorHeader) 
