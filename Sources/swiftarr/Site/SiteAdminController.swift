@@ -65,6 +65,7 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.get("serversettings", use: settingsViewHandler)
 		privateTTRoutes.post("serversettings", use: settingsPostHandler)
 		privateTTRoutes.get("rollup", use: rollupHandler)
+		privateTTRoutes.get("jobs", use: jobsViewHandler)
 
 		privateTTRoutes.get("timezonechanges", use: timeZonesViewHandler)
 		privateTTRoutes.post("serversettings", "reloadtzfile", use: settingsReloadTZFilePostHandler)
@@ -77,6 +78,7 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.get("schedulelogview", scheduleLogIDParam, use: scheduleLogEntryViewer)
 		privateTTRoutes.post("schedulereload", use: scheduleReloadHandler)
 		privateTTRoutes.post("notificationcheck", use: notificationConsistencyCheckHandler)
+		privateTTRoutes.post("forumreaper", use: forumReaperHandler)
 
 		
 		privateTTRoutes.get("bulkuser", use: bulkUserRootViewHandler)
@@ -535,6 +537,21 @@ struct SiteAdminController: SiteControllerUtils {
 		return try await req.view.render("admin/serverRollup", ctx)
 	}
 
+	// GET /admin/jobs
+	//
+	// Shows a page for manually triggering admin jobs.
+	func jobsViewHandler(_ req: Request) async throws -> View {
+		struct JobsViewContext: Encodable {
+			var trunk: TrunkContext
+
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "Admin Jobs", tab: .admin)
+			}
+		}
+		let ctx = try JobsViewContext(req)
+		return try await req.view.render("admin/jobs", ctx)
+	}
+
 // MARK: - TZ, Karaoke, Games, Hunts
 	// GET /admin/timezonechanges
 	//
@@ -820,6 +837,11 @@ struct SiteAdminController: SiteControllerUtils {
 
 	func notificationConsistencyCheckHandler(_ req: Request) async throws -> HTTPStatus {
 		let _ = try await apiQuery(req, endpoint: "/admin/notifications/reload", method: .POST)
+		return .ok
+	}
+
+	func forumReaperHandler(_ req: Request) async throws -> HTTPStatus {
+		let _ = try await apiQuery(req, endpoint: "/admin/forum/reaper", method: .POST)
 		return .ok
 	}
 
