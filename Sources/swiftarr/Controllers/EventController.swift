@@ -198,7 +198,7 @@ struct EventController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Must be logged in to view favorite events or the dayplanner")
 		}
 		else if options.needsPhotographer != nil || options.hasPhotographer != nil {
-			throw Abort(.badRequest, reason: "Must be logged in as a Shutternaut or TwitarrTeam to view photographer event data")
+			throw Abort(.badRequest, reason: "User role or access level does not allow viewing photographer event data")
 		}
 		let events = try await query.all()
 		let favoriteEventIDs = try await getFavorites(in: req, from: events)
