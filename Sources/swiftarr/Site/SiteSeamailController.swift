@@ -93,6 +93,8 @@ struct SiteSeamailController: SiteControllerUtils {
 		privateRoutes.post("seamail", fezIDParam, "post", use: seamailThreadPostHandler)
 		privateRoutes.post("seamail", fezIDParam, "mute", use: seamailAddMutePostHandler)
 		privateRoutes.delete("seamail", fezIDParam, "mute", use: seamailRemoveMutePostHandler)
+		privateRoutes.get("seamail", fezIDParam, "edit", use: seamailEditViewHandler)
+		privateRoutes.post("seamail", fezIDParam, "edit", use: seamailEditHandler)
 		privateRoutes.webSocket("seamail", fezIDParam, "socket", shouldUpgrade: shouldCreateMsgSocket, onUpgrade: createMsgSocket)
 	}
 
@@ -260,7 +262,8 @@ struct SiteSeamailController: SiteControllerUtils {
 			var socketURL: String
 			var breadcrumbURL: String
 			var paginator: PaginatorContext
-			var breadcrumbTitle: String;
+			var breadcrumbTitle: String
+			var canEditTitle: Bool
 
 			init(_ req: Request, fez: FezData) throws {
 				let (title, tab) = titleAndTab(for: req, seamail: fez)
@@ -270,6 +273,26 @@ struct SiteSeamailController: SiteControllerUtils {
 				newPosts = []
 				showDivider = false
 				post = .init(forType: .seamailPost(fez))
+				
+				// Determine if user can edit title
+				let isOwner = fez.owner.userID == trunk.userID
+				var canEdit = isOwner
+				
+				if !isOwner {
+					// Check if this is a privileged mailbox
+					let ownerUsername = fez.owner.username.lowercased()
+					if ownerUsername == PrivilegedUser.moderator.rawValue.lowercased() {
+						canEdit = trunk.userIsMod
+					}
+					else if ownerUsername == PrivilegedUser.TwitarrTeam.rawValue.lowercased() {
+						canEdit = trunk.userIsTwitarrTeam
+					}
+					else if ownerUsername == PrivilegedUser.THO.rawValue.lowercased() {
+						canEdit = trunk.userIsTHO
+					}
+				}
+				
+				self.canEditTitle = canEdit
 				if req.method == .POST, let formContent = try? req.content.decode(SeamailCreateFormContent.self) {
 					post.messageText = formContent.postText
 					post.postErrorString = "Created the chat, but was not able to post the initial message."
@@ -389,6 +412,66 @@ struct SiteSeamailController: SiteControllerUtils {
 		}
 		try await apiQuery(req, endpoint: "/fez/\(fezID)/mute/remove", method: .POST)
 		return .noContent
+	}
+
+	// GET /seamail/:seamail_ID/edit
+	//
+	// Returns a view with a form for editing a seamail conversation.
+	func seamailEditViewHandler(_ req: Request) async throws -> View {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Invalid seamail ID")
+		}
+		let response = try await apiQuery(req, endpoint: "/fez/\(fezID)")
+		let fez = try response.content.decode(FezData.self)
+		struct SeamailEditPageContext: Encodable {
+			var trunk: TrunkContext
+			var fez: FezData
+			var post: MessagePostContext
+
+			init(_ req: Request, fez: FezData) throws {
+				trunk = .init(req, title: "Edit Seamail", tab: .seamail)
+				self.fez = fez
+				self.post = .init(forType: .seamailEdit(fez))
+			}
+		}
+		var ctx = try SeamailEditPageContext(req, fez: fez)
+		if ctx.trunk.userID != fez.owner.userID {
+			ctx.post.authorName = fez.owner.username
+		}
+		return try await req.view.render("Fez/seamailEdit", ctx)
+	}
+
+	// POST /seamail/:seamail_ID/edit
+	//
+	// Handles the POST that edits a seamail conversation.
+	func seamailEditHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Invalid seamail ID")
+		}
+		let formStruct = try req.content.decode(MessagePostFormContent.self)
+		guard let newTitle = formStruct.forumTitle else {
+			throw Abort(.badRequest, reason: "No new title specified.")
+		}
+		
+		// Get current fez data to preserve other fields
+		let fezResponse = try await apiQuery(req, endpoint: "/fez/\(fezID)")
+		let fez = try fezResponse.content.decode(FezData.self)
+		
+		// Create FezContentData with updated title, preserving all other fields
+		let fezContent = FezContentData(
+			fezType: fez.fezType,
+			title: newTitle,
+			info: fez.info,
+			startTime: fez.startTime,
+			endTime: fez.endTime,
+			location: fez.location,
+			minCapacity: fez.minParticipants,
+			maxCapacity: fez.maxParticipants,
+			initialUsers: []
+		)
+		
+		try await apiQuery(req, endpoint: "/fez/\(fezID)/update", method: .POST, encodeContent: fezContent)
+		return .created
 	}
 }
 
