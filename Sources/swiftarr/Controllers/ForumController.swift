@@ -32,6 +32,7 @@ struct ForumController: APIRouteCollection {
 		tokenAuthGroup.post(forumIDParam, "delete", use: forumDeleteHandler)
 		tokenAuthGroup.delete(forumIDParam, use: forumDeleteHandler)
 		tokenAuthGroup.post(forumIDParam, "report", use: forumReportHandler)
+		tokenAuthGroup.post(forumIDParam, "markRead", use: forumMarkReadHandler)
 
 		// 'Favorite' applies to forums, while 'Bookmark' is for posts
 		tokenAuthGroup.get("favorites", use: favoritesHandler)
@@ -1156,6 +1157,41 @@ struct ForumController: APIRouteCollection {
 			query.categoryAccessFilter(for: cacheUser)
 		}
 		return try await forum.fileReport(submitter: cacheUser, submitterMessage: data.message, on: req)
+	}
+
+	/// `POST /api/v3/forum/ID/markRead`
+	///
+	/// Mark the specified `Forum` as read for the current user. This sets the user's read position
+	/// to the last post in the forum, effectively marking all posts in the forum as read without
+	/// requiring the user to paginate through all posts.
+	///
+	/// - Parameter forumID: in URL path
+	/// - Throws: 404 error if the forum is not available.
+	/// - Returns: 201 Created on success; 200 OK if already marked as read.
+	func forumMarkReadHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let forum = try await Forum.findFromParameter(forumIDParam, on: req) { query in
+			query.with(\.$category)
+		}
+		try guardUserCanAccessCategory(cacheUser, category: forum.category)
+		let forumReader =
+			try await ForumReaders.query(on: req.db).filter(\.$forum.$id == forum.requireID())
+			.filter(\.$user.$id == cacheUser.userID).first() ?? ForumReaders(cacheUser.userID, forum)
+		// Query for the actual last post ID in the forum, filtering out blocked/muted users
+		// This is more reliable than using forum.lastPostID which may be outdated
+		// I was testing this against the event forums so maybe something is special with them?
+		let lastPost = try await forum.$posts.query(on: req.db)
+			.filter(\.$author.$id !~ cacheUser.getBlocks())
+			.filter(\.$author.$id !~ cacheUser.getMutes())
+			.sort(\.$id, .descending)
+			.first()
+		let lastPostID = lastPost?.id ?? 0
+		if let currentReadID = forumReader.lastPostReadID, currentReadID >= lastPostID {
+			return .ok
+		}
+		forumReader.lastPostReadID = lastPostID
+		try await forumReader.save(on: req.db)
+		return .created
 	}
 
 	/// `POST /api/v3/forum/ID/delete`
