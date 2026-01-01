@@ -92,7 +92,7 @@ struct UserController: APIRouteCollection {
 
 		// endpoints available only when logged in
 		let tokenAuthGroup = userRoutes.tokenRoutes()
-		tokenAuthGroup.get("whoami", use: whoamiHandler)
+		tokenAuthGroup.get("whoami", use: whoamiHandler).setUsedForPreregistration()
 		tokenAuthGroup.post("verify", use: verifyHandler)
 		tokenAuthGroup.post("password", use: passwordHandler).setUsedForPreregistration()
 		tokenAuthGroup.post("username", use: usernameHandler)
