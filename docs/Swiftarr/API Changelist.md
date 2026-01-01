@@ -201,3 +201,6 @@ associated AddedToChat field value increase.
 
 ## Dec 20, 2025
 * `POST /api/v3/fez/:fez_ID/update` now allows Seamail owners to rename their chats.
+
+## Dec 21, 2025
+* `GET /api/v3/forum/unread` no longer returns muted threads.
