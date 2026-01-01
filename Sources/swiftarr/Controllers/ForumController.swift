@@ -529,6 +529,10 @@ struct ForumController: APIRouteCollection {
 			.categoryAccessFilter(for: cacheUser)	
 			.join(ForumReaders.self, joinFilters, method: .left)
 			.group(.or) { (or) in
+				or.filter(ForumReaders.self, \.$isMuted == nil)
+				or.filter(ForumReaders.self, \.$isMuted == false)
+			}
+			.group(.or) { (or) in
 				or.filter(ForumReaders.self, \.$lastPostReadID == nil)
 				or.filter(\Forum.$lastPostID != \ForumReaders.$lastPostReadID)
 			}

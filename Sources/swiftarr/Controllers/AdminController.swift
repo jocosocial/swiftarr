@@ -790,8 +790,14 @@ struct AdminController: APIRouteCollection {
 				.filter(\.$verification != nil)
 				.join(RegistrationCode.self, on: \User.$id == \RegistrationCode.$user.$id)
 				.filter(RegistrationCode.self, \RegistrationCode.$isDiscordUser == false)
+				// If the user has favorited a now-(soft)-deleted event this will throw an exception
+				// without withDeleted: true. This is safe to include in the export because it likely
+				// wont match anything on the import and fail less verbosely.
+				//
+				// Filtering out deleted events seemed to be a whole pain so I elected to include
+				// them instead.
 				.with(\.$favoriteEvents.$pivots) { favoriteEvent in
-					favoriteEvent.with(\.$event)
+					favoriteEvent.with(\.$event, withDeleted: true)
 				}
 				.with(\.$favorites) { favorite in
 					favorite.with(\.$favorite)
