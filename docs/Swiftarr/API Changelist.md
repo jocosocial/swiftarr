@@ -199,5 +199,10 @@ associated AddedToChat field value increase.
 ## Dec 13, 2025
 * New open-access endpoint `GET /api/v3/client/settings` returns cruise configuration data (`ClientSettingsData`) including canonical hostnames, cruise start date, cruise length, port timezone info, schedule URL, ship WiFi SSID, pre-registration status, and database installation ID. Allows client apps to fetch environment configuration dynamically instead of hardcoding values in bundled env files.
 
-## [Dec 21, 2025]
+## Dec 20, 2025
+* `POST /api/v3/fez/:fez_ID/update` now allows Seamail owners to rename their chats.
+
+## Dec 21, 2025
+* `GET /api/v3/forum/unread` no longer returns muted threads.
+* New forum thread mark-as-read endpoint `POST /api/v3/forum/ID/markRead`
 * `GET /api/v3/photostream` now supports `eventID` and `locationName` query parameters.
