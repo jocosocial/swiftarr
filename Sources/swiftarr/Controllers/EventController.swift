@@ -176,7 +176,7 @@ struct EventController: APIRouteCollection {
 				query.join(EventFavorite.self, on: \Event.$id == \EventFavorite.$event.$id)
 						.filter(EventFavorite.self, \.$user.$id == user.userID)
 			}
-			if user.userRoles.contains(.shutternaut) || user.userRoles.contains(.shutternautmanager) {
+			if user.userRoles.contains(.shutternaut) || user.userRoles.contains(.shutternautmanager) || user.accessLevel >= .twitarrteam {
 				if let np = options.needsPhotographer {
 					query.filter(\.$needsPhotographer == np)
 				}
@@ -191,14 +191,14 @@ struct EventController: APIRouteCollection {
 				}
 			}
 			else if options.needsPhotographer != nil || options.hasPhotographer != nil {
-				throw Abort(.badRequest, reason: "Only Shutternauts can view photograper event data")
+				throw Abort(.badRequest, reason: "User role or access level does not allow viewing photographer event data")
 			}
 		}
 		else if options.following == true || options.dayplanner == true {
 			throw Abort(.badRequest, reason: "Must be logged in to view favorite events or the dayplanner")
 		}
 		else if options.needsPhotographer != nil || options.hasPhotographer != nil {
-			throw Abort(.badRequest, reason: "Must be logged in as a Shutternaut to view photograper event data")
+			throw Abort(.badRequest, reason: "User role or access level does not allow viewing photographer event data")
 		}
 		let events = try await query.all()
 		let favoriteEventIDs = try await getFavorites(in: req, from: events)
@@ -209,7 +209,7 @@ struct EventController: APIRouteCollection {
 				return nil
 			}
 			var resultEvent = try EventData($0, isFavorite: favoriteEventIDs.contains($0.requireID()))
-			if let user, user.userRoles.contains(.shutternaut) || user.userRoles.contains(.shutternautmanager) {
+			if let user, user.userRoles.contains(.shutternaut) || user.userRoles.contains(.shutternautmanager) || user.accessLevel >= .twitarrteam {
 				let photographers = try photographedEvents[$0.requireID()] ?? []
 				resultEvent.shutternautData = .init(needsPhotographer: $0.needsPhotographer, photographers: photographers,
 						userIsPhotographer: photographers.contains { $0.userID == user.userID })
@@ -246,7 +246,7 @@ struct EventController: APIRouteCollection {
 		if let user = req.auth.get(UserCacheData.self) {
 			result.isFavorite = try await EventFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
 					.filter(\.$event.$id == event.requireID()).first() != nil
-			if user.userRoles.contains(.shutternaut) || user.userRoles.contains(.shutternautmanager) {
+			if user.userRoles.contains(.shutternaut) || user.userRoles.contains(.shutternautmanager) || user.accessLevel >= .twitarrteam {
 				let photographers = try await EventFavorite.query(on: req.db).filter(\.$event.$id == event.requireID())
 						.filter(\.$photographer == true).all().map { try req.userCache.getHeader($0.$user.id) }
 				result.shutternautData = .init(needsPhotographer: event.needsPhotographer, photographers: photographers,
@@ -330,7 +330,7 @@ struct EventController: APIRouteCollection {
 		let photographedEvents = try await getShutternautsForEvents(in: req, from: events)
 		return try events.map { 
 			var resultEvent = try EventData($0, isFavorite: true)
-			if user.userRoles.contains(.shutternaut) || user.userRoles.contains(.shutternautmanager) {
+			if user.userRoles.contains(.shutternaut) || user.userRoles.contains(.shutternautmanager) || user.accessLevel >= .twitarrteam {
 				let photographers = try photographedEvents[$0.requireID()] ?? []
 				resultEvent.shutternautData = .init(needsPhotographer: $0.needsPhotographer, photographers: photographers,
 						userIsPhotographer: photographers.contains { $0.userID == user.userID })
@@ -430,7 +430,7 @@ struct EventController: APIRouteCollection {
 	
 	func getShutternautsForEvents(in req: Request, from events: [Event]) async throws -> [UUID : [UserHeader]] {
 		guard let user = req.auth.get (UserCacheData.self), 
-				user.userRoles.contains(.shutternaut) || user.userRoles.contains(.shutternautmanager) else {
+				user.userRoles.contains(.shutternaut) || user.userRoles.contains(.shutternautmanager) || user.accessLevel >= .twitarrteam else {
 			return [:]
 		}
 		let eventIDs = try events.map { try $0.requireID() }
