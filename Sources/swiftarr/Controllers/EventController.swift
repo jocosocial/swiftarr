@@ -191,7 +191,7 @@ struct EventController: APIRouteCollection {
 				}
 			}
 			else if options.needsPhotographer != nil || options.hasPhotographer != nil {
-				throw Abort(.badRequest, reason: "Only Shutternauts and TwitarrTeam can view photographer event data")
+				throw Abort(.badRequest, reason: "User role or access level does not allow viewing photographer event data")
 			}
 		}
 		else if options.following == true || options.dayplanner == true {
