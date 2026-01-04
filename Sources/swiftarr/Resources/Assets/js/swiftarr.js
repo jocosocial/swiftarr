@@ -628,7 +628,7 @@ function eventFilterDropdownTappedAction(event) {
 function filterEvents() {
 	let onlyFollowing = document.getElementById("eventFollowingFilter").classList.contains("active")
 	let category = document.getElementById("eventFilterMenu").dataset.selected;
-	let shutternaut = document.getElementById("shutternautMenu").dataset.selected;
+	let shutternaut = document.getElementById("shutternautMenu")?.dataset.selected || "all";
 	let dayCheckboxes = document.getElementById("cruiseDayButtonGroup").querySelectorAll('input');
 	let selectedDays = [];
 	for (let checkbox of dayCheckboxes) {
