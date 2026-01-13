@@ -1,4 +1,3 @@
-import Foundation
 import Fluent
 import FluentSQL
 import Vapor
@@ -1208,13 +1207,6 @@ extension FezController {
 	}
 
 	// Remember that there can be posts by authors who are not currently participants.
-	//
-	// Under normal circumstances, the pivot and effectiveUser are the same calling user.
-	//
-	// In the case of a privileged user, the pivot and effectiveUser are that of the privileged mailbox
-	// rather than the actual user. Example: when viewing twitarrteam seamail
-	// (GET /api/v3/fez/:fez_ID?foruser=TwitarrTeam) the pivot is the twitarrteam pivot and effectiveUser
-	// is the twitarrteam user.
 	func buildPostsForFez(_ fez: FriendlyFez, pivot: FezParticipant?, on req: Request, 
 		user: UserCacheData, as effectiveUser: UserCacheData) async throws -> ([FezPostData], Paginator)
 	{
@@ -1239,71 +1231,28 @@ extension FezController {
 		if let pivot = pivot, start + limit > pivot.readCount {
 			pivot.readCount = min(start + limit, fez.postCount - pivot.hiddenCount)
 			try await pivot.save(on: req.db)
-			
-			// https://github.com/jocosocial/swiftarr/issues/434
-			// If the actual user (ie, you) is different from effectiveUser (ie, twitarrteam) and is also a participant,
-			// we need to update their pivot.readCount as well. That pivot is what gets returned by
-			// GET /api/v3/fez/:fez_ID.
-			var userPivot: FezParticipant? = nil
-			if user.userID != effectiveUser.userID && fez.participantArray.contains(user.userID) {
-				userPivot = try await fez.$participants.$pivots.query(on: req.db)
-						.filter(\.$user.$id == user.userID).first()
-				if let userPivot = userPivot, start + limit > userPivot.readCount {
-					userPivot.readCount = min(start + limit, fez.postCount - userPivot.hiddenCount)
-					try await userPivot.save(on: req.db)
-				}
-			}
-			
 			// If the user has now read all the posts (except those hidden from them) mark this notification as viewed.
-			// Check both the effectiveUser's pivot and the actual user's pivot (if different)
-			let effectiveUserAllRead = pivot.readCount + pivot.hiddenCount >= fez.postCount
-			let userAllRead = userPivot.map { $0.readCount + $0.hiddenCount >= fez.postCount } ?? effectiveUserAllRead
-			
-			if effectiveUserAllRead {
-				try await markFezNotificationsAsViewed(fez: fez, user: user, effectiveUser: effectiveUser, on: req)
-			}
-			// Covers the user reading as a privileged user but within their own seamail (not the privileged mailbox).
-			if userAllRead && user.userID != effectiveUser.userID {
-				try await markFezNotificationsAsViewed(fez: fez, user: user, effectiveUser: user, on: req)
+			if pivot.readCount + pivot.hiddenCount >= fez.postCount {
+				try await markNotificationViewed(user: user, type: .chatUnreadMsg(fez.requireID(), fez.fezType), on: req)
+				// If the user is part of a privileged mailbox (currently TwitarrTeam and Moderator)
+				// the first user to read the message counts it as read for everyone. The pivot
+				// has already been updated to reflect this, but a Redis notification will exist
+				// until this block executes which will mark the conversation read for all other
+				// privileged users of that level.
+				if let effectiveUsername = PrivilegedUser(rawValue: effectiveUser.username) {
+					var cacheUsers: [UserCacheData] = []
+					switch effectiveUsername {
+						case .TwitarrTeam: cacheUsers = req.userCache.allUsersWithAccessLevel(.twitarrteam)
+						case .moderator: cacheUsers = req.userCache.allUsersWithAccessLevel(.moderator)
+						case .admin, .THO: break // No special mailboxes for them.
+					}
+					// Mark as read for everyone in the group except the current user. We already
+					// did that above. Very minor optimization.
+					try await markNotificationViewed(for: cacheUsers.filter { $0.userID != user.userID }, type: .chatUnreadMsg(fez.requireID(), fez.fezType), on: req)
+				}
 			}
 		}
 		return (postDatas, paginator)
-	}
-
-	/// Marks fez notifications as viewed for all relevant users (current user, privileged mailbox users, etc.)
-	/// This handles both regular seamail inboxes and privileged mailboxes automatically.
-	func markFezNotificationsAsViewed(fez: FriendlyFez, user: UserCacheData, effectiveUser: UserCacheData, on req: Request) async throws {
-		let fezID = try fez.requireID()
-		// Check if the fez contains privileged mailboxes in its participant list, not just if effectiveUser is a privileged mailbox.
-		// This fixes the issue where privileged users viewing fezzes containing TwitarrTeam/moderator as themselves
-		// (not as the privileged mailbox) weren't marking those mailboxes as read for other team members.
-		let modUser = req.userCache.getUser(username: "moderator")
-		let ttUser = req.userCache.getUser(username: "TwitarrTeam")
-		let hasModInParticipants = modUser.map { fez.participantArray.contains($0.userID) } ?? false
-		let hasTTInParticipants = ttUser.map { fez.participantArray.contains($0.userID) } ?? false
-		
-		// Collect all users that need notifications marked, deduplicated by userID
-		var usersToMark: [UUID: UserCacheData] = [user.userID: user]  // Start with current user
-		
-		// Check if we need to add TT members: either viewing AS TT or fez contains TT
-		let effectiveIsTT = PrivilegedUser(rawValue: effectiveUser.username) == .TwitarrTeam
-		if effectiveIsTT || hasTTInParticipants {
-			for ttMember in req.userCache.allUsersWithAccessLevel(.twitarrteam) {
-				usersToMark[ttMember.userID] = ttMember
-			}
-		}
-		
-		// Check if we need to add mod members: either viewing AS mod or fez contains mod
-		let effectiveIsMod = PrivilegedUser(rawValue: effectiveUser.username) == .moderator
-		if effectiveIsMod || hasModInParticipants {
-			for modMember in req.userCache.allUsersWithAccessLevel(.moderator) {
-				usersToMark[modMember.userID] = modMember
-			}
-		}
-		
-		// Single call with deduplicated list
-		// markNotificationViewed will automatically handle privileged mailboxes for users with appropriate access levels
-		try await markNotificationViewed(for: Array(usersToMark.values), type: .chatUnreadMsg(fezID, fez.fezType), on: req)
 	}
 
 	// Finds the FezParticipant for the given fez and user.
