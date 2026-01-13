@@ -376,7 +376,7 @@ struct SwiftarrConfigurator {
 		app.http.server.configuration.port = port
 
 		// Routes that upload images have a higher limit, applied to the route directly.
-		app.routes.defaultMaxBodySize = "10mb"
+		app.routes.defaultMaxBodySize = ByteCount(value: Settings.shared.defaultMaxBodySize)
 
 		// Enable HTTP response compression.
 		// app.http.server.configuration.responseCompression = .enabled

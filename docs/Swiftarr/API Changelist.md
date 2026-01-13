@@ -205,3 +205,6 @@ associated AddedToChat field value increase.
 ## Dec 21, 2025
 * `GET /api/v3/forum/unread` no longer returns muted threads.
 * New forum thread mark-as-read endpoint `POST /api/v3/forum/ID/markRead`
+* `GET /api/v3/client/settings` now also includes `minAccessLevel` and `maxForumPostImages`.
+* Added `maxForumPostImages` to `SettingsAdminData`.
+* `PostContentData` `images` can now incude up to 8 `ImageUploadData`, conditional based on role and settings.

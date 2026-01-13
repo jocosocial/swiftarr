@@ -99,7 +99,7 @@ struct UserController: APIRouteCollection {
 		tokenAuthGroup.post(userIDParam, "username", use: usernameHandler) // No prereg for mod endpoint
 		tokenAuthGroup.post("add", use: addHandler)
 
-		tokenAuthGroup.on(.POST, "image", body: .collect(maxSize: "30mb"), use: imageHandler)
+		tokenAuthGroup.on(.POST, "image", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: imageHandler)
 			.setUsedForPreregistration()
 		tokenAuthGroup.post("image", "remove", use: imageRemoveHandler).setUsedForPreregistration()
 		tokenAuthGroup.delete("image", use: imageRemoveHandler).setUsedForPreregistration()
