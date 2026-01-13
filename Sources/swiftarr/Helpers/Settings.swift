@@ -226,8 +226,8 @@ final class Settings: Encodable, @unchecked Sendable {
 
 	/// Maximum HTTP request body size in bytes for routes that upload images.
 	/// Configured in various route handlers that upload images.
-	/// Default: 60MB, used to be 30MB before we allowed Shutternauts to upload more.
-	@SettingsValue var imageMaxBodySize: Int = 60 * 1024 * 1024
+	/// Default: 170MB, 8x maxImageSize + some overhead
+	@SettingsValue var imageMaxBodySize: Int = 170 * 1024 * 1024
 }
 
 /// Derivative directory paths. These are computed property getters that return a path based on a root path.
