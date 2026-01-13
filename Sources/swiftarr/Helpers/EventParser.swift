@@ -245,18 +245,22 @@ final class EventParser {
 
 		// Creates
 		let createduids = updateEventuids.subtracting(existingEventuids)
+		let timeZoneChanges = Settings.shared.timeZoneChanges
 		createduids.forEach { uid in
 			if let updated = updateEventDict[uid] {
+				// Convert port time to display time
+				let displayStartTime = timeZoneChanges.portTimeToDisplayTime(updated.startTime)
+				let displayEndTime = timeZoneChanges.portTimeToDisplayTime(updated.endTime)
 				// This eventData uses a throwaway UUID as the Event isn't in the db yet
 				let eventData = EventData(
 					eventID: UUID(),
 					uid: updated.uid,
 					title: updated.title,
 					description: updated.description,
-					startTime: updated.startTime,
-					endTime: updated.endTime,
-					timeZone: "",
-					timeZoneID: "",
+					startTime: displayStartTime,
+					endTime: displayEndTime,
+					timeZone: timeZoneChanges.abbrevAtTime(displayStartTime),
+					timeZoneID: timeZoneChanges.tzAtTime(displayStartTime).identifier,
 					location: updated.location,
 					eventType: updated.eventType.rawValue,
 					lastUpdateTime: updated.updatedAt ?? Date(),
@@ -272,15 +276,18 @@ final class EventParser {
 		let updatedEvents = existingEventuids.intersection(updateEventuids)
 		updatedEvents.forEach { uid in
 			if let existing = existingEventDict[uid], let updated = updateEventDict[uid] {
+				// Convert port time to display time
+				let displayStartTime = timeZoneChanges.portTimeToDisplayTime(updated.startTime)
+				let displayEndTime = timeZoneChanges.portTimeToDisplayTime(updated.endTime)
 				let eventData = EventData(
 					eventID: UUID(),
 					uid: updated.uid,
 					title: updated.title,
 					description: updated.description,
-					startTime: updated.startTime,
-					endTime: updated.endTime,
-					timeZone: "",
-					timeZoneID: "",
+					startTime: displayStartTime,
+					endTime: displayEndTime,
+					timeZone: timeZoneChanges.abbrevAtTime(displayStartTime),
+					timeZoneID: timeZoneChanges.tzAtTime(displayStartTime).identifier,
 					location: updated.location,
 					eventType: updated.eventType.rawValue,
 					lastUpdateTime: updated.updatedAt ?? Date(),

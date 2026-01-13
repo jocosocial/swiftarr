@@ -65,6 +65,51 @@ func getImagePath(for image: String, format: String? = nil, usage: ImageUsage, s
 }
 	
 extension APIRouteCollection {
+	/// Loads an image from data and returns the image, its type, and original orientation.
+	/// - Parameter data: The image data to load
+	/// - Returns: A tuple containing the loaded image, its format type, and original orientation value
+	static func loadImageFromData(_ data: Data) throws -> (image: GDImage, type: ImportableFormat, orientation: Int32) {
+		let imageTypes: [ImportableFormat] = [.jpg, .png, .gif, .webp, .tiff, .bmp, .wbmp]
+		var foundType: ImportableFormat? = nil
+		var foundImage: GDImage?
+		for type in imageTypes {
+			foundImage = try? GDImage(data: data, as: type) 
+			if foundImage != nil{
+				foundType = type
+				break
+			}
+		}
+		guard let image = foundImage, let imageType = foundType else {
+			throw GDError.invalidImage(reason: "No matching raster formatter for given image found")
+		}
+		// We've modified SwiftGD to call methods in gd_jpeg_custom.c instead of the gd_jpeg.c in the GD library.
+		// The customized .c file has extra code to save the image orientation in the gdImage struct.
+		// It's definitely a hack, as polyAllocated is not for this purpose.
+		let origOrientation = image.internalImage.pointee.polyAllocated
+		return (image, imageType, origOrientation)
+	}
+	
+	/// Creates a thumbnail from an image with proper orientation handling and exports it.
+	/// Silently skips thumbnail creation if resize fails (returns nil), matching the original behavior.
+	/// - Parameters:
+	///   - image: The source image to create a thumbnail from
+	///   - orientation: The original orientation value to preserve
+	///   - outputType: The format to export the thumbnail as
+	///   - thumbPath: The file path where the thumbnail should be saved
+	///   - req: The incoming `Request`, used for logging
+	/// - Throws: Errors from export or file write operations
+	static func createThumbnail(from image: GDImage, preserving orientation: Int32, as outputType: ImportableFormat, to thumbPath: URL, on req: Request) throws {
+		guard let thumbnail = image.resizedTo(height: Settings.shared.imageThumbnailSize) else {
+			req.logger.error("Failed to generate thumbnail: image.resizedTo returned nil for path \(thumbPath.path)")
+			return
+		}
+		// Put the orientation value into the polyAllocated field, so that our code in the customized gd_jpeg.c file
+		// can store the original image orientation back in the jpeg as exif data.
+		thumbnail.internalImage.pointee.polyAllocated = orientation
+		let thumbnailData = try thumbnail.export(as: ExportableFormat(outputType))
+		try thumbnailData.write(to: thumbPath)
+	}
+
 	/// Takes an an array of `ImageUploadData` as input. Some of the input elements may be new image Data that needs procssing;
 	/// some of the input elements may refer to already-processed images in our image store. Once all the ImageUploadData elements are processed,
 	/// returns a `[String]` containing the filenames where al the images are stored. The use case here is for editing existing content with
@@ -122,25 +167,9 @@ extension APIRouteCollection {
 			throw Abort(.badRequest, reason: "Image too large. Size limit is \(maxMegabytes)MB.")
 		}
 		return try await req.application.threadPool.runIfActive(eventLoop: req.eventLoop) {
-			let imageTypes: [ImportableFormat] = [.jpg, .png, .gif, .webp, .tiff, .bmp, .wbmp]
-			var foundType: ImportableFormat? = nil
-			var foundImage: GDImage?
-			for type in imageTypes {
-				foundImage = try? GDImage(data: data, as: type) 
-				if foundImage != nil{
-					foundType = type
-					break
-				}
-			}
-			guard var image = foundImage, let imageType = foundType else {
-				throw GDError.invalidImage(reason: "No matching raster formatter for given image found")
-			}
+			let (loadedImage, imageType, origOrientation) = try Self.loadImageFromData(data)
+			var image = loadedImage
 			var outputType = imageType
-			
-			// We've modified SwiftGD to call methods in gd_jpeg_custom.c instead of the gd_jpeg.c in the GD library.
-			// The customized .c file has extra code to save the image orientation in the gdImage struct.
-			// It's definitely a hack, as polyAllocated is not for this purpose.
-			let origOrientation = image.internalImage.pointee.polyAllocated
 			
 			// Disallow images with an aspect ratio > 10:1, as they're too often malicious (even if by 'malicious' it means
 			// "ha ha you have to scroll past this"). Also disallow extremely large widths and heights.
@@ -206,36 +235,18 @@ extension APIRouteCollection {
 			try imageData.write(to: fullPath)
 			
 			// save thumbnail
-			if let thumbnail = image.resizedTo(height: Settings.shared.imageThumbnailSize) {
-				thumbnail.internalImage.pointee.polyAllocated = origOrientation
-				let thumbnailData = try thumbnail.export(as: ExportableFormat(outputType))
-				try thumbnailData.write(to: thumbPath)
-			}
+			try Self.createThumbnail(from: image, preserving: origOrientation, as: outputType, to: thumbPath, on: req)
 			return fullPath.lastPathComponent
 		}.get()
 	}
 
 	// Generate a thumbnail for the given image (by full path). Currently used in `copyImage`
-	// as part of the bulk user import process. Could stand to be deduped with `processImage`
-	// above some day since most of the code came from there.
+	// as part of the bulk user import process. Now uses shared helper functions with `processImage`.
 	func regenerateThumbnail(for imageSource: URL, on req: Request) async throws {
 		let imageName = imageSource.lastPathComponent
 		return try await req.application.threadPool.runIfActive(eventLoop: req.eventLoop) {
 			let data = try Data(contentsOf: imageSource)
-
-			let imageTypes: [ImportableFormat] = [.jpg, .png, .gif, .webp, .tiff, .bmp, .wbmp]
-			var foundType: ImportableFormat? = nil
-			var foundImage: GDImage?
-			for type in imageTypes {
-				foundImage = try? GDImage(data: data, as: type) 
-				if foundImage != nil{
-					foundType = type
-					break
-				}
-			}
-			guard let image = foundImage, let imageType = foundType else {
-				throw GDError.invalidImage(reason: "No matching raster formatter for given image found")
-			}
+			let (image, imageType, origOrientation) = try Self.loadImageFromData(data)
 
 			let destinationDir = Settings.shared.userImagesRootPath
 					.appendingPathComponent(ImageSizeGroup.thumbnail.rawValue)
@@ -246,12 +257,7 @@ extension APIRouteCollection {
 			}
 			let thumbPath = destinationDir.appendingPathComponent(imageName)
 
-			guard let thumbnail = image.resizedTo(height: Settings.shared.imageThumbnailSize) else {
-				throw Abort(.internalServerError, reason: "Error generating thumbnail image")
-			}
-
-			let thumbnailData = try thumbnail.export(as: ExportableFormat(imageType))
-			try thumbnailData.write(to: thumbPath)
+			try Self.createThumbnail(from: image, preserving: origOrientation, as: imageType, to: thumbPath, on: req)
 		}.get()
 	}
 

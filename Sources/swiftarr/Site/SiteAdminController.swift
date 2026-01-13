@@ -153,12 +153,12 @@ struct SiteAdminController: SiteControllerUtils {
 		var levelName: String
 		var targetLevel: String
 
-		init(_ req: Request, current: [UserHeader], searchStr: String, searchResults: [UserHeader]?) throws {
-			trunk = .init(req, title: "Manage Moderators", tab: .admin)
+		init(_ req: Request, current: [UserHeader], searchStr: String, searchResults: [UserHeader]?, levelName: String) throws {
+			trunk = .init(req, title: "Manage \(levelName)", tab: .admin)
 			self.currentMembers = current
 			self.userSearch = searchStr
 			self.searchResults = searchResults
-			levelName = ""
+			self.levelName = levelName
 			targetLevel = ""
 		}
 	}
@@ -1113,9 +1113,9 @@ struct SiteAdminController: SiteControllerUtils {
 			req,
 			current: currentMembers,
 			searchStr: searchStr,
-			searchResults: searchResults
+			searchResults: searchResults,
+			levelName: "Moderator"
 		)
-		ctx.levelName = "Moderator"
 		ctx.targetLevel = "moderator"
 		return try await req.view.render("admin/showModerators", ctx)
 	}
@@ -1137,9 +1137,9 @@ struct SiteAdminController: SiteControllerUtils {
 			req,
 			current: currentMembers,
 			searchStr: searchStr,
-			searchResults: searchResults
+			searchResults: searchResults,
+			levelName: "TwitarrTeam"
 		)
-		ctx.levelName = "TwitarrTeam"
 		ctx.targetLevel = "twitarrteam"
 		return try await req.view.render("admin/showModerators", ctx)
 	}
@@ -1161,9 +1161,9 @@ struct SiteAdminController: SiteControllerUtils {
 			req,
 			current: currentMembers,
 			searchStr: searchStr,
-			searchResults: searchResults
+			searchResults: searchResults,
+			levelName: "THO"
 		)
-		ctx.levelName = "THO"
 		ctx.targetLevel = "tho"
 		return try await req.view.render("admin/showModerators", ctx)
 	}

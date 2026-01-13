@@ -92,11 +92,11 @@ struct UserController: APIRouteCollection {
 
 		// endpoints available only when logged in
 		let tokenAuthGroup = userRoutes.tokenRoutes()
-		tokenAuthGroup.get("whoami", use: whoamiHandler)
+		tokenAuthGroup.get("whoami", use: whoamiHandler).setUsedForPreregistration()
 		tokenAuthGroup.post("verify", use: verifyHandler)
 		tokenAuthGroup.post("password", use: passwordHandler).setUsedForPreregistration()
-		tokenAuthGroup.post("username", use: usernameHandler)
-		tokenAuthGroup.post(userIDParam, "username", use: usernameHandler)
+		tokenAuthGroup.post("username", use: usernameHandler).setUsedForPreregistration()
+		tokenAuthGroup.post(userIDParam, "username", use: usernameHandler) // No prereg for mod endpoint
 		tokenAuthGroup.post("add", use: addHandler)
 
 		tokenAuthGroup.on(.POST, "image", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: imageHandler)
@@ -356,8 +356,8 @@ struct UserController: APIRouteCollection {
 	/// while `/api/v3/user/:userID/username` allows moderators to change the username of the indicated user.
 	///
 	/// - Parameter requestBody: `UserUsernameData` containing the user's desired new username.
-	/// - Throws: 400 error if the username is an invalid format.
-	///   403 error if you change username more than once per 20 hours (to prevent abuse). Or if the user is a `.client`.
+	/// - Throws: 400 error if the username is an invalid format. Or is special.
+	///   403 error if you change username more than once per 20 hours (to prevent abuse).
 	///   409 error if the username is not available.
 	/// - Returns: 201 Created on success.
 	func usernameHandler(_ req: Request) async throws -> HTTPStatus {
@@ -377,16 +377,14 @@ struct UserController: APIRouteCollection {
 		}
 		try user.guardCanEditProfile(ofUser: targetUser)
 		try guardNotSpecialAccount(targetUser)
-		// clients are hard-coded
-		guard targetUser.accessLevel != .client else {
-			throw Abort(.forbidden, reason: "username change would break a client")
-		}
 		// see `UserUsernameData.validations()`
 		let data = try ValidatingJSONDecoder().decode(UserUsernameData.self, fromBodyOf: req)
-		// check for existing username
-		guard try await User.query(on: req.db).filter(\.$username, .custom("ilike"), data.username).first() == nil
-		else {
-			throw Abort(.conflict, reason: "username '\(data.username)' is not available")
+		// check for existing username (case-insensitive)
+		if let existingUser = try await User.query(on: req.db).filter(\.$username, .custom("ilike"), data.username).first() {
+			// Allow case-only changes: if the found user is the same user, allow the change
+			guard existingUser.id == targetUser.id else {
+				throw Abort(.conflict, reason: "username '\(data.username)' is not available")
+			}
 		}
 		// Check for recent name change; throw if the user has a profileEdit in the last 20 hours where the username doesn't match.
 		if targetUser.id == user.id {
