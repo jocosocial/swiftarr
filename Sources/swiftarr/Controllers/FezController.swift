@@ -1001,10 +1001,7 @@ extension FezController {
 	func getJoinedChats(_ req: Request, urlQuery: FezURLQueryStruct) async throws -> FezListData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let effectiveUser = try getEffectiveUser(user: cacheUser, req: req)
-		// For privileged mailboxes, use the actual user's ID to query FezParticipants
-		// This ensures each user has their own read tracking for privileged mailbox conversations
-		let queryUserID = effectiveUser.userID != cacheUser.userID ? cacheUser.userID : effectiveUser.userID
-		
+
 		// If accessing a privileged mailbox, we need to include fezzes where the privileged mailbox user is a participant
 		// and ensure FezParticipants exist for the actual user
 		if effectiveUser.userID != cacheUser.userID {
@@ -1022,8 +1019,22 @@ extension FezController {
 			}
 		}
 		
-		let query = FezParticipant.query(on: req.db).filter(\.$user.$id == queryUserID)
+		// We just also need to do a particiation check against the effective user
+		// now that we build pivots for privileged mailboxes.
+		let query = FezParticipant.query(on: req.db)
 			.join(FriendlyFez.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
+			// Use the actual user's ID because we always track particiation now.
+			.filter(\.$user.$id == cacheUser.userID)
+			// This next part is hideous but seems to be the only schema-safe way to do a
+			// "FIELD contains VALUE" filter when what we want is "VALUE in FIELD".
+			// This uses the effective user because that dictates whether you're coming in as
+			// actual user or privileged mailbox user. Simply filtering on actual shows privileged
+			// chats in the personal seamail.
+			.filter(
+				DatabaseQuery.Field.path(FriendlyFez.path(for: \.$participantArray), schema: FriendlyFez.schema),
+				.custom("@>"),
+				DatabaseQuery.Value.custom("ARRAY['\(unsafeRaw: effectiveUser.userID.uuidString)']::uuid[]" as SQLQueryString)
+			)
 		if let includeTypes = try urlQuery.getTypes() {
 			query.filter(FriendlyFez.self, \.$fezType ~~ includeTypes)
 		}
