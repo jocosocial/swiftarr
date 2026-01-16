@@ -24,7 +24,7 @@ struct ForumController: APIRouteCollection {
 		tokenAuthGroup.get("categories", categoryIDParam, use: categoryForumsHandler)
 
 		// Forums - CRUD first, then actions on forums
-		tokenAuthGroup.on(.POST, "categories", categoryIDParam, "create", body: .collect(maxSize: "30mb"), use: forumCreateHandler)
+		tokenAuthGroup.on(.POST, "categories", categoryIDParam, "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: forumCreateHandler)
 		tokenAuthGroup.get(forumIDParam, use: forumThreadHandler)  // Returns a forum thread by ID
 		tokenAuthGroup.get("post", postIDParam, "forum", use: postForumThreadHandler)  // Returns the forum a post is in.
 		tokenAuthGroup.get("forevent", ":event_id", use: eventForumThreadHandler)  // Returns the forum for an event
@@ -58,9 +58,9 @@ struct ForumController: APIRouteCollection {
 		tokenAuthGroup.get("unread", use: unreadHandler)
 
 		// Posts - CRUD first, then actions on posts
-		tokenAuthGroup.on(.POST, forumIDParam, "create", body: .collect(maxSize: "30mb"), use: postCreateHandler)
+		tokenAuthGroup.on(.POST, forumIDParam, "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: postCreateHandler)
 		tokenAuthGroup.get("post", postIDParam, use: postHandler)
-		tokenAuthGroup.on(.POST, "post", postIDParam, "update", body: .collect(maxSize: "30mb"), use: postUpdateHandler)
+		tokenAuthGroup.on(.POST, "post", postIDParam, "update", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: postUpdateHandler)
 		tokenAuthGroup.post("post", postIDParam, "delete", use: postDeleteHandler)
 		tokenAuthGroup.delete("post", postIDParam, use: postDeleteHandler)
 
@@ -1075,6 +1075,7 @@ struct ForumController: APIRouteCollection {
 		// see `ForumCreateData.validations()`
 		try cacheUser.guardCanCreateContent()
 		let data = try ValidatingJSONDecoder().decode(ForumCreateData.self, fromBodyOf: req)
+		try guardForumPostImages(data.firstPost.images, for: cacheUser)
 		// check authorization to create
 		let category = try await Category.findFromParameter(categoryIDParam, on: req)
 		guard cacheUser.accessLevel.hasAccess(category.accessLevelToCreate) else {
@@ -1082,7 +1083,7 @@ struct ForumController: APIRouteCollection {
 		}
 		try guardUserCanAccessCategory(cacheUser, category: category)
 		// process images
-		let imageFilenames = try await self.processImages(data.firstPost.images, usage: .forumPost, on: req)
+		let imageFilenames = try await self.processImages(data.firstPost.images, usage: .forumPost, maxImages: Settings.shared.getMaxForumPostImages(for: cacheUser), on: req)
 		// create forum
 		let effectiveAuthor = data.firstPost.effectiveAuthor(actualAuthor: cacheUser, on: req)
 		let forum = try Forum(title: data.title, category: category, creatorID: effectiveAuthor.userID, isLocked: false)
@@ -1243,6 +1244,7 @@ struct ForumController: APIRouteCollection {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// see `PostContentData.validations()`
 		let newPostData = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
+		try guardForumPostImages(newPostData.images, for: cacheUser)
 		// get forum
 		let forum = try await Forum.findFromParameter(forumIDParam, on: req) { query in
 			query.with(\.$category)
@@ -1254,7 +1256,7 @@ struct ForumController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "user cannot post in forum")
 		}
 		// process images
-		let filenames = try await self.processImages(newPostData.images, usage: .forumPost, on: req)
+		let filenames = try await self.processImages(newPostData.images, usage: .forumPost, maxImages: Settings.shared.getMaxForumPostImages(for: cacheUser), on: req)
 		// create post
 		let effectiveAuthor = newPostData.effectiveAuthor(actualAuthor: cacheUser, on: req)
 		let forumPost = try ForumPost(
@@ -1426,6 +1428,7 @@ struct ForumController: APIRouteCollection {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// see `PostContentData.validations()`
 		let newPostData = try ValidatingJSONDecoder().decode(PostContentData.self, fromBodyOf: req)
+		try guardForumPostImages(newPostData.images, for: cacheUser)
 		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
 			query.with(\.$forum) { forum in
 				forum.with(\.$category)
@@ -1436,7 +1439,7 @@ struct ForumController: APIRouteCollection {
 		// ensure user has write access, the post can be modified by them, and the forum isn't locked.
 		try guardUserCanPostInForum(cacheUser, in: post.forum, editingPost: post)
 		// process images
-		let filenames = try await self.processImages(newPostData.images, usage: .forumPost, on: req)
+		let filenames = try await self.processImages(newPostData.images, usage: .forumPost, maxImages: Settings.shared.getMaxForumPostImages(for: cacheUser), on: req)
 		// update if there are changes
 		let normalizedText = newPostData.text.replacingOccurrences(of: "\r\n", with: "\r")
 		if post.text != normalizedText || post.images != filenames {
@@ -1540,6 +1543,15 @@ struct ForumController: APIRouteCollection {
 
 // Utilities for route methods
 extension ForumController {
+
+	/// Ensures the given user's images array doesn't exceed the allowed limit for forum posts.
+	/// Shutternauts are allowed up to 8 images, other users are limited by the `maxForumPostImages` setting.
+	func guardForumPostImages(_ images: [ImageUploadData], for user: UserCacheData) throws {
+		let maxImages = Settings.shared.getMaxForumPostImages(for: user)
+		guard images.count <= maxImages else {
+			throw Abort(.badRequest, reason: "posts are limited to \(maxImages) image attachments")
+		}
+	}
 
 	/// Ensures the given user has appropriate access to create or edit posts in the given forum. If editing a post, you must pass the post in the `editingPost` parameter.
 	func guardUserCanPostInForum(_ user: UserCacheData, in forum: Forum, editingPost: ForumPost? = nil) throws {
