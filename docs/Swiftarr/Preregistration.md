@@ -8,7 +8,7 @@
 
 ## Account Creation
 
-Instructions are provided below for web and native iOS/Android devices. We suggest using the native iOS/Android apps first with web as a secondary option.
+Accounts are new every year. Instructions are provided below for web and native iOS/Android devices. We suggest using the native iOS/Android apps first with web as a secondary option.
 
 ### Web
 
