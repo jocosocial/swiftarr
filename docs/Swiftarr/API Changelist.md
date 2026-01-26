@@ -208,3 +208,6 @@ associated AddedToChat field value increase.
 * `GET /api/v3/client/settings` now also includes `minAccessLevel` and `maxForumPostImages`.
 * Added `maxForumPostImages` to `SettingsAdminData`.
 * `PostContentData` `images` can now incude up to 8 `ImageUploadData`, conditional based on role and settings.
+
+## Jan 25, 2026
+* `GET /api/v3/fez/joined` with `onlynew=[true,false]` now include/exclude newly added-to fezzes.
