@@ -52,7 +52,7 @@ import Vapor
 /// Usage: #addJocomoji(String) -> String
 struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 	static let jocomoji = [
-		"buffet", "die-ship", "die", "hottub", "joco", "pirate", "ship-front",
+		"back-deck-juice", "buffet", "die-ship", "die", "hottub", "joco", "pirate", "ship-front",
 		"ship", "towel-monkey", "tropical-drink", "wangwang", "zombie",
 	]
 
