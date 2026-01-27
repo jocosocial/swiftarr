@@ -21,6 +21,11 @@ final class FezParticipant: Model, @unchecked Sendable {
 	/// Otherwise this field should be NIL or FALSE.
 	@Field(key: "mute") var isMuted: Bool?
 
+	/// True if the user was recently added to this Fez by another user.
+	/// Set to true when an .addedToChat notification is generated, cleared when the user views the fez.
+	/// Otherwise this field should be NIL or FALSE.
+	@Field(key: "added_to") var addedTo: Bool?
+
 	/// Timestamp of the model's soft-deletion, set automatically.
 	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
 
@@ -47,6 +52,7 @@ final class FezParticipant: Model, @unchecked Sendable {
 		self.readCount = 0
 		self.hiddenCount = 0
 		self.isMuted = nil
+		self.addedTo = nil
 	}
 }
 
@@ -91,6 +97,20 @@ struct AddDeletedTimestampToFezParticipantSchema: AsyncMigration {
 	func revert(on database: Database) async throws {
 		try await database.schema("fez+participants")
 			.deleteField("deleted_at")
+			.update()
+	}
+}
+
+struct AddAddedToFieldToFezParticipantSchema: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("fez+participants")
+			.field("added_to", .bool)
+			.update()
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema("fez+participants")
+			.deleteField("added_to")
 			.update()
 	}
 }

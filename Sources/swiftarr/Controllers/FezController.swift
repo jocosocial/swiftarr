@@ -314,6 +314,11 @@ struct FezController: APIRouteCollection {
 			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
 		}
 		let pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first()
+		// Clear the addedTo flag when the user views the fez
+		if let pivot = pivot, pivot.addedTo == true {
+			pivot.addedTo = false
+			try await pivot.save(on: req.db)
+		}
 		var fezData = try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
 		if let _ = fezData.members {
 			let (posts, paginator) = try await buildPostsForFez(fez, pivot: pivot, on: req, user: cacheUser, as: effectiveUser)
@@ -389,6 +394,7 @@ struct FezController: APIRouteCollection {
 		try await fez.save(on: req.db)
 		let newParticipant = try await getUserPivotForAdd(lfg: fez, userID: cacheUser.userID, on: req.db)
 		newParticipant.readCount = 0
+		newParticipant.addedTo = nil  // Clear addedTo for voluntary joins (user wasn't added by someone else)
 		let blocksAndMutes = cacheUser.getBlocks().union(cacheUser.getMutes())
 		newParticipant.hiddenCount = try await fez.$fezPosts.query(on: req.db).filter(\.$author.$id ~~ blocksAndMutes)
 			.count()
@@ -745,15 +751,15 @@ struct FezController: APIRouteCollection {
 		let newParticipant = try await getUserPivotForAdd(lfg: fez, userID: addingUserID, on: req.db)
 		newParticipant.readCount = 0
 		newParticipant.hiddenCount = hiddenPostCount
+		newParticipant.addedTo = true
 		try await req.db.transaction { transaction in
 			try await fez.save(on: transaction)
 			try await newParticipant.save(on: transaction)
 		}
 		// Tell chat members listening on chat sockets about the new member
 		try await forwardMembershipChangeToSockets(fez, participantID: addingUserID, joined: true, on: req)
-		// Tell the new member they've been added by the chat owner.
-		let infoStr = "@\(requester.username) added you to their \(fez.fezType.lfgLabel) titled \"\(fez.title)\""
-		try await addNotifications(users: [addingUserID], type: .addedToChat(fez.requireID(), fez.fezType), info: infoStr, on: req)
+		// Set addedTo = true and notify the new member they've been added
+		try await notifyAddedToFez(fez, for: newParticipant, by: requester, on: req)
 		let effectiveUser = getEffectiveUser(user: requester, req: req, fez: fez)
 		let requesterPivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first()
 		_ = try await storeNextJoinedAppointment(userID: addingUserID, on: req)
@@ -1015,12 +1021,31 @@ extension FezController {
 
 		if let onlyNew = urlQuery.onlynew {
 			// Uses a custom filter to test "readCount + hiddenCount < FriendlyFez.postCount". If true, there's unread messages
-			// in this chat. Because it uses a custom filter for parameter 1, the other params use the weird long-form notation.
-			query.filter(
-				DatabaseQuery.Field.custom("\(FezParticipant().$readCount.key) + \(FezParticipant().$hiddenCount.key)"),
-				onlyNew ? DatabaseQuery.Filter.Method.lessThan : DatabaseQuery.Filter.Method.equal,
-				DatabaseQuery.Field.path(FriendlyFez.path(for: \.$postCount), schema: FriendlyFez.schema)
-			)
+			// in this chat. Also includes chats where addedTo == true (user was recently added to the chat).
+			// Because it uses a custom filter for parameter 1, the other params use the weird long-form notation.
+			if onlyNew {
+				// Include fezzes with unread messages OR where user was recently added
+				query.group(.or) { group in
+					group.filter(
+						DatabaseQuery.Field.custom("\(FezParticipant().$readCount.key) + \(FezParticipant().$hiddenCount.key)"),
+						DatabaseQuery.Filter.Method.lessThan,
+						DatabaseQuery.Field.path(FriendlyFez.path(for: \.$postCount), schema: FriendlyFez.schema)
+					)
+					group.filter(FezParticipant.self, \.$addedTo == true)
+				}
+			} else {
+				// Only include fezzes with no unread messages AND not recently added
+				query.filter(
+					DatabaseQuery.Field.custom("\(FezParticipant().$readCount.key) + \(FezParticipant().$hiddenCount.key)"),
+					DatabaseQuery.Filter.Method.equal,
+					DatabaseQuery.Field.path(FriendlyFez.path(for: \.$postCount), schema: FriendlyFez.schema)
+				)
+				// Include both NULL and false (exclude only true). SQL NULL != true evaluates to NULL, not TRUE, so we need explicit NULL handling
+				query.group(.or) { group in
+					group.filter(FezParticipant.self, \.$addedTo == nil)
+					group.filter(FezParticipant.self, \.$addedTo == false)
+				}
+			}
 		}
 		if var searchStr = urlQuery.search {
 			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
@@ -1100,8 +1125,8 @@ extension FezController {
 			_ = try await storeNextJoinedAppointment(userID: fezParticipant, on: req)
 		}
 		let addedInitialUsers = Set(initialUsers).subtracting([user.userID, creator.userID])
-		let infoStr = "@\(creator.username) added you to their \(fez.fezType.lfgLabel) titled \"\(fez.title)\""
-		try await addNotifications(users: Array(addedInitialUsers), type: .addedToChat(fez.requireID(), fez.fezType), info: infoStr, on: req)
+		// Notify users who were added (does not include the creator)
+		try await notifyAddedToFez(fez, for: Array(addedInitialUsers), by: creator, on: req)
 		let creatorPivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == creator.userID).first()
 		let fezData = try buildFezData(from: fez, with: creatorPivot, posts: [], for: user, on: req)
 		return fezData
@@ -1344,5 +1369,39 @@ extension FezController {
 		}
 		// User is or is not a member of the fez. But they are themself and not anyone special.
 		return user
+	}
+
+	// Sets addedTo = true for the specified users and sends them .addedToChat notifications.
+	// Call this when users are added to a fez by someone else (not when they join voluntarily).
+	func notifyAddedToFez(_ fez: FriendlyFez, for addedUserIDs: [UUID], by adder: UserCacheData, on req: Request) async throws {
+		guard !addedUserIDs.isEmpty else { return }
+		
+		// Set addedTo = true for all added users
+		let addedPivots = try await fez.$participants.$pivots.query(on: req.db)
+			.filter(\.$user.$id ~~ addedUserIDs)
+			.all()
+		for pivot in addedPivots {
+			pivot.addedTo = true
+			try await pivot.save(on: req.db)
+		}
+		
+		// Send notifications to added users
+		try await redisNotifyAddedToFez(fez, users: addedUserIDs, by: adder, on: req)
+	}
+	
+	// Overload that takes a single FezParticipant directly (for when you already have the pivot).
+	// Sends an .addedToChat notification to that user.
+	//
+	// The only caller right now of this function has a preceeding database transaction that sets addedTo = true.
+	// I am keeping this function here for future use and to keep the logic of notifying
+	// in one place.
+	func notifyAddedToFez(_ fez: FriendlyFez, for participant: FezParticipant, by adder: UserCacheData, on req: Request) async throws {
+		try await redisNotifyAddedToFez(fez, users: [participant.$user.id], by: adder, on: req)
+	}
+
+	// Helper function to send a .addedToChat notification to a list of users.
+	private func redisNotifyAddedToFez(_ fez: FriendlyFez, users: [UUID], by adder: UserCacheData, on req: Request) async throws {
+		let infoStr = "@\(adder.username) added you to their \(fez.fezType.lfgLabel) titled \"\(fez.title)\""
+		try await addNotifications(users: users, type: .addedToChat(fez.requireID(), fez.fezType), info: infoStr, on: req)
 	}
 }
