@@ -208,3 +208,6 @@ associated AddedToChat field value increase.
 * `GET /api/v3/client/settings` now also includes `minAccessLevel` and `maxForumPostImages`.
 * Added `maxForumPostImages` to `SettingsAdminData`.
 * `PostContentData` `images` can now incude up to 8 `ImageUploadData`, conditional based on role and settings.
+
+## Feb 02, 2026
+* New `EventType` of `.dining`

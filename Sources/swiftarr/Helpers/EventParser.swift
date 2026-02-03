@@ -128,6 +128,8 @@ final class EventParser {
 						eventType = .signing
 					case "WORKSHOP":
 						eventType = .workshop
+					case "DINING":
+						eventType = .dining
 					default:
 						eventType = .general
 					}
