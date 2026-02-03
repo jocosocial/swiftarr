@@ -313,7 +313,17 @@ struct FezController: APIRouteCollection {
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
 			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
 		}
-		let pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first()
+		// For privileged mailboxes, use the actual user's ID to query/ensure per-user FezParticipant
+		// This ensures each user has their own read tracking for privileged mailbox conversations
+		let pivot: FezParticipant?
+		if effectiveUser.userID != cacheUser.userID {
+			// For privileged mailboxes, ensure a pivot exists for the actual user
+			// This will query and create if needed, avoiding redundant queries
+			pivot = try await ensureFezParticipantForUser(fez: fez, user: cacheUser, on: req, isPrivilegedMailbox: true)
+		} else {
+			// For normal cases, just query for existing pivot (don't create if missing)
+			pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first()
+		}
 		var fezData = try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
 		if let _ = fezData.members {
 			let (posts, paginator) = try await buildPostsForFez(fez, pivot: pivot, on: req, user: cacheUser, as: effectiveUser)
@@ -991,8 +1001,40 @@ extension FezController {
 	func getJoinedChats(_ req: Request, urlQuery: FezURLQueryStruct) async throws -> FezListData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let effectiveUser = try getEffectiveUser(user: cacheUser, req: req)
-		let query = FezParticipant.query(on: req.db).filter(\.$user.$id == effectiveUser.userID)
+
+		// If accessing a privileged mailbox, we need to include fezzes where the privileged mailbox user is a participant
+		// and ensure FezParticipants exist for the actual user
+		if effectiveUser.userID != cacheUser.userID {
+			// Find all FezParticipants where the privileged mailbox user is the participant
+			// This gives us all fezzes where the privileged mailbox user is a member
+			let privilegedPivots = try await FezParticipant.query(on: req.db)
+				.filter(\.$user.$id == effectiveUser.userID)
+				.join(FriendlyFez.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
+				.all()
+			
+			// Ensure FezParticipants exist for the actual user for these privileged mailbox conversations
+			for privilegedPivot in privilegedPivots {
+				let fez = try privilegedPivot.joined(FriendlyFez.self)
+				_ = try await ensureFezParticipantForUser(fez: fez, user: cacheUser, on: req, isPrivilegedMailbox: true)
+			}
+		}
+		
+		// We just also need to do a particiation check against the effective user
+		// now that we build pivots for privileged mailboxes.
+		let query = FezParticipant.query(on: req.db)
 			.join(FriendlyFez.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
+			// Use the actual user's ID because we always track particiation now.
+			.filter(\.$user.$id == cacheUser.userID)
+			// This next part is hideous but seems to be the only schema-safe way to do a
+			// "FIELD contains VALUE" filter when what we want is "VALUE in FIELD".
+			// This uses the effective user because that dictates whether you're coming in as
+			// actual user or privileged mailbox user. Simply filtering on actual shows privileged
+			// chats in the personal seamail.
+			.filter(
+				DatabaseQuery.Field.path(FriendlyFez.path(for: \.$participantArray), schema: FriendlyFez.schema),
+				.custom("@>"),
+				DatabaseQuery.Value.custom("ARRAY['\(unsafeRaw: effectiveUser.userID.uuidString)']::uuid[]" as SQLQueryString)
+			)
 		if let includeTypes = try urlQuery.getTypes() {
 			query.filter(FriendlyFez.self, \.$fezType ~~ includeTypes)
 		}
@@ -1043,7 +1085,7 @@ extension FezController {
 			.sort(FriendlyFez.self, \.$updatedAt, .descending).range(urlQuery.calcRange()).all()
 		let fezDataArray = try pivots.map { pivot -> FezData in
 			let fez = try pivot.joined(FriendlyFez.self)
-			return try buildFezData(from: fez, with: pivot, for: effectiveUser, on: req)
+			return try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
 		}
 		return FezListData(paginator: Paginator(total: fezCount, start: urlQuery.calcStart(), limit: urlQuery.calcLimit()),
 				fezzes: fezDataArray)
@@ -1232,24 +1274,9 @@ extension FezController {
 			pivot.readCount = min(start + limit, fez.postCount - pivot.hiddenCount)
 			try await pivot.save(on: req.db)
 			// If the user has now read all the posts (except those hidden from them) mark this notification as viewed.
+			// Only mark as read for the current user, not all users in the privileged mailbox group.
 			if pivot.readCount + pivot.hiddenCount >= fez.postCount {
 				try await markNotificationViewed(user: user, type: .chatUnreadMsg(fez.requireID(), fez.fezType), on: req)
-				// If the user is part of a privileged mailbox (currently TwitarrTeam and Moderator)
-				// the first user to read the message counts it as read for everyone. The pivot
-				// has already been updated to reflect this, but a Redis notification will exist
-				// until this block executes which will mark the conversation read for all other
-				// privileged users of that level.
-				if let effectiveUsername = PrivilegedUser(rawValue: effectiveUser.username) {
-					var cacheUsers: [UserCacheData] = []
-					switch effectiveUsername {
-						case .TwitarrTeam: cacheUsers = req.userCache.allUsersWithAccessLevel(.twitarrteam)
-						case .moderator: cacheUsers = req.userCache.allUsersWithAccessLevel(.moderator)
-						case .admin, .THO: break // No special mailboxes for them.
-					}
-					// Mark as read for everyone in the group except the current user. We already
-					// did that above. Very minor optimization.
-					try await markNotificationViewed(for: cacheUsers.filter { $0.userID != user.userID }, type: .chatUnreadMsg(fez.requireID(), fez.fezType), on: req)
-				}
 			}
 		}
 		return (postDatas, paginator)
@@ -1268,6 +1295,81 @@ extension FezController {
 			return result
 		}
 		return try FezParticipant(userID, lfg)
+	}
+
+	/// Ensures a FezParticipant exists for the given user and fez, creating and initializing it if needed.
+	/// This is used when accessing privileged mailbox conversations to ensure per-user read tracking.
+	///
+	/// - Parameters:
+	///   - fez: The FriendlyFez to ensure participation for
+	///   - user: The UserCacheData for the actual user (not the effective/privileged mailbox user)
+	///   - req: The Request for database access
+	///   - isPrivilegedMailbox: Whether this is for a privileged mailbox context (effectiveUser != cacheUser)
+	/// - Returns: The FezParticipant for the user, either existing or newly created
+	func ensureFezParticipantForUser(fez: FriendlyFez, user: UserCacheData, on req: Request, isPrivilegedMailbox: Bool = false) async throws -> FezParticipant {
+		// Check if a FezParticipant already exists
+		if let existingPivot = try await getUserPivot(lfg: fez, userID: user.userID, on: req.db) {
+			return existingPivot
+		}
+		
+		// Create a new FezParticipant for the user
+		let pivot = try await getUserPivotForAdd(lfg: fez, userID: user.userID, on: req.db)
+		
+		// Initialize readCount and hiddenCount
+		let blocksAndMutes = user.getBlocks().union(user.getMutes())
+		pivot.hiddenCount = try await fez.$fezPosts.query(on: req.db).filter(\.$author.$id ~~ blocksAndMutes).count()
+		
+		// Initialize readCount based on context
+		if isPrivilegedMailbox {
+			// For privileged mailbox conversations, check Redis for existing unread notifications
+			// This ensures the readCount matches the Redis notification state
+			// Exception: If the user is the owner of the fez, they created it, so start as all read
+			if fez.$owner.id == user.userID {
+				// User created this conversation, initialize as all read
+				pivot.readCount = fez.postCount - pivot.hiddenCount
+			} else if let mailbox = getPrivilegedMailboxForFez(fez: fez, on: req) {
+				// Check Redis for unread count
+				let fezID = try fez.requireID()
+				if let redisUnreadCount = try await req.redis.getChatUnreadCount(fezID, for: user.userID, in: mailbox) {
+					// Redis has unread notifications, initialize readCount to reflect unread state
+					// readCount should be: postCount - redisUnreadCount - hiddenCount
+					// This ensures readCount + hiddenCount < postCount when there are unreads
+					pivot.readCount = max(0, fez.postCount - redisUnreadCount - pivot.hiddenCount)
+				} else {
+					// No Redis notification, initialize as all read
+					pivot.readCount = fez.postCount - pivot.hiddenCount
+				}
+			} else {
+				// Couldn't determine mailbox, default to all read
+				pivot.readCount = fez.postCount - pivot.hiddenCount
+			}
+		} else {
+			// For regular conversations, initialize as all read
+			pivot.readCount = fez.postCount - pivot.hiddenCount
+		}
+		
+		try await pivot.save(on: req.db)
+		return pivot
+	}
+
+	/// Determines the appropriate MailInbox for a fez based on privileged mailbox participants.
+	/// Returns the privileged mailbox inbox if TwitarrTeam or moderator is a participant, otherwise returns nil.
+	/// - Parameters:
+	///   - fez: The FriendlyFez to check
+	///   - req: The Request for userCache access
+	/// - Returns: The MailInbox if a privileged mailbox user is a participant, nil otherwise
+	func getPrivilegedMailboxForFez(fez: FriendlyFez, on req: Request) -> MailInbox? {
+		// Check if TwitarrTeam is a participant
+		if let ttUser = req.userCache.getUser(username: PrivilegedUser.TwitarrTeam.rawValue),
+		   fez.participantArray.contains(ttUser.userID) {
+			return .twitarrTeamSeamail
+		}
+		// Check if moderator is a participant
+		if let modUser = req.userCache.getUser(username: PrivilegedUser.moderator.rawValue),
+		   fez.participantArray.contains(modUser.userID) {
+			return .moderatorSeamail
+		}
+		return nil
 	}
 
 	func userCanViewMemberData(user: UserCacheData, fez: FriendlyFez) -> Bool {
