@@ -552,8 +552,16 @@ struct SwiftarrConfigurator {
 			Settings.shared.nightlyJobHour = nightlyJobHour
 		}
 
+		// Check if UpdateScheduleJob should be enabled (defaults to true)
+		var enableUpdateScheduleJob = true
+		if let rawEnableUpdateScheduleJob = Environment.get("SWIFTARR_ENABLE_UPDATE_SCHEDULE_JOB"), rawEnableUpdateScheduleJob != "" {
+			enableUpdateScheduleJob = Bool(rawEnableUpdateScheduleJob) ?? true
+		}
+
 		// Setup the schedule update job to run at an interval and on-demand.
-		app.queues.schedule(UpdateScheduleJob()).hourly().at(5)
+		if enableUpdateScheduleJob {
+			app.queues.schedule(UpdateScheduleJob()).hourly().at(5)
+		}
 		app.queues.schedule(UserEventNotificationJob()).minutely().at(0)
 		app.queues.schedule(UpdateRedisJob()).daily().at(.init(integerLiteral: Settings.shared.nightlyJobHour), 0)
 		app.queues.add(OnDemandScheduleUpdateJob())
