@@ -29,7 +29,7 @@ struct AlertController: APIRouteCollection {
 		let flexAuthGroup = alertRoutes.flexRoutes()
 		flexAuthGroup.get("global", use: globalNotificationHandler)
 		flexAuthGroup.get("user", use: globalNotificationHandler)
-		flexAuthGroup.get("announcements", use: getAnnouncements)
+		flexAuthGroup.get("announcements", use: getAnnouncements).setUsedForPreregistration()
 		flexAuthGroup.get("dailythemes", use: getDailyThemes)
 
 		// endpoints available only when logged in
