@@ -166,8 +166,15 @@ struct KaraokeController: APIRouteCollection {
 		}
 		let songCount = try await songQuery.count()
 		let recentSongs = try await songQuery.sort(\.$createdAt, .descending).range(start..<(start + limit)).with(\.$song).all()
+		let favoriteSongIDs: Set<UUID>
+		if let user = try? req.auth.require(UserCacheData.self) {
+			let favorites = try await KaraokeFavorite.query(on: req.db).filter(\.$user.$id == user.userID).all()
+			favoriteSongIDs = Set(favorites.map { $0.$song.id })
+		} else {
+			favoriteSongIDs = []
+		}
 		let results = recentSongs.map {
-			KaraokePerformedSongsData(artist: $0.song.artist, songName: $0.song.title, performers: $0.performers, time: $0.createdAt ?? Date())
+			KaraokePerformedSongsData(songID: $0.$song.id, artist: $0.song.artist, songName: $0.song.title, performers: $0.performers, time: $0.createdAt ?? Date(), isFavorite: favoriteSongIDs.contains($0.$song.id))
 		}
 		return KaraokePerformedSongsResult(songs: results, paginator: Paginator(total: songCount, start: start, limit: limit))
 	}
