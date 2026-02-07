@@ -1201,7 +1201,8 @@ extension KaraokeSongData {
 					artist: song.artist,
 					songName: song.title,
 					performers: $0.performers,
-					time: $0.createdAt ?? Date()
+					time: $0.createdAt ?? Date(),
+					isFavorite: isFavorite
 				)
 			}
 		}
@@ -1223,6 +1224,8 @@ public struct KaraokePerformedSongsData: Content {
 	var performers: String
 	/// The time the performance was logged -- this is usually the time the song was performed.
 	var time: Date
+	/// TRUE if this user has favorited this song. Always FALSE if not logged in.
+	var isFavorite: Bool
 }
 
 /// Returns information about songs that have been performed in the Karaoke Lounge onboard.
