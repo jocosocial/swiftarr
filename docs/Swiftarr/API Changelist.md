@@ -217,3 +217,4 @@ associated AddedToChat field value increase.
 
 ## Feb 08, 2026
 * `GET /api/v3/photostream` now supports `eventID` and `locationName` query parameters.
+* `GET /api/v3/fez/joined` with `onlynew=[true,false]` now include/exclude newly added-to fezzes.
