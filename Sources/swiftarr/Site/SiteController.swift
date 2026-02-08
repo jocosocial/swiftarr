@@ -164,7 +164,7 @@ struct MessagePostContext: Encodable {
 	var forumTitlePlaceholder: String = "Forum Title"
 	var messageText: String = ""
 	var messageTextPlaceholder: String = "Post Text"
-	var photoFilenames: [String] = ["", "", "", ""]  // Must have 4 values to make Leaf templating work. Use "" as placeholder.
+	var photoFilenames: [String] = []  // Will be set based on content type. Use "" as placeholder for empty slots.
 	var allowedImageTypes: String
 	var displayUntil: String = ""  // Used by announcements.
 	var postErrorString: String = ""  // Prepopulates the error alert. Useful for partial successes.
@@ -197,8 +197,15 @@ struct MessagePostContext: Encodable {
 		case themeEdit(DailyThemeData)
 	}
 
-	init(forType: InitType) {
+	init(forType: InitType, userRoles: Set<UserRoleType>? = nil) {
 		allowedImageTypes = Settings.shared.validImageInputTypes.joined(separator: ", ")
+		// Determine max images based on user role (shutternauts get 8, others get setting value)
+		let maxImages: Int
+		if let roles = userRoles, roles.contains(.shutternaut) {
+			maxImages = 8
+		} else {
+			maxImages = Settings.shared.maxForumPostImages
+		}
 		switch forType {
 		// For creating a new tweet
 		case .tweet:
@@ -214,6 +221,7 @@ struct MessagePostContext: Encodable {
 		case .tweetEdit(let tweet):
 			messageText = tweet.text
 			photoFilenames = tweet.images ?? []
+			// Tweets also have a limit of 4 images (hardcoded for now)
 			while photoFilenames.count < 4 {
 				photoFilenames.append("")
 			}
@@ -226,6 +234,8 @@ struct MessagePostContext: Encodable {
 			postSuccessURL = "/forums/\(catID)"
 			showForumTitle = true
 			showModPostOptions = true
+			// Initialize with empty slots based on user role (same as forumPost since creating a forum includes creating the initial post)
+			photoFilenames = Array(repeating: "", count: maxImages)
 		// For editing a forum title
 		case .forumEdit(let forum):
 			forumTitle = forum.title
@@ -239,11 +249,13 @@ struct MessagePostContext: Encodable {
 			formAction = "/forum/\(forumID)/create"
 			postSuccessURL = "/forum/\(forumID)"
 			showModPostOptions = true
+			// Initialize with empty slots based on user role
+			photoFilenames = Array(repeating: "", count: maxImages)
 		// For editing a post in a forum
 		case .forumPostEdit(let withForumPost):
 			messageText = withForumPost.text
 			photoFilenames = withForumPost.images ?? []
-			while photoFilenames.count < 4 {
+			while photoFilenames.count < maxImages {
 				photoFilenames.append("")
 			}
 			formAction = "/forumpost/edit/\(withForumPost.postID)"
@@ -325,6 +337,14 @@ struct MessagePostFormContent: Codable {
 	let serverPhoto3: String?
 	let localPhoto4: Data?
 	let serverPhoto4: String?
+	let localPhoto5: Data?
+	let serverPhoto5: String?
+	let localPhoto6: Data?
+	let serverPhoto6: String?
+	let localPhoto7: Data?
+	let serverPhoto7: String?
+	let localPhoto8: Data?
+	let serverPhoto8: String?
 	let displayUntil: String?  // Used for announcements
 	let cruiseDay: Int32?  // Used for Daily Themes
 	let postAsTwitarrTeam: String?
@@ -342,6 +362,10 @@ extension MessagePostFormContent {
 			ImageUploadData(serverPhoto2, localPhoto2),
 			ImageUploadData(serverPhoto3, localPhoto3),
 			ImageUploadData(serverPhoto4, localPhoto4),
+			ImageUploadData(serverPhoto5, localPhoto5),
+			ImageUploadData(serverPhoto6, localPhoto6),
+			ImageUploadData(serverPhoto7, localPhoto7),
+			ImageUploadData(serverPhoto8, localPhoto8),
 		]
 			.filter { $0.filename != nil || $0.image != nil }
 		let postContent = PostContentData(

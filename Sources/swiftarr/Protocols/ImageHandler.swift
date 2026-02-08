@@ -118,10 +118,11 @@ extension APIRouteCollection {
 	/// - Parameters:
 	///   - images: The  images in `ImageUploadData` format. 
 	///   - usage: The type of model using the image content.
+	///   - maxImages: Maximum number of images allowed. Defaults to 4 for backward compatibility.
 	///	- req: The incoming `Request`, on which this processing must run.
 	/// - Returns: The generated names of the stored files.
-	func processImages(_ images: [ImageUploadData], usage: ImageUsage, on req: Request) async throws -> [String] {
-		guard images.count <= 4 else {
+	func processImages(_ images: [ImageUploadData], usage: ImageUsage, maxImages: Int = 4, on req: Request) async throws -> [String] {
+		guard images.count <= maxImages else {
 			throw Abort(.badRequest, reason: "Too many image attachments")
 		}
 		var savedImageNames = [String?]()

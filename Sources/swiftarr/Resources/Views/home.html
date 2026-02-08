@@ -62,7 +62,12 @@
 					<div class="card mb-2">	
 						<div class="card-header bg-success">
 							<span class="text-white">
-								<b>From:</b> #userByline(ann.author, "link-light")
+								<b>From:</b>
+								#if(trunk.preregistrationApplies):
+									#userByline(ann.author, "nolink")
+								#else:
+									#userByline(ann.author, "link-light")
+								#endif
 							</span>
 						</div>
 						<div class="card-body bg-light">
