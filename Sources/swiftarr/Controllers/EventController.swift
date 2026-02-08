@@ -244,8 +244,7 @@ struct EventController: APIRouteCollection {
 		}
 		var result = try EventData(event, isFavorite: false)
 		if let user = req.auth.get(UserCacheData.self) {
-			result.isFavorite = try await EventFavorite.query(on: req.db).filter(\.$user.$id == user.userID)
-					.filter(\.$event.$id == event.requireID()).first() != nil
+			result.isFavorite = try await getIsFavorite(userID: user.userID, eventID: event.requireID(), on: req)
 			if user.userRoles.contains(.shutternaut) || user.userRoles.contains(.shutternautmanager) || user.accessLevel >= .twitarrteam {
 				let photographers = try await EventFavorite.query(on: req.db).filter(\.$event.$id == event.requireID())
 						.filter(\.$photographer == true).all().map { try req.userCache.getHeader($0.$user.id) }
@@ -416,6 +415,25 @@ struct EventController: APIRouteCollection {
 	}
 	
 	// MARK: Utilities
+
+	/// Get whether the user has favorited the event.
+	/// This was added to deal with EventFavorite's getting created for Shutternauts
+	/// when they are photographing an event.
+	///
+	/// - Parameters:
+	///   - userID: The ID of the user.
+	///   - eventID: The ID of the event.
+	///   - req: The request object.
+	/// - Returns: TRUE if the user has favorited the event, FALSE otherwise.
+	func getIsFavorite(userID: UUID, eventID: UUID, on req: Request) async throws -> Bool {
+		if let favorite = try await EventFavorite.query(on: req.db)
+				.filter(\.$user.$id == userID)
+				.filter(\.$event.$id == eventID)
+				.first() {
+			return favorite.favorite
+		}
+		return false
+	}
 
 	func getFavorites(in req: Request, from events: [Event]? = nil) async throws -> Set<UUID> {
 		guard let cacheUser = req.auth.get (UserCacheData.self) else {

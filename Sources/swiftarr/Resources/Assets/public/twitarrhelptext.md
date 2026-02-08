@@ -27,6 +27,7 @@ Yes, you can! Twit-arr supports the standard emoji that are available through yo
 
 Additionally, Twit-arr has a few custom emoji that can be entered manually. But be warned - they might not render properly in all clients! The available custom emoji are:
 
+- :back-deck-juice:
 - :buffet:
 - :die-ship:
 - :die:

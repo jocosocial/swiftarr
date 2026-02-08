@@ -1197,10 +1197,12 @@ extension KaraokeSongData {
 		if song.$sungBy.value != nil {
 			performances = song.sungBy.map {
 				KaraokePerformedSongsData(
+					songID: songID,
 					artist: song.artist,
 					songName: song.title,
 					performers: $0.performers,
-					time: $0.createdAt ?? Date()
+					time: $0.createdAt ?? Date(),
+					isFavorite: isFavorite
 				)
 			}
 		}
@@ -1212,6 +1214,8 @@ extension KaraokeSongData {
 /// Returned by: `GET /api/v3/karaoke/performance`
 /// Incorporated into: `KaraokeSongData`, which itself is incorporated into `KaraokeSongResponseData`
 public struct KaraokePerformedSongsData: Content {
+	/// The database ID of the karaoke song that was performed.
+	var songID: UUID
 	/// The artist that originally performed this song.
 	var artist: String
 	/// The title of the song.
@@ -1220,6 +1224,8 @@ public struct KaraokePerformedSongsData: Content {
 	var performers: String
 	/// The time the performance was logged -- this is usually the time the song was performed.
 	var time: Date
+	/// TRUE if this user has favorited this song. Always FALSE if not logged in.
+	var isFavorite: Bool
 }
 
 /// Returns information about songs that have been performed in the Karaoke Lounge onboard.
@@ -1756,7 +1762,7 @@ struct PhotostreamUploadData: Content {
 public struct PostContentData: Content {
 	/// The new text of the forum post.
 	var text: String
-	/// An array of up to 4 images (1 when used in a Fez post). Each image can specify either new image data or an existing image filename.
+	/// An array of images (up to `Settings.shared.maxForumPostImages` for forum posts, 1 when used in a Fez post). Each image can specify either new image data or an existing image filename.
 	/// For new posts, images will generally contain all new image data. When editing existing posts, images may contain a mix of new and existing images.
 	/// Reorder ImageUploadDatas to change presentation order. Set images to [] to remove images attached to post when editing.
 	var images: [ImageUploadData]
@@ -1777,7 +1783,8 @@ extension PostContentData: RCFValidatable {
 			forKey: .text,
 			or: "post length of \(text.count) is over the 2048 character limit"
 		)
-		tester.validate(images.count < 5, forKey: .images, or: "posts are limited to 4 image attachments")
+		// Allow up to 8 images (theoretical max). Handlers will enforce role-based limits (shutternauts get 8, others get maxForumPostImages setting)
+		tester.validate(images.count <= 8, forKey: .images, or: "posts are limited to 8 image attachments")
 		let lines = text.replacingOccurrences(of: "\r\n", with: "\r").components(separatedBy: .newlines).count
 		tester.validate(lines <= 25, forKey: .text, or: "posts are limited to 25 lines of text")
 	}
@@ -2755,6 +2762,10 @@ public struct ClientSettingsData: Content {
 	var shipWifiSSID: String?
 	/// If TRUE, users can create accounts, log in, and edit their profile before the cruise in a restricted pre-registration mode.
 	var enablePreregistration: Bool
+	/// Minimum user access level required to use the full server (e.g., "banned", "verified", "moderator", "admin")
+	var minAccessLevel: String
+	/// Maximum number of images allowed per forum post.
+	var maxForumPostImages: Int
 	/// Unique identifier for this Postgres database installation (from pg_control_system())
 	var installationID: String
 }
@@ -2770,6 +2781,8 @@ extension ClientSettingsData {
 		self.scheduleUpdateURL = Settings.shared.scheduleUpdateURL
 		self.shipWifiSSID = Settings.shared.shipWifiSSID
 		self.enablePreregistration = Settings.shared.enablePreregistration
+		self.minAccessLevel = Settings.shared.minAccessLevel.rawValue
+		self.maxForumPostImages = Settings.shared.maxForumPostImages
 		self.installationID = installationID
 	}
 }

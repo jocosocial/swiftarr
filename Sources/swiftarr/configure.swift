@@ -376,7 +376,7 @@ struct SwiftarrConfigurator {
 		app.http.server.configuration.port = port
 
 		// Routes that upload images have a higher limit, applied to the route directly.
-		app.routes.defaultMaxBodySize = "10mb"
+		app.routes.defaultMaxBodySize = ByteCount(value: Settings.shared.defaultMaxBodySize)
 
 		// Enable HTTP response compression.
 		// app.http.server.configuration.responseCompression = .enabled
@@ -552,8 +552,16 @@ struct SwiftarrConfigurator {
 			Settings.shared.nightlyJobHour = nightlyJobHour
 		}
 
+		// Check if UpdateScheduleJob should be enabled (defaults to true)
+		var enableUpdateScheduleJob = true
+		if let rawEnableUpdateScheduleJob = Environment.get("SWIFTARR_ENABLE_UPDATE_SCHEDULE_JOB"), rawEnableUpdateScheduleJob != "" {
+			enableUpdateScheduleJob = Bool(rawEnableUpdateScheduleJob) ?? true
+		}
+
 		// Setup the schedule update job to run at an interval and on-demand.
-		app.queues.schedule(UpdateScheduleJob()).hourly().at(5)
+		if enableUpdateScheduleJob {
+			app.queues.schedule(UpdateScheduleJob()).hourly().at(5)
+		}
 		app.queues.schedule(UserEventNotificationJob()).minutely().at(0)
 		app.queues.schedule(UpdateRedisJob()).daily().at(.init(integerLiteral: Settings.shared.nightlyJobHour), 0)
 		app.queues.add(OnDemandScheduleUpdateJob())

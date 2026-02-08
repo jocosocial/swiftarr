@@ -23,6 +23,8 @@ enum EventType: String, Codable {
 	case signing
 	/// A workshop event.
 	case workshop
+	/// A dining event.
+	case dining
 
 	/// `.label` returns consumer-friendly case names.
 	var label: String {
@@ -38,6 +40,7 @@ enum EventType: String, Codable {
 		case .shadow: return "Shadow Event"
 		case .signing: return "Signing"
 		case .workshop: return "Workshop"
+		case .dining: return "Dining"
 		}
 	}
 }
