@@ -466,6 +466,12 @@ struct SitePerformerController: SiteControllerUtils {
 }
 
 extension SitePerformerController {
+	// Helper function to check if a URL contains a 4-digit year pattern (e.g., "/2026", "/2027").
+	// Used to filter out year-specific navigation links when scraping performer pages.
+	fileprivate func containsYearPattern(_ url: String) -> Bool {
+		return url.range(of: #"jococruise\.com/\d{4}"#, options: .regularExpression) != nil
+	}
+	
 	// Scrapes the performer listing page at the given URL, finds links to individual performer pages,
 	// and scrapes each one using buildPerformerFromURL to get full performer data.
 	// Meant to work with the JoCo Cruise guests page (e.g. "https://jococruise.com/guests/").
@@ -489,7 +495,7 @@ extension SitePerformerController {
 				let href = try link.attr("href")
 				// Filter to only jococruise.com links that look like performer pages, not navigation links
 				if href.contains("jococruise.com/") && !href.contains("jococruise.com/guests")
-						&& !href.contains("jococruise.com/2026") && !href.contains("jococruise.com/2027")
+						&& !containsYearPattern(href)
 						&& !href.contains("book.jococruise.com") {
 					performerURLs.append(href)
 				}
