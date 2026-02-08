@@ -5,21 +5,60 @@
     			<div class="col col-12">
 					<nav aria-label="breadcrumb">
 						<span class="swiftarr-breadcrumb-item"><a href="/">Home</a></span>
-						<span class="swiftarr-breadcrumb-item active" aria-current="page"><a href="/photostream)">Photo Stream</a></span>
+						<span class="swiftarr-breadcrumb-item"><a href="/photostream">Photo Stream</a></span>
+						#if(currentEventTitle != nil):
+							<span class="swiftarr-breadcrumb-item active" aria-current="page">#(currentEventTitle)</span>
+						#elseif(currentLocationName != nil):
+							<span class="swiftarr-breadcrumb-item active" aria-current="page">#(currentLocationName)</span>
+						#else:
+							<span class="swiftarr-breadcrumb-item active" aria-current="page">All Photos</span>
+						#endif
 					</nav>
 				</div>
 			</div>
+			<div class="row mb-2 align-items-center">
+				<div class="col">
+					#if(currentLocationName != nil):
+						<b>Filtered by Location: #(currentLocationName)</b>
+					#elseif(currentEventID != nil):
+						<b>Filtered by Event</b>
+					#else:
+						<b>All Photos</b>
+					#endif
+				</div>
+				#if(currentEventID == nil):
+					<div class="col col-auto">
+						<div class="dropdown">
+							<button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="locationFilterMenu" data-bs-toggle="dropdown" aria-expanded="false">
+								#if(currentLocationName != nil):
+									#(currentLocationName)
+								#else:
+									All Locations
+								#endif
+							</button>
+							<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="locationFilterMenu">
+								<li><a class="dropdown-item #if(currentLocationName == nil && currentEventID == nil):active#endif" href="/photostream">All Locations</a></li>
+								<li><hr class="dropdown-divider"></li>
+								<li><h6 class="dropdown-header">Filter by Location:</h6></li>
+								#for(location in locations):
+									<li><a class="dropdown-item #if(currentLocationName == location.name):active#endif" href="#(location.url)">#(location.name)</a></li>
+								#endfor
+							</ul>
+						</div>
+					</div>
+				#endif
+			</div>
 			<ul class="list-group">
-				#for(photo in photostream.photos):
+				#for(photo in photos):
 					<li class="list-group-item d-flex">
 						<button type="button" class="btn p-0 border-0" data-bs-toggle="modal" data-bs-target="\#imageCarouselModal">
 							<img src="/api/v3/image/thumb/#(photo.image)" class="swiftarr-post-image rounded img-fluid" alt="Photostream Image">
 						</button>
 						<div class="col-6 ms-2">
-							#if(photo.event != nil):
-								<h5 class="text-truncate"><a href="/events/#(photo.event.eventID)">#(photo.event.title)</a></h5>
+							#if(photo.titleUrl != nil):
+								<h5 class="text-truncate"><a href="#(photo.titleUrl)">#(photo.title)</a></h5>
 							#else:
-								<h5>#(photo.location)</h5>
+								<h5>#(photo.title)</h5>
 							#endif
 							<div>#staticTime(photo.createdAt)</div>
 							<a class="btn btn-primary" role="button" href="photostream/#(photo.postID)">link</a>

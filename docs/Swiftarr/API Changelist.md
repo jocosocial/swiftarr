@@ -209,5 +209,12 @@ associated AddedToChat field value increase.
 * Added `maxForumPostImages` to `SettingsAdminData`.
 * `PostContentData` `images` can now incude up to 8 `ImageUploadData`, conditional based on role and settings.
 
-## Jan 25, 2026
+## Feb 02, 2026
+* New `EventType` of `.dining`
+
+## Feb 07, 2026
+* `KaraokePerformedSongsData` now includes `songID` and `isFavorite`.
+
+## Feb 08, 2026
+* `GET /api/v3/photostream` now supports `eventID` and `locationName` query parameters.
 * `GET /api/v3/fez/joined` with `onlynew=[true,false]` now include/exclude newly added-to fezzes.
