@@ -1197,10 +1197,12 @@ extension KaraokeSongData {
 		if song.$sungBy.value != nil {
 			performances = song.sungBy.map {
 				KaraokePerformedSongsData(
+					songID: songID,
 					artist: song.artist,
 					songName: song.title,
 					performers: $0.performers,
-					time: $0.createdAt ?? Date()
+					time: $0.createdAt ?? Date(),
+					isFavorite: isFavorite
 				)
 			}
 		}
@@ -1212,6 +1214,8 @@ extension KaraokeSongData {
 /// Returned by: `GET /api/v3/karaoke/performance`
 /// Incorporated into: `KaraokeSongData`, which itself is incorporated into `KaraokeSongResponseData`
 public struct KaraokePerformedSongsData: Content {
+	/// The database ID of the karaoke song that was performed.
+	var songID: UUID
 	/// The artist that originally performed this song.
 	var artist: String
 	/// The title of the song.
@@ -1220,6 +1224,8 @@ public struct KaraokePerformedSongsData: Content {
 	var performers: String
 	/// The time the performance was logged -- this is usually the time the song was performed.
 	var time: Date
+	/// TRUE if this user has favorited this song. Always FALSE if not logged in.
+	var isFavorite: Bool
 }
 
 /// Returns information about songs that have been performed in the Karaoke Lounge onboard.

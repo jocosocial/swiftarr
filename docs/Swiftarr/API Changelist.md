@@ -211,3 +211,6 @@ associated AddedToChat field value increase.
 
 ## Feb 02, 2026
 * New `EventType` of `.dining`
+
+## Feb 07, 2027
+* `KaraokePerformedSongsData` now includes `songID` and `isFavorite`.
