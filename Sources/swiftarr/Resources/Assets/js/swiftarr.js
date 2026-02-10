@@ -474,6 +474,11 @@ async function submitAJAXForm(formElement, event) {
 		if (formElement.classList.contains('fileupload')) {
 			uploadBody = formElement.querySelector('input[type=file]').files[0];
 		}
+		else if (!formElement.querySelector('input[type=file]')) {
+			// For forms without file inputs, use URL-encoded instead of multipart/form-data
+			// to avoid MultipartKit parsing issues with simple text/checkbox forms.
+			uploadBody = new URLSearchParams(uploadBody);
+		}
 		let response = await fetch(formElement.action, { method: 'POST', body: uploadBody });
 		if (response.status < 300) {
 			let successURL = formElement.dataset.successurl;

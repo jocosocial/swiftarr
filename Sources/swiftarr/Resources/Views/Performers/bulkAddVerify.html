@@ -1,0 +1,140 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+			<div class="row">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item"><a href="/admin/performer/root">Manage Performers</a></li>
+							<li class="breadcrumb-item"><a href="/admin/performer/bulk">Bulk Add</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Verify Performer Import</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+
+			<div class="alert alert-info" role="alert">
+				<b>Note:</b> Images are not updated for existing performers. This is intentional to avoid needing to diff images.
+				To update a performer's image, edit them individually via the <a href="/admin/performer/add">Add Performer</a> form.
+			</div>
+
+			<div class="accordion mb-2" id="performerDiffAccordion">
+				<div class="accordion-item">
+					<h2 class="accordion-header" id="newPerformersHeader">
+						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="\#newPerformersCollapse" aria-expanded="false" aria-controls="newPerformersCollapse">
+							#count(diff.newPerformers) New Performers
+						</button>
+					</h2>
+					<div id="newPerformersCollapse" class="accordion-collapse collapse" aria-labelledby="newPerformersHeader">
+						<ul class="container-md mx-0 px-0 list-group">
+							#for(performer in diff.newPerformers):
+								<li class="list-group-item bg-transparent">
+									<div class="container-fluid">
+										<div class="row">
+											<div class="col">
+												<b>#(performer.header.name)</b>
+											</div>
+										</div>
+										#if(performer.bio):
+										<div class="row">
+											<div class="col">
+												<small class="text-secondary">#(performer.bio)</small>
+											</div>
+										</div>
+										#endif
+									</div>
+								</li>
+							#endfor
+						</ul>
+					</div>
+				</div>
+
+				<div class="accordion-item">
+					<h2 class="accordion-header" id="updatedPerformersHeader">
+						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="\#updatedPerformersCollapse" aria-expanded="false" aria-controls="updatedPerformersCollapse">
+							#count(diff.updatedPerformers) Updated Performers
+						</button>
+					</h2>
+					<div id="updatedPerformersCollapse" class="accordion-collapse collapse" aria-labelledby="updatedPerformersHeader">
+						<ul class="container-md mx-0 px-0 list-group">
+							#for(performer in diff.updatedPerformers):
+								<li class="list-group-item bg-transparent">
+									<div class="container-fluid">
+										<div class="row">
+											<div class="col">
+												<b>#(performer.header.name)</b>
+												<span class="text-secondary"><i>(profile changes detected)</i></span>
+											</div>
+										</div>
+									</div>
+								</li>
+							#endfor
+						</ul>
+					</div>
+				</div>
+
+				<div class="accordion-item">
+					<h2 class="accordion-header" id="unchangedHeader">
+						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="\#unchangedCollapse" aria-expanded="false" aria-controls="unchangedCollapse">
+							#(diff.unchangedCount) Unchanged Performers
+						</button>
+					</h2>
+					<div id="unchangedCollapse" class="accordion-collapse collapse" aria-labelledby="unchangedHeader">
+						<div class="p-3">
+							<span class="text-secondary">#(diff.unchangedCount) performers matched with no profile changes detected.</span>
+						</div>
+					</div>
+				</div>
+
+				<div class="accordion-item">
+					<h2 class="accordion-header" id="notInSourceHeader">
+						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="\#notInSourceCollapse" aria-expanded="false" aria-controls="notInSourceCollapse">
+							#count(diff.notInSourcePerformers) Performers Not In Source
+						</button>
+					</h2>
+					<div id="notInSourceCollapse" class="accordion-collapse collapse" aria-labelledby="notInSourceHeader">
+						<ul class="container-md mx-0 px-0 list-group">
+							#for(performer in diff.notInSourcePerformers):
+								<li class="list-group-item bg-transparent">
+									<div class="container-fluid">
+										<div class="row">
+											<div class="col">
+												<b>#(performer.name)</b>
+												<span class="text-secondary"><i>(in database but not found on scraped page)</i></span>
+											</div>
+										</div>
+									</div>
+								</li>
+							#endfor
+						</ul>
+					</div>
+				</div>
+			</div>
+
+			<form class="ajax" action="/admin/performer/bulk/apply" method="POST" data-successurl="/admin/performer/bulk/complete" id="bulkApplyForm">
+				<div class="row mb-2">
+					<div class="col">
+						<input type="checkbox" id="ignoreUpdates" name="ignoreUpdates">
+						<label for="ignoreUpdates">Ignore updates</label>
+						(skip updating existing performers with changed profiles)
+					</div>
+				</div>
+				<div class="row mb-2">
+					<div class="col">
+						<input type="checkbox" id="processDeletes" name="processDeletes">
+						<label for="processDeletes">Delete performers not in source</label>
+						(remove performers from database that were not found on the scraped page)
+					</div>
+				</div>
+				<div class="alert alert-danger mt-3 d-none" role="alert">
+				</div>
+				<div class="row mb-2">
+					<div class="col col-auto">
+						<button type="submit" class="btn btn-primary">Apply<span class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span></button>
+					</div>
+				</div>
+			</form>
+    	</div>
+	#endexport
+#endextend
