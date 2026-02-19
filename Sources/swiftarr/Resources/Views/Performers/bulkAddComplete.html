@@ -1,0 +1,28 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+			<div class="row">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item"><a href="/admin/performer/root">Manage Performers</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Import Complete</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<div class="row mb-2">
+				<div class="col">
+					<b>Performer import has been applied successfully.</b>
+				</div>
+			</div>
+			<div class="row mb-2">
+				<div class="col">
+					<a href="/performers" class="btn btn-outline-primary btn-sm">View Performers</a>
+					<a href="/admin/performer/root" class="btn btn-outline-secondary btn-sm ms-2">Back to Performer Admin</a>
+				</div>
+			</div>
+    	</div>
+	#endexport
+#endextend
