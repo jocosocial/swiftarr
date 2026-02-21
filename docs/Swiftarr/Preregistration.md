@@ -10,6 +10,8 @@
 
 Accounts are new every year. Instructions are provided below for web and native iOS/Android devices. We suggest using the native iOS/Android apps first with web as a secondary option.
 
+Uninstall any previous version of the native apps (such as from prior sailing or beta test) before proceeding.
+
 ### Web
 
 1.  Visit [https://start.twitarr.com](https://start.twitarr.com) on any device (does not need to be your phone).
