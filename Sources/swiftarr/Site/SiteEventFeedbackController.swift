@@ -328,7 +328,9 @@ struct SiteEventFeedbackController: SiteControllerUtils {
 	/// 
 	/// The returned page uses special css for printing, but doesn't contain a 'Print' button that opens the print dialog in the browser.
 	/// 
-	/// Each sheet contains a QR Code, and the URL encoded in that QR code 
+	/// Each sheet contains a QR Code, and the URL encoded in that QR code has the form 
+	/// "https://twitarr.com/eventfeedback?room=Rolling+Stone+Lounge", but with appropriate room names. The URL encoded in the QR Code
+	/// is always twitarr.com no matter what the current hostname is.
 	func printRoomPosters(_ req: Request) async throws -> View {
 		struct RoomPosterForm: Content {
 			var roomNames: String
@@ -340,10 +342,18 @@ struct SiteEventFeedbackController: SiteControllerUtils {
 		struct PageContext: Encodable {
 			var trunk: TrunkContext
 			var rooms: [RoomInfo]
+			var year: String
 			
 			init(_ req: Request, roomNames: [String]) throws {
 				trunk = .init(req, title: "Shadow Event Room Names", tab: .none)
 				rooms = try roomNames.map { try RoomInfo(name: $0) }
+				if let currentYear = Settings.shared.cruiseStartDateComponents.year {
+					year = "\(currentYear)"
+				}
+				else {
+					year = "2026"
+				}
+
 			}
 		}
 		let ctx = try PageContext(req, roomNames: roomNamesArray)
