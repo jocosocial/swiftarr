@@ -21,7 +21,7 @@ struct SiteEventFeedbackController: SiteControllerUtils {
 		// Not for Seamails, pages for posting new content, mod pages, etc. Logged-out users given one of these links should get
 		// redirect-chained through /login and back.
 		let globalRoutes = getGlobalRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .eventFeedback))
-		globalRoutes.get("eventfeedback", use: eventSelector).destination("Shadow Event Feedback")
+		globalRoutes.get("eventfeedback", use: eventSelector).destination("Shadow Event Feedback").setErrorSchemeOverride(htmlErrors: true)
 		globalRoutes.get("eventfeedback", "form", eventUIDParam, use: eventFeedbackForm)
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
