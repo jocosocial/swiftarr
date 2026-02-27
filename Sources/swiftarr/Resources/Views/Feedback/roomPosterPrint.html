@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 	<meta charset="utf-8">
-	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; connect-src *; img-src 'self' jococruise.com data: blob:; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'">
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; connect-src *; img-src 'self' jococruise.com data: blob:; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'; font-src 'self'">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link href="/css/printroomposter.css" rel="stylesheet">
 	<link rel="icon" type="image/vnd.microsoft.icon" href="/img/favicon.ico">
@@ -17,15 +17,19 @@
 <body>
 	#for(room in rooms):
 		<div class="page">
+			<div class="headerBlock">
+				<img class="jocoLogo" src="/img/Joco-_PrimaryLogo-Black-reversed.png">
+				<p>Shadow Cruise Event Host Feedback</p>
+				<p>#(room.name)</p>
+				<img class="qrCodeImage" src="#(room.qrCodeURL)">
+			</div>
 			<div class="centerBlock">
-				<h2>#(room.name)</h2>
-				<h2>Event Host Feedback</h2>
-				<br>
-				<img width="200pt" height="200pt" src="#(room.qrCodeURL)">
-				<h2>http://twitarr.com/eventfeedback</h2>
-				<p>
-					<b>Shadow Event Hosts</b>: After completing your event, please visit the above URL and fill out the feedback form
-					to tell THO how your event went.
+				<p>Dear Shadow Event Hosts,</p>
+				<p>After completing your event, please visit the above URL and fill out the feedback form
+					to tell the JoCo Cruise Home Office how your event went.</p>
+				<p>You can scan the QR code above to get the specific page for this venue; otherwise, visit 
+					http://twitarr.com/eventfeedback. (You don’t need Internet access for this, just connect to the ship’s WiFi.)</p>
+				<p> Thank you for running a Shadow Cruise Event on JoCo Cruise #(year)!</p>
 			</div>
 		</div>
 	#endfor
