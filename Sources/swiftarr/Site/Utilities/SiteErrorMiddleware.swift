@@ -66,8 +66,15 @@ public final class SiteErrorMiddleware: AsyncMiddleware {
 
 	func handleError(req: Request, error: Error) async throws -> Response {
 		if let route = req.route {
+			// If this request got decorated with a key specifying whether to produce html or json error, honor that.
 			if let store = req.storage.get(SiteErrorStorageKey.self), let htmlErrors = store.produceHTMLFormattedErrors {
 				if !htmlErrors {
+					throw error
+				}
+			}
+			// If the route has metadata specifying an error scheme is should use, honor that.
+			else if let overrideWithHTML = route.errorSchemeOverride() {
+				if !overrideWithHTML {
 					throw error
 				}
 			}

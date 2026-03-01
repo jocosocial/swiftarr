@@ -12,6 +12,7 @@ struct SiteFileController: SiteControllerUtils {
 
 		// Routes that the user does not need to be logged in to access.
 		app.get("css", "**", use: streamCSSFile)
+		app.get("fonts", "**", use: streamFontFile)
 		app.get("img", "**", use: streamImgFile)
 		app.get("js", "**", use: streamJSFile)
 		app.get("microkaraoke", "**", use: streamMKFile)
@@ -25,6 +26,11 @@ struct SiteFileController: SiteControllerUtils {
 	// :catchall is any path after "/css/", not just a single filename.
 	func streamCSSFile(_ req: Request) throws -> Response {
 		return try streamFile(req, basePath: "css")
+	}
+
+	// `GET /fonts/:catchall`
+	func streamFontFile(_ req: Request) throws -> Response {
+		return try streamFile(req, basePath: "fonts")
 	}
 
 	// `GET /img/:catchall`

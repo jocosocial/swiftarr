@@ -124,6 +124,21 @@ public struct EventUpdateDifferenceData: Content {
 	var minorChangeEvents: [EventData] = []
 }
 
+/// Used to return the results of comparing a bulk-scraped set of performers against the performers already in the database.
+/// The diff groups performers into categories based on whether they need to be created, updated, or are unchanged.
+///
+/// Returned by: `GET /api/v3/admin/performer/bulk/verify`
+public struct PerformerUpdateDifferenceData: Content {
+	/// Performers scraped from web that don't exist in the database. Will be created on apply.
+	var newPerformers: [PerformerData] = []
+	/// Performers that exist in both source and DB but have profile changes. Updated on apply unless "ignore updates" is checked.
+	var updatedPerformers: [PerformerData] = []
+	/// Count of performers that matched and had no changes.
+	var unchangedCount: Int = 0
+	/// Performers in DB but not found in the scraped source. Only deleted on apply if "process deletes" is checked.
+	var notInSourcePerformers: [PerformerHeaderData] = []
+}
+
 public struct EventUpdateLogData: Content {
 	/// The ID of this log entry
 	var entryID: Int

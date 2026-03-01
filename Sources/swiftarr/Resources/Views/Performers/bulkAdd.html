@@ -1,0 +1,53 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+			<div class="row">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item"><a href="/admin/performer/root">Manage Performers</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Bulk Add Performers</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<ul class="list-group mt-3">
+				<li class="list-group-item active">
+					<b>Import From URL</b>
+				</li>
+				<li class="list-group-item bg-transparent">
+					Fetches the performer listing page at the given URL, scrapes each linked performer page for their full profile data,
+					and compares the results against performers already in the database. You will be shown a summary of changes before anything is applied.
+					This may take a while as each performer page is fetched individually.
+				</li>
+				<li class="list-group-item bg-transparent mb-3">
+					<form class="ajax" action="/admin/performer/bulk/fetch" method="POST" data-successurl="/admin/performer/bulk/verify" id="bulkFetchForm">
+						<div class="container-fluid">
+							<div class="row mb-2">
+								<div class="col-sm-8">
+									<label for="sourceURL" class="form-label">Source URL</label>
+									<input type="text" class="form-control" id="sourceURL" name="sourceURL" value="#(defaultURL)" required>
+								</div>
+							</div>
+							<div class="alert alert-danger mt-3 d-none" role="alert"></div>
+							<div class="row mb-2">
+								<div class="col col-auto gx-0">
+									<button type="submit" class="btn btn-primary">Fetch &amp; Compare<span class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span></button>
+								</div>
+							</div>
+						</div>
+					</form>
+				</li>
+			</ul>
+			<ul class="list-group mt-3">
+				<li class="list-group-item active">
+					<b>Import From File</b>
+				</li>
+				<li class="list-group-item bg-transparent text-muted">
+					Import performers from a local file. <b>NOT CURRENTLY IMPLEMENTED.</b>
+				</li>
+			</ul>
+    	</div>
+	#endexport
+#endextend

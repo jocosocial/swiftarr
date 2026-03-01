@@ -22,6 +22,17 @@ extension Route {
     public func usedForPreregistration() -> Bool {
 		return (self.userInfo["usedForPreregistration"] as? Bool?) == true
     }
+
+	/// Adds metadata to a site route that indicates whether it should reutrn JSON or HTML errors. Overrides logic
+	/// in SiteErrorMiddleware.
+	@discardableResult public func setErrorSchemeOverride(htmlErrors: Bool) -> Route {
+        self.userInfo["htmlErrors"] = htmlErrors
+        return self
+    }
+    
+    public func errorSchemeOverride() -> Bool? {
+		return self.userInfo["htmlErrors"] as? Bool ?? nil
+    }
 }
 
 
