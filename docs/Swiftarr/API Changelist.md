@@ -217,3 +217,6 @@ associated AddedToChat field value increase.
 
 ## Feb 08, 2026
 * `GET /api/v3/photostream` now supports `eventID` and `locationName` query parameters.
+
+## Feb 09, 2026
+* New admin endpoints for bulk performer import (TT and above): `POST /api/v3/admin/performer/bulk/upload`, `GET /api/v3/admin/performer/bulk/verify`, `POST /api/v3/admin/performer/bulk/apply`.

@@ -80,6 +80,12 @@ struct SitePerformerController: SiteControllerUtils {
 		ttRoutes.post("admin", "performer", "link", "upload", use: postLinkPerformersUpload)
 		ttRoutes.get("admin", "performer", "link", "verify", use: showLinkPerformersVerifyResults)
 		ttRoutes.post("admin", "performer", "link", "apply", use: postLinkPerformersApply)
+
+		ttRoutes.get("admin", "performer", "bulk", use: bulkAddPerformersPage)
+		ttRoutes.post("admin", "performer", "bulk", "fetch", use: postBulkFetchPerformers)
+		ttRoutes.get("admin", "performer", "bulk", "verify", use: bulkAddVerifyPage)
+		ttRoutes.post("admin", "performer", "bulk", "apply", use: postBulkApplyPerformers)
+		ttRoutes.get("admin", "performer", "bulk", "complete", use: bulkAddCompletePage)
 	}
 	
 	/// `GET /performers`
@@ -365,9 +371,152 @@ struct SitePerformerController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/admin/performer/\(performerID)", method: .DELETE)
 		return response.status
 	}
+
+// MARK: Bulk Add Performers
+
+	// `GET /admin/performer/bulk`
+	//
+	// Shows the landing page for bulk performer import. Offers two options: import from file (stub) and import from URL.
+	func bulkAddPerformersPage(_ req: Request) async throws -> View {
+		struct BulkAddPerformersPageContext: Encodable {
+			var trunk: TrunkContext
+			var defaultURL: String
+
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "Bulk Add Performers", tab: .admin)
+				defaultURL = "https://jococruise.com/guests/"
+			}
+		}
+		let ctx = try BulkAddPerformersPageContext(req)
+		return try await req.view.render("Performers/bulkAdd", ctx)
+	}
+
+	// `POST /admin/performer/bulk/fetch`
+	//
+	// Fetches the performer listing page at the given URL, scrapes all linked performer pages,
+	// and uploads the scraped data to the API for storage. On success, the browser navigates to the verify page.
+	func postBulkFetchPerformers(_ req: Request) async throws -> HTTPStatus {
+		struct BulkFetchFormData: Content {
+			var sourceURL: String
+		}
+		let formData = try req.content.decode(BulkFetchFormData.self)
+		let performers = try await buildPerformersFromListingPage(formData.sourceURL, on: req)
+		try await apiQuery(req, endpoint: "/admin/performer/bulk/upload", method: .POST, encodeContent: performers)
+		return .ok
+	}
+
+	// `GET /admin/performer/bulk/verify`
+	//
+	// Calls the API verify endpoint and renders the diff page showing new, updated, unchanged, and not-in-source performers.
+	func bulkAddVerifyPage(_ req: Request) async throws -> View {
+		let response = try await apiQuery(req, endpoint: "/admin/performer/bulk/verify")
+		let differenceData = try response.content.decode(PerformerUpdateDifferenceData.self)
+
+		struct BulkAddVerifyContext: Encodable {
+			var trunk: TrunkContext
+			var diff: PerformerUpdateDifferenceData
+
+			init(_ req: Request, differenceData: PerformerUpdateDifferenceData) throws {
+				trunk = .init(req, title: "Verify Performer Import", tab: .admin)
+				self.diff = differenceData
+			}
+		}
+		let ctx = try BulkAddVerifyContext(req, differenceData: differenceData)
+		return try await req.view.render("Performers/bulkAddVerify", ctx)
+	}
+
+	// `POST /admin/performer/bulk/apply`
+	//
+	// Reads checkbox form values and calls the API apply endpoint with the appropriate query parameters.
+	// Uses try? for content decoding since the body may be empty when no checkboxes are checked.
+	func postBulkApplyPerformers(_ req: Request) async throws -> HTTPStatus {
+		let ignoreUpdates = (try? req.content.get(String.self, at: "ignoreUpdates")) == "on"
+		let processDeletes = (try? req.content.get(String.self, at: "processDeletes")) == "on"
+		var query = [URLQueryItem]()
+		if ignoreUpdates {
+			query.append(URLQueryItem(name: "processUpdates", value: "false"))
+		}
+		if processDeletes {
+			query.append(URLQueryItem(name: "processDeletes", value: "true"))
+		}
+		var components = URLComponents()
+		components.queryItems = query
+		try await apiQuery(
+			req,
+			endpoint: "/admin/performer/bulk/apply?\(components.percentEncodedQuery ?? "")",
+			method: .POST
+		)
+		return .ok
+	}
+
+	// `GET /admin/performer/bulk/complete`
+	//
+	// Shows a success page after the bulk performer import has been applied.
+	func bulkAddCompletePage(_ req: Request) async throws -> View {
+		struct BulkAddCompleteContext: Encodable {
+			var trunk: TrunkContext
+
+			init(_ req: Request) throws {
+				trunk = .init(req, title: "Performer Import Complete", tab: .admin)
+			}
+		}
+		let ctx = try BulkAddCompleteContext(req)
+		return try await req.view.render("Performers/bulkAddComplete", ctx)
+	}
 }
 
 extension SitePerformerController {
+	// Helper function to check if a URL contains a 4-digit year pattern (e.g., "/2026", "/2027").
+	// Used to filter out year-specific navigation links when scraping performer pages.
+	fileprivate func containsYearPattern(_ url: String) -> Bool {
+		return url.range(of: #"jococruise\.com/\d{4}"#, options: .regularExpression) != nil
+	}
+	
+	// Scrapes the performer listing page at the given URL, finds links to individual performer pages,
+	// and scrapes each one using buildPerformerFromURL to get full performer data.
+	// Meant to work with the JoCo Cruise guests page (e.g. "https://jococruise.com/guests/").
+	// Like all scrapers, this code is fragile to changes in the HTML structure of the page being scraped.
+	fileprivate func buildPerformersFromListingPage(_ urlString: String, on req: Request) async throws -> [PerformerData] {
+		guard let _ = URL(string: urlString) else {
+			throw Abort(.badRequest, reason: "Invalid listing URL: \(urlString)")
+		}
+		let uri = URI(string: urlString)
+		var response = try await req.client.get(uri)
+		guard let bytes = response.body?.readableBytes, let html = response.body?.readString(length: bytes) else {
+			throw Abort(.badRequest, reason: "No HTML returned from URL: \(urlString)")
+		}
+		let doc = try SwiftSoup.parse(html)
+		// Find all h2 elements that contain a link -- these are the performer entries on the listing page.
+		// Each performer name is an <a> tag inside an <h2>, linking to their individual page.
+		let headings = try doc.select("h2")
+		var performerURLs = [String]()
+		for heading in headings {
+			if let link = try heading.select("a").first() {
+				let href = try link.attr("href")
+				// Filter to only jococruise.com links that look like performer pages, not navigation links
+				if href.contains("jococruise.com/") && !href.contains("jococruise.com/guests")
+						&& !containsYearPattern(href)
+						&& !href.contains("book.jococruise.com") {
+					performerURLs.append(href)
+				}
+			}
+		}
+		req.logger.info("Found \(performerURLs.count) performer URLs on listing page")
+		var performers = [PerformerData]()
+		for performerURL in performerURLs {
+			do {
+				var performer = try await buildPerformerFromURL(performerURL, on: req)
+				performer.header.isOfficialPerformer = true
+				performers.append(performer)
+				req.logger.info("Scraped performer: \(performer.header.name)")
+			}
+			catch {
+				req.logger.warning("Failed to scrape performer from \(performerURL): \(error)")
+			}
+		}
+		return performers
+	}
+
 	// Scrapes the HTML found at the given url, builds a PerformerData out of what it finds.
 	// Meant to work with urls of the form: "https://jococruise.com/jonathan-coulton/" 
 	// Like all scrapers, this code is fragile to changes in the HTML structure in the page being scraped.

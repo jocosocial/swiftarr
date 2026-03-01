@@ -1,21 +1,61 @@
 body { 
-	margin: 0;
+	margin: 0pt;
 }
 @page {
 	size: letter portrait;
-    margin: 0mm;
+    margin: 0pt;
 }
 @media print {
     .page { break-after: page; }
 }
 .page {
-	margin: 1in;
+	margin: 0.7in 1in;
 }
 
-.centerBlock {
-    margin: 0;
+@font-face {
+  font-family: Bungee;
+  src: url("/fonts/Bungee/Bungee-Regular.ttf");
+}
+
+@font-face {
+  font-family: FilsonPro;
+  src: url("/fonts/filson-pro/FilsonProRegular.otf");
+}
+
+.headerBlock {
+    margin: 0pt;
     text-align: center;
     overflow: hidden;
     position: relative;
     box-sizing: border-box;
+    font-family: "Bungee";
+    font-size: 19pt;
 }
+
+.headerBlock p {
+    margin-top: 5pt;
+    margin-bottom: 5pt;
+}
+
+.jocoLogo {
+	margin-bottom: 24pt;
+	width: 180px;
+}
+
+.qrCodeImage {
+	margin-top: 16pt;
+	margin-bottom: 12pt;
+	width: 200px;
+	height: 200px;
+}
+
+.centerBlock {
+    margin: 0pt;
+    text-align: center;
+    overflow: hidden;
+    position: relative;
+    box-sizing: border-box;
+    font-family: "FilsonPro";
+    font-size: 15pt;
+}
+

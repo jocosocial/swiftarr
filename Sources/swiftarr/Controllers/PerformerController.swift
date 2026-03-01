@@ -39,6 +39,9 @@ struct PerformerController: APIRouteCollection {
 		ttAuthGroup.post("performer", "link", "upload", use: uploadPerformerLinkSpreadsheet)
 		ttAuthGroup.get("performer", "link", "verify", use: performerLinkVerificationHandler)
 		ttAuthGroup.post("performer", "link", "apply", use: performerLinkApplyHandler)
+		ttAuthGroup.post("performer", "bulk", "upload", use: bulkPerformerUploadHandler)
+		ttAuthGroup.get("performer", "bulk", "verify", use: bulkPerformerVerifyHandler)
+		ttAuthGroup.post("performer", "bulk", "apply", use: bulkPerformerApplyHandler)
 		ttAuthGroup.delete("performer", performerIDParam, use: deletePerformerHandler).setUsedForPreregistration()
 	}
 	
@@ -354,6 +357,150 @@ struct PerformerController: APIRouteCollection {
 		return .ok
 	}
 
+// MARK: Bulk Performer Import
+
+	/// `POST /api/v3/admin/performer/bulk/upload`
+	///
+	/// Receives a JSON array of `PerformerData` objects (scraped from a performer listing page) and saves them to disk
+	/// for later verification and application. Only one bulk import file can be "in the hopper" at a time.
+	///
+	/// - Returns: HTTP status.
+	func bulkPerformerUploadHandler(_ req: Request) async throws -> HTTPStatus {
+		let performers = try req.content.decode([PerformerData].self)
+		let filepath = try uploadedPerformersBulkPath()
+		try? FileManager.default.removeItem(at: filepath)
+		let encoder = JSONEncoder()
+		let jsonData = try encoder.encode(performers)
+		try await req.fileio.writeFile(ByteBuffer(data: jsonData), at: filepath.path)
+		return .ok
+	}
+
+	/// `GET /api/v3/admin/performer/bulk/verify`
+	///
+	/// Reads the saved bulk performer JSON file, loads all official performers from the database, and compares them
+	/// by name (case-insensitive) to produce a diff. Does not modify the database.
+	///
+	/// - Returns: `PerformerUpdateDifferenceData` with new, updated, unchanged, and not-in-source performers.
+	func bulkPerformerVerifyHandler(_ req: Request) async throws -> PerformerUpdateDifferenceData {
+		let scrapedPerformers = try await readSavedBulkPerformers(on: req)
+		let dbPerformers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).all()
+		// Build a dictionary of existing performers keyed by lowercased name for case-insensitive matching
+		let dbPerformersByName = Dictionary(dbPerformers.map { ($0.name.lowercased(), $0) }) { first, _ in first }
+		let scrapedNames = Set(scrapedPerformers.map { $0.header.name.lowercased() })
+		var result = PerformerUpdateDifferenceData()
+		for scraped in scrapedPerformers {
+			let key = scraped.header.name.lowercased()
+			if let existing = dbPerformersByName[key] {
+				// Performer exists -- check if any profile fields differ
+				if performerHasChanges(scraped: scraped, existing: existing) {
+					result.updatedPerformers.append(scraped)
+				}
+				else {
+					result.unchangedCount += 1
+				}
+			}
+			else {
+				result.newPerformers.append(scraped)
+			}
+		}
+		// Find performers in DB that are not in the scraped source
+		for dbPerformer in dbPerformers {
+			if !scrapedNames.contains(dbPerformer.name.lowercased()) {
+				result.notInSourcePerformers.append(try PerformerHeaderData(dbPerformer))
+			}
+		}
+		return result
+	}
+
+	/// `POST /api/v3/admin/performer/bulk/apply`
+	///
+	/// Reads the saved bulk performer JSON file and applies changes to the database.
+	/// - New performers are created with their photo fetched from the scraped URL.
+	/// - Existing performers have their profile fields updated (photo is intentionally skipped to avoid image diffing).
+	/// - Optionally deletes performers not in source if `processDeletes=true` query param is set.
+	/// - Optionally skips updates to existing performers if `processUpdates=false` query param is set.
+	///
+	/// - Returns: HTTP status.
+	func bulkPerformerApplyHandler(_ req: Request) async throws -> HTTPStatus {
+		let processDeletes = req.query[String.self, at: "processDeletes"]?.lowercased() == "true"
+		let processUpdates = req.query[String.self, at: "processUpdates"]?.lowercased() != "false"
+		let scrapedPerformers = try await readSavedBulkPerformers(on: req)
+		let dbPerformers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).all()
+		let dbPerformersByName = Dictionary(dbPerformers.map { ($0.name.lowercased(), $0) }) { first, _ in first }
+		let scrapedNames = Set(scrapedPerformers.map { $0.header.name.lowercased() })
+		let currentYear = Settings.shared.cruiseStartDateComponents.year ?? 2025
+		for scraped in scrapedPerformers {
+			let key = scraped.header.name.lowercased()
+			if let existing = dbPerformersByName[key] {
+				// Update existing performer's profile fields only (skip image)
+				if processUpdates && performerHasChanges(scraped: scraped, existing: existing) {
+					existing.name = scraped.header.name.trimmingCharacters(in: .whitespaces)
+					existing.sortOrder = (existing.name.split(separator: " ").last?.string ?? existing.name).uppercased()
+					existing.pronouns = scraped.pronouns
+					existing.bio = scraped.bio
+					// Photo intentionally NOT updated for existing performers
+					existing.organization = scraped.organization
+					existing.title = scraped.title
+					existing.website = scraped.website
+					existing.facebookURL = scraped.facebookURL
+					existing.xURL = scraped.xURL
+					existing.instagramURL = scraped.instagramURL
+					existing.youtubeURL = scraped.youtubeURL
+					var years = scraped.yearsAttended
+					if !years.contains(currentYear) {
+						years.append(currentYear)
+					}
+					existing.yearsAttended = years.sorted()
+					try await existing.save(on: req.db)
+				}
+			}
+			else {
+				// Create new performer
+				let performer = Performer()
+				performer.name = scraped.header.name.trimmingCharacters(in: .whitespaces)
+				performer.sortOrder = (performer.name.split(separator: " ").last?.string ?? performer.name).uppercased()
+				performer.pronouns = scraped.pronouns
+				performer.bio = scraped.bio
+				performer.organization = scraped.organization
+				performer.title = scraped.title
+				performer.website = scraped.website
+				performer.facebookURL = scraped.facebookURL
+				performer.xURL = scraped.xURL
+				performer.instagramURL = scraped.instagramURL
+				performer.youtubeURL = scraped.youtubeURL
+				performer.officialPerformer = true
+				var years = scraped.yearsAttended
+				if !years.contains(currentYear) {
+					years.append(currentYear)
+				}
+				performer.yearsAttended = years.sorted()
+				// For new performers, fetch the image from the scraped photo URL
+				if let photoURLString = scraped.header.photo, !photoURLString.isEmpty {
+					do {
+						let response = try await req.client.send(.GET, to: URI(string: photoURLString))
+						if let imageData = response.body?.getData(at: 0, length: response.body?.readableBytes ?? 0) {
+							performer.photo = try await processImage(data: imageData, usage: .userProfile, on: req)
+						}
+					}
+					catch {
+						req.logger.warning("Failed to fetch performer image from \(photoURLString): \(error)")
+					}
+				}
+				try await performer.save(on: req.db)
+			}
+		}
+		// Optionally delete performers not found in scraped source
+		if processDeletes {
+			for dbPerformer in dbPerformers {
+				if !scrapedNames.contains(dbPerformer.name.lowercased()) {
+					try await EventPerformer.query(on: req.db).filter(\.$performer.$id == dbPerformer.requireID()).delete()
+					try await dbPerformer.delete(on: req.db)
+				}
+			}
+		}
+		return .ok
+	}
+
 	// `DELETE /api/v3/performer/:performer_ID`
 	//
 	// Delete a performer profile.
@@ -371,11 +518,41 @@ struct PerformerController: APIRouteCollection {
 	
 	// MARK: Utilities
 	
-	// Gets the path where the uploaded schedule is kept. Only one schedule file can be in the hopper at a time.
-	// This fn ensures intermediate directories are created.
+	// Gets the path where the uploaded performer links file is kept. Only one file can be in the hopper at a time.
 	func uploadedPerformerLinksPath() throws -> URL {
 		let filePath = Settings.shared.adminDirectoryPath.appendingPathComponent("uploadperformerlinks.ics")
 		return filePath
+	}
+
+	// Gets the path where the bulk-scraped performer JSON is kept. Only one file can be in the hopper at a time.
+	func uploadedPerformersBulkPath() throws -> URL {
+		let filePath = Settings.shared.adminDirectoryPath.appendingPathComponent("uploadperformers.json")
+		return filePath
+	}
+
+	// Reads the saved bulk performer JSON from disk and decodes it into an array of PerformerData.
+	func readSavedBulkPerformers(on req: Request) async throws -> [PerformerData] {
+		let filepath = try uploadedPerformersBulkPath()
+		let buffer = try await req.fileio.collectFile(at: filepath.path)
+		guard let jsonData = buffer.getData(at: 0, length: buffer.readableBytes) else {
+			throw Abort(.badRequest, reason: "Could not read bulk performer upload file.")
+		}
+		return try JSONDecoder().decode([PerformerData].self, from: jsonData)
+	}
+
+	// Compares a scraped PerformerData against an existing Performer model to determine if any profile fields differ.
+	// Intentionally does NOT compare photo, as we skip image updates for existing performers.
+	func performerHasChanges(scraped: PerformerData, existing: Performer) -> Bool {
+		if scraped.pronouns != existing.pronouns { return true }
+		if scraped.bio != existing.bio { return true }
+		if scraped.organization != existing.organization { return true }
+		if scraped.title != existing.title { return true }
+		if scraped.website != existing.website { return true }
+		if scraped.facebookURL != existing.facebookURL { return true }
+		if scraped.xURL != existing.xURL { return true }
+		if scraped.instagramURL != existing.instagramURL { return true }
+		if scraped.youtubeURL != existing.youtubeURL { return true }
+		return false
 	}
 
 	// Returns a set of EventIDs indicating which of hte given events are favorited by the current user, or an empty set
