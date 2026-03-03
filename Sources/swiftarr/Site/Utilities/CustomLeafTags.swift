@@ -53,7 +53,7 @@ import Vapor
 struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 	static let jocomoji = [
 		"back-deck-juice", "buffet", "die-ship", "die", "hottub", "joco", "pirate", "ship-front",
-		"ship", "towel-monkey", "tropical-drink", "wangwang", "zombie",
+		"ship", "tropical-drink", "wangwang", "zombie",
 	]
 
 	static func process(_ str: String) -> String {
