@@ -92,16 +92,32 @@ struct UpdateRedisJobBase: APICollection {
 		context.logger.debug("User is part of \(userFezParticipants.count) chats")
 		try await self.processChatParticipants(context, chatParticipants: userFezParticipants, userID: userID)
 
+		// Privileged mailbox read tracking is now per-user, but we find TT/mod fezzes via the
+		// system user's FezParticipants. Build a lookup so we can substitute the actual user's
+		// readCount where they have their own FezParticipant (from being a direct member or
+		// having previously viewed the fez). Without this, the system user's stale readCount
+		// would cause the job to incorrectly mark conversations as unread.
+		let userParticipantsByFez: [UUID: FezParticipant] = Dictionary(
+			uniqueKeysWithValues: userFezParticipants.map { ($0.$fez.id, $0) }
+		)
+
 		// Privileged Users
 		if user.accessLevel.hasAccess(.twitarrteam) {
 			let ttFezParticipants = try await FezParticipant.query(on: context.application.db)
 				.with(\.$fez)
 				.filter(\.$user.$id == privilegedUsers.ttUser.requireID())
 				.all()
-			context.logger.debug("User is part of \(ttFezParticipants.count) TwitarrTeam chats")
+			// Prefer the user's own FezParticipant over the TT system user's when available.
+			let resolvedTTParticipants = ttFezParticipants.map { ttParticipant -> FezParticipant in
+				if let userParticipant = userParticipantsByFez[ttParticipant.$fez.id] {
+					return userParticipant
+				}
+				return ttParticipant
+			}
+			context.logger.debug("User is part of \(resolvedTTParticipants.count) TwitarrTeam chats")
 			try await self.processChatParticipants(
 				context,
-				chatParticipants: ttFezParticipants,
+				chatParticipants: resolvedTTParticipants,
 				userID: userID,
 				overrideInbox: MailInbox.twitarrTeamSeamail
 			)
@@ -112,10 +128,17 @@ struct UpdateRedisJobBase: APICollection {
 				.with(\.$fez)
 				.filter(\.$user.$id == privilegedUsers.modUser.requireID())
 				.all()
-			context.logger.debug("User is part of \(modFezParticipants.count) moderator chats")
+			// Prefer the user's own FezParticipant over the moderator system user's when available.
+			let resolvedModParticipants = modFezParticipants.map { modParticipant -> FezParticipant in
+				if let userParticipant = userParticipantsByFez[modParticipant.$fez.id] {
+					return userParticipant
+				}
+				return modParticipant
+			}
+			context.logger.debug("User is part of \(resolvedModParticipants.count) moderator chats")
 			try await self.processChatParticipants(
 				context,
-				chatParticipants: modFezParticipants,
+				chatParticipants: resolvedModParticipants,
 				userID: userID,
 				overrideInbox: MailInbox.moderatorSeamail
 			)
