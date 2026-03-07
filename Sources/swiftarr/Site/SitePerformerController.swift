@@ -392,10 +392,19 @@ struct SitePerformerController: SiteControllerUtils {
 		struct BulkAddPerformersPageContext: Encodable {
 			var trunk: TrunkContext
 			var defaultURL: String
+			var defaultSchedURL: String
 
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "Bulk Add Performers", tab: .admin)
 				defaultURL = "https://jococruise.com/guests/"
+				if var components = URLComponents(string: Settings.shared.scheduleUpdateURL) {
+					components.scheme = "https"
+					components.path = "/directory/speakers"
+					defaultSchedURL = components.string ?? "https://jococruise2025.sched.com/directory/speakers"
+				}
+				else {
+					defaultSchedURL = "https://jococruise2025.sched.com/directory/speakers"
+				}
 			}
 		}
 		let ctx = try BulkAddPerformersPageContext(req)
@@ -409,9 +418,19 @@ struct SitePerformerController: SiteControllerUtils {
 	func postBulkFetchPerformers(_ req: Request) async throws -> HTTPStatus {
 		struct BulkFetchFormData: Content {
 			var sourceURL: String
+			var source: String?
 		}
 		let formData = try req.content.decode(BulkFetchFormData.self)
-		let performers = try await buildPerformersFromListingPage(formData.sourceURL, on: req)
+		let performers: [PerformerData]
+		if formData.source == "sched" {
+			performers = try await buildPerformersFromSchedListingPage(formData.sourceURL, on: req)
+		}
+		else {
+			performers = try await buildPerformersFromListingPage(formData.sourceURL, on: req)
+		}
+		guard !performers.isEmpty else {
+			throw Abort(.badRequest, reason: "No performers were scraped from the provided source URL.")
+		}
 		try await apiQuery(req, endpoint: "/admin/performer/bulk/upload", method: .POST, encodeContent: performers)
 		return .ok
 	}
@@ -524,6 +543,58 @@ extension SitePerformerController {
 			catch {
 				req.logger.warning("Failed to scrape performer from \(performerURL): \(error)")
 			}
+		}
+		return performers
+	}
+
+	// Scrapes the sched.com speakers directory page at the given URL, finds links to individual speaker pages,
+	// and scrapes each one using buildPerformerFromSchedURL to get full performer data.
+	// Meant to work with URLs of the form: "https://jococruise2026.sched.com/directory/speakers"
+	// Like all scrapers, this code is fragile to changes in the HTML structure of the page being scraped.
+	fileprivate func buildPerformersFromSchedListingPage(_ urlString: String, on req: Request) async throws -> [PerformerData] {
+		guard let listingURL = URL(string: urlString) else {
+			throw Abort(.badRequest, reason: "Invalid sched listing URL: \(urlString)")
+		}
+		var rootComponents = URLComponents()
+		rootComponents.scheme = listingURL.scheme ?? "https"
+		rootComponents.host = listingURL.host
+		guard let siteRootURL = rootComponents.url else {
+			throw Abort(.badRequest, reason: "Could not derive site root from sched listing URL: \(urlString)")
+		}
+		let uri = URI(string: urlString)
+		let headers = HTTPHeaders([("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)")])
+		var response = try await req.client.get(uri, headers: headers)
+		guard let bytes = response.body?.readableBytes, let html = response.body?.readString(length: bytes) else {
+			throw Abort(.badRequest, reason: "No HTML returned from URL: \(urlString)")
+		}
+		let doc = try SwiftSoup.parse(html)
+		let avatarLinks = try doc.select("a.sched-avatar")
+		guard !avatarLinks.isEmpty else {
+			throw Abort(.badRequest, reason: "No speaker links were found on the Sched directory page. Sched may be rate-limiting requests or the page format may have changed.")
+		}
+		var speakerURLs = [String]()
+		for link in avatarLinks {
+			let href = try link.attr("href")
+			guard !href.isEmpty else { continue }
+			if let resolved = URL(string: href, relativeTo: siteRootURL)?.absoluteString {
+				speakerURLs.append(resolved)
+			}
+		}
+		req.logger.info("Found \(speakerURLs.count) speaker URLs on sched listing page")
+		var performers = [PerformerData]()
+		for speakerURL in speakerURLs {
+			do {
+				var performer = try await buildPerformerFromSchedURL(speakerURL, on: req)
+				performer.header.isOfficialPerformer = true
+				performers.append(performer)
+				req.logger.info("Scraped sched performer: \(performer.header.name)")
+			}
+			catch {
+				req.logger.warning("Failed to scrape sched performer from \(speakerURL): \(error)")
+			}
+		}
+		guard !performers.isEmpty else {
+			throw Abort(.badRequest, reason: "Sched returned speaker links, but none of the speaker pages could be scraped.")
 		}
 		return performers
 	}

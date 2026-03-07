@@ -387,14 +387,25 @@ struct PerformerController: APIRouteCollection {
 	func bulkPerformerVerifyHandler(_ req: Request) async throws -> PerformerUpdateDifferenceData {
 		let scrapedPerformers = try await readSavedBulkPerformers(on: req)
 		let dbPerformers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).all()
-		// Build a dictionary of existing performers keyed by lowercased name for case-insensitive matching
 		let dbPerformersByName = Dictionary(dbPerformers.map { ($0.name.lowercased(), $0) }) { first, _ in first }
+		var dbPerformersByAltName = [String: Performer]()
+		var dbPerformersBySchedID = [String: Performer]()
+		for performer in dbPerformers {
+			for altName in performer.alternativeNames ?? [] {
+				dbPerformersByAltName[altName.lowercased()] = performer
+			}
+			if let schedID = performer.schedID, !schedID.isEmpty {
+				dbPerformersBySchedID[schedID] = performer
+			}
+		}
 		let scrapedNames = Set(scrapedPerformers.map { $0.header.name.lowercased() })
 		var result = PerformerUpdateDifferenceData()
 		for scraped in scrapedPerformers {
 			let key = scraped.header.name.lowercased()
-			if let existing = dbPerformersByName[key] {
-				// Performer exists -- check if any profile fields differ
+			let existing = dbPerformersByName[key]
+					?? dbPerformersByAltName[key]
+					?? scraped.schedID.flatMap { dbPerformersBySchedID[$0] }
+			if let existing = existing {
 				if performerHasChanges(scraped: scraped, existing: existing) {
 					result.updatedPerformers.append(scraped)
 				}
@@ -406,9 +417,13 @@ struct PerformerController: APIRouteCollection {
 				result.newPerformers.append(scraped)
 			}
 		}
-		// Find performers in DB that are not in the scraped source
 		for dbPerformer in dbPerformers {
-			if !scrapedNames.contains(dbPerformer.name.lowercased()) {
+			let nameMatches = scrapedNames.contains(dbPerformer.name.lowercased())
+			let altNameMatches = (dbPerformer.alternativeNames ?? []).contains { scrapedNames.contains($0.lowercased()) }
+			let schedIDMatches = dbPerformer.schedID.flatMap { id in
+				scrapedPerformers.contains { $0.schedID == id }
+			} ?? false
+			if !nameMatches && !altNameMatches && !schedIDMatches {
 				result.notInSourcePerformers.append(try PerformerHeaderData(dbPerformer))
 			}
 		}
@@ -430,18 +445,27 @@ struct PerformerController: APIRouteCollection {
 		let scrapedPerformers = try await readSavedBulkPerformers(on: req)
 		let dbPerformers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).all()
 		let dbPerformersByName = Dictionary(dbPerformers.map { ($0.name.lowercased(), $0) }) { first, _ in first }
+		var dbPerformersByAltName = [String: Performer]()
+		var dbPerformersBySchedID = [String: Performer]()
+		for performer in dbPerformers {
+			for altName in performer.alternativeNames ?? [] {
+				dbPerformersByAltName[altName.lowercased()] = performer
+			}
+			if let schedID = performer.schedID, !schedID.isEmpty {
+				dbPerformersBySchedID[schedID] = performer
+			}
+		}
 		let scrapedNames = Set(scrapedPerformers.map { $0.header.name.lowercased() })
 		let currentYear = Settings.shared.cruiseStartDateComponents.year ?? 2025
 		for scraped in scrapedPerformers {
 			let key = scraped.header.name.lowercased()
-			if let existing = dbPerformersByName[key] {
-				// Update existing performer's profile fields only (skip image)
+			let existing = dbPerformersByName[key]
+					?? dbPerformersByAltName[key]
+					?? scraped.schedID.flatMap { dbPerformersBySchedID[$0] }
+			if let existing = existing {
 				if processUpdates && performerHasChanges(scraped: scraped, existing: existing) {
-					existing.name = scraped.header.name.trimmingCharacters(in: .whitespaces)
-					existing.sortOrder = (existing.name.split(separator: " ").last?.string ?? existing.name).uppercased()
 					existing.pronouns = scraped.pronouns
 					existing.bio = scraped.bio
-					// Photo intentionally NOT updated for existing performers
 					existing.organization = scraped.organization
 					existing.title = scraped.title
 					existing.website = scraped.website
@@ -449,7 +473,9 @@ struct PerformerController: APIRouteCollection {
 					existing.xURL = scraped.xURL
 					existing.instagramURL = scraped.instagramURL
 					existing.youtubeURL = scraped.youtubeURL
-					existing.schedID = scraped.schedID
+					if let scrapedSchedID = scraped.schedID, !scrapedSchedID.isEmpty {
+						existing.schedID = scrapedSchedID
+					}
 					var years = scraped.yearsAttended
 					if !years.contains(currentYear) {
 						years.append(currentYear)
@@ -459,7 +485,6 @@ struct PerformerController: APIRouteCollection {
 				}
 			}
 			else {
-				// Create new performer
 				let performer = Performer()
 				performer.name = scraped.header.name.trimmingCharacters(in: .whitespaces)
 				performer.sortOrder = (performer.name.split(separator: " ").last?.string ?? performer.name).uppercased()
@@ -479,7 +504,6 @@ struct PerformerController: APIRouteCollection {
 					years.append(currentYear)
 				}
 				performer.yearsAttended = years.sorted()
-				// For new performers, fetch the image from the scraped photo URL
 				if let photoURLString = scraped.header.photo, !photoURLString.isEmpty {
 					do {
 						let response = try await req.client.send(.GET, to: URI(string: photoURLString))
@@ -494,10 +518,14 @@ struct PerformerController: APIRouteCollection {
 				try await performer.save(on: req.db)
 			}
 		}
-		// Optionally delete performers not found in scraped source
 		if processDeletes {
 			for dbPerformer in dbPerformers {
-				if !scrapedNames.contains(dbPerformer.name.lowercased()) {
+				let nameMatches = scrapedNames.contains(dbPerformer.name.lowercased())
+				let altNameMatches = (dbPerformer.alternativeNames ?? []).contains { scrapedNames.contains($0.lowercased()) }
+				let schedIDMatches = dbPerformer.schedID.flatMap { id in
+					scrapedPerformers.contains { $0.schedID == id }
+				} ?? false
+				if !nameMatches && !altNameMatches && !schedIDMatches {
 					try await EventPerformer.query(on: req.db).filter(\.$performer.$id == dbPerformer.requireID()).delete()
 					try await dbPerformer.delete(on: req.db)
 				}
