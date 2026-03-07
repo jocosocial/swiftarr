@@ -231,6 +231,7 @@ struct SitePerformerController: SiteControllerUtils {
 	// Only TwitarrTeam and above can access.
 	// - Parameter performer: UUID. In URL Query. Set if this is an edit of an existing performer.
 	// - Parameter performerurl: String. In URL Query. Set if the form should be filled in with data from jococruise.com.
+	// - Parameter schedurl: String. In URL Query. Set if the form should be filled in with data from sched.com.
 	func upsertPerformer(_ req: Request) async throws -> View {
 		var performer: PerformerData?
 		var performerImageURL: String?
@@ -239,6 +240,12 @@ struct SitePerformerController: SiteControllerUtils {
 		}
 		else if let performerURL = req.query[String.self, at: "performerurl"] {
 			performer = try await buildPerformerFromURL(performerURL, on: req)
+			performerImageURL = performer?.header.photo
+			performer?.header.photo = nil
+			performer?.header.isOfficialPerformer = true
+		}
+		else if let schedURL = req.query[String.self, at: "schedurl"] {
+			performer = try await buildPerformerFromSchedURL(schedURL, on: req)
 			performerImageURL = performer?.header.photo
 			performer?.header.photo = nil
 			performer?.header.isOfficialPerformer = true
@@ -560,8 +567,47 @@ extension SitePerformerController {
 		return result
 	}
 	
+	// Scrapes a sched.com speaker page at the given URL, builds a PerformerData out of what it finds.
+	// Meant to work with URLs of the form: "https://jococruise2026.sched.com/speaker/kate_rubins.29by5qbb"
+	// Like all scrapers, this code is fragile to changes in the HTML structure of the page being scraped.
+	fileprivate func buildPerformerFromSchedURL(_ urlString: String, on req: Request) async throws -> PerformerData {
+		guard let _ = URL(string: urlString) else {
+			throw Abort(.badRequest, reason: "Invalid sched.com URL: \(urlString)")
+		}
+		let uri = URI(string: urlString)
+		let headers = HTTPHeaders([("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)")])
+		var response = try await req.client.get(uri, headers: headers)
+		guard let bytes = response.body?.readableBytes, let html = response.body?.readString(length: bytes) else {
+			throw Abort(.badRequest, reason: "No HTML returned from URL: \(urlString)")
+		}
+		var result = PerformerData()
+		let doc = try SwiftSoup.parse(html)
+		result.header.name = try doc.select("h2.user-profile__name").first()?.text() ?? ""
+		if let photoSrc = try doc.select("div.user-profile__image img").first()?.attr("src") {
+			if photoSrc.hasPrefix("//") {
+				result.header.photo = "https:" + photoSrc
+			} else {
+				result.header.photo = photoSrc
+			}
+		}
+		let company = try doc.select("div.user-profile__company").first()?.text().trimmingCharacters(in: .whitespacesAndNewlines)
+		result.organization = company?.isEmpty == true ? nil : company
+		let position = try doc.select("div.user-profile__position").first()?.text().trimmingCharacters(in: .whitespacesAndNewlines)
+		result.title = position?.isEmpty == true ? nil : position
+		result.website = try doc.select("div.user-profile__link a").first()?.attr("href")
+		result.xURL = try doc.select("div.social-profile.twitter a").first()?.attr("href")
+		result.facebookURL = try doc.select("div.social-profile.facebook a").first()?.attr("href")
+		result.instagramURL = try doc.select("div.social-profile.instagram a").first()?.attr("href")
+		result.youtubeURL = try doc.select("div.social-profile.youtube a").first()?.attr("href")
+		if let bio = try doc.select("div.user-profile__about-content").first() {
+			result.bio = try processHTMLIntoMarkdown(bio)
+		}
+		req.logger.info("Scraped sched.com performer: '\(result.header.name)', photo: \(result.header.photo ?? "nil")")
+		return result
+	}
+
 	// A really bad implementation of HTML to Markdown. Only works with a few Markdonw tags, but these seem to be the only
-	// ones used by the Performer Bio html sections on jococruise.com.
+	// ones used by the Performer Bio html sections on jococruise.com and sched.com.
 	// 
 	// Any HTML tags not recognized and converted into their Markdown equivalent are removed from the output.
 	fileprivate func processHTMLIntoMarkdown(_ rootNode: Node) throws  -> String {
@@ -579,6 +625,7 @@ extension SitePerformerController {
 					case "strong": accum.append("**"); tailText = "**"
 					case "i", "em": accum.append("*"); tailText = "*"
 					case "p": tailText = "\n"
+					case "br": accum.append("\n")
 					case "a": accum.append("["); tailText = try "](\(element.attr("href")))"
 					default: break
 				}
