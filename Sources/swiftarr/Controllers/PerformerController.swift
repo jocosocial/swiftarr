@@ -388,6 +388,13 @@ struct PerformerController: APIRouteCollection {
 		let scrapedPerformers = try await readSavedBulkPerformers(on: req)
 		let dbPerformers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).all()
 		let dbPerformersByName = Dictionary(dbPerformers.map { ($0.name.lowercased(), $0) }) { first, _ in first }
+		let dbEvents = try await Event.query(on: req.db).all()
+		let dbEventsByUID = Dictionary(dbEvents.map { ($0.uid, $0) }) { first, _ in first }
+		let dbEventsByTitleAndStartTime = Dictionary(dbEvents.map { (eventLookupKey(title: $0.title, startTime: $0.startTime), $0) }) { first, _ in first }
+		let existingPivots = try await EventPerformer.query(on: req.db).all()
+		let existingPivotKeys = Set<String>(existingPivots.map { pivot in
+			eventPerformerLookupKey(performerID: pivot.$performer.id, eventID: pivot.$event.id)
+		})
 		var dbPerformersByAltName = [String: Performer]()
 		for performer in dbPerformers {
 			for altName in performer.alternativeNames ?? [] {
@@ -396,6 +403,8 @@ struct PerformerController: APIRouteCollection {
 		}
 		let scrapedNames = Set(scrapedPerformers.map { $0.header.name.lowercased() })
 		var result = PerformerUpdateDifferenceData()
+		var previewedAddedLinks = Set<String>()
+		var previewedUnmatchedEvents = Set<String>()
 		for scraped in scrapedPerformers {
 			let key = scraped.header.name.lowercased()
 			let existing = dbPerformersByName[key]
@@ -407,9 +416,33 @@ struct PerformerController: APIRouteCollection {
 				else {
 					result.unchangedCount += 1
 				}
+				previewScrapedEventLinks(
+					scraped.scrapedEventRefs,
+					forPerformerNamed: existing.name,
+					existingPerformerID: try existing.requireID(),
+					dbEventsByUID: dbEventsByUID,
+					dbEventsByTitleAndStartTime: dbEventsByTitleAndStartTime,
+					existingPivotKeys: existingPivotKeys,
+					addedLinks: &result.eventLinksToAdd,
+					unmatchedEvents: &result.unmatchedScrapedEvents,
+					previewedAddedLinks: &previewedAddedLinks,
+					previewedUnmatchedEvents: &previewedUnmatchedEvents
+				)
 			}
 			else {
 				result.newPerformers.append(scraped)
+				previewScrapedEventLinks(
+					scraped.scrapedEventRefs,
+					forPerformerNamed: scraped.header.name,
+					existingPerformerID: nil,
+					dbEventsByUID: dbEventsByUID,
+					dbEventsByTitleAndStartTime: dbEventsByTitleAndStartTime,
+					existingPivotKeys: existingPivotKeys,
+					addedLinks: &result.eventLinksToAdd,
+					unmatchedEvents: &result.unmatchedScrapedEvents,
+					previewedAddedLinks: &previewedAddedLinks,
+					previewedUnmatchedEvents: &previewedUnmatchedEvents
+				)
 			}
 		}
 		for dbPerformer in dbPerformers {
@@ -602,8 +635,11 @@ struct PerformerController: APIRouteCollection {
 		}
 		let performerID = try performer.requireID()
 		for scrapedEvent in scrapedEventRefs {
-			let matchedEvent = scrapedEvent.uid.flatMap { dbEventsByUID[$0] }
-				?? dbEventsByTitleAndStartTime[eventLookupKey(title: scrapedEvent.title, startTime: scrapedEvent.startTime)]
+			let matchedEvent = resolveScrapedEvent(
+				scrapedEvent,
+				dbEventsByUID: dbEventsByUID,
+				dbEventsByTitleAndStartTime: dbEventsByTitleAndStartTime
+			)
 			guard let matchedEvent else {
 				req.logger.warning("Couldn't match scraped event '\(scrapedEvent.title)' for performer '\(performer.name)' to any DB event.")
 				continue
@@ -615,12 +651,85 @@ struct PerformerController: APIRouteCollection {
 		}
 	}
 
+	func previewScrapedEventLinks(
+		_ scrapedEventRefs: [ScrapedPerformerEventReferenceData],
+		forPerformerNamed performerName: String,
+		existingPerformerID: UUID?,
+		dbEventsByUID: [String: Event],
+		dbEventsByTitleAndStartTime: [String: Event],
+		existingPivotKeys: Set<String>,
+		addedLinks: inout [PerformerEventLinkPreviewData],
+		unmatchedEvents: inout [PerformerEventLinkPreviewData],
+		previewedAddedLinks: inout Set<String>,
+		previewedUnmatchedEvents: inout Set<String>
+	) {
+		for scrapedEvent in scrapedEventRefs {
+			let matchedEvent = resolveScrapedEvent(
+				scrapedEvent,
+				dbEventsByUID: dbEventsByUID,
+				dbEventsByTitleAndStartTime: dbEventsByTitleAndStartTime
+			)
+			if let matchedEvent {
+				let linkAlreadyExists = existingPerformerID.map {
+					existingPivotKeys.contains(eventPerformerLookupKey(performerID: $0, eventID: matchedEvent.id))
+				} ?? false
+				let matchedEventKey = matchedEvent.id?.uuidString.lowercased() ?? eventLookupKey(title: matchedEvent.title, startTime: matchedEvent.startTime)
+				let previewKey = "\(performerName.lowercased())|\(matchedEventKey)"
+				if !linkAlreadyExists && previewedAddedLinks.insert(previewKey).inserted {
+					addedLinks.append(
+						PerformerEventLinkPreviewData(
+							performerName: performerName,
+							eventTitle: matchedEvent.title,
+							eventStartTime: formatBulkPerformerEventPreviewTime(matchedEvent.startTime),
+							eventLocation: matchedEvent.location
+						)
+					)
+				}
+			}
+			else {
+				let previewKey = "\(performerName.lowercased())|\(eventLookupKey(title: scrapedEvent.title, startTime: scrapedEvent.startTime))"
+				if previewedUnmatchedEvents.insert(previewKey).inserted {
+					unmatchedEvents.append(
+						PerformerEventLinkPreviewData(
+							performerName: performerName,
+							eventTitle: scrapedEvent.title,
+							eventStartTime: formatBulkPerformerEventPreviewTime(scrapedEvent.startTime),
+							eventLocation: nil
+						)
+					)
+				}
+			}
+		}
+	}
+
+	func resolveScrapedEvent(
+		_ scrapedEvent: ScrapedPerformerEventReferenceData,
+		dbEventsByUID: [String: Event],
+		dbEventsByTitleAndStartTime: [String: Event]
+	) -> Event? {
+		scrapedEvent.uid.flatMap { dbEventsByUID[$0] }
+			?? dbEventsByTitleAndStartTime[eventLookupKey(title: scrapedEvent.title, startTime: scrapedEvent.startTime)]
+	}
+
+	func formatBulkPerformerEventPreviewTime(_ date: Date) -> String {
+		let dateFormatter = DateFormatter()
+		dateFormatter.dateStyle = .short
+		dateFormatter.timeStyle = .short
+		dateFormatter.locale = Locale(identifier: "en_US")
+		dateFormatter.timeZone = Settings.shared.timeZoneChanges.tzAtTime(date)
+		return "\(dateFormatter.string(from: date)) \(dateFormatter.timeZone.abbreviation() ?? "")"
+	}
+
 	func eventLookupKey(title: String, startTime: Date) -> String {
 		"\(title.lowercased())|\(startTime.timeIntervalSinceReferenceDate)"
 	}
 
 	func eventPerformerLookupKey(performerID: UUID, eventID: UUID) -> String {
 		"\(performerID.uuidString.lowercased())|\(eventID.uuidString.lowercased())"
+	}
+
+	func eventPerformerLookupKey(performerID: UUID, eventID: UUID?) -> String {
+		"\(performerID.uuidString.lowercased())|\(eventID?.uuidString.lowercased() ?? "")"
 	}
 
 	// Returns a set of EventIDs indicating which of hte given events are favorited by the current user, or an empty set
