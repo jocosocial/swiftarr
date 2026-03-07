@@ -418,14 +418,16 @@ struct SitePerformerController: SiteControllerUtils {
 		struct BulkFetchFormData: Content {
 			var sourceURL: String
 			var source: String?
+			var sampleOnly: Bool?
 		}
 		let formData = try req.content.decode(BulkFetchFormData.self)
+		let sampleOnly = formData.sampleOnly ?? false
 		let performers: [PerformerData]
 		if formData.source == "sched" {
-			performers = try await buildPerformersFromSchedListingPage(formData.sourceURL, on: req)
+			performers = try await buildPerformersFromSchedListingPage(formData.sourceURL, sampleOnly: sampleOnly, on: req)
 		}
 		else {
-			performers = try await buildPerformersFromListingPage(formData.sourceURL, on: req)
+			performers = try await buildPerformersFromListingPage(formData.sourceURL, sampleOnly: sampleOnly, on: req)
 		}
 		guard !performers.isEmpty else {
 			throw Abort(.badRequest, reason: "No performers were scraped from the provided source URL.")
@@ -505,7 +507,7 @@ extension SitePerformerController {
 	// and scrapes each one using buildPerformerFromURL to get full performer data.
 	// Meant to work with the JoCo Cruise guests page (e.g. "https://jococruise.com/guests/").
 	// Like all scrapers, this code is fragile to changes in the HTML structure of the page being scraped.
-	fileprivate func buildPerformersFromListingPage(_ urlString: String, on req: Request) async throws -> [PerformerData] {
+	fileprivate func buildPerformersFromListingPage(_ urlString: String, sampleOnly: Bool = false, on req: Request) async throws -> [PerformerData] {
 		guard let _ = URL(string: urlString) else {
 			throw Abort(.badRequest, reason: "Invalid listing URL: \(urlString)")
 		}
@@ -538,6 +540,9 @@ extension SitePerformerController {
 				performer.header.isOfficialPerformer = true
 				performers.append(performer)
 				req.logger.info("Scraped performer: \(performer.header.name)")
+				if sampleOnly {
+					break
+				}
 			}
 			catch {
 				req.logger.warning("Failed to scrape performer from \(performerURL): \(error)")
@@ -550,7 +555,7 @@ extension SitePerformerController {
 	// and scrapes each one using buildPerformerFromSchedURL to get full performer data.
 	// Meant to work with URLs of the form: "https://jococruise2026.sched.com/directory/speakers"
 	// Like all scrapers, this code is fragile to changes in the HTML structure of the page being scraped.
-	fileprivate func buildPerformersFromSchedListingPage(_ urlString: String, on req: Request) async throws -> [PerformerData] {
+	fileprivate func buildPerformersFromSchedListingPage(_ urlString: String, sampleOnly: Bool = false, on req: Request) async throws -> [PerformerData] {
 		guard let listingURL = URL(string: urlString) else {
 			throw Abort(.badRequest, reason: "Invalid sched listing URL: \(urlString)")
 		}
@@ -587,6 +592,9 @@ extension SitePerformerController {
 				performer.header.isOfficialPerformer = true
 				performers.append(performer)
 				req.logger.info("Scraped sched performer: \(performer.header.name)")
+				if sampleOnly {
+					break
+				}
 			}
 			catch {
 				req.logger.warning("Failed to scrape sched performer from \(speakerURL): \(error)")
