@@ -434,9 +434,17 @@ struct PerformerController: APIRouteCollection {
 	func bulkPerformerApplyHandler(_ req: Request) async throws -> HTTPStatus {
 		let processDeletes = req.query[String.self, at: "processDeletes"]?.lowercased() == "true"
 		let processUpdates = req.query[String.self, at: "processUpdates"]?.lowercased() != "false"
+		let linkEvents = req.query[String.self, at: "linkEvents"]?.lowercased() != "false"
 		let scrapedPerformers = try await readSavedBulkPerformers(on: req)
 		let dbPerformers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).all()
 		let dbPerformersByName = Dictionary(dbPerformers.map { ($0.name.lowercased(), $0) }) { first, _ in first }
+		let dbEvents = linkEvents ? try await Event.query(on: req.db).all() : []
+		let dbEventsByUID = linkEvents ? Dictionary(dbEvents.map { ($0.uid, $0) }) { first, _ in first } : [:]
+		let dbEventsByTitleAndStartTime = linkEvents ? Dictionary(dbEvents.map { (eventLookupKey(title: $0.title, startTime: $0.startTime), $0) }) { first, _ in first } : [:]
+		let existingPivots = linkEvents ? try await EventPerformer.query(on: req.db).all() : []
+		var existingPivotKeys = Set<String>(existingPivots.map { pivot in
+			eventPerformerLookupKey(performerID: pivot.$performer.id, eventID: pivot.$event.id)
+		})
 		var dbPerformersByAltName = [String: Performer]()
 		for performer in dbPerformers {
 			for altName in performer.alternativeNames ?? [] {
@@ -449,6 +457,7 @@ struct PerformerController: APIRouteCollection {
 			let key = scraped.header.name.lowercased()
 			let existing = dbPerformersByName[key]
 					?? dbPerformersByAltName[key]
+			let performerForLinks: Performer
 			if let existing = existing {
 				if processUpdates && performerHasChanges(scraped: scraped, existing: existing) {
 					existing.pronouns = scraped.pronouns
@@ -467,6 +476,7 @@ struct PerformerController: APIRouteCollection {
 					existing.yearsAttended = years.sorted()
 					try await existing.save(on: req.db)
 				}
+				performerForLinks = existing
 			}
 			else {
 				let performer = Performer()
@@ -499,6 +509,17 @@ struct PerformerController: APIRouteCollection {
 					}
 				}
 				try await performer.save(on: req.db)
+				performerForLinks = performer
+			}
+			if linkEvents {
+				try await linkScrapedEvents(
+					scraped.scrapedEventRefs,
+					to: performerForLinks,
+					dbEventsByUID: dbEventsByUID,
+					dbEventsByTitleAndStartTime: dbEventsByTitleAndStartTime,
+					existingPivotKeys: &existingPivotKeys,
+					on: req
+				)
 			}
 		}
 		if processDeletes {
@@ -566,6 +587,40 @@ struct PerformerController: APIRouteCollection {
 		if scraped.instagramURL != existing.instagramURL { return true }
 		if scraped.youtubeURL != existing.youtubeURL { return true }
 		return false
+	}
+
+	func linkScrapedEvents(
+		_ scrapedEventRefs: [ScrapedPerformerEventReferenceData],
+		to performer: Performer,
+		dbEventsByUID: [String: Event],
+		dbEventsByTitleAndStartTime: [String: Event],
+		existingPivotKeys: inout Set<String>,
+		on req: Request
+	) async throws {
+		guard !scrapedEventRefs.isEmpty else {
+			return
+		}
+		let performerID = try performer.requireID()
+		for scrapedEvent in scrapedEventRefs {
+			let matchedEvent = scrapedEvent.uid.flatMap { dbEventsByUID[$0] }
+				?? dbEventsByTitleAndStartTime[eventLookupKey(title: scrapedEvent.title, startTime: scrapedEvent.startTime)]
+			guard let matchedEvent else {
+				req.logger.warning("Couldn't match scraped event '\(scrapedEvent.title)' for performer '\(performer.name)' to any DB event.")
+				continue
+			}
+			let pivotKey = eventPerformerLookupKey(performerID: performerID, eventID: try matchedEvent.requireID())
+			if existingPivotKeys.insert(pivotKey).inserted {
+				try await EventPerformer(event: matchedEvent, performer: performer).save(on: req.db)
+			}
+		}
+	}
+
+	func eventLookupKey(title: String, startTime: Date) -> String {
+		"\(title.lowercased())|\(startTime.timeIntervalSinceReferenceDate)"
+	}
+
+	func eventPerformerLookupKey(performerID: UUID, eventID: UUID) -> String {
+		"\(performerID.uuidString.lowercased())|\(eventID.uuidString.lowercased())"
 	}
 
 	// Returns a set of EventIDs indicating which of hte given events are favorited by the current user, or an empty set

@@ -115,6 +115,13 @@
 			<form class="ajax" action="/admin/performer/bulk/apply" method="POST" data-successurl="/admin/performer/bulk/complete" id="bulkApplyForm">
 				<div class="row mb-2">
 					<div class="col">
+						<input type="checkbox" id="linkEvents" name="linkEvents" checked>
+						<label for="linkEvents">Link to events</label>
+						(match scraped Sched performers to existing events and create performer-event links)
+					</div>
+				</div>
+				<div class="row mb-2">
+					<div class="col">
 						<input type="checkbox" id="ignoreUpdates" name="ignoreUpdates">
 						<label for="ignoreUpdates">Ignore updates</label>
 						(skip updating existing performers with changed profiles)

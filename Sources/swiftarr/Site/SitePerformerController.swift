@@ -461,9 +461,13 @@ struct SitePerformerController: SiteControllerUtils {
 	// Reads checkbox form values and calls the API apply endpoint with the appropriate query parameters.
 	// Uses try? for content decoding since the body may be empty when no checkboxes are checked.
 	func postBulkApplyPerformers(_ req: Request) async throws -> HTTPStatus {
+		let linkEvents = (try? req.content.get(String.self, at: "linkEvents")) == "on"
 		let ignoreUpdates = (try? req.content.get(String.self, at: "ignoreUpdates")) == "on"
 		let processDeletes = (try? req.content.get(String.self, at: "processDeletes")) == "on"
 		var query = [URLQueryItem]()
+		if !linkEvents {
+			query.append(URLQueryItem(name: "linkEvents", value: "false"))
+		}
 		if ignoreUpdates {
 			query.append(URLQueryItem(name: "processUpdates", value: "false"))
 		}
@@ -681,8 +685,82 @@ extension SitePerformerController {
 		if let bio = try doc.select("div.user-profile__about-content").first() {
 			result.bio = try processHTMLIntoMarkdown(bio)
 		}
+		result.scrapedEventRefs = try buildSchedSessionReferences(from: doc)
 		req.logger.info("Scraped sched.com performer: '\(result.header.name)', photo: \(result.header.photo ?? "nil")")
 		return result
+	}
+
+	fileprivate func buildSchedSessionReferences(from doc: Document) throws -> [ScrapedPerformerEventReferenceData] {
+		guard let sessionsContainer = try doc.select("h3:contains(My Performers/Speakers Sessions) + div.list-simple").first() else {
+			return []
+		}
+		var currentDate: String?
+		var currentTime: String?
+		var scrapedEvents = [ScrapedPerformerEventReferenceData]()
+		var seenKeys = Set<String>()
+		for element in try sessionsContainer.select("div.sched-current-date, h3, a.name") {
+			if element.hasClass("sched-current-date") {
+				currentDate = try element.text().trimmingCharacters(in: .whitespacesAndNewlines)
+				continue
+			}
+			if element.tagName() == "h3" {
+				currentTime = try element.text().trimmingCharacters(in: .whitespacesAndNewlines)
+				continue
+			}
+			guard let currentDate, let currentTime else {
+				continue
+			}
+			let venue = try element.select("span.vs").text()
+			let fullTitle = try element.text().trimmingCharacters(in: .whitespacesAndNewlines)
+			let title = (venue.isEmpty ? fullTitle : fullTitle.replacingOccurrences(of: venue, with: ""))
+				.trimmingCharacters(in: .whitespacesAndNewlines)
+			guard !title.isEmpty else {
+				continue
+			}
+			let uidValue = try element.attr("id")
+			let uid = uidValue.isEmpty ? nil : uidValue
+			let startTime = try schedDateAndTimeToDate(dateString: currentDate, startTimeString: currentTime)
+			let dedupeKey = uid ?? "\(title.lowercased())|\(startTime.timeIntervalSinceReferenceDate)"
+			if seenKeys.insert(dedupeKey).inserted {
+				scrapedEvents.append(.init(uid: uid, title: title, startTime: startTime))
+			}
+		}
+		return scrapedEvents
+	}
+
+	fileprivate func schedDateAndTimeToDate(dateString: String, startTimeString: String) throws -> Date {
+		let cleanedTime = startTimeString.replacing(#/\s+[A-Z]{2,5}$/#, with: "")
+			.trimmingCharacters(in: .whitespacesAndNewlines)
+		let portCalendar = Settings.shared.getPortCalendar()
+		if cleanedTime == "All Day" {
+			let formatter = DateFormatter()
+			formatter.calendar = portCalendar
+			formatter.timeZone = portCalendar.timeZone
+			formatter.locale = Locale(identifier: "en_US_POSIX")
+			formatter.dateFormat = "EEEE, MMMM d, yyyy"
+			let cruiseYear = Settings.shared.cruiseStartDateComponents.year ?? portCalendar.component(.year, from: Settings.shared.cruiseStartDate())
+			guard let baseDate = formatter.date(from: "\(dateString), \(cruiseYear)") else {
+				throw "Couldn't convert Sched date '\(dateString)' into a Date."
+			}
+			var allDayComponents = portCalendar.dateComponents([.year, .month, .day], from: baseDate)
+			allDayComponents.hour = 7
+			allDayComponents.minute = 0
+			allDayComponents.second = 0
+			guard let eventTime = portCalendar.date(from: allDayComponents) else {
+				throw "Couldn't create all-day Sched event time for '\(dateString)'."
+			}
+			return eventTime
+		}
+		let formatter = DateFormatter()
+		formatter.calendar = portCalendar
+		formatter.timeZone = portCalendar.timeZone
+		formatter.locale = Locale(identifier: "en_US_POSIX")
+		formatter.dateFormat = "EEEE, MMMM d, yyyy h:mma"
+		let cruiseYear = Settings.shared.cruiseStartDateComponents.year ?? portCalendar.component(.year, from: Settings.shared.cruiseStartDate())
+		guard let eventTime = formatter.date(from: "\(dateString), \(cruiseYear) \(cleanedTime)") else {
+			throw "Couldn't convert Sched event time '\(dateString) \(startTimeString)' into a Date."
+		}
+		return eventTime
 	}
 
 	// A really bad implementation of HTML to Markdown. Only works with a few Markdonw tags, but these seem to be the only

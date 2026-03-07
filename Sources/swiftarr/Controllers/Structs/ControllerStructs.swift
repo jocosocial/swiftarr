@@ -1541,6 +1541,16 @@ extension PerformerHeaderData {
 	}
 }
 
+/// Lightweight event reference scraped from a Sched speaker page.
+struct ScrapedPerformerEventReferenceData: Content, Sendable {
+	/// The event UID from Sched, when present on the speaker page.
+	var uid: String?
+	/// Event title as shown on the speaker page.
+	var title: String
+	/// Event start time normalized into the same timezone basis as imported schedule events.
+	var startTime: Date
+}
+
 /// Returns info about a single perfomer. Most fields are optional, and the array fields may be empty, although they shouldn't be under normal conditions.
 ///
 /// Returned by: `GET /api/v3/performer/self`
@@ -1570,6 +1580,8 @@ public struct PerformerData: Content {
 	var yearsAttended: [Int]
 	/// Other names this performer may be listed under in spreadsheets. Used for matching during bulk import.
 	var alternativeNames: [String]?
+	/// Scraped Sched session references used only during bulk performer import.
+	var scrapedEventRefs: [ScrapedPerformerEventReferenceData]
 	/// The events this performer is going to be performing at.
 	var events: [EventData]
 	/// The user who created this Performer. Only applies to Shadow Event organizers, and is only returned if the requester is a Moderator or higher or is themselves.
@@ -1593,12 +1605,14 @@ extension PerformerData {
 		self.events = try performer.events.map { try EventData($0, isFavorite: favoriteEventIDs.contains($0.requireID())) }
 		self.yearsAttended = performer.yearsAttended
 		self.alternativeNames = performer.alternativeNames
+		self.scrapedEventRefs = []
 		self.user = user
 	}
 
 	// Empty performerData for users that don't have a Performer object
 	init() {
 		header = .init()
+		scrapedEventRefs = []
 		events = []
 		yearsAttended = []
 	}
