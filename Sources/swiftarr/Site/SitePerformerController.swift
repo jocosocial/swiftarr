@@ -271,7 +271,7 @@ struct SitePerformerController: SiteControllerUtils {
 				if let performerID = performer?.header.id {
 					self.deleteAction = "/admin/performer/\(performerID)/delete"
 				}
-				let currentYear = Settings.shared.cruiseStartDateComponents.year ?? 2025
+				let currentYear = Settings.shared.cruiseStartDateComponents.year ?? 2026
 				var years = performer?.yearsAttended ?? [currentYear]
 				if !years.contains(currentYear) {
 					years.append(currentYear)
@@ -399,10 +399,10 @@ struct SitePerformerController: SiteControllerUtils {
 				if var components = URLComponents(string: Settings.shared.scheduleUpdateURL) {
 					components.scheme = "https"
 					components.path = "/directory/speakers"
-					defaultSchedURL = components.string ?? "https://jococruise2025.sched.com/directory/speakers"
+					defaultSchedURL = components.string ?? "https://jococruise2026.sched.com/directory/speakers"
 				}
 				else {
-					defaultSchedURL = "https://jococruise2025.sched.com/directory/speakers"
+					defaultSchedURL = "https://jococruise2026.sched.com/directory/speakers"
 				}
 			}
 		}
