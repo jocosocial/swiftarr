@@ -1566,6 +1566,8 @@ public struct PerformerData: Content {
 	var instagramURL: String?
 	/// Should be a fully-qualified URL.
 	var youtubeURL: String?
+	/// The performer's identifier on sched.com, e.g. "daphne_always.26axwag9".
+	var schedID: String?
 	/// Full 4-digit years, ascending order-- like this: [2011, 2012, 2022]
 	var yearsAttended: [Int]
 	/// Other names this performer may be listed under in spreadsheets. Used for matching during bulk import.
@@ -1590,6 +1592,7 @@ extension PerformerData {
 		xURL = performer.xURL
 		instagramURL = performer.instagramURL
 		youtubeURL = performer.youtubeURL
+		schedID = performer.schedID
 		self.events = try performer.events.map { try EventData($0, isFavorite: favoriteEventIDs.contains($0.requireID())) }
 		self.yearsAttended = performer.yearsAttended
 		self.alternativeNames = performer.alternativeNames
@@ -1645,6 +1648,8 @@ struct PerformerUploadData: Content, Sendable {
 	let instagramURL: String?
 	/// Social media URLs. Should be actual URLs we put into an HREF.
 	let youtubeURL: String?
+	/// The performer's identifier on sched.com, e.g. "daphne_always.26axwag9".
+	let schedID: String?
 	/// Other names this performer may be listed under in spreadsheets. Used for matching during bulk import.
 	let alternativeNames: [String]?
 	/// UIDs of events where this performer is scheduled to appear.
@@ -1668,6 +1673,7 @@ extension PerformerUploadData {
 		xURL = performer.xURL
 		instagramURL = performer.instagramURL
 		youtubeURL = performer.youtubeURL
+		schedID = performer.schedID
 		alternativeNames = performer.alternativeNames
 		if performer.$events.value != nil {
 			eventUIDs = performer.events.map { $0.uid }

@@ -449,6 +449,7 @@ struct PerformerController: APIRouteCollection {
 					existing.xURL = scraped.xURL
 					existing.instagramURL = scraped.instagramURL
 					existing.youtubeURL = scraped.youtubeURL
+					existing.schedID = scraped.schedID
 					var years = scraped.yearsAttended
 					if !years.contains(currentYear) {
 						years.append(currentYear)
@@ -471,6 +472,7 @@ struct PerformerController: APIRouteCollection {
 				performer.xURL = scraped.xURL
 				performer.instagramURL = scraped.instagramURL
 				performer.youtubeURL = scraped.youtubeURL
+				performer.schedID = scraped.schedID
 				performer.officialPerformer = true
 				var years = scraped.yearsAttended
 				if !years.contains(currentYear) {
@@ -555,6 +557,7 @@ struct PerformerController: APIRouteCollection {
 		if scraped.xURL != existing.xURL { return true }
 		if scraped.instagramURL != existing.instagramURL { return true }
 		if scraped.youtubeURL != existing.youtubeURL { return true }
+		if scraped.schedID != existing.schedID { return true }
 		return false
 	}
 
@@ -588,6 +591,7 @@ struct PerformerController: APIRouteCollection {
 		performer.xURL = uploadData.xURL
 		performer.instagramURL = uploadData.instagramURL
 		performer.youtubeURL = uploadData.youtubeURL
+		performer.schedID = uploadData.schedID
 		performer.alternativeNames = uploadData.alternativeNames
 		performer.officialPerformer = uploadData.isOfficialPerformer
 	}

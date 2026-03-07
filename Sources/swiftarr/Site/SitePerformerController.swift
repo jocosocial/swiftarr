@@ -54,6 +54,7 @@ fileprivate struct AddPerformerFormContent: Codable {
 	var youtubeURL: String?
 	var yearsAttended: String?
 	var alternativeNames: String?
+	var schedID: String?
 	var isOfficialPerformer: Bool?
 }
 
@@ -571,7 +572,7 @@ extension SitePerformerController {
 	// Meant to work with URLs of the form: "https://jococruise2026.sched.com/speaker/kate_rubins.29by5qbb"
 	// Like all scrapers, this code is fragile to changes in the HTML structure of the page being scraped.
 	fileprivate func buildPerformerFromSchedURL(_ urlString: String, on req: Request) async throws -> PerformerData {
-		guard let _ = URL(string: urlString) else {
+		guard let url = URL(string: urlString) else {
 			throw Abort(.badRequest, reason: "Invalid sched.com URL: \(urlString)")
 		}
 		let uri = URI(string: urlString)
@@ -581,6 +582,10 @@ extension SitePerformerController {
 			throw Abort(.badRequest, reason: "No HTML returned from URL: \(urlString)")
 		}
 		var result = PerformerData()
+		let schedID = url.lastPathComponent
+		if !schedID.isEmpty && schedID != "/" {
+			result.schedID = schedID
+		}
 		let doc = try SwiftSoup.parse(html)
 		result.header.name = try doc.select("h2.user-profile__name").first()?.text() ?? ""
 		if let photoSrc = try doc.select("div.user-profile__image img").first()?.attr("src") {
@@ -679,5 +684,6 @@ extension PerformerUploadData {
 		isOfficialPerformer = overrideIsOfficial ?? form.isOfficialPerformer ?? true
 		yearsAttended = form.yearsAttended?.matches(of: #/20\d\d/#).compactMap { Int($0.output) }.sorted() ?? []
 		alternativeNames = form.alternativeNames?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+		schedID = form.schedID
 	}
 }

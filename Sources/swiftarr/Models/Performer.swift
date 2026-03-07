@@ -59,6 +59,9 @@ final class Performer: Model, @unchecked Sendable {
 	/// Performer's Youtube link, if any
 	@OptionalField(key: "youtube_url") var youtubeURL: String?
 
+	/// The performer's identifier on sched.com, e.g. "daphne_always.26axwag9". Extracted from the URL path of their sched.com speaker page.
+	@OptionalField(key: "sched_id") var schedID: String?
+
 	/// Which years the performer has attended/will attend JoCo, as an array of Ints in the range 2011...<current year>.
 	@Field(key: "years_attended") var yearsAttended: [Int]
 	
@@ -118,6 +121,20 @@ struct AddPerformerAlternativeNamesMigration: AsyncMigration {
 	func revert(on database: Database) async throws {
 		try await database.schema("performer")
 			.deleteField("alternative_names")
+			.update()
+	}
+}
+
+struct AddPerformerSchedIDMigration: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("performer")
+			.field("sched_id", .string)
+			.update()
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema("performer")
+			.deleteField("sched_id")
 			.update()
 	}
 }
