@@ -389,13 +389,9 @@ struct PerformerController: APIRouteCollection {
 		let dbPerformers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).all()
 		let dbPerformersByName = Dictionary(dbPerformers.map { ($0.name.lowercased(), $0) }) { first, _ in first }
 		var dbPerformersByAltName = [String: Performer]()
-		var dbPerformersBySchedID = [String: Performer]()
 		for performer in dbPerformers {
 			for altName in performer.alternativeNames ?? [] {
 				dbPerformersByAltName[altName.lowercased()] = performer
-			}
-			if let schedID = performer.schedID, !schedID.isEmpty {
-				dbPerformersBySchedID[schedID] = performer
 			}
 		}
 		let scrapedNames = Set(scrapedPerformers.map { $0.header.name.lowercased() })
@@ -404,7 +400,6 @@ struct PerformerController: APIRouteCollection {
 			let key = scraped.header.name.lowercased()
 			let existing = dbPerformersByName[key]
 					?? dbPerformersByAltName[key]
-					?? scraped.schedID.flatMap { dbPerformersBySchedID[$0] }
 			if let existing = existing {
 				if performerHasChanges(scraped: scraped, existing: existing) {
 					result.updatedPerformers.append(scraped)
@@ -420,10 +415,7 @@ struct PerformerController: APIRouteCollection {
 		for dbPerformer in dbPerformers {
 			let nameMatches = scrapedNames.contains(dbPerformer.name.lowercased())
 			let altNameMatches = (dbPerformer.alternativeNames ?? []).contains { scrapedNames.contains($0.lowercased()) }
-			let schedIDMatches = dbPerformer.schedID.flatMap { id in
-				scrapedPerformers.contains { $0.schedID == id }
-			} ?? false
-			if !nameMatches && !altNameMatches && !schedIDMatches {
+			if !nameMatches && !altNameMatches {
 				result.notInSourcePerformers.append(try PerformerHeaderData(dbPerformer))
 			}
 		}
@@ -446,13 +438,9 @@ struct PerformerController: APIRouteCollection {
 		let dbPerformers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).all()
 		let dbPerformersByName = Dictionary(dbPerformers.map { ($0.name.lowercased(), $0) }) { first, _ in first }
 		var dbPerformersByAltName = [String: Performer]()
-		var dbPerformersBySchedID = [String: Performer]()
 		for performer in dbPerformers {
 			for altName in performer.alternativeNames ?? [] {
 				dbPerformersByAltName[altName.lowercased()] = performer
-			}
-			if let schedID = performer.schedID, !schedID.isEmpty {
-				dbPerformersBySchedID[schedID] = performer
 			}
 		}
 		let scrapedNames = Set(scrapedPerformers.map { $0.header.name.lowercased() })
@@ -461,7 +449,6 @@ struct PerformerController: APIRouteCollection {
 			let key = scraped.header.name.lowercased()
 			let existing = dbPerformersByName[key]
 					?? dbPerformersByAltName[key]
-					?? scraped.schedID.flatMap { dbPerformersBySchedID[$0] }
 			if let existing = existing {
 				if processUpdates && performerHasChanges(scraped: scraped, existing: existing) {
 					existing.pronouns = scraped.pronouns
@@ -473,9 +460,6 @@ struct PerformerController: APIRouteCollection {
 					existing.xURL = scraped.xURL
 					existing.instagramURL = scraped.instagramURL
 					existing.youtubeURL = scraped.youtubeURL
-					if let scrapedSchedID = scraped.schedID, !scrapedSchedID.isEmpty {
-						existing.schedID = scrapedSchedID
-					}
 					var years = scraped.yearsAttended
 					if !years.contains(currentYear) {
 						years.append(currentYear)
@@ -497,7 +481,6 @@ struct PerformerController: APIRouteCollection {
 				performer.xURL = scraped.xURL
 				performer.instagramURL = scraped.instagramURL
 				performer.youtubeURL = scraped.youtubeURL
-				performer.schedID = scraped.schedID
 				performer.officialPerformer = true
 				var years = scraped.yearsAttended
 				if !years.contains(currentYear) {
@@ -522,10 +505,7 @@ struct PerformerController: APIRouteCollection {
 			for dbPerformer in dbPerformers {
 				let nameMatches = scrapedNames.contains(dbPerformer.name.lowercased())
 				let altNameMatches = (dbPerformer.alternativeNames ?? []).contains { scrapedNames.contains($0.lowercased()) }
-				let schedIDMatches = dbPerformer.schedID.flatMap { id in
-					scrapedPerformers.contains { $0.schedID == id }
-				} ?? false
-				if !nameMatches && !altNameMatches && !schedIDMatches {
+				if !nameMatches && !altNameMatches {
 					try await EventPerformer.query(on: req.db).filter(\.$performer.$id == dbPerformer.requireID()).delete()
 					try await dbPerformer.delete(on: req.db)
 				}
@@ -585,7 +565,6 @@ struct PerformerController: APIRouteCollection {
 		if scraped.xURL != existing.xURL { return true }
 		if scraped.instagramURL != existing.instagramURL { return true }
 		if scraped.youtubeURL != existing.youtubeURL { return true }
-		if scraped.schedID != existing.schedID { return true }
 		return false
 	}
 
@@ -619,7 +598,6 @@ struct PerformerController: APIRouteCollection {
 		performer.xURL = uploadData.xURL
 		performer.instagramURL = uploadData.instagramURL
 		performer.youtubeURL = uploadData.youtubeURL
-		performer.schedID = uploadData.schedID
 		performer.alternativeNames = uploadData.alternativeNames
 		performer.officialPerformer = uploadData.isOfficialPerformer
 	}
