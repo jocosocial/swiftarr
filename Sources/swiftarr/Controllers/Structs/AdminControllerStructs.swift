@@ -139,11 +139,27 @@ public struct PerformerEventLinkPreviewData: Content {
 	var eventLocation: String?
 }
 
+public struct PerformerProfileFieldChangeData: Content {
+	/// Human-readable field label shown in bulk verify.
+	var fieldName: String
+	/// Existing value currently in the database.
+	var oldValue: String
+	/// Replacement value scraped from the source.
+	var newValue: String
+}
+
+public struct UpdatedPerformerData: Content {
+	/// The canonical performer that will be updated if changes are applied.
+	var header: PerformerHeaderData
+	/// The set of profile fields that changed for this performer.
+	var changedFields: [PerformerProfileFieldChangeData]
+}
+
 public struct PerformerUpdateDifferenceData: Content {
 	/// Performers scraped from web that don't exist in the database. Will be created on apply.
 	var newPerformers: [PerformerData] = []
 	/// Performers that exist in both source and DB but have profile changes. Updated on apply unless "ignore updates" is checked.
-	var updatedPerformers: [PerformerData] = []
+	var updatedPerformers: [UpdatedPerformerData] = []
 	/// Count of performers that matched and had no changes.
 	var unchangedCount: Int = 0
 	/// Matched or new performer-event links that would be added if event linking is enabled on apply.

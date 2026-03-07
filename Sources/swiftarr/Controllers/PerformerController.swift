@@ -410,8 +410,14 @@ struct PerformerController: APIRouteCollection {
 			let existing = dbPerformersByName[key]
 					?? dbPerformersByAltName[key]
 			if let existing = existing {
-				if performerHasChanges(scraped: scraped, existing: existing) {
-					result.updatedPerformers.append(scraped)
+				let changedFields = performerProfileChanges(scraped: scraped, existing: existing)
+				if !changedFields.isEmpty {
+					result.updatedPerformers.append(
+						try UpdatedPerformerData(
+							header: PerformerHeaderData(existing),
+							changedFields: changedFields
+						)
+					)
 				}
 				else {
 					result.unchangedCount += 1
@@ -492,7 +498,8 @@ struct PerformerController: APIRouteCollection {
 					?? dbPerformersByAltName[key]
 			let performerForLinks: Performer
 			if let existing = existing {
-				if processUpdates && performerHasChanges(scraped: scraped, existing: existing) {
+				let changedFields = performerProfileChanges(scraped: scraped, existing: existing)
+				if processUpdates && !changedFields.isEmpty {
 					existing.pronouns = scraped.pronouns
 					existing.bio = scraped.bio
 					existing.organization = scraped.organization
@@ -607,19 +614,90 @@ struct PerformerController: APIRouteCollection {
 		return try JSONDecoder().decode([PerformerData].self, from: jsonData)
 	}
 
-	// Compares a scraped PerformerData against an existing Performer model to determine if any profile fields differ.
+	// Builds field-level differences for a scraped performer profile versus the existing DB record.
 	// Intentionally does NOT compare photo, as we skip image updates for existing performers.
-	func performerHasChanges(scraped: PerformerData, existing: Performer) -> Bool {
-		if scraped.pronouns != existing.pronouns { return true }
-		if scraped.bio != existing.bio { return true }
-		if scraped.organization != existing.organization { return true }
-		if scraped.title != existing.title { return true }
-		if scraped.website != existing.website { return true }
-		if scraped.facebookURL != existing.facebookURL { return true }
-		if scraped.xURL != existing.xURL { return true }
-		if scraped.instagramURL != existing.instagramURL { return true }
-		if scraped.youtubeURL != existing.youtubeURL { return true }
-		return false
+	func performerProfileChanges(scraped: PerformerData, existing: Performer) -> [PerformerProfileFieldChangeData] {
+		var changes: [PerformerProfileFieldChangeData] = []
+		appendPerformerProfileChange(
+			fieldName: "Pronouns",
+			oldValue: existing.pronouns,
+			newValue: scraped.pronouns,
+			to: &changes
+		)
+		appendPerformerProfileChange(
+			fieldName: "Bio",
+			oldValue: existing.bio,
+			newValue: scraped.bio,
+			to: &changes
+		)
+		appendPerformerProfileChange(
+			fieldName: "Organization",
+			oldValue: existing.organization,
+			newValue: scraped.organization,
+			to: &changes
+		)
+		appendPerformerProfileChange(
+			fieldName: "Title",
+			oldValue: existing.title,
+			newValue: scraped.title,
+			to: &changes
+		)
+		appendPerformerProfileChange(
+			fieldName: "Website",
+			oldValue: existing.website,
+			newValue: scraped.website,
+			to: &changes
+		)
+		appendPerformerProfileChange(
+			fieldName: "Facebook",
+			oldValue: existing.facebookURL,
+			newValue: scraped.facebookURL,
+			to: &changes
+		)
+		appendPerformerProfileChange(
+			fieldName: "X",
+			oldValue: existing.xURL,
+			newValue: scraped.xURL,
+			to: &changes
+		)
+		appendPerformerProfileChange(
+			fieldName: "Instagram",
+			oldValue: existing.instagramURL,
+			newValue: scraped.instagramURL,
+			to: &changes
+		)
+		appendPerformerProfileChange(
+			fieldName: "YouTube",
+			oldValue: existing.youtubeURL,
+			newValue: scraped.youtubeURL,
+			to: &changes
+		)
+		return changes
+	}
+
+	func appendPerformerProfileChange(
+		fieldName: String,
+		oldValue: String?,
+		newValue: String?,
+		to changes: inout [PerformerProfileFieldChangeData]
+	) {
+		guard oldValue != newValue else {
+			return
+		}
+		changes.append(
+			PerformerProfileFieldChangeData(
+				fieldName: fieldName,
+				oldValue: performerProfileDisplayValue(oldValue),
+				newValue: performerProfileDisplayValue(newValue)
+			)
+		)
+	}
+
+	func performerProfileDisplayValue(_ value: String?) -> String {
+		guard let value else {
+			return "(none)"
+		}
+		return value.isEmpty ? "(blank)" : value
 	}
 
 	func linkScrapedEvents(
