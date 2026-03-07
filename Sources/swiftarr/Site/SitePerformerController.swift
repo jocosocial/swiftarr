@@ -53,6 +53,7 @@ fileprivate struct AddPerformerFormContent: Codable {
 	var instagramURL: String?
 	var youtubeURL: String?
 	var yearsAttended: String?
+	var alternativeNames: String?
 	var isOfficialPerformer: Bool?
 }
 
@@ -253,6 +254,7 @@ struct SitePerformerController: SiteControllerUtils {
 			var formAction: String
 			var deleteAction: String?
 			var attendedYears: [String]
+			var alternativeNames: [String]
 			
 			init(_ req: Request, performer: PerformerData?, image: String?) throws {
 				trunk = .init(req, title: "Add/Modify Official Performer Bio", tab: .events)
@@ -268,6 +270,7 @@ struct SitePerformerController: SiteControllerUtils {
 					years.append(currentYear)
 				}
 				attendedYears = years.map { String($0) }
+				alternativeNames = performer?.alternativeNames ?? []
 			}
 		}
 		let ctx = try AddPerformerPageContext(req, performer: performer, image: performerImageURL)
@@ -628,5 +631,6 @@ extension PerformerUploadData {
 		youtubeURL = form.youtubeURL
 		isOfficialPerformer = overrideIsOfficial ?? form.isOfficialPerformer ?? true
 		yearsAttended = form.yearsAttended?.matches(of: #/20\d\d/#).compactMap { Int($0.output) }.sorted() ?? []
+		alternativeNames = form.alternativeNames?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
 	}
 }

@@ -54,6 +54,21 @@
 						</div>
 					</div>
 				</div>
+				#if(performer.header.isOfficialPerformer):
+				<div class="row mt-4">
+    				<div class="col">
+						<label for="alternativeNames" class="form-label">Alternative Names</label>
+						<input type="text" class="form-control" id="alternativeNames" name="alternativeNames"
+								aria-describedby="alternativeNamesHelp"
+								value="#for(altName in alternativeNames):#(altName)#if(!isLast):, #endif#endfor">
+    					<div id="alternativeNamesHelp" class="form-text">
+    						Comma-separated list of alternative names for matching this performer during bulk import.
+    						For example, if the performer's name is "Mollylele" but the spreadsheet lists them as "Molly Lewis",
+    						add "Molly Lewis" here.
+						</div>
+					</div>
+				</div>
+				#endif
 				<div class="row mt-4">
     				<div class="col">
 						<label for="name" class="form-label">Performer's' Pronouns</label>

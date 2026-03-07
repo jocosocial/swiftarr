@@ -1568,6 +1568,8 @@ public struct PerformerData: Content {
 	var youtubeURL: String?
 	/// Full 4-digit years, ascending order-- like this: [2011, 2012, 2022]
 	var yearsAttended: [Int]
+	/// Other names this performer may be listed under in spreadsheets. Used for matching during bulk import.
+	var alternativeNames: [String]?
 	/// The events this performer is going to be performing at.
 	var events: [EventData]
 	/// The user who created this Performer. Only applies to Shadow Event organizers, and is only returned if the requester is a Moderator or higher or is themselves.
@@ -1590,6 +1592,7 @@ extension PerformerData {
 		youtubeURL = performer.youtubeURL
 		self.events = try performer.events.map { try EventData($0, isFavorite: favoriteEventIDs.contains($0.requireID())) }
 		self.yearsAttended = performer.yearsAttended
+		self.alternativeNames = performer.alternativeNames
 		self.user = user
 	}
 
@@ -1642,6 +1645,8 @@ struct PerformerUploadData: Content, Sendable {
 	let instagramURL: String?
 	/// Social media URLs. Should be actual URLs we put into an HREF.
 	let youtubeURL: String?
+	/// Other names this performer may be listed under in spreadsheets. Used for matching during bulk import.
+	let alternativeNames: [String]?
 	/// UIDs of events where this performer is scheduled to appear.
 	let eventUIDs: [String]
 }
@@ -1663,6 +1668,7 @@ extension PerformerUploadData {
 		xURL = performer.xURL
 		instagramURL = performer.instagramURL
 		youtubeURL = performer.youtubeURL
+		alternativeNames = performer.alternativeNames
 		if performer.$events.value != nil {
 			eventUIDs = performer.events.map { $0.uid }
 		}

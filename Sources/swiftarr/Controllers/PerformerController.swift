@@ -303,11 +303,14 @@ struct PerformerController: APIRouteCollection {
 				unmatchedEventCount += 1
 			}
 		}
-		// Validations using the performer and event lists
-		let dbPerformerNames = Set(dbPerformers.map { $0.name })
+		// Validations using the performer and event lists; includes alternative names for matching
+		let dbAllMatchableNames = Set(dbPerformers.flatMap { [$0.name] + ($0.alternativeNames ?? []) })
 		let excelPerformerNames = Set(performers)
-		let missingPerformerNames = excelPerformerNames.subtracting(dbPerformerNames)
-		let noEventPerformerNames = dbPerformerNames.subtracting(excelPerformerNames)
+		let missingPerformerNames = excelPerformerNames.subtracting(dbAllMatchableNames)
+		let noEventPerformerNames = Set(dbPerformers.filter { performer in
+			!excelPerformerNames.contains(performer.name) &&
+			!(performer.alternativeNames ?? []).contains(where: { excelPerformerNames.contains($0) })
+		}.map { $0.name })
 		if missingPerformerNames.count > 0 {
 			errors.append("\(missingPerformerNames.count) performers mentioned in the spreadsheet didn't match up to any Performer name in the DB: \(missingPerformerNames)")
 		}
@@ -344,7 +347,7 @@ struct PerformerController: APIRouteCollection {
 		for event in events {
 			if let foundEvent = dbEvents.first(where: { $0.startTime == event.eventTime && $0.title == event.eventName }) {
 				for performerName in event.performerNames {
-					if let foundPerformer = dbPerformers.first(where: { $0.name == performerName }) {
+					if let foundPerformer = dbPerformers.first(where: { $0.name == performerName || ($0.alternativeNames ?? []).contains(performerName) }) {
 						builtPerformerPivots.append(try EventPerformer(event: foundEvent, performer: foundPerformer))
 					}
 				}
@@ -585,6 +588,7 @@ struct PerformerController: APIRouteCollection {
 		performer.xURL = uploadData.xURL
 		performer.instagramURL = uploadData.instagramURL
 		performer.youtubeURL = uploadData.youtubeURL
+		performer.alternativeNames = uploadData.alternativeNames
 		performer.officialPerformer = uploadData.isOfficialPerformer
 	}
 	
