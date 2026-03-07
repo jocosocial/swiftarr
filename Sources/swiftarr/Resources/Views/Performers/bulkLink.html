@@ -14,11 +14,11 @@
 			</div>
 			<ul class="list-group mt-3">
 				<li class="list-group-item active">
-					<b>Upload Schedule Excel Document</b>
+					<b>Upload Performer-Event Links File</b>
 				</li>
 				<li class="list-group-item bg-transparent">
-					Uploads an Excel spreadsheet with info on which performers are performing in which events. This document comes from THO. After tapping 'Upload' you'll be taken to a page that previews
-					what changes the import will have on the database. 
+					Upload a plain text file (.txt) that links performers to events. Each line must have 4 tab-separated columns: Day (e.g. Tue), Start (e.g. 1:30pm or All Day), Event Name, and Performers (semicolon-separated). Example: Tue	1:30pm	Anti-Gravity Derby	Storm DiCostanzo; Thera Heller<br><br>
+					Event names and performer names must match the database exactly. After tapping 'Upload' you'll be taken to a page that previews what changes the import will have on the database.
 				</li>
 				<li class="list-group-item bg-transparent mb-3">				
 					<form class="ajax" action="/admin/performer/link/upload" enctype="multipart/form-data" method="POST" data-successurl="/admin/performer/link/verify" id="userfileuploadform">
