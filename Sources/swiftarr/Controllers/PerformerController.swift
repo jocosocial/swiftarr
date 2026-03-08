@@ -282,14 +282,14 @@ struct PerformerController: APIRouteCollection {
 		guard let fileData = buffer.getData(at: 0, length: buffer.readableBytes) else {
 			throw Abort(.badRequest, reason: "Could not read performer/event links file.")
 		}
-		var (events, errors) = try parsePerformerLinksTextFile(from: fileData)
+		var (events, errors) = try parsePerformerLinksExcelDoc(from: fileData)
 		let performers = events.reduce(Set<String>()) { $0.union($1.performerNames) }
 		let dbEvents = try await Event.query(on: req.db).all()
 		let dbPerformers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).all()
 		var matchedEventCount = 0
 		var unmatchedEventCount = 0
 		for event in events {
-			if let _ = dbEvents.first(where: { $0.startTime == event.eventTime && $0.title == event.eventName }) {
+			if let _ = findPerformerLinkEventMatch(for: event, in: dbEvents) {
 				matchedEventCount += 1
 			}
 			else {
@@ -340,12 +340,12 @@ struct PerformerController: APIRouteCollection {
 		guard let fileData = buffer.getData(at: 0, length: buffer.readableBytes) else {
 			throw Abort(.badRequest, reason: "Could not read performer/event links file.")
 		}
-		let (events, _) = try parsePerformerLinksTextFile(from: fileData)
+		let (events, _) = try parsePerformerLinksExcelDoc(from: fileData)
 		let dbEvents = try await Event.query(on: req.db).all()
 		let dbPerformers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).all()
 		var builtPerformerPivots = [EventPerformer]()
 		for event in events {
-			if let foundEvent = dbEvents.first(where: { $0.startTime == event.eventTime && $0.title == event.eventName }) {
+			if let foundEvent = findPerformerLinkEventMatch(for: event, in: dbEvents) {
 				for performerName in event.performerNames {
 					if let foundPerformer = dbPerformers.first(where: { $0.name == performerName || ($0.alternativeNames ?? []).contains(performerName) }) {
 						builtPerformerPivots.append(try EventPerformer(event: foundEvent, performer: foundPerformer))
@@ -808,6 +808,55 @@ struct PerformerController: APIRouteCollection {
 
 	func eventPerformerLookupKey(performerID: UUID, eventID: UUID?) -> String {
 		"\(performerID.uuidString.lowercased())|\(eventID?.uuidString.lowercased() ?? "")"
+	}
+
+	func findPerformerLinkEventMatch(for importedEvent: PerformerLinksData, in dbEvents: [Event]) -> Event? {
+		if let exactMatch = dbEvents.first(where: {
+			$0.startTime == importedEvent.eventTime && $0.title == importedEvent.eventName
+		}) {
+			return exactMatch
+		}
+		let exactTimeCandidates = dbEvents.filter { $0.startTime == importedEvent.eventTime }
+		let simplifiedMatches = exactTimeCandidates.filter {
+			performerLinkComparableEventTitle($0.title) == performerLinkComparableEventTitle(importedEvent.eventName)
+		}
+		if simplifiedMatches.count == 1 {
+			return simplifiedMatches[0]
+		}
+		return nil
+	}
+
+	func normalizedPerformerLinkEventTitle(_ title: String) -> String {
+		let quoteNormalized = title
+			.precomposedStringWithCompatibilityMapping
+			.replacingOccurrences(of: "\u{2018}", with: "'")
+			.replacingOccurrences(of: "\u{2019}", with: "'")
+			.replacingOccurrences(of: "\u{201C}", with: "\"")
+			.replacingOccurrences(of: "\u{201D}", with: "\"")
+			.replacingOccurrences(of: "\u{00A0}", with: " ")
+			.replacingOccurrences(of: "\u{202F}", with: " ")
+		let whitespaceCollapsed = quoteNormalized.replacingOccurrences(
+			of: #"\s+"#,
+			with: " ",
+			options: .regularExpression
+		)
+		return whitespaceCollapsed
+			.trimmingCharacters(in: .whitespacesAndNewlines)
+			.folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: Locale(identifier: "en_US_POSIX"))
+	}
+
+	func performerLinkComparableEventTitle(_ title: String) -> String {
+		let withoutQuotedSections = normalizedPerformerLinkEventTitle(title).replacingOccurrences(
+			of: #"\s*"[^"]+"\s*"#,
+			with: " ",
+			options: .regularExpression
+		)
+		let whitespaceCollapsed = withoutQuotedSections.replacingOccurrences(
+			of: #"\s+"#,
+			with: " ",
+			options: .regularExpression
+		)
+		return whitespaceCollapsed.trimmingCharacters(in: .whitespacesAndNewlines)
 	}
 
 	// Returns a set of EventIDs indicating which of hte given events are favorited by the current user, or an empty set

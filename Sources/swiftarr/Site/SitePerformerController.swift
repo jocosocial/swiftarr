@@ -331,12 +331,12 @@ struct SitePerformerController: SiteControllerUtils {
 
 	// `POST /admin/performer/link/upload`
 	//
-	// Takes a file upload containing an Excel spreadsheet.
+	// Takes a file upload containing an XLSX spreadsheet.
 	func postLinkPerformersUpload(_ req: Request) async throws -> HTTPStatus {
-		struct ExcelFileUploadData: Content {
+		struct XLSXFileUploadData: Content {
 			var performerlinks: Data
 		}
-		let spreadsheet = try req.content.decode(ExcelFileUploadData.self)		
+		let spreadsheet = try req.content.decode(XLSXFileUploadData.self)
 		try await apiQuery(req, endpoint: "/admin/performer/link/upload", method: .POST, encodeContent: spreadsheet.performerlinks)
 		return .ok
 	}
