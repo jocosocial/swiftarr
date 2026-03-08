@@ -4,8 +4,9 @@
 # and the TimeZone ID. TimeZone IDs come can be found using Swift "print(TimeZone.knownTimeZoneIdentifiers)", and have more
 # information than timezone abbreviations, such as whether an area observers DST.
 #
-# 2025 sailing, assumed
-20250101T070000Z	EST	America/New_York
-20250305T070000Z	AST	America/Puerto_Rico
-20250306T060000Z	AST	America/Lower_Princes
-20250309T070000Z	EDT	America/New_York
+# https://www.zeitverschiebung.net/en/ is a good tool to look these up.
+#
+# 2026 sailing
+20260321T090000Z	PST	America/Los_Angeles
+20260323T090000Z	MST	America/Mazatlan
+20260328T090000Z	PST	America/Los_Angeles
