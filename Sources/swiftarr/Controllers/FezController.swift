@@ -394,7 +394,7 @@ struct FezController: APIRouteCollection {
 		try await fez.save(on: req.db)
 		let newParticipant = try await getUserPivotForAdd(lfg: fez, userID: cacheUser.userID, on: req.db)
 		newParticipant.readCount = 0
-		newParticipant.addedTo = nil  // Clear addedTo for voluntary joins (user wasn't added by someone else)
+		newParticipant.addedTo = false  // Clear addedTo for voluntary joins (user wasn't added by someone else)
 		let blocksAndMutes = cacheUser.getBlocks().union(cacheUser.getMutes())
 		newParticipant.hiddenCount = try await fez.$fezPosts.query(on: req.db).filter(\.$author.$id ~~ blocksAndMutes)
 			.count()
@@ -1040,11 +1040,7 @@ extension FezController {
 					DatabaseQuery.Filter.Method.equal,
 					DatabaseQuery.Field.path(FriendlyFez.path(for: \.$postCount), schema: FriendlyFez.schema)
 				)
-				// Include both NULL and false (exclude only true). SQL NULL != true evaluates to NULL, not TRUE, so we need explicit NULL handling
-				query.group(.or) { group in
-					group.filter(FezParticipant.self, \.$addedTo == nil)
-					group.filter(FezParticipant.self, \.$addedTo == false)
-				}
+				query.filter(FezParticipant.self, \.$addedTo == false)
 			}
 		}
 		if var searchStr = urlQuery.search {
