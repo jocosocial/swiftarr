@@ -58,6 +58,29 @@
 			</ul>
 			<div class="row mb-2">
 				<div class="col">
+					<b>Manual Schedule Update: Clear current schedule</b>
+				</div>
+			</div>
+			<div class="alert alert-warning" role="alert">
+				This is a destructive action and should only be done in non-production environments. You'll get a chance to confirm on the next screen.
+			</div>
+			<ul class="container-md mx-0 px-0 list-group">
+				<li class="list-group-item bg-transparent mb-3">
+					<form class="ajax" action="/admin/scheduleupload" method="POST" data-successurl="/admin/scheduleverify" id="scheduleclearform">
+						<input type="hidden" name="schedule" value="">
+						<div class="container-fluid">
+							<div class="alert alert-danger mt-3 d-none" role="alert"></div>
+							<div class="row mb-2">
+								<div class="col col-auto gx-0">
+									<button type="submit" class="btn btn-outline-danger">Clear Schedule<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+								</div>
+							</div>
+						</div>
+					</form>
+				</li>
+			</ul>
+			<div class="row mb-2">
+				<div class="col">
 					<b>Log of Automatic and Manual Schedule Update Actions:</b>
 				</div>
 			</div>

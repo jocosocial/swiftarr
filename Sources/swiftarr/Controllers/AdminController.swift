@@ -651,6 +651,9 @@ struct AdminController: APIRouteCollection {
 		var schedule = try req.content.decode(EventsUpdateData.self).schedule
 		schedule = schedule.replacingOccurrences(of: "&amp;", with: "&")
 		schedule = schedule.replacingOccurrences(of: "\\,", with: ",")
+		if schedule.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+			schedule = emptySchedulePayload
+		}
 		let filepath = try uploadSchedulePath()
 		// If we attempt an upload, it's important we end up with the uploaded file or nothing at the filepath.
 		// Leaving the previous file there would be bad.
@@ -1271,6 +1274,20 @@ struct AdminController: APIRouteCollection {
 	func uploadSchedulePath() throws -> URL {
 		let filePath = Settings.shared.adminDirectoryPath.appendingPathComponent("uploadschedule.ics")
 		return filePath
+	}
+
+	private var emptySchedulePayload: String {
+		"""
+		BEGIN:VCALENDAR
+		VERSION:2.0
+		X-WR-CALNAME:jococruise2026
+		X-WR-CALDESC:Event Calendar
+		METHOD:PUBLISH
+		CALSCALE:GREGORIAN
+		PRODID:-//Sched.com JoCo Cruise 2026//EN
+		X-WR-TIMEZONE:UTC
+		END:VCALENDAR
+		"""
 	}
 
 	// Gets the directory path to the directory where we store the "Twitarr_userfile.zip" and the unzipped "Twitarr_userfile" dir.
