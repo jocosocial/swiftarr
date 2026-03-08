@@ -36,7 +36,6 @@ Additionally, Twit-arr has a few custom emoji that can be entered manually. But 
 - :pirate:
 - :ship-front:
 - :ship:
-- :towel-monkey:
 - :tropical-drink:
 - :wangwang:
 - :zombie:
