@@ -324,9 +324,9 @@ struct FezController: APIRouteCollection {
 		} else {
 			// For normal cases, just query for existing pivot (don't create if missing)
 			pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first()
-    }
+		}
 
-    // Clear the addedTo flag when the user views the fez
+		// Clear the addedTo flag when the user views the fez
 		if let pivot = pivot, pivot.addedTo == true {
 			pivot.addedTo = false
 			try await pivot.save(on: req.db)
