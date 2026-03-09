@@ -100,7 +100,7 @@
 							</a>
 						#endif
 						#if(trunk.alertCounts.addedToLFGCount > 0 || trunk.alertCounts.newFezMessageCount > 0):
-							<a class="list-group-item list-group-item-action" href="/lfg/joined">
+							<a class="list-group-item list-group-item-action" href="/lfg/joined?onlynew=true">
 								#if(trunk.alertCounts.addedToLFGCount > 0 && trunk.alertCounts.newFezMessageCount > 0):
 									You've been added to #(trunk.alertCounts.addedToLFGCount) new LFG#if(trunk.alertCounts.addedToLFGCount != 1):s#endif,
 									and #(trunk.alertCounts.newFezMessageCount) LFG chat#if(trunk.alertCounts.newFezMessageCount != 1):s have#else: has#endif new messages
