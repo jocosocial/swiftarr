@@ -283,8 +283,10 @@ extension Settings {
 	// "correctly". Hey we even have tests for it now.
 	func getDateInCruiseWeek(from date: Date = Date()) -> Date {
 		let cruiseStartDate = Settings.shared.cruiseStartDate()
-		var filterDate = date
-		// If the cruise is in the future or more than 10 days in the past, construct a fake date during the cruise week
+		// We used to start the filterDate from date, but that could still have too
+		// much precision for filters to be effective.
+		var filterDate = Settings.shared.getCurrentFilterDate(from: date)
+		// If the cruise is in the future or more than cruiseLengthInDays days in the past, construct a fake date during the cruise week
 		let secondsPerDay = 24 * 60 * 60.0
 		if cruiseStartDate.timeIntervalSinceNow > 0
 			|| cruiseStartDate.timeIntervalSinceNow < 0 - Double(Settings.shared.cruiseLengthInDays) * secondsPerDay
