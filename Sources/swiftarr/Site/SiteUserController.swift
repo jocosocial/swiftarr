@@ -118,9 +118,9 @@ struct SiteUserController: SiteControllerUtils {
 
 		// User Role Management, which for now means Shutternaut management
 		// These paths may well change to take the role as a parameter and become generic Role mgmt methods.
-		privateRoutes.get("userrole", "shutternaut", "manage", use: getShutternautsHandler)
-		privateRoutes.post("userrole", "shutternaut", "add", userIDParam, use: addShutternautHandler)
-		privateRoutes.post("userrole", "shutternaut", "remove", userIDParam, use: removeShutternautHandler)
+		privateRoutes.get("userrole", "shutternaut", "manage", use: getShutternautsHandler).setUsedForPreregistration()
+		privateRoutes.post("userrole", "shutternaut", "add", userIDParam, use: addShutternautHandler).setUsedForPreregistration()
+		privateRoutes.post("userrole", "shutternaut", "remove", userIDParam, use: removeShutternautHandler).setUsedForPreregistration()
 	}
 
 	/// GET /avatar/full/ID
