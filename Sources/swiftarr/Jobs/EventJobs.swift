@@ -104,9 +104,20 @@ public struct UserEventNotificationJob: AsyncScheduledJob {
 			to: filterDate
 		)!
 
+		// Events are stored in port time. Convert the absolute filter time to port time
+		// so the query matches correctly when the ship is in a different timezone.
+		let portFilterTime = Settings.shared.timeZoneChanges.displayTimeToPortTime(filterStartTime)
+
+		// Use a 60-second window instead of exact equality to tolerate scheduler jitter.
+		// The job runs minutely; a +/- 30 second window ensures we catch events even if
+		// the scheduler fires slightly early or late.
+		let rangeStart = portFilterTime.addingTimeInterval(-30)
+		let rangeEnd = portFilterTime.addingTimeInterval(30)
+
 		let upcomingEvents = try await Event.query(on: context.application.db)
 			.with(\.$favorites)
-			.filter(\.$startTime == filterStartTime)
+			.filter(\.$startTime >= rangeStart)
+			.filter(\.$startTime < rangeEnd)
 			.all()
 		for event in upcomingEvents {
 			let eventID = try event.requireID()
@@ -135,8 +146,14 @@ public struct UserEventNotificationJob: AsyncScheduledJob {
 			to: filterDate
 		)!
 
+		// Convert to port time and use a range query, same as processEvents() above.
+		let portFilterTime = Settings.shared.timeZoneChanges.displayTimeToPortTime(filterStartTime)
+		let rangeStart = portFilterTime.addingTimeInterval(-30)
+		let rangeEnd = portFilterTime.addingTimeInterval(30)
+
 		let upcomingFezzes = try await FriendlyFez.query(on: context.application.db)
-			.filter(\.$startTime == filterStartTime)
+			.filter(\.$startTime >= rangeStart)
+			.filter(\.$startTime < rangeEnd)
 			.filter(\.$fezType !~ [.open, .closed])
 			.all()
 		for fez in upcomingFezzes {
@@ -145,8 +162,12 @@ public struct UserEventNotificationJob: AsyncScheduledJob {
 			if let location = fez.location {
 				infoStr += " in \(location)."
 			}
-			await context.application.notificationSockets.forwardToSockets(app: context.application, idList: fez.participantArray,
-					type: .chatStarting(fezID, type: fez.fezType), info: infoStr)
+			await context.application.notificationSockets.forwardToSockets(
+				app: context.application,
+				idList: fez.participantArray,
+				type: .chatStarting(fezID, type: fez.fezType),
+				info: infoStr
+			)
 		}
 	}
 
