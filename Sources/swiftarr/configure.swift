@@ -656,6 +656,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(UpdateEventSchema_NeedsPhotographer(), to: .psql)
 		app.migrations.add(UpdateEventFavoriteSchema_Photographer(), to: .psql)
 		app.migrations.add(UpdateUserDiscordHandleMigration(), to: .psql)
+		app.migrations.add(AddPerformerAlternativeNamesMigration(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 

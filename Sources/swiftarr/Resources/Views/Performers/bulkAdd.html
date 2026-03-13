@@ -12,28 +12,68 @@
 					</nav>
 				</div>
 			</div>
+			<div class="alert alert-info" role="alert">
+				Fetches a performer listing page, scrapes each linked performer page for their full profile data,
+				and compares the results against performers already in the database. You will be shown a summary of changes before anything is applied.
+				This may take a while as each performer page is fetched individually.
+				<br><br>
+				Sample mode fetches the list but then only one performer, letting you test the process before doing the full scrape.
+				<br><br>
+				<b>Recommended workflow:</b> Import from Sched first, fill in any known alternative names,
+				then import from jococruise.com. Alternative names are used to match performers across sources. You will
+				still probably need to do some manual massaging or verification.
+			</div>
 			<ul class="list-group mt-3">
 				<li class="list-group-item active">
-					<b>Import From URL</b>
-				</li>
-				<li class="list-group-item bg-transparent">
-					Fetches the performer listing page at the given URL, scrapes each linked performer page for their full profile data,
-					and compares the results against performers already in the database. You will be shown a summary of changes before anything is applied.
-					This may take a while as each performer page is fetched individually.
+					<b>Import From jococruise.com</b>
 				</li>
 				<li class="list-group-item bg-transparent mb-3">
-					<form class="ajax" action="/admin/performer/bulk/fetch" method="POST" data-successurl="/admin/performer/bulk/verify" id="bulkFetchForm">
+					<form class="ajax" action="/admin/performer/bulk/fetch" method="POST" data-successurl="/admin/performer/bulk/verify" id="bulkFetchJocoForm">
+						<input type="hidden" name="source" value="joco">
 						<div class="container-fluid">
 							<div class="row mb-2">
 								<div class="col-sm-8">
-									<label for="sourceURL" class="form-label">Source URL</label>
-									<input type="text" class="form-control" id="sourceURL" name="sourceURL" value="#(defaultURL)" required>
+									<label for="jocoSourceURL" class="form-label">Source URL</label>
+									<input type="text" class="form-control" id="jocoSourceURL" name="sourceURL" value="#(defaultURL)" required>
 								</div>
 							</div>
 							<div class="alert alert-danger mt-3 d-none" role="alert"></div>
 							<div class="row mb-2">
 								<div class="col col-auto gx-0">
 									<button type="submit" class="btn btn-primary">Fetch &amp; Compare<span class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span></button>
+								</div>
+								<div class="col col-auto gx-2">
+									<button type="submit" class="btn btn-outline-secondary" name="sampleOnly" value="true">Sample<span class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span></button>
+								</div>
+							</div>
+						</div>
+					</form>
+				</li>
+			</ul>
+			<div class="alert alert-warning" role="alert">
+				You will get maybe one or two Sched scrapes before Cloudflare shuts you down for a while. Use with caution.
+			</div>
+			<ul class="list-group mt-3">
+				<li class="list-group-item active">
+					<b>Import From Sched</b>
+				</li>
+				<li class="list-group-item bg-transparent mb-3">
+					<form class="ajax" action="/admin/performer/bulk/fetch" method="POST" data-successurl="/admin/performer/bulk/verify" id="bulkFetchSchedForm">
+						<input type="hidden" name="source" value="sched">
+						<div class="container-fluid">
+							<div class="row mb-2">
+								<div class="col-sm-8">
+									<label for="schedSourceURL" class="form-label">Source URL</label>
+									<input type="text" class="form-control" id="schedSourceURL" name="sourceURL" value="#(defaultSchedURL)" required>
+								</div>
+							</div>
+							<div class="alert alert-danger mt-3 d-none" role="alert"></div>
+							<div class="row mb-2">
+								<div class="col col-auto gx-0">
+									<button type="submit" class="btn btn-primary">Fetch &amp; Compare<span class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span></button>
+								</div>
+								<div class="col col-auto gx-2">
+									<button type="submit" class="btn btn-outline-secondary" name="sampleOnly" value="true">Sample<span class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span></button>
 								</div>
 							</div>
 						</div>

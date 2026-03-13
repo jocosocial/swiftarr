@@ -282,14 +282,14 @@ struct PerformerController: APIRouteCollection {
 		guard let fileData = buffer.getData(at: 0, length: buffer.readableBytes) else {
 			throw Abort(.badRequest, reason: "Could not read performer/event links file.")
 		}
-		var (events, errors) = try parsePerformerLinksTextFile(from: fileData)
+		var (events, errors) = try parsePerformerLinksExcelDoc(from: fileData)
 		let performers = events.reduce(Set<String>()) { $0.union($1.performerNames) }
 		let dbEvents = try await Event.query(on: req.db).all()
 		let dbPerformers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).all()
 		var matchedEventCount = 0
 		var unmatchedEventCount = 0
 		for event in events {
-			if let _ = dbEvents.first(where: { $0.startTime == event.eventTime && $0.title == event.eventName }) {
+			if let _ = findPerformerLinkEventMatch(for: event, in: dbEvents) {
 				matchedEventCount += 1
 			}
 			else {
@@ -303,11 +303,14 @@ struct PerformerController: APIRouteCollection {
 				unmatchedEventCount += 1
 			}
 		}
-		// Validations using the performer and event lists
-		let dbPerformerNames = Set(dbPerformers.map { $0.name })
+		// Validations using the performer and event lists; includes alternative names for matching
+		let dbAllMatchableNames = Set(dbPerformers.flatMap { [$0.name] + ($0.alternativeNames ?? []) })
 		let excelPerformerNames = Set(performers)
-		let missingPerformerNames = excelPerformerNames.subtracting(dbPerformerNames)
-		let noEventPerformerNames = dbPerformerNames.subtracting(excelPerformerNames)
+		let missingPerformerNames = excelPerformerNames.subtracting(dbAllMatchableNames)
+		let noEventPerformerNames = Set(dbPerformers.filter { performer in
+			!excelPerformerNames.contains(performer.name) &&
+			!(performer.alternativeNames ?? []).contains(where: { excelPerformerNames.contains($0) })
+		}.map { $0.name })
 		if missingPerformerNames.count > 0 {
 			errors.append("\(missingPerformerNames.count) performers mentioned in the spreadsheet didn't match up to any Performer name in the DB: \(missingPerformerNames)")
 		}
@@ -337,14 +340,14 @@ struct PerformerController: APIRouteCollection {
 		guard let fileData = buffer.getData(at: 0, length: buffer.readableBytes) else {
 			throw Abort(.badRequest, reason: "Could not read performer/event links file.")
 		}
-		let (events, _) = try parsePerformerLinksTextFile(from: fileData)
+		let (events, _) = try parsePerformerLinksExcelDoc(from: fileData)
 		let dbEvents = try await Event.query(on: req.db).all()
 		let dbPerformers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).all()
 		var builtPerformerPivots = [EventPerformer]()
 		for event in events {
-			if let foundEvent = dbEvents.first(where: { $0.startTime == event.eventTime && $0.title == event.eventName }) {
+			if let foundEvent = findPerformerLinkEventMatch(for: event, in: dbEvents) {
 				for performerName in event.performerNames {
-					if let foundPerformer = dbPerformers.first(where: { $0.name == performerName }) {
+					if let foundPerformer = dbPerformers.first(where: { $0.name == performerName || ($0.alternativeNames ?? []).contains(performerName) }) {
 						builtPerformerPivots.append(try EventPerformer(event: foundEvent, performer: foundPerformer))
 					}
 				}
@@ -384,28 +387,74 @@ struct PerformerController: APIRouteCollection {
 	func bulkPerformerVerifyHandler(_ req: Request) async throws -> PerformerUpdateDifferenceData {
 		let scrapedPerformers = try await readSavedBulkPerformers(on: req)
 		let dbPerformers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).all()
-		// Build a dictionary of existing performers keyed by lowercased name for case-insensitive matching
 		let dbPerformersByName = Dictionary(dbPerformers.map { ($0.name.lowercased(), $0) }) { first, _ in first }
+		let dbEvents = try await Event.query(on: req.db).all()
+		let dbEventsByUID = Dictionary(dbEvents.map { ($0.uid, $0) }) { first, _ in first }
+		let dbEventsByTitleAndStartTime = Dictionary(dbEvents.map { (eventLookupKey(title: $0.title, startTime: $0.startTime), $0) }) { first, _ in first }
+		let existingPivots = try await EventPerformer.query(on: req.db).all()
+		let existingPivotKeys = Set<String>(existingPivots.map { pivot in
+			eventPerformerLookupKey(performerID: pivot.$performer.id, eventID: pivot.$event.id)
+		})
+		var dbPerformersByAltName = [String: Performer]()
+		for performer in dbPerformers {
+			for altName in performer.alternativeNames ?? [] {
+				dbPerformersByAltName[altName.lowercased()] = performer
+			}
+		}
 		let scrapedNames = Set(scrapedPerformers.map { $0.header.name.lowercased() })
 		var result = PerformerUpdateDifferenceData()
+		var previewedAddedLinks = Set<String>()
+		var previewedUnmatchedEvents = Set<String>()
 		for scraped in scrapedPerformers {
 			let key = scraped.header.name.lowercased()
-			if let existing = dbPerformersByName[key] {
-				// Performer exists -- check if any profile fields differ
-				if performerHasChanges(scraped: scraped, existing: existing) {
-					result.updatedPerformers.append(scraped)
+			let existing = dbPerformersByName[key]
+					?? dbPerformersByAltName[key]
+			if let existing = existing {
+				let changedFields = performerProfileChanges(scraped: scraped, existing: existing)
+				if !changedFields.isEmpty {
+					result.updatedPerformers.append(
+						try UpdatedPerformerData(
+							header: PerformerHeaderData(existing),
+							changedFields: changedFields
+						)
+					)
 				}
 				else {
 					result.unchangedCount += 1
 				}
+				previewScrapedEventLinks(
+					scraped.scrapedEventRefs,
+					forPerformerNamed: existing.name,
+					existingPerformerID: try existing.requireID(),
+					dbEventsByUID: dbEventsByUID,
+					dbEventsByTitleAndStartTime: dbEventsByTitleAndStartTime,
+					existingPivotKeys: existingPivotKeys,
+					addedLinks: &result.eventLinksToAdd,
+					unmatchedEvents: &result.unmatchedScrapedEvents,
+					previewedAddedLinks: &previewedAddedLinks,
+					previewedUnmatchedEvents: &previewedUnmatchedEvents
+				)
 			}
 			else {
 				result.newPerformers.append(scraped)
+				previewScrapedEventLinks(
+					scraped.scrapedEventRefs,
+					forPerformerNamed: scraped.header.name,
+					existingPerformerID: nil,
+					dbEventsByUID: dbEventsByUID,
+					dbEventsByTitleAndStartTime: dbEventsByTitleAndStartTime,
+					existingPivotKeys: existingPivotKeys,
+					addedLinks: &result.eventLinksToAdd,
+					unmatchedEvents: &result.unmatchedScrapedEvents,
+					previewedAddedLinks: &previewedAddedLinks,
+					previewedUnmatchedEvents: &previewedUnmatchedEvents
+				)
 			}
 		}
-		// Find performers in DB that are not in the scraped source
 		for dbPerformer in dbPerformers {
-			if !scrapedNames.contains(dbPerformer.name.lowercased()) {
+			let nameMatches = scrapedNames.contains(dbPerformer.name.lowercased())
+			let altNameMatches = (dbPerformer.alternativeNames ?? []).contains { scrapedNames.contains($0.lowercased()) }
+			if !nameMatches && !altNameMatches {
 				result.notInSourcePerformers.append(try PerformerHeaderData(dbPerformer))
 			}
 		}
@@ -424,21 +473,35 @@ struct PerformerController: APIRouteCollection {
 	func bulkPerformerApplyHandler(_ req: Request) async throws -> HTTPStatus {
 		let processDeletes = req.query[String.self, at: "processDeletes"]?.lowercased() == "true"
 		let processUpdates = req.query[String.self, at: "processUpdates"]?.lowercased() != "false"
+		let linkEvents = req.query[String.self, at: "linkEvents"]?.lowercased() != "false"
 		let scrapedPerformers = try await readSavedBulkPerformers(on: req)
 		let dbPerformers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).all()
 		let dbPerformersByName = Dictionary(dbPerformers.map { ($0.name.lowercased(), $0) }) { first, _ in first }
+		let dbEvents = linkEvents ? try await Event.query(on: req.db).all() : []
+		let dbEventsByUID = linkEvents ? Dictionary(dbEvents.map { ($0.uid, $0) }) { first, _ in first } : [:]
+		let dbEventsByTitleAndStartTime = linkEvents ? Dictionary(dbEvents.map { (eventLookupKey(title: $0.title, startTime: $0.startTime), $0) }) { first, _ in first } : [:]
+		let existingPivots = linkEvents ? try await EventPerformer.query(on: req.db).all() : []
+		var existingPivotKeys = Set<String>(existingPivots.map { pivot in
+			eventPerformerLookupKey(performerID: pivot.$performer.id, eventID: pivot.$event.id)
+		})
+		var dbPerformersByAltName = [String: Performer]()
+		for performer in dbPerformers {
+			for altName in performer.alternativeNames ?? [] {
+				dbPerformersByAltName[altName.lowercased()] = performer
+			}
+		}
 		let scrapedNames = Set(scrapedPerformers.map { $0.header.name.lowercased() })
 		let currentYear = Settings.shared.cruiseStartDateComponents.year ?? 2025
 		for scraped in scrapedPerformers {
 			let key = scraped.header.name.lowercased()
-			if let existing = dbPerformersByName[key] {
-				// Update existing performer's profile fields only (skip image)
-				if processUpdates && performerHasChanges(scraped: scraped, existing: existing) {
-					existing.name = scraped.header.name.trimmingCharacters(in: .whitespaces)
-					existing.sortOrder = (existing.name.split(separator: " ").last?.string ?? existing.name).uppercased()
+			let existing = dbPerformersByName[key]
+					?? dbPerformersByAltName[key]
+			let performerForLinks: Performer
+			if let existing = existing {
+				let changedFields = performerProfileChanges(scraped: scraped, existing: existing)
+				if processUpdates && !changedFields.isEmpty {
 					existing.pronouns = scraped.pronouns
 					existing.bio = scraped.bio
-					// Photo intentionally NOT updated for existing performers
 					existing.organization = scraped.organization
 					existing.title = scraped.title
 					existing.website = scraped.website
@@ -453,9 +516,9 @@ struct PerformerController: APIRouteCollection {
 					existing.yearsAttended = years.sorted()
 					try await existing.save(on: req.db)
 				}
+				performerForLinks = existing
 			}
 			else {
-				// Create new performer
 				let performer = Performer()
 				performer.name = scraped.header.name.trimmingCharacters(in: .whitespaces)
 				performer.sortOrder = (performer.name.split(separator: " ").last?.string ?? performer.name).uppercased()
@@ -474,7 +537,6 @@ struct PerformerController: APIRouteCollection {
 					years.append(currentYear)
 				}
 				performer.yearsAttended = years.sorted()
-				// For new performers, fetch the image from the scraped photo URL
 				if let photoURLString = scraped.header.photo, !photoURLString.isEmpty {
 					do {
 						let response = try await req.client.send(.GET, to: URI(string: photoURLString))
@@ -487,12 +549,24 @@ struct PerformerController: APIRouteCollection {
 					}
 				}
 				try await performer.save(on: req.db)
+				performerForLinks = performer
+			}
+			if linkEvents {
+				try await linkScrapedEvents(
+					scraped.scrapedEventRefs,
+					to: performerForLinks,
+					dbEventsByUID: dbEventsByUID,
+					dbEventsByTitleAndStartTime: dbEventsByTitleAndStartTime,
+					existingPivotKeys: &existingPivotKeys,
+					on: req
+				)
 			}
 		}
-		// Optionally delete performers not found in scraped source
 		if processDeletes {
 			for dbPerformer in dbPerformers {
-				if !scrapedNames.contains(dbPerformer.name.lowercased()) {
+				let nameMatches = scrapedNames.contains(dbPerformer.name.lowercased())
+				let altNameMatches = (dbPerformer.alternativeNames ?? []).contains { scrapedNames.contains($0.lowercased()) }
+				if !nameMatches && !altNameMatches {
 					try await EventPerformer.query(on: req.db).filter(\.$performer.$id == dbPerformer.requireID()).delete()
 					try await dbPerformer.delete(on: req.db)
 				}
@@ -540,19 +614,249 @@ struct PerformerController: APIRouteCollection {
 		return try JSONDecoder().decode([PerformerData].self, from: jsonData)
 	}
 
-	// Compares a scraped PerformerData against an existing Performer model to determine if any profile fields differ.
+	// Builds field-level differences for a scraped performer profile versus the existing DB record.
 	// Intentionally does NOT compare photo, as we skip image updates for existing performers.
-	func performerHasChanges(scraped: PerformerData, existing: Performer) -> Bool {
-		if scraped.pronouns != existing.pronouns { return true }
-		if scraped.bio != existing.bio { return true }
-		if scraped.organization != existing.organization { return true }
-		if scraped.title != existing.title { return true }
-		if scraped.website != existing.website { return true }
-		if scraped.facebookURL != existing.facebookURL { return true }
-		if scraped.xURL != existing.xURL { return true }
-		if scraped.instagramURL != existing.instagramURL { return true }
-		if scraped.youtubeURL != existing.youtubeURL { return true }
-		return false
+	func performerProfileChanges(scraped: PerformerData, existing: Performer) -> [PerformerProfileFieldChangeData] {
+		var changes: [PerformerProfileFieldChangeData] = []
+		appendPerformerProfileChange(
+			fieldName: "Pronouns",
+			oldValue: existing.pronouns,
+			newValue: scraped.pronouns,
+			to: &changes
+		)
+		appendPerformerProfileChange(
+			fieldName: "Bio",
+			oldValue: existing.bio,
+			newValue: scraped.bio,
+			to: &changes
+		)
+		appendPerformerProfileChange(
+			fieldName: "Organization",
+			oldValue: existing.organization,
+			newValue: scraped.organization,
+			to: &changes
+		)
+		appendPerformerProfileChange(
+			fieldName: "Title",
+			oldValue: existing.title,
+			newValue: scraped.title,
+			to: &changes
+		)
+		appendPerformerProfileChange(
+			fieldName: "Website",
+			oldValue: existing.website,
+			newValue: scraped.website,
+			to: &changes
+		)
+		appendPerformerProfileChange(
+			fieldName: "Facebook",
+			oldValue: existing.facebookURL,
+			newValue: scraped.facebookURL,
+			to: &changes
+		)
+		appendPerformerProfileChange(
+			fieldName: "X",
+			oldValue: existing.xURL,
+			newValue: scraped.xURL,
+			to: &changes
+		)
+		appendPerformerProfileChange(
+			fieldName: "Instagram",
+			oldValue: existing.instagramURL,
+			newValue: scraped.instagramURL,
+			to: &changes
+		)
+		appendPerformerProfileChange(
+			fieldName: "YouTube",
+			oldValue: existing.youtubeURL,
+			newValue: scraped.youtubeURL,
+			to: &changes
+		)
+		return changes
+	}
+
+	func appendPerformerProfileChange(
+		fieldName: String,
+		oldValue: String?,
+		newValue: String?,
+		to changes: inout [PerformerProfileFieldChangeData]
+	) {
+		guard oldValue != newValue else {
+			return
+		}
+		changes.append(
+			PerformerProfileFieldChangeData(
+				fieldName: fieldName,
+				oldValue: performerProfileDisplayValue(oldValue),
+				newValue: performerProfileDisplayValue(newValue)
+			)
+		)
+	}
+
+	func performerProfileDisplayValue(_ value: String?) -> String {
+		guard let value else {
+			return "(none)"
+		}
+		return value.isEmpty ? "(blank)" : value
+	}
+
+	func linkScrapedEvents(
+		_ scrapedEventRefs: [ScrapedPerformerEventReferenceData],
+		to performer: Performer,
+		dbEventsByUID: [String: Event],
+		dbEventsByTitleAndStartTime: [String: Event],
+		existingPivotKeys: inout Set<String>,
+		on req: Request
+	) async throws {
+		guard !scrapedEventRefs.isEmpty else {
+			return
+		}
+		let performerID = try performer.requireID()
+		for scrapedEvent in scrapedEventRefs {
+			let matchedEvent = resolveScrapedEvent(
+				scrapedEvent,
+				dbEventsByUID: dbEventsByUID,
+				dbEventsByTitleAndStartTime: dbEventsByTitleAndStartTime
+			)
+			guard let matchedEvent else {
+				req.logger.warning("Couldn't match scraped event '\(scrapedEvent.title)' for performer '\(performer.name)' to any DB event.")
+				continue
+			}
+			let pivotKey = eventPerformerLookupKey(performerID: performerID, eventID: try matchedEvent.requireID())
+			if existingPivotKeys.insert(pivotKey).inserted {
+				try await EventPerformer(event: matchedEvent, performer: performer).save(on: req.db)
+			}
+		}
+	}
+
+	func previewScrapedEventLinks(
+		_ scrapedEventRefs: [ScrapedPerformerEventReferenceData],
+		forPerformerNamed performerName: String,
+		existingPerformerID: UUID?,
+		dbEventsByUID: [String: Event],
+		dbEventsByTitleAndStartTime: [String: Event],
+		existingPivotKeys: Set<String>,
+		addedLinks: inout [PerformerEventLinkPreviewData],
+		unmatchedEvents: inout [PerformerEventLinkPreviewData],
+		previewedAddedLinks: inout Set<String>,
+		previewedUnmatchedEvents: inout Set<String>
+	) {
+		for scrapedEvent in scrapedEventRefs {
+			let matchedEvent = resolveScrapedEvent(
+				scrapedEvent,
+				dbEventsByUID: dbEventsByUID,
+				dbEventsByTitleAndStartTime: dbEventsByTitleAndStartTime
+			)
+			if let matchedEvent {
+				let linkAlreadyExists = existingPerformerID.map {
+					existingPivotKeys.contains(eventPerformerLookupKey(performerID: $0, eventID: matchedEvent.id))
+				} ?? false
+				let matchedEventKey = matchedEvent.id?.uuidString.lowercased() ?? eventLookupKey(title: matchedEvent.title, startTime: matchedEvent.startTime)
+				let previewKey = "\(performerName.lowercased())|\(matchedEventKey)"
+				if !linkAlreadyExists && previewedAddedLinks.insert(previewKey).inserted {
+					addedLinks.append(
+						PerformerEventLinkPreviewData(
+							performerName: performerName,
+							eventTitle: matchedEvent.title,
+							eventStartTime: formatBulkPerformerEventPreviewTime(matchedEvent.startTime),
+							eventLocation: matchedEvent.location
+						)
+					)
+				}
+			}
+			else {
+				let previewKey = "\(performerName.lowercased())|\(eventLookupKey(title: scrapedEvent.title, startTime: scrapedEvent.startTime))"
+				if previewedUnmatchedEvents.insert(previewKey).inserted {
+					unmatchedEvents.append(
+						PerformerEventLinkPreviewData(
+							performerName: performerName,
+							eventTitle: scrapedEvent.title,
+							eventStartTime: formatBulkPerformerEventPreviewTime(scrapedEvent.startTime),
+							eventLocation: nil
+						)
+					)
+				}
+			}
+		}
+	}
+
+	func resolveScrapedEvent(
+		_ scrapedEvent: ScrapedPerformerEventReferenceData,
+		dbEventsByUID: [String: Event],
+		dbEventsByTitleAndStartTime: [String: Event]
+	) -> Event? {
+		scrapedEvent.uid.flatMap { dbEventsByUID[$0] }
+			?? dbEventsByTitleAndStartTime[eventLookupKey(title: scrapedEvent.title, startTime: scrapedEvent.startTime)]
+	}
+
+	func formatBulkPerformerEventPreviewTime(_ date: Date) -> String {
+		let dateFormatter = DateFormatter()
+		dateFormatter.dateStyle = .short
+		dateFormatter.timeStyle = .short
+		dateFormatter.locale = Locale(identifier: "en_US")
+		dateFormatter.timeZone = Settings.shared.timeZoneChanges.tzAtTime(date)
+		return "\(dateFormatter.string(from: date)) \(dateFormatter.timeZone.abbreviation() ?? "")"
+	}
+
+	func eventLookupKey(title: String, startTime: Date) -> String {
+		"\(title.lowercased())|\(startTime.timeIntervalSinceReferenceDate)"
+	}
+
+	func eventPerformerLookupKey(performerID: UUID, eventID: UUID) -> String {
+		"\(performerID.uuidString.lowercased())|\(eventID.uuidString.lowercased())"
+	}
+
+	func eventPerformerLookupKey(performerID: UUID, eventID: UUID?) -> String {
+		"\(performerID.uuidString.lowercased())|\(eventID?.uuidString.lowercased() ?? "")"
+	}
+
+	func findPerformerLinkEventMatch(for importedEvent: PerformerLinksData, in dbEvents: [Event]) -> Event? {
+		if let exactMatch = dbEvents.first(where: {
+			$0.startTime == importedEvent.eventTime && $0.title == importedEvent.eventName
+		}) {
+			return exactMatch
+		}
+		let exactTimeCandidates = dbEvents.filter { $0.startTime == importedEvent.eventTime }
+		let simplifiedMatches = exactTimeCandidates.filter {
+			performerLinkComparableEventTitle($0.title) == performerLinkComparableEventTitle(importedEvent.eventName)
+		}
+		if simplifiedMatches.count == 1 {
+			return simplifiedMatches[0]
+		}
+		return nil
+	}
+
+	func normalizedPerformerLinkEventTitle(_ title: String) -> String {
+		let quoteNormalized = title
+			.precomposedStringWithCompatibilityMapping
+			.replacingOccurrences(of: "\u{2018}", with: "'")
+			.replacingOccurrences(of: "\u{2019}", with: "'")
+			.replacingOccurrences(of: "\u{201C}", with: "\"")
+			.replacingOccurrences(of: "\u{201D}", with: "\"")
+			.replacingOccurrences(of: "\u{00A0}", with: " ")
+			.replacingOccurrences(of: "\u{202F}", with: " ")
+		let whitespaceCollapsed = quoteNormalized.replacingOccurrences(
+			of: #"\s+"#,
+			with: " ",
+			options: .regularExpression
+		)
+		return whitespaceCollapsed
+			.trimmingCharacters(in: .whitespacesAndNewlines)
+			.folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: Locale(identifier: "en_US_POSIX"))
+	}
+
+	func performerLinkComparableEventTitle(_ title: String) -> String {
+		let withoutQuotedSections = normalizedPerformerLinkEventTitle(title).replacingOccurrences(
+			of: #"\s*"[^"]+"\s*"#,
+			with: " ",
+			options: .regularExpression
+		)
+		let whitespaceCollapsed = withoutQuotedSections.replacingOccurrences(
+			of: #"\s+"#,
+			with: " ",
+			options: .regularExpression
+		)
+		return whitespaceCollapsed.trimmingCharacters(in: .whitespacesAndNewlines)
 	}
 
 	// Returns a set of EventIDs indicating which of hte given events are favorited by the current user, or an empty set
@@ -585,6 +889,7 @@ struct PerformerController: APIRouteCollection {
 		performer.xURL = uploadData.xURL
 		performer.instagramURL = uploadData.instagramURL
 		performer.youtubeURL = uploadData.youtubeURL
+		performer.alternativeNames = uploadData.alternativeNames
 		performer.officialPerformer = uploadData.isOfficialPerformer
 	}
 	
