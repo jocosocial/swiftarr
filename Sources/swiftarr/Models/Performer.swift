@@ -22,6 +22,11 @@ final class Performer: Model, @unchecked Sendable {
 
 	/// Generally, the last name of the performer, although it could be the first non-'the' word if it's a band name. Should only be used for sorting. Should be uppercased.
 	@Field(key: "sort_order") var sortOrder: String
+
+	/// Other names this performer may be listed under in spreadsheets or schedules. Used during bulk import to match
+	/// spreadsheet entries (e.g. "Molly Lewis") to the canonical performer name (e.g. "Mollylele").
+	/// Consumer UI clients are not expected to show these.
+	@OptionalField(key: "alternative_names") var alternativeNames: [String]?
 	
 	/// Shadow event organizers relate their Performer model to their User, therefore the User's pronouns field is theoretically available, but don't use it in the context of Performers.
 	/// Also, official performers aren't associated with any user.
@@ -103,4 +108,16 @@ struct CreatePerformerSchema: AsyncMigration {
 	}
 }
 
+struct AddPerformerAlternativeNamesMigration: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("performer")
+			.field("alternative_names", .array(of: .string))
+			.update()
+	}
 
+	func revert(on database: Database) async throws {
+		try await database.schema("performer")
+			.deleteField("alternative_names")
+			.update()
+	}
+}

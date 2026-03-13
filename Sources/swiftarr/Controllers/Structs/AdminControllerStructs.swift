@@ -128,13 +128,44 @@ public struct EventUpdateDifferenceData: Content {
 /// The diff groups performers into categories based on whether they need to be created, updated, or are unchanged.
 ///
 /// Returned by: `GET /api/v3/admin/performer/bulk/verify`
+public struct PerformerEventLinkPreviewData: Content {
+	/// The matched performer that would receive the event link.
+	var performerName: String
+	/// The title of the matched or scraped event.
+	var eventTitle: String
+	/// Human-readable start time for the event.
+	var eventStartTime: String
+	/// Optional location for matched DB events.
+	var eventLocation: String?
+}
+
+public struct PerformerProfileFieldChangeData: Content {
+	/// Human-readable field label shown in bulk verify.
+	var fieldName: String
+	/// Existing value currently in the database.
+	var oldValue: String
+	/// Replacement value scraped from the source.
+	var newValue: String
+}
+
+public struct UpdatedPerformerData: Content {
+	/// The canonical performer that will be updated if changes are applied.
+	var header: PerformerHeaderData
+	/// The set of profile fields that changed for this performer.
+	var changedFields: [PerformerProfileFieldChangeData]
+}
+
 public struct PerformerUpdateDifferenceData: Content {
 	/// Performers scraped from web that don't exist in the database. Will be created on apply.
 	var newPerformers: [PerformerData] = []
 	/// Performers that exist in both source and DB but have profile changes. Updated on apply unless "ignore updates" is checked.
-	var updatedPerformers: [PerformerData] = []
+	var updatedPerformers: [UpdatedPerformerData] = []
 	/// Count of performers that matched and had no changes.
 	var unchangedCount: Int = 0
+	/// Matched or new performer-event links that would be added if event linking is enabled on apply.
+	var eventLinksToAdd: [PerformerEventLinkPreviewData] = []
+	/// Scraped performer-event references that could not be matched to any DB event.
+	var unmatchedScrapedEvents: [PerformerEventLinkPreviewData] = []
 	/// Performers in DB but not found in the scraped source. Only deleted on apply if "process deletes" is checked.
 	var notInSourcePerformers: [PerformerHeaderData] = []
 }

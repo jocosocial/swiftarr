@@ -53,6 +53,7 @@ fileprivate struct AddPerformerFormContent: Codable {
 	var instagramURL: String?
 	var youtubeURL: String?
 	var yearsAttended: String?
+	var alternativeNames: String?
 	var isOfficialPerformer: Bool?
 }
 
@@ -230,6 +231,7 @@ struct SitePerformerController: SiteControllerUtils {
 	// Only TwitarrTeam and above can access.
 	// - Parameter performer: UUID. In URL Query. Set if this is an edit of an existing performer.
 	// - Parameter performerurl: String. In URL Query. Set if the form should be filled in with data from jococruise.com.
+	// - Parameter schedurl: String. In URL Query. Set if the form should be filled in with data from sched.com.
 	func upsertPerformer(_ req: Request) async throws -> View {
 		var performer: PerformerData?
 		var performerImageURL: String?
@@ -238,6 +240,12 @@ struct SitePerformerController: SiteControllerUtils {
 		}
 		else if let performerURL = req.query[String.self, at: "performerurl"] {
 			performer = try await buildPerformerFromURL(performerURL, on: req)
+			performerImageURL = performer?.header.photo
+			performer?.header.photo = nil
+			performer?.header.isOfficialPerformer = true
+		}
+		else if let schedURL = req.query[String.self, at: "schedurl"] {
+			performer = try await buildPerformerFromSchedURL(schedURL, on: req)
 			performerImageURL = performer?.header.photo
 			performer?.header.photo = nil
 			performer?.header.isOfficialPerformer = true
@@ -253,6 +261,7 @@ struct SitePerformerController: SiteControllerUtils {
 			var formAction: String
 			var deleteAction: String?
 			var attendedYears: [String]
+			var alternativeNames: [String]
 			
 			init(_ req: Request, performer: PerformerData?, image: String?) throws {
 				trunk = .init(req, title: "Add/Modify Official Performer Bio", tab: .events)
@@ -262,12 +271,13 @@ struct SitePerformerController: SiteControllerUtils {
 				if let performerID = performer?.header.id {
 					self.deleteAction = "/admin/performer/\(performerID)/delete"
 				}
-				let currentYear = Settings.shared.cruiseStartDateComponents.year ?? 2025
+				let currentYear = Settings.shared.cruiseStartDateComponents.year ?? 2026
 				var years = performer?.yearsAttended ?? [currentYear]
 				if !years.contains(currentYear) {
 					years.append(currentYear)
 				}
 				attendedYears = years.map { String($0) }
+				alternativeNames = performer?.alternativeNames ?? []
 			}
 		}
 		let ctx = try AddPerformerPageContext(req, performer: performer, image: performerImageURL)
@@ -321,12 +331,12 @@ struct SitePerformerController: SiteControllerUtils {
 
 	// `POST /admin/performer/link/upload`
 	//
-	// Takes a file upload containing an Excel spreadsheet.
+	// Takes a file upload containing an XLSX spreadsheet.
 	func postLinkPerformersUpload(_ req: Request) async throws -> HTTPStatus {
-		struct ExcelFileUploadData: Content {
+		struct XLSXFileUploadData: Content {
 			var performerlinks: Data
 		}
-		let spreadsheet = try req.content.decode(ExcelFileUploadData.self)		
+		let spreadsheet = try req.content.decode(XLSXFileUploadData.self)
 		try await apiQuery(req, endpoint: "/admin/performer/link/upload", method: .POST, encodeContent: spreadsheet.performerlinks)
 		return .ok
 	}
@@ -381,10 +391,19 @@ struct SitePerformerController: SiteControllerUtils {
 		struct BulkAddPerformersPageContext: Encodable {
 			var trunk: TrunkContext
 			var defaultURL: String
+			var defaultSchedURL: String
 
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "Bulk Add Performers", tab: .admin)
 				defaultURL = "https://jococruise.com/guests/"
+				if var components = URLComponents(string: Settings.shared.scheduleUpdateURL) {
+					components.scheme = "https"
+					components.path = "/directory/speakers"
+					defaultSchedURL = components.string ?? "https://jococruise2026.sched.com/directory/speakers"
+				}
+				else {
+					defaultSchedURL = "https://jococruise2026.sched.com/directory/speakers"
+				}
 			}
 		}
 		let ctx = try BulkAddPerformersPageContext(req)
@@ -398,9 +417,21 @@ struct SitePerformerController: SiteControllerUtils {
 	func postBulkFetchPerformers(_ req: Request) async throws -> HTTPStatus {
 		struct BulkFetchFormData: Content {
 			var sourceURL: String
+			var source: String?
+			var sampleOnly: Bool?
 		}
 		let formData = try req.content.decode(BulkFetchFormData.self)
-		let performers = try await buildPerformersFromListingPage(formData.sourceURL, on: req)
+		let sampleOnly = formData.sampleOnly ?? false
+		let performers: [PerformerData]
+		if formData.source == "sched" {
+			performers = try await buildPerformersFromSchedListingPage(formData.sourceURL, sampleOnly: sampleOnly, on: req)
+		}
+		else {
+			performers = try await buildPerformersFromListingPage(formData.sourceURL, sampleOnly: sampleOnly, on: req)
+		}
+		guard !performers.isEmpty else {
+			throw Abort(.badRequest, reason: "No performers were scraped from the provided source URL.")
+		}
 		try await apiQuery(req, endpoint: "/admin/performer/bulk/upload", method: .POST, encodeContent: performers)
 		return .ok
 	}
@@ -430,9 +461,13 @@ struct SitePerformerController: SiteControllerUtils {
 	// Reads checkbox form values and calls the API apply endpoint with the appropriate query parameters.
 	// Uses try? for content decoding since the body may be empty when no checkboxes are checked.
 	func postBulkApplyPerformers(_ req: Request) async throws -> HTTPStatus {
+		let linkEvents = (try? req.content.get(String.self, at: "linkEvents")) == "on"
 		let ignoreUpdates = (try? req.content.get(String.self, at: "ignoreUpdates")) == "on"
 		let processDeletes = (try? req.content.get(String.self, at: "processDeletes")) == "on"
 		var query = [URLQueryItem]()
+		if !linkEvents {
+			query.append(URLQueryItem(name: "linkEvents", value: "false"))
+		}
 		if ignoreUpdates {
 			query.append(URLQueryItem(name: "processUpdates", value: "false"))
 		}
@@ -476,7 +511,7 @@ extension SitePerformerController {
 	// and scrapes each one using buildPerformerFromURL to get full performer data.
 	// Meant to work with the JoCo Cruise guests page (e.g. "https://jococruise.com/guests/").
 	// Like all scrapers, this code is fragile to changes in the HTML structure of the page being scraped.
-	fileprivate func buildPerformersFromListingPage(_ urlString: String, on req: Request) async throws -> [PerformerData] {
+	fileprivate func buildPerformersFromListingPage(_ urlString: String, sampleOnly: Bool = false, on req: Request) async throws -> [PerformerData] {
 		guard let _ = URL(string: urlString) else {
 			throw Abort(.badRequest, reason: "Invalid listing URL: \(urlString)")
 		}
@@ -509,10 +544,68 @@ extension SitePerformerController {
 				performer.header.isOfficialPerformer = true
 				performers.append(performer)
 				req.logger.info("Scraped performer: \(performer.header.name)")
+				if sampleOnly {
+					break
+				}
 			}
 			catch {
 				req.logger.warning("Failed to scrape performer from \(performerURL): \(error)")
 			}
+		}
+		return performers
+	}
+
+	// Scrapes the sched.com speakers directory page at the given URL, finds links to individual speaker pages,
+	// and scrapes each one using buildPerformerFromSchedURL to get full performer data.
+	// Meant to work with URLs of the form: "https://jococruise2026.sched.com/directory/speakers"
+	// Like all scrapers, this code is fragile to changes in the HTML structure of the page being scraped.
+	fileprivate func buildPerformersFromSchedListingPage(_ urlString: String, sampleOnly: Bool = false, on req: Request) async throws -> [PerformerData] {
+		guard let listingURL = URL(string: urlString) else {
+			throw Abort(.badRequest, reason: "Invalid sched listing URL: \(urlString)")
+		}
+		var rootComponents = URLComponents()
+		rootComponents.scheme = listingURL.scheme ?? "https"
+		rootComponents.host = listingURL.host
+		guard let siteRootURL = rootComponents.url else {
+			throw Abort(.badRequest, reason: "Could not derive site root from sched listing URL: \(urlString)")
+		}
+		let uri = URI(string: urlString)
+		let headers = HTTPHeaders([("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)")])
+		var response = try await req.client.get(uri, headers: headers)
+		guard let bytes = response.body?.readableBytes, let html = response.body?.readString(length: bytes) else {
+			throw Abort(.badRequest, reason: "No HTML returned from URL: \(urlString)")
+		}
+		let doc = try SwiftSoup.parse(html)
+		let avatarLinks = try doc.select("a.sched-avatar")
+		guard !avatarLinks.isEmpty else {
+			throw Abort(.badRequest, reason: "No speaker links were found on the Sched directory page. Sched may be rate-limiting requests or the page format may have changed.")
+		}
+		var speakerURLs = [String]()
+		for link in avatarLinks {
+			let href = try link.attr("href")
+			guard !href.isEmpty else { continue }
+			if let resolved = URL(string: href, relativeTo: siteRootURL)?.absoluteString {
+				speakerURLs.append(resolved)
+			}
+		}
+		req.logger.info("Found \(speakerURLs.count) speaker URLs on sched listing page")
+		var performers = [PerformerData]()
+		for speakerURL in speakerURLs {
+			do {
+				var performer = try await buildPerformerFromSchedURL(speakerURL, on: req)
+				performer.header.isOfficialPerformer = true
+				performers.append(performer)
+				req.logger.info("Scraped sched performer: \(performer.header.name)")
+				if sampleOnly {
+					break
+				}
+			}
+			catch {
+				req.logger.warning("Failed to scrape sched performer from \(speakerURL): \(error)")
+			}
+		}
+		guard !performers.isEmpty else {
+			throw Abort(.badRequest, reason: "Sched returned speaker links, but none of the speaker pages could be scraped.")
 		}
 		return performers
 	}
@@ -557,8 +650,121 @@ extension SitePerformerController {
 		return result
 	}
 	
+	// Scrapes a sched.com speaker page at the given URL, builds a PerformerData out of what it finds.
+	// Meant to work with URLs of the form: "https://jococruise2026.sched.com/speaker/kate_rubins.29by5qbb"
+	// Like all scrapers, this code is fragile to changes in the HTML structure of the page being scraped.
+	fileprivate func buildPerformerFromSchedURL(_ urlString: String, on req: Request) async throws -> PerformerData {
+		guard let _ = URL(string: urlString) else {
+			throw Abort(.badRequest, reason: "Invalid sched.com URL: \(urlString)")
+		}
+		let uri = URI(string: urlString)
+		let headers = HTTPHeaders([("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)")])
+		var response = try await req.client.get(uri, headers: headers)
+		guard let bytes = response.body?.readableBytes, let html = response.body?.readString(length: bytes) else {
+			throw Abort(.badRequest, reason: "No HTML returned from URL: \(urlString)")
+		}
+		var result = PerformerData()
+		let doc = try SwiftSoup.parse(html)
+		result.header.name = try doc.select("h2.user-profile__name").first()?.text() ?? ""
+		if let photoSrc = try doc.select("div.user-profile__image img").first()?.attr("src") {
+			if photoSrc.hasPrefix("//") {
+				result.header.photo = "https:" + photoSrc
+			} else {
+				result.header.photo = photoSrc
+			}
+		}
+		let company = try doc.select("div.user-profile__company").first()?.text().trimmingCharacters(in: .whitespacesAndNewlines)
+		result.organization = company?.isEmpty == true ? nil : company
+		let position = try doc.select("div.user-profile__position").first()?.text().trimmingCharacters(in: .whitespacesAndNewlines)
+		result.title = position?.isEmpty == true ? nil : position
+		result.website = try doc.select("div.user-profile__link a").first()?.attr("href")
+		result.xURL = try doc.select("div.social-profile.twitter a").first()?.attr("href")
+		result.facebookURL = try doc.select("div.social-profile.facebook a").first()?.attr("href")
+		result.instagramURL = try doc.select("div.social-profile.instagram a").first()?.attr("href")
+		result.youtubeURL = try doc.select("div.social-profile.youtube a").first()?.attr("href")
+		if let bio = try doc.select("div.user-profile__about-content").first() {
+			result.bio = try processHTMLIntoMarkdown(bio)
+		}
+		result.scrapedEventRefs = try buildSchedSessionReferences(from: doc)
+		req.logger.info("Scraped sched.com performer: '\(result.header.name)', photo: \(result.header.photo ?? "nil")")
+		return result
+	}
+
+	fileprivate func buildSchedSessionReferences(from doc: Document) throws -> [ScrapedPerformerEventReferenceData] {
+		guard let sessionsContainer = try doc.select("h3:contains(My Performers/Speakers Sessions) + div.list-simple").first() else {
+			return []
+		}
+		var currentDate: String?
+		var currentTime: String?
+		var scrapedEvents = [ScrapedPerformerEventReferenceData]()
+		var seenKeys = Set<String>()
+		for element in try sessionsContainer.select("div.sched-current-date, h3, a.name") {
+			if element.hasClass("sched-current-date") {
+				currentDate = try element.text().trimmingCharacters(in: .whitespacesAndNewlines)
+				continue
+			}
+			if element.tagName() == "h3" {
+				currentTime = try element.text().trimmingCharacters(in: .whitespacesAndNewlines)
+				continue
+			}
+			guard let currentDate, let currentTime else {
+				continue
+			}
+			let venue = try element.select("span.vs").text()
+			let fullTitle = try element.text().trimmingCharacters(in: .whitespacesAndNewlines)
+			let title = (venue.isEmpty ? fullTitle : fullTitle.replacingOccurrences(of: venue, with: ""))
+				.trimmingCharacters(in: .whitespacesAndNewlines)
+			guard !title.isEmpty else {
+				continue
+			}
+			let uidValue = try element.attr("id")
+			let uid = uidValue.isEmpty ? nil : uidValue
+			let startTime = try schedDateAndTimeToDate(dateString: currentDate, startTimeString: currentTime)
+			let dedupeKey = uid ?? "\(title.lowercased())|\(startTime.timeIntervalSinceReferenceDate)"
+			if seenKeys.insert(dedupeKey).inserted {
+				scrapedEvents.append(.init(uid: uid, title: title, startTime: startTime))
+			}
+		}
+		return scrapedEvents
+	}
+
+	fileprivate func schedDateAndTimeToDate(dateString: String, startTimeString: String) throws -> Date {
+		let cleanedTime = startTimeString.replacing(#/\s+[A-Z]{2,5}$/#, with: "")
+			.trimmingCharacters(in: .whitespacesAndNewlines)
+		let portCalendar = Settings.shared.getPortCalendar()
+		if cleanedTime == "All Day" {
+			let formatter = DateFormatter()
+			formatter.calendar = portCalendar
+			formatter.timeZone = portCalendar.timeZone
+			formatter.locale = Locale(identifier: "en_US_POSIX")
+			formatter.dateFormat = "EEEE, MMMM d, yyyy"
+			let cruiseYear = Settings.shared.cruiseStartDateComponents.year ?? portCalendar.component(.year, from: Settings.shared.cruiseStartDate())
+			guard let baseDate = formatter.date(from: "\(dateString), \(cruiseYear)") else {
+				throw "Couldn't convert Sched date '\(dateString)' into a Date."
+			}
+			var allDayComponents = portCalendar.dateComponents([.year, .month, .day], from: baseDate)
+			allDayComponents.hour = 7
+			allDayComponents.minute = 0
+			allDayComponents.second = 0
+			guard let eventTime = portCalendar.date(from: allDayComponents) else {
+				throw "Couldn't create all-day Sched event time for '\(dateString)'."
+			}
+			return eventTime
+		}
+		let formatter = DateFormatter()
+		formatter.calendar = portCalendar
+		formatter.timeZone = portCalendar.timeZone
+		formatter.locale = Locale(identifier: "en_US_POSIX")
+		formatter.dateFormat = "EEEE, MMMM d, yyyy h:mma"
+		let cruiseYear = Settings.shared.cruiseStartDateComponents.year ?? portCalendar.component(.year, from: Settings.shared.cruiseStartDate())
+		guard let eventTime = formatter.date(from: "\(dateString), \(cruiseYear) \(cleanedTime)") else {
+			throw "Couldn't convert Sched event time '\(dateString) \(startTimeString)' into a Date."
+		}
+		return eventTime
+	}
+
 	// A really bad implementation of HTML to Markdown. Only works with a few Markdonw tags, but these seem to be the only
-	// ones used by the Performer Bio html sections on jococruise.com.
+	// ones used by the Performer Bio html sections on jococruise.com and sched.com.
 	// 
 	// Any HTML tags not recognized and converted into their Markdown equivalent are removed from the output.
 	fileprivate func processHTMLIntoMarkdown(_ rootNode: Node) throws  -> String {
@@ -576,6 +782,7 @@ extension SitePerformerController {
 					case "strong": accum.append("**"); tailText = "**"
 					case "i", "em": accum.append("*"); tailText = "*"
 					case "p": tailText = "\n"
+					case "br": accum.append("\n")
 					case "a": accum.append("["); tailText = try "](\(element.attr("href")))"
 					default: break
 				}
@@ -628,5 +835,6 @@ extension PerformerUploadData {
 		youtubeURL = form.youtubeURL
 		isOfficialPerformer = overrideIsOfficial ?? form.isOfficialPerformer ?? true
 		yearsAttended = form.yearsAttended?.matches(of: #/20\d\d/#).compactMap { Int($0.output) }.sorted() ?? []
+		alternativeNames = form.alternativeNames?.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
 	}
 }

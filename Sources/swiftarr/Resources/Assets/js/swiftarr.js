@@ -466,11 +466,15 @@ async function submitAJAXForm(formElement, event) {
 	if (!formElement.classList.contains('ajax')) {
 		return;
 	}
-	let spinnerElem = formElement.querySelector(".spinner-border");
+	let submitter = event.submitter;
+	let spinnerElem = submitter?.querySelector(".spinner-border") ?? formElement.querySelector(".spinner-border");
 	event.preventDefault();
 	try {
 		spinnerElem?.classList.remove("d-none");
 		var uploadBody = new FormData(formElement);
+		if (submitter?.name) {
+			uploadBody.append(submitter.name, submitter.value);
+		}
 		if (formElement.classList.contains('fileupload')) {
 			uploadBody = formElement.querySelector('input[type=file]').files[0];
 		}
