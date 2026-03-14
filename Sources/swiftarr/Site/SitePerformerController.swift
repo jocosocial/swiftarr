@@ -35,6 +35,35 @@ struct PerformerContext: Encodable {
 	}
 }
 
+struct ManagePerformersContext: Encodable {
+	struct ManagePerformerRow: Encodable {
+		var id: UUID
+		var name: String
+		var photo: String?
+		var isOfficialPerformer: Bool
+	}
+
+	var trunk: TrunkContext
+	var performers: [ManagePerformerRow]
+
+	init(_ req: Request, performers: [PerformerHeaderData]) throws {
+		trunk = .init(req, title: "Manage Performers", tab: .events)
+		self.performers = performers.compactMap { performer in
+			guard let id = performer.id else {
+				return nil
+			}
+			return ManagePerformerRow(
+				id: id,
+				name: performer.name,
+				photo: performer.photo,
+				isOfficialPerformer: performer.isOfficialPerformer
+			)
+		}.sorted { lhs, rhs in
+			lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+		}
+	}
+}
+
 // Form data from the Add/Update Event Organizer and Add/Update Performer form
 fileprivate struct AddPerformerFormContent: Codable {
 	var performerID: UUID?		// non-nil if editing an existing performer
@@ -73,6 +102,7 @@ struct SitePerformerController: SiteControllerUtils {
 
 		let ttRoutes = getPrivateRoutes(app, feature: .performers, minAccess: .twitarrteam)
 		ttRoutes.get("admin", "performer", "root", use: getPerformersRoot)
+		ttRoutes.get("admin", "performer", "manage", use: managePerformersPage)
 		ttRoutes.get("admin", "performer", "add", use: upsertPerformer)
 		ttRoutes.post("admin", "performer", "add", use: postUpsertPerformer)
 		ttRoutes.post("admin", "performer", performerIDParam, "delete", use: performerDeleteHandler)
@@ -222,6 +252,18 @@ struct SitePerformerController: SiteControllerUtils {
 		}
 		let ctx = try PerformerPageContext(req)
 		return try await req.view.render("Performers/adminRoot", ctx)
+	}
+
+	// `GET /admin/performer/manage`
+	//
+	// Shows a list of official and shadow performers for multi-select bulk deletion.
+	func managePerformersPage(_ req: Request) async throws -> View {
+		let officialResponse = try await apiQuery(req, endpoint: "/performer/official?start=0&limit=200")
+		let shadowResponse = try await apiQuery(req, endpoint: "/performer/shadow?start=0&limit=200")
+		let officialPerformers = try officialResponse.content.decode(PerformerResponseData.self).performers
+		let shadowPerformers = try shadowResponse.content.decode(PerformerResponseData.self).performers
+		let ctx = try ManagePerformersContext(req, performers: officialPerformers + shadowPerformers)
+		return try await req.view.render("Performers/manage", ctx)
 	}
 	
 	

@@ -1,0 +1,195 @@
+#extend("trunk"):
+	#export("body"):
+		<div class="container-md ms-0 my-1">
+			<div class="row justify-content-between align-items-center my-1">
+				<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item"><a href="/admin/performer/root">Manage Performers</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Bulk Delete</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<div class="row mb-2 align-items-center">
+				<div class="col">
+					<h5 class="mb-0">Manage Performers</h5>
+				</div>
+			</div>
+			<div class="row mb-2">
+				<div class="col">
+					<div id="bulkDeleteSuccess" class="alert alert-success d-none mb-2"></div>
+					<div id="bulkDeleteError" class="alert alert-danger d-none mb-2"></div>
+					<div class="d-flex gap-2">
+						<button id="selectAllPerformers" type="button" class="btn btn-outline-secondary btn-sm">Select All</button>
+						<button id="selectNonePerformers" type="button" class="btn btn-outline-secondary btn-sm">Select None</button>
+						<button id="deleteSelectedPerformers" type="button" class="btn btn-danger btn-sm">
+							<span class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>
+							Delete Selected
+						</button>
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col">
+					#if(count(performers) == 0):
+						<div class="text-muted">No performers found.</div>
+					#else:
+						<table class="table table-sm table-hover align-middle">
+							<thead>
+								<tr>
+									<th style="width: 48px;">
+										<input id="performerSelectMaster" type="checkbox" class="form-check-input" aria-label="Select all performers">
+									</th>
+									<th style="width: 68px;">Image</th>
+									<th>Name</th>
+									<th style="width: 120px;">Type</th>
+								</tr>
+							</thead>
+							<tbody>
+								#for(performer in performers):
+									<tr data-performerid="#(performer.id)">
+										<td>
+											<input type="checkbox" class="form-check-input performer-select" value="#(performer.id)" aria-label="Select performer #(performer.name)">
+										</td>
+										<td>
+											#if(performer.photo != nil && performer.photo != ""):
+												<img src="/api/v3/image/thumb/#(performer.photo)" alt="Performer image" style="width: 48px; height: 48px; object-fit: cover;">
+											#else:
+												<img src="/img/NoAvatarUser.png" alt="No performer image" style="width: 48px; height: 48px; object-fit: cover;">
+											#endif
+										</td>
+										<td>#(performer.name)</td>
+										<td>
+											#if(performer.isOfficialPerformer):
+												<span class="badge text-bg-primary">Official</span>
+											#else:
+												<span class="badge text-bg-secondary">Shadow</span>
+											#endif
+										</td>
+									</tr>
+								#endfor
+							</tbody>
+						</table>
+					#endif
+				</div>
+			</div>
+		</div>
+		<script>
+			(() => {
+				const rowCheckboxes = Array.from(document.querySelectorAll('.performer-select'));
+				const selectAllButton = document.getElementById('selectAllPerformers');
+				const selectNoneButton = document.getElementById('selectNonePerformers');
+				const masterCheckbox = document.getElementById('performerSelectMaster');
+				const deleteButton = document.getElementById('deleteSelectedPerformers');
+				const spinner = deleteButton?.querySelector('.spinner-border');
+				const errorAlert = document.getElementById('bulkDeleteError');
+				const successAlert = document.getElementById('bulkDeleteSuccess');
+
+				function setSelection(checked) {
+					for (const checkbox of rowCheckboxes) {
+						checkbox.checked = checked;
+					}
+					if (masterCheckbox) {
+						masterCheckbox.checked = checked && rowCheckboxes.length > 0;
+						masterCheckbox.indeterminate = false;
+					}
+				}
+
+				function updateMasterCheckboxState() {
+					if (!masterCheckbox) {
+						return;
+					}
+					const selectedCount = rowCheckboxes.filter((checkbox) => checkbox.checked).length;
+					masterCheckbox.checked = selectedCount > 0 && selectedCount === rowCheckboxes.length;
+					masterCheckbox.indeterminate = selectedCount > 0 && selectedCount < rowCheckboxes.length;
+				}
+
+				function showAlert(element, message) {
+					if (!element) {
+						return;
+					}
+					element.textContent = message;
+					element.classList.remove('d-none');
+				}
+
+				function hideAlert(element) {
+					if (!element) {
+						return;
+					}
+					element.textContent = '';
+					element.classList.add('d-none');
+				}
+
+				function selectedIDs() {
+					return rowCheckboxes.filter((checkbox) => checkbox.checked).map((checkbox) => checkbox.value);
+				}
+
+				async function deleteSelectedPerformers() {
+					hideAlert(errorAlert);
+					hideAlert(successAlert);
+					const ids = selectedIDs();
+					if (ids.length === 0) {
+						showAlert(errorAlert, "Select at least one performer to delete.");
+						return;
+					}
+					const confirmed = confirm(`Delete ${ids.length} selected performer${ids.length === 1 ? '' : 's'}? This cannot be undone.`);
+					if (!confirmed) {
+						return;
+					}
+					selectAllButton?.setAttribute('disabled', 'disabled');
+					selectNoneButton?.setAttribute('disabled', 'disabled');
+					deleteButton?.setAttribute('disabled', 'disabled');
+					masterCheckbox?.setAttribute('disabled', 'disabled');
+					for (const checkbox of rowCheckboxes) {
+						checkbox.setAttribute('disabled', 'disabled');
+					}
+					spinner?.classList.remove('d-none');
+					const failed = [];
+					for (const id of ids) {
+						try {
+							const response = await fetch(`/admin/performer/${id}/delete`, { method: 'POST' });
+							if (response.status >= 300) {
+								failed.push(id);
+							}
+						}
+						catch (_) {
+							failed.push(id);
+						}
+					}
+					spinner?.classList.add('d-none');
+					if (failed.length === 0) {
+						showAlert(successAlert, `Deleted ${ids.length} performer${ids.length === 1 ? '' : 's'}. Reloading...`);
+						window.setTimeout(() => location.reload(), 500);
+						return;
+					}
+					showAlert(
+						errorAlert,
+						`Deleted ${ids.length - failed.length} performer${ids.length - failed.length === 1 ? '' : 's'}, but ${failed.length} failed.`
+					);
+					selectAllButton?.removeAttribute('disabled');
+					selectNoneButton?.removeAttribute('disabled');
+					deleteButton?.removeAttribute('disabled');
+					masterCheckbox?.removeAttribute('disabled');
+					for (const checkbox of rowCheckboxes) {
+						checkbox.removeAttribute('disabled');
+						if (failed.includes(checkbox.value)) {
+							checkbox.checked = true;
+						}
+					}
+					updateMasterCheckboxState();
+				}
+
+				selectAllButton?.addEventListener('click', () => setSelection(true));
+				selectNoneButton?.addEventListener('click', () => setSelection(false));
+				masterCheckbox?.addEventListener('change', () => setSelection(masterCheckbox.checked));
+				for (const checkbox of rowCheckboxes) {
+					checkbox.addEventListener('change', updateMasterCheckboxState);
+				}
+				deleteButton?.addEventListener('click', deleteSelectedPerformers);
+				updateMasterCheckboxState();
+			})();
+		</script>
+	#endexport
+#endextend
