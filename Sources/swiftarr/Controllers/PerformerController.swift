@@ -1,5 +1,4 @@
 import Fluent
-import FluentSQL
 import Vapor
 import CoreXLSX
 
@@ -343,7 +342,7 @@ struct PerformerController: APIRouteCollection {
 		let (events, _) = try parsePerformerLinksExcelDoc(from: fileData)
 		let dbEvents = try await Event.query(on: req.db).all()
 		let dbPerformers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).all()
-		var newPivotPairs = [(performerID: UUID, eventID: UUID)]()
+		var builtPerformerPivots = [EventPerformer]()
 		var seenPivotKeys = Set<String>()
 		var duplicatePairCount = 0
 		for event in events {
@@ -355,7 +354,7 @@ struct PerformerController: APIRouteCollection {
 						let pivotKey = eventPerformerLookupKey(performerID: performerID, eventID: eventID)
 						// Duplicate spreadsheet rows are treated as idempotent no-ops.
 						if seenPivotKeys.insert(pivotKey).inserted {
-							newPivotPairs.append((performerID: performerID, eventID: eventID))
+							builtPerformerPivots.append(try EventPerformer(event: foundEvent, performer: foundPerformer))
 						}
 						else {
 							duplicatePairCount += 1
@@ -370,29 +369,7 @@ struct PerformerController: APIRouteCollection {
 		let pivots = try await EventPerformer.query(on: req.db).join(Performer.self, on: \EventPerformer.$performer.$id == \Performer.$id)
 				.filter(Performer.self, \.$officialPerformer == true).all()
 		try await pivots.delete(on: req.db)
-		if let sql = req.db as? SQLDatabase {
-			for pivotPair in newPivotPairs {
-				try await sql.raw("""
-					INSERT INTO "event+performer" ("performer", "event")
-					VALUES (\(bind: pivotPair.performerID), \(bind: pivotPair.eventID))
-					ON CONFLICT ("performer", "event") DO NOTHING
-					""").run()
-			}
-		}
-		else {
-			for pivotPair in newPivotPairs {
-				let attachedEvent = try await EventPerformer.query(on: req.db)
-					.filter(\.$performer.$id == pivotPair.performerID)
-					.filter(\.$event.$id == pivotPair.eventID)
-					.first()
-				if attachedEvent == nil {
-					let newEventPerformer = EventPerformer()
-					newEventPerformer.$performer.id = pivotPair.performerID
-					newEventPerformer.$event.id = pivotPair.eventID
-					try await newEventPerformer.save(on: req.db)
-				}
-			}
-		}
+		try await builtPerformerPivots.create(on: req.db)
 		return .ok
 	}
 
