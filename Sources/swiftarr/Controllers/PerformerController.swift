@@ -1,5 +1,4 @@
 import Fluent
-import FluentSQL
 import Vapor
 import CoreXLSX
 
@@ -344,14 +343,28 @@ struct PerformerController: APIRouteCollection {
 		let dbEvents = try await Event.query(on: req.db).all()
 		let dbPerformers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).all()
 		var builtPerformerPivots = [EventPerformer]()
+		var seenPivotKeys = Set<String>()
+		var duplicatePairCount = 0
 		for event in events {
 			if let foundEvent = findPerformerLinkEventMatch(for: event, in: dbEvents) {
+				let eventID = try foundEvent.requireID()
 				for performerName in event.performerNames {
 					if let foundPerformer = dbPerformers.first(where: { $0.name == performerName || ($0.alternativeNames ?? []).contains(performerName) }) {
-						builtPerformerPivots.append(try EventPerformer(event: foundEvent, performer: foundPerformer))
+						let performerID = try foundPerformer.requireID()
+						let pivotKey = eventPerformerLookupKey(performerID: performerID, eventID: eventID)
+						// Duplicate spreadsheet rows are treated as idempotent no-ops.
+						if seenPivotKeys.insert(pivotKey).inserted {
+							builtPerformerPivots.append(try EventPerformer(event: foundEvent, performer: foundPerformer))
+						}
+						else {
+							duplicatePairCount += 1
+						}
 					}
 				}
 			}
+		}
+		if duplicatePairCount > 0 {
+			req.logger.warning("Performer link spreadsheet contained \(duplicatePairCount) duplicate performer/event pair(s); duplicates were ignored.")
 		}
 		let pivots = try await EventPerformer.query(on: req.db).join(Performer.self, on: \EventPerformer.$performer.$id == \Performer.$id)
 				.filter(Performer.self, \.$officialPerformer == true).all()
