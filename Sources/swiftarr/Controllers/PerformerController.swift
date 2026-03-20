@@ -78,7 +78,7 @@ struct PerformerController: APIRouteCollection {
 	/// * `?limit=INT` - the maximum number of games to retrieve: 1-200, default is 50.
 	func getShadowPerformers(_ req: Request) async throws -> PerformerResponseData {
 		let start = req.query[Int.self, at: "start"] ?? 0
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+		let limit = (req.query[Int.self, at: "limit"] ?? 100).clamped(to: 0...Settings.shared.maximumTwarrts)
 		let query = Performer.query(on: req.db).filter(\.$officialPerformer == false).sort(\.$sortOrder)
 				.join(User.self, on: \Performer.$user.$id == \User.$id)
 				.filter(User.self, \.$accessLevel != .banned)
