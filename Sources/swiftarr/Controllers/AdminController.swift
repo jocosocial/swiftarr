@@ -290,7 +290,7 @@ struct AdminController: APIRouteCollection {
 					.forum: Forum.query(on: req.db).count(),
 					.forumPost: ForumPost.query(on: req.db).count(),
 					.forumPostEdit: ForumPostEdit.query(on: req.db).count(),
-					.forumPostLike: PostLikes.query(on: req.db).filter(\.$likeType != nil).count(),
+					.forumPostLike: ForumPostReaction.query(on: req.db).count(),
 					
 					// Games and Karaoke
 					.karaokePlayedSong: KaraokePlayedSong.query(on: req.db).count(),

@@ -80,6 +80,8 @@ struct FezController: APIRouteCollection {
 		tokenAuthGroup.post(fezIDParam, "unjoin", use: unjoinHandler)
 		tokenAuthGroup.post("post", fezPostIDParam, "delete", use: postDeleteHandler)
 		tokenAuthGroup.delete("post", fezPostIDParam, use: postDeleteHandler)
+		tokenAuthGroup.post("post", fezPostIDParam, "react", ":emoji", use: fezPostReactHandler)
+		tokenAuthGroup.delete("post", fezPostIDParam, "react", ":emoji", use: fezPostUnreactHandler)
 		tokenAuthGroup.post(fezIDParam, "user", userIDParam, "add", use: userAddHandler)
 		tokenAuthGroup.post(fezIDParam, "user", userIDParam, "remove", use: userRemoveHandler)
 		tokenAuthGroup.post(fezIDParam, "update", use: updateHandler)
@@ -521,7 +523,7 @@ struct FezController: APIRouteCollection {
 			pivot.readCount = fez.postCount - pivot.hiddenCount
 			try await pivot.save(on: req.db)
 		}
-		return try FezPostData(post: post, author: effectiveAuthor.makeHeader())
+		return try FezPostData(post: post, author: effectiveAuthor.makeHeader(), reactions: [])
 	}
 
 	/// `POST /api/v3/fez/post/ID/delete`
@@ -575,6 +577,51 @@ struct FezController: APIRouteCollection {
 		_ = try await subtractNotifications(users: adjustNotificationCountForUsers, type: .chatUnreadMsg(fez.requireID(), fez.fezType), on: req)
 		try await post.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
 		return .noContent
+	}
+
+	/// `POST /api/v3/fez/post/ID/react/:emoji`
+	func fezPostReactHandler(_ req: Request) async throws -> FezPostData {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		guard let emoji = req.parameters.get("emoji"), !emoji.isEmpty else {
+			throw Abort(.badRequest, reason: "emoji path parameter is required")
+		}
+		let post = try await FezPost.findFromParameter(fezPostIDParam, on: req)
+		let fez = try await post.$fez.get(on: req.db)
+		guard fez.participantArray.contains(cacheUser.userID) || cacheUser.accessLevel.hasAccess(.moderator) else {
+			throw Abort(.forbidden, reason: "user is not member of \(fez.fezType.lfgLabel); cannot react")
+		}
+		if try await FezPostReaction.query(on: req.db)
+			.filter(\.$user.$id == cacheUser.userID)
+			.filter(\.$post.$id == post.requireID())
+			.filter(\.$emoji == emoji)
+			.first() == nil
+		{
+			let reaction = try FezPostReaction(cacheUser.userID, post, emoji: emoji)
+			try await reaction.save(on: req.db)
+		}
+		return try await buildFezPostData(post, for: cacheUser, on: req)
+	}
+
+	/// `DELETE /api/v3/fez/post/ID/react/:emoji`
+	func fezPostUnreactHandler(_ req: Request) async throws -> FezPostData {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		guard let emoji = req.parameters.get("emoji"), !emoji.isEmpty else {
+			throw Abort(.badRequest, reason: "emoji path parameter is required")
+		}
+		let post = try await FezPost.findFromParameter(fezPostIDParam, on: req)
+		let fez = try await post.$fez.get(on: req.db)
+		guard fez.participantArray.contains(cacheUser.userID) || cacheUser.accessLevel.hasAccess(.moderator) else {
+			throw Abort(.forbidden, reason: "user is not member of \(fez.fezType.lfgLabel); cannot react")
+		}
+		if let reaction = try await FezPostReaction.query(on: req.db)
+			.filter(\.$user.$id == cacheUser.userID)
+			.filter(\.$post.$id == post.requireID())
+			.filter(\.$emoji == emoji)
+			.first()
+		{
+			try await reaction.delete(on: req.db)
+		}
+		return try await buildFezPostData(post, for: cacheUser, on: req)
 	}
 
 	/// `POST /api/v3/fez/post/ID/report`
@@ -1207,6 +1254,16 @@ extension FezController {
 	}
 
 	// Remember that there can be posts by authors who are not currently participants.
+	private func buildFezPostData(_ post: FezPost, for user: UserCacheData, on req: Request) async throws -> FezPostData {
+		let reactions = try await FezPostReaction.query(on: req.db).filter(\.$post.$id == post.requireID()).all()
+		let groupedReactions = Dictionary(grouping: reactions, by: \.emoji)
+		let reactionData = groupedReactions.keys.sorted().map { emoji in
+			ReactionData(emoji: emoji, users: req.userCache.getHeaders(groupedReactions[emoji]?.map(\.$user.id) ?? []))
+		}
+		return try FezPostData(post: post, author: req.userCache.getHeader(post.$author.id), reactions: reactionData, overrideQuarantine: user.accessLevel.hasAccess(.moderator))
+	}
+
+	// Remember that there can be posts by authors who are not currently participants.
 	func buildPostsForFez(_ fez: FriendlyFez, pivot: FezParticipant?, on req: Request, 
 		user: UserCacheData, as effectiveUser: UserCacheData) async throws -> ([FezPostData], Paginator)
 	{
@@ -1223,7 +1280,26 @@ extension FezController {
 			.sort(\.$createdAt, .ascending)
 			.range(start..<(start + limit))
 			.all()
-		let postDatas = try posts.map { try FezPostData(post: $0, author: req.userCache.getHeader($0.$author.id)) }
+		let postIDs = try posts.map { try $0.requireID() }
+		let allReactions = try await FezPostReaction.query(on: req.db).filter(\.$post.$id ~~ postIDs).all()
+		var postReactionMap = [Int: [String: [UUID]]]()
+		for reaction in allReactions {
+			let postID = reaction.$post.id
+			postReactionMap[postID, default: [:]][reaction.emoji, default: []].append(reaction.$user.id)
+		}
+		let postDatas = try posts.map {
+			let postID = try $0.requireID()
+			let grouped = postReactionMap[postID] ?? [:]
+			let reactionData = grouped.keys.sorted().map { emoji in
+				ReactionData(emoji: emoji, users: req.userCache.getHeaders(grouped[emoji] ?? []))
+			}
+			return try FezPostData(
+				post: $0,
+				author: req.userCache.getHeader($0.$author.id),
+				reactions: reactionData,
+				overrideQuarantine: user.accessLevel.hasAccess(.moderator)
+			)
+		}
 		let paginator = Paginator(total: fez.postCount - hiddenCount, start: start, limit: limit)
 
 		// If this batch of posts is farther into the thread than the user has previously read, increase
