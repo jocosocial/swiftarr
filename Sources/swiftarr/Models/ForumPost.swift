@@ -53,6 +53,9 @@ final class ForumPost: Model, Searchable, @unchecked Sendable {
 	/// The child `ForumPostEdit` accountability records of the post.
 	@Children(for: \.$post) var edits: [ForumPostEdit]
 
+	/// The child reaction pivots for this post.
+	@Children(for: \.$post) var reactions: [ForumPostReaction]
+
 	/// The sibling `User`s who have "liked" the post.
 	@Siblings(through: PostLikes.self, from: \.$post, to: \.$user) var likes
 

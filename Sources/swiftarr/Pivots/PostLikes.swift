@@ -11,10 +11,6 @@ final class PostLikes: Model, @unchecked Sendable {
 	/// The ID of the pivot.
 	@ID(key: .id) var id: UUID?
 
-	/// The type of like reaction. Needs to be optional to conform to `ModifiablePivot`'s
-	/// required `init(_:_:)`.
-	@Field(key: "liketype") var likeType: LikeType?
-
 	/// TRUE if this forum post is favorited by this user.
 	@Field(key: "favorite") var isFavorite: Bool
 
@@ -43,16 +39,6 @@ final class PostLikes: Model, @unchecked Sendable {
 		self.isFavorite = false
 	}
 
-	/// Convenience initializer to provide `.likeType` initializaion.
-	///
-	/// - Parameters:
-	///   - user: The left hand `User` model.
-	///   - post: The right hand `ForumPost` model.
-	///   - likeType: The type of like reaction for this pivot.
-	convenience init(_ userID: UUID, _ post: ForumPost, likeType: LikeType) throws {
-		try self.init(userID, post)
-		self.likeType = likeType
-	}
 }
 
 struct CreatePostLikesSchema: AsyncMigration {
@@ -60,7 +46,6 @@ struct CreatePostLikesSchema: AsyncMigration {
 		try await database.schema("post+likes")
 			.id()
 			.unique(on: "user", "forumPost")
-			.field("liketype", .string)
 			.field("favorite", .bool, .required)
 			.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
 			.field("forumPost", .int, .required, .references("forumpost", "id", onDelete: .cascade))
