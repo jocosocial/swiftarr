@@ -140,6 +140,7 @@ public struct UserEventNotificationJob: AsyncScheduledJob {
 		let upcomingFezzes = try await FriendlyFez.query(on: context.application.db)
 			.filter(\.$startTime == filterStartTime)
 			.filter(\.$fezType !~ [.open, .closed])
+			.filter(\.$cancelled == false)
 			.all()
 		for fez in upcomingFezzes {
 			let fezID = try fez.requireID()

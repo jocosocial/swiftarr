@@ -591,7 +591,7 @@ struct SiteUserController: SiteControllerUtils {
 			var searchResults: [UserHeader]?
 
 			init(_ req: Request, currentMgrs: [UserHeader], searchStr: String, searchResults: [UserHeader]?) throws {
-				trunk = .init(req, title: "Karaoke Managers", tab: .admin)
+				trunk = .init(req, title: "Shutternauts", tab: .admin)
 				self.currentMgrs = currentMgrs
 				self.userSearch = searchStr
 				self.searchResults = searchResults
