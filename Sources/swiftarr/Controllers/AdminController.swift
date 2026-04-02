@@ -1,4 +1,5 @@
 import FluentSQL
+import PostgresNIO
 import Vapor
 
 /// The collection of `/api/v3/admin` route endpoints and handler functions related to admin tasks.
@@ -85,7 +86,12 @@ struct AdminController: APIRouteCollection {
 		let filenames = try await processImages(imageArray, usage: .dailyTheme, on: req)
 		let filename = filenames.isEmpty ? nil : filenames[0]
 		let dailyTheme = DailyTheme(title: data.title, info: data.info, image: filename, day: data.cruiseDay)
-		try await dailyTheme.save(on: req.db)
+		do {
+			try await dailyTheme.save(on: req.db)
+		}
+		catch let error as PostgresError where error.code == .uniqueViolation {
+			throw Abort(.conflict, reason: "A daily theme for day \(data.cruiseDay) already exists. Edit the existing theme instead.")
+		}
 		return .created
 	}
 
@@ -109,7 +115,12 @@ struct AdminController: APIRouteCollection {
 		dailyTheme.info = data.info
 		dailyTheme.image = filenames.isEmpty ? nil : filenames[0]
 		dailyTheme.cruiseDay = data.cruiseDay
-		try await dailyTheme.save(on: req.db)
+		do {
+			try await dailyTheme.save(on: req.db)
+		}
+		catch let error as PostgresError where error.code == .uniqueViolation {
+			throw Abort(.conflict, reason: "A daily theme for day \(data.cruiseDay) already exists.")
+		}
 		return .created
 	}
 
