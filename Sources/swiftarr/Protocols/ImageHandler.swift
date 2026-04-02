@@ -66,25 +66,50 @@ func getImagePath(for image: String, format: String? = nil, usage: ImageUsage, s
 	
 extension APIRouteCollection {
 	/// Loads an image from data and returns the image, its type, and original orientation.
+	/// Detects the format via magic bytes before parsing. Converts HEIC/AVIF/JXL to JPEG
+	/// via CLI tools if needed. Rejects unknown formats with a descriptive error.
 	/// - Parameter data: The image data to load
 	/// - Returns: A tuple containing the loaded image, its format type, and original orientation value
 	static func loadImageFromData(_ data: Data) throws -> (image: GDImage, type: ImportableFormat, orientation: Int32) {
-		let imageTypes: [ImportableFormat] = [.jpg, .png, .gif, .webp, .tiff, .bmp, .wbmp]
-		var foundType: ImportableFormat? = nil
-		var foundImage: GDImage?
-		for type in imageTypes {
-			foundImage = try? GDImage(data: data, as: type) 
-			if foundImage != nil{
-				foundType = type
-				break
+		let detected = ImageFormatDetector.detect(data)
+		let imageData: Data
+		let imageType: ImportableFormat
+
+		if let gdFormat = detected.gdFormat {
+			// GD can handle this format directly
+			imageData = data
+			imageType = gdFormat
+		} else if detected.needsConversion {
+			// Convert non-GD format to JPEG via CLI tool
+			imageData = try ImageFormatConverter.convertToJPEG(data, from: detected)
+			imageType = .jpg
+		} else {
+			// Unknown format — try TGA and WBMP as fallback (no reliable magic bytes for these)
+			let fallbackTypes: [ImportableFormat] = [.tga, .wbmp]
+			var fallbackImage: GDImage?
+			var fallbackType: ImportableFormat?
+			for type in fallbackTypes {
+				fallbackImage = try? GDImage(data: data, as: type)
+				if fallbackImage != nil {
+					fallbackType = type
+					break
+				}
 			}
+			guard let image = fallbackImage, let foundType = fallbackType else {
+				throw GDError.invalidImage(
+					reason: "Unsupported image format. Supported: JPEG, PNG, GIF, WebP, TIFF, BMP, HEIC, AVIF, JXL"
+				)
+			}
+			let origOrientation = image.internalImage.pointee.polyAllocated
+			return (image, foundType, origOrientation)
 		}
-		guard let image = foundImage, let imageType = foundType else {
-			throw GDError.invalidImage(reason: "No matching raster formatter for given image found")
+
+		// Parse with the identified GD format
+		guard let image = try? GDImage(data: imageData, as: imageType) else {
+			throw GDError.invalidImage(
+				reason: "Failed to parse image data as \(imageType). The file may be corrupted."
+			)
 		}
-		// We've modified SwiftGD to call methods in gd_jpeg_custom.c instead of the gd_jpeg.c in the GD library.
-		// The customized .c file has extra code to save the image orientation in the gdImage struct.
-		// It's definitely a hack, as polyAllocated is not for this purpose.
 		let origOrientation = image.internalImage.pointee.polyAllocated
 		return (image, imageType, origOrientation)
 	}
