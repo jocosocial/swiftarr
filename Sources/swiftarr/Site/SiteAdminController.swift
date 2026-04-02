@@ -1228,12 +1228,13 @@ struct SiteAdminController: SiteControllerUtils {
 				searchResults: [UserHeader]?,
 				role: String?
 			) throws {
-				trunk = .init(req, title: "Karaoke Managers", tab: .admin)
+				let roleName = UserRoleType(fromString: role)?.label ?? "User Roles"
+				trunk = .init(req, title: roleName, tab: .admin)
 				self.currentMgrs = currentMgrs
 				self.userSearch = searchStr
 				self.searchResults = searchResults
 				self.role = role
-				self.rolename = UserRoleType(fromString: role)?.label ?? "User Roles"
+				self.rolename = roleName
 			}
 		}
 		let ctx = try KaraokeManagersViewContext(
