@@ -4,11 +4,13 @@
 import Foundation
 
 /// Errors from image format conversion.
-enum ImageConversionError: Error, LocalizedError {
+enum ImageConversionError: Error, LocalizedError, CustomStringConvertible {
 	case notConvertible(DetectedImageFormat)
 	case converterNotFound(String)
 	case conversionFailed(String)
 	case timeout
+
+	var description: String { errorDescription ?? "unknown error" }
 
 	var errorDescription: String? {
 		switch self {
