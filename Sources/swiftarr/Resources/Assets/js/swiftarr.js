@@ -321,6 +321,10 @@ function updateInputFieldCharCounts(inputElement) {
 	}
 }
 
+// scrolls tagged elements into view on first load
+document.querySelector("[data-scroll-into-view]")
+  ?.scrollIntoView({ behavior: "instant", block: "center" });
+
 // Updates a photo card when its file input field changes (mostly, shows the photo selected).
 for (let input of document.querySelectorAll('.image-upload-input')) {
 	let card = input.closest('.card');
