@@ -1,5 +1,5 @@
-// ABOUTME: Converts image formats that GD cannot handle (HEIC, AVIF, JXL) to JPEG.
-// ABOUTME: Shells out to CLI tools (heif-convert, djxl) with temp files and timeout.
+// Converts image formats that GD cannot handle (HEIC, AVIF, JXL) to JPEG.
+// Shells out to CLI tools (heif-convert, djxl) with temp files and timeout.
 
 import Foundation
 

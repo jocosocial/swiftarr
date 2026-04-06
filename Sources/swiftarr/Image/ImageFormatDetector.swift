@@ -1,5 +1,5 @@
-// ABOUTME: Identifies image formats by reading magic bytes from file headers.
-// ABOUTME: Returns a detected format enum — no dependencies, no side effects.
+// Identifies image formats by reading magic bytes from file headers.
+// Returns a detected format enum — no dependencies, no side effects.
 
 import Foundation
 
