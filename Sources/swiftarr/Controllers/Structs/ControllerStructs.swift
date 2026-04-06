@@ -258,7 +258,7 @@ public struct CurrentUserData: Content {
 
 /// Used to return the day's theme.
 ///
-/// Returned by: `GET /api/v3/notifications/dailythemes`
+/// Returned by: `GET /api/v3/notification/dailythemes`
 ///
 public struct DailyThemeData: Content {
 	/// The theme's ID Probably only useful for admins in order to edit or delete themes.
