@@ -100,16 +100,22 @@ extension APIRouteCollection {
 					reason: "Unsupported image format. Supported: JPEG, PNG, GIF, WebP, TIFF, BMP, HEIC, AVIF, JXL"
 				)
 			}
+			// polyAllocated stores the original EXIF orientation — see comment in main parse path below
 			let origOrientation = image.internalImage.pointee.polyAllocated
 			return (image, foundType, origOrientation)
 		}
 
 		// Parse with the identified GD format
-		guard let image = try? GDImage(data: imageData, as: imageType) else {
+		let image: GDImage
+		do {
+			image = try GDImage(data: imageData, as: imageType)
+		} catch {
 			throw GDError.invalidImage(
-				reason: "Failed to parse image data as \(imageType). The file may be corrupted."
+				reason: "Failed to parse image data as \(imageType): \(error)"
 			)
 		}
+		// polyAllocated stores the original EXIF orientation, set by our custom gd_jpeg_custom.c.
+		// The field is repurposed — it's not designed for this, but it's how orientation flows through GD.
 		let origOrientation = image.internalImage.pointee.polyAllocated
 		return (image, imageType, origOrientation)
 	}

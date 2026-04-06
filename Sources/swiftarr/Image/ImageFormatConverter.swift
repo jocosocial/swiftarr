@@ -142,6 +142,9 @@ struct ImageFormatConverter {
 			let path = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 			return path.isEmpty ? nil : URL(fileURLWithPath: path)
 		} catch {
+			// Log the actual error — a catch-all nil would misdiagnose system failures
+			// (permission denied, file descriptor exhaustion, sandbox) as "tool not installed."
+			print("[ImageFormatConverter] Failed to search PATH for \(name): \(error)")
 			return nil
 		}
 	}
