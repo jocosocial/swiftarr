@@ -32,9 +32,8 @@ let package = Package(
 		.package(url: "https://github.com/ApolloZhu/swift_qrcodejs.git", from: "2.2.2"),
 	],
 	targets: [
-		.systemLibrary(name: "gd", pkgConfig: "gdlib", providers: [.apt(["libgd-dev"]), .brew(["gd"]), .yum(["gd-devel"])]),
-		.systemLibrary(name: "jpeg", pkgConfig: "libjpeg", providers: [.apt(["libjpeg-dev"]), .brew(["jpeg-turbo"]), .yum(["libjpeg-turbo-devel"])]),
-		.target(name: "gdOverrides", dependencies: ["gd", "jpeg"], publicHeadersPath: "."),
+		.systemLibrary(name: "Cvips", pkgConfig: "vips", providers: [.apt(["libvips-dev"]), .brew(["vips"])]),
+		.target(name: "CvipsShim", dependencies: ["Cvips"], publicHeadersPath: "."),
 		.executableTarget(
 			name: "swiftarr",
 			dependencies: [
@@ -48,9 +47,7 @@ let package = Package(
 				.product(name: "Ink", package: "ink"),
 				.product(name: "CoreXLSX", package: "CoreXLSX"),
 				.product(name: "SwiftSoup", package: "SwiftSoup"),
-				"gd",
-				"jpeg",
-				"gdOverrides",
+				"CvipsShim",
 				"ZIPFoundation",
 				.product(name: "QRCodeSwift", package: "swift_qrcodejs"),
 			],

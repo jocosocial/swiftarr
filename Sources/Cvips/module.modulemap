@@ -1,0 +1,6 @@
+module Cvips [system] {
+    link "vips"
+    link "glib-2.0"
+    link "gobject-2.0"
+    export *
+}
