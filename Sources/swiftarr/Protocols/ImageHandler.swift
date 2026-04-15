@@ -80,7 +80,7 @@ extension APIRouteCollection {
 			}
 		}
 		guard let image = foundImage, let imageType = foundType else {
-			throw GDError.invalidImage(reason: "No matching raster formatter for given image found")
+			throw ImageError.invalidImage(reason: "No matching raster formatter for given image found")
 		}
 		// We've modified SwiftGD to call methods in gd_jpeg_custom.c instead of the gd_jpeg.c in the GD library.
 		// The customized .c file has extra code to save the image orientation in the gdImage struct.
@@ -175,11 +175,11 @@ extension APIRouteCollection {
 			// "ha ha you have to scroll past this"). Also disallow extremely large widths and heights.
 			let sourceSize = image.size
 			if sourceSize.width > 10000 || sourceSize.height > 10000 {
-				throw GDError.invalidImage(reason: "Image dimensions too large")
+				throw ImageError.invalidImage(reason: "Image dimensions too large")
 			}
 			let aspectRatio = Double(sourceSize.width) / Double(sourceSize.height)
 			if aspectRatio < 0.1 || aspectRatio > 10.0 {
-				throw GDError.invalidImage(reason: "Invalid image aspect ratio. ")
+				throw ImageError.invalidImage(reason: "Invalid image aspect ratio. ")
 			}
 											
 			// attempt to crop to square if profile image
