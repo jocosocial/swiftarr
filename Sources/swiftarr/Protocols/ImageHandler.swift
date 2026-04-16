@@ -233,6 +233,14 @@ extension APIRouteCollection {
 				imageWasModified = true
 			}
 
+			// Always re-encode JPEGs — autorot already applied the EXIF orientation to
+			// the in-memory image, but the original bytes still carry the old tag.
+			// Saving original JPEG bytes would cause sideways display in some viewers.
+			let isJPEG = data.count >= 2 && data[0] == 0xFF && data[1] == 0xD8
+			if isJPEG {
+				imageWasModified = true
+			}
+
 			// Determine output format. If the image wasn't modified, preserve the original
 			// format (PNG stays PNG, GIF stays GIF, etc). Modified images become JPEG.
 			let outputFormat = imageWasModified ? "jpg" : Self.detectExtension(data)
