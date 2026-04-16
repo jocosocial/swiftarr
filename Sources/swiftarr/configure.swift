@@ -8,7 +8,6 @@ import Queues
 import QueuesRedisDriver
 import Redis
 import Vapor
-import gd
 
 /// # Launching Swiftarr
 ///
@@ -210,23 +209,11 @@ struct SwiftarrConfigurator {
 			Settings.shared.enableLateDayFlip = Bool(enableLateDayFlip) ?? false
 		}
 
-		// Ask the GD Image library what filetypes are available on the local machine.
-		// gd, gd2, xbm, xpm, wbmp, some other useless formats culled.
-		let fileTypes = [".gif", ".bmp", ".tga", ".png", ".jpg", ".heif", ".heix", ".avif", ".tif", ".webp"]
-		var supportedInputTypes = fileTypes.filter { gdSupportsFileType($0, 0) != 0 }
-		var supportedOutputTypes = fileTypes.filter { gdSupportsFileType($0, 1) != 0 }
-		if supportedInputTypes.contains(".jpg") {
-			supportedInputTypes.append(".jpeg")
-		}
-		if supportedOutputTypes.contains(".jpg") {
-			supportedOutputTypes.append(".jpeg")
-		}
-		Settings.shared.validImageInputTypes = supportedInputTypes
-		Settings.shared.validImageOutputTypes = supportedOutputTypes
-
-		// On my machine: heif, heix, avif not supported
-		// [".gif", ".bmp", ".tga", ".png", ".jpg", ".tif", ".webp"] inputs
-		// [".gif", ".bmp",		 ".png", ".jpg", ".tif", ".webp"] outputs
+		// libvips supports these formats natively. All uploads are re-encoded as JPEG,
+		// so output types only need JPEG and PNG (for generated images like QR codes).
+		Settings.shared.validImageInputTypes = [".gif", ".bmp", ".tga", ".png", ".jpg", ".jpeg",
+				".heif", ".heix", ".avif", ".tif", ".webp", ".jxl"]
+		Settings.shared.validImageOutputTypes = [".png", ".jpg", ".jpeg"]
 
 		// Set the app's views dir, which is where all the Leaf template files are.
 		app.directory.viewsDirectory =

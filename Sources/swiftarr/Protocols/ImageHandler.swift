@@ -1,3 +1,6 @@
+// ABOUTME: Defines image processing pipeline for user-uploaded images.
+// ABOUTME: Handles loading, validation, resizing, cropping, thumbnail generation, and archival.
+
 import Vapor
 
 /// The type of model for which an `ImageHandler` is processing. This defines the size of the thumbnail produced.
@@ -22,12 +25,12 @@ enum ImageSizeGroup: String {
 	case thumbnail = "thumb"
 //	case medium
 	case full = "full"
-	
+
 	case archive = "archive"
 }
 
 /// Returns the file system path for the given image filename. Makes sure all image directories in the path exist.
-/// 
+///
 /// Currently, this fn returns paths in the form:
 ///		<WorkingDir>/images/<full/thumb>/<xx>/<filename>.jpg
 /// where "xx" is the first 2 characters of the filename.
@@ -45,7 +48,7 @@ func getImagePath(for image: String, format: String? = nil, usage: ImageUsage, s
 		throw Abort(.badRequest, reason: "Malformed image filename.")
 	}
 	let filename = noFiletype.lastPathComponent
-	
+
 	if let _ = UUID(filename) {
 		let subDirName = String(image.prefix(2))
 		let subDir = baseImagesDirectory.appendingPathComponent(size.rawValue)
@@ -63,50 +66,33 @@ func getImagePath(for image: String, format: String? = nil, usage: ImageUsage, s
 	let fileURL = staticBase.appendingPathComponent(filename + "." + imageFormat)
 	return fileURL
 }
-	
+
 extension APIRouteCollection {
-	/// Loads an image from data and returns the image, its type, and original orientation.
+	/// Loads an image from data, auto-detecting format and applying EXIF rotation.
+	/// Flattens alpha channels onto a white background since we export as JPEG.
 	/// - Parameter data: The image data to load
-	/// - Returns: A tuple containing the loaded image, its format type, and original orientation value
-	static func loadImageFromData(_ data: Data) throws -> (image: GDImage, type: ImportableFormat, orientation: Int32) {
-		let imageTypes: [ImportableFormat] = [.jpg, .png, .gif, .webp, .tiff, .bmp, .wbmp]
-		var foundType: ImportableFormat? = nil
-		var foundImage: GDImage?
-		for type in imageTypes {
-			foundImage = try? GDImage(data: data, as: type) 
-			if foundImage != nil{
-				foundType = type
-				break
-			}
+	/// - Returns: The loaded image, ready for processing
+	static func loadImageFromData(_ data: Data) throws -> SwiftarrImage {
+		var image = try SwiftarrImage(data: data)
+		if let flattened = image.flattened() {
+			image = flattened
 		}
-		guard let image = foundImage, let imageType = foundType else {
-			throw ImageError.invalidImage(reason: "No matching raster formatter for given image found")
-		}
-		// We've modified SwiftGD to call methods in gd_jpeg_custom.c instead of the gd_jpeg.c in the GD library.
-		// The customized .c file has extra code to save the image orientation in the gdImage struct.
-		// It's definitely a hack, as polyAllocated is not for this purpose.
-		let origOrientation = image.internalImage.pointee.polyAllocated
-		return (image, imageType, origOrientation)
+		return image
 	}
-	
-	/// Creates a thumbnail from an image with proper orientation handling and exports it.
+
+	/// Creates a thumbnail from an image and exports it as JPEG.
 	/// Silently skips thumbnail creation if resize fails (returns nil), matching the original behavior.
 	/// - Parameters:
 	///   - image: The source image to create a thumbnail from
-	///   - orientation: The original orientation value to preserve
-	///   - outputType: The format to export the thumbnail as
 	///   - thumbPath: The file path where the thumbnail should be saved
 	///   - req: The incoming `Request`, used for logging
 	/// - Throws: Errors from export or file write operations
-	static func createThumbnail(from image: GDImage, preserving orientation: Int32, as outputType: ImportableFormat, to thumbPath: URL, on req: Request) throws {
+	static func createThumbnail(from image: SwiftarrImage, to thumbPath: URL, on req: Request) throws {
 		guard let thumbnail = image.resizedTo(height: Settings.shared.imageThumbnailSize) else {
 			req.logger.error("Failed to generate thumbnail: image.resizedTo returned nil for path \(thumbPath.path)")
 			return
 		}
-		// Put the orientation value into the polyAllocated field, so that our code in the customized gd_jpeg.c file
-		// can store the original image orientation back in the jpeg as exif data.
-		thumbnail.internalImage.pointee.polyAllocated = orientation
-		let thumbnailData = try thumbnail.export(as: ExportableFormat(outputType))
+		let thumbnailData = try thumbnail.exportAsJPEG(quality: 90)
 		try thumbnailData.write(to: thumbPath)
 	}
 
@@ -116,7 +102,7 @@ extension APIRouteCollection {
 	/// image attachments in a way that prevents re-uploading of photos that are already on the server.
 	///
 	/// - Parameters:
-	///   - images: The  images in `ImageUploadData` format. 
+	///   - images: The  images in `ImageUploadData` format.
 	///   - usage: The type of model using the image content.
 	///   - maxImages: Maximum number of images allowed. Defaults to 4 for backward compatibility.
 	///	- req: The incoming `Request`, on which this processing must run.
@@ -151,8 +137,8 @@ extension APIRouteCollection {
 			// Not an error, just nothing to do.
 			return nil
 		}
-		
-		// For debugging. Saves the uploaded image to the /images directory. Useful when you need to 
+
+		// For debugging. Saves the uploaded image to the /images directory. Useful when you need to
 		// see the image as it gets uploaded, which may not be the same as the image on the client device,
 		// nor is it the same as the image we save. Replace the test with whatever criteria needed to catch
 		// the file you're looking for.
@@ -161,16 +147,14 @@ extension APIRouteCollection {
 //						.appendingPathComponent("images").appendingPathComponent("testfile.jpg")
 //				try? data.write(to: p)
 //			}
-		
+
 		guard data.count < Settings.shared.maxImageSize else {
 			let maxMegabytes = Settings.shared.maxImageSize / 1024 * 1024
 			throw Abort(.badRequest, reason: "Image too large. Size limit is \(maxMegabytes)MB.")
 		}
 		return try await req.application.threadPool.runIfActive(eventLoop: req.eventLoop) {
-			let (loadedImage, imageType, origOrientation) = try Self.loadImageFromData(data)
-			var image = loadedImage
-			var outputType = imageType
-			
+			var image = try Self.loadImageFromData(data)
+
 			// Disallow images with an aspect ratio > 10:1, as they're too often malicious (even if by 'malicious' it means
 			// "ha ha you have to scroll past this"). Also disallow extremely large widths and heights.
 			let sourceSize = image.size
@@ -181,11 +165,9 @@ extension APIRouteCollection {
 			if aspectRatio < 0.1 || aspectRatio > 10.0 {
 				throw ImageError.invalidImage(reason: "Invalid image aspect ratio. ")
 			}
-											
+
 			// attempt to crop to square if profile image
 			if usage == .userProfile {
-				// Disallow animated avatars; make them always be jpegs
-				outputType = .jpg
 				if image.size.height != image.size.width {
 					let size = min(image.size.height, image.size.width)
 					var cropOrigin: Point
@@ -200,42 +182,29 @@ extension APIRouteCollection {
 					}
 				}
 			}
-			
+
 			// Resize if the image is over our size limit. Iphone 11 Pro Max has a scren size of 1242x2688 pixels.
 			// A 4:3 portrait photo at 1536x2048 would downscale slightly to 1242x1656. 2K should therefore
 			// be a reasonable size limit.
 			if image.size.height > 2048 || image.size.width > 2048 {
-				outputType = .jpg
 				let resizeAmt: Double = 2048.0 / Double(max(image.size.height, image.size.width))
-				if let resizedImage = image.resizedTo(width: Int(Double(image.size.width) * resizeAmt), 
+				if let resizedImage = image.resizedTo(width: Int(Double(image.size.width) * resizeAmt),
 						height: Int(Double(image.size.height) * resizeAmt)) {
-					image = resizedImage		
+					image = resizedImage
 				}
-			}
-			
-			// If allowAnimatedImages == false, force jpeg output if the input file could be an animation. 
-			// This transocdes the first image of the input file (whether it's an animation or not) into a static jpeg.
-			if outputType == .gif || outputType == .webp, !Settings.shared.allowAnimatedImages {
-				outputType = .jpg
 			}
 
 			// ensure directories exist
 			let name = UUID().uuidString
-			let outputExtension = ExportableFormat(outputType).fileExtension()
-			let fullPath = try getImagePath(for: name, format: outputExtension, usage: usage, size: .full, on: req)
-			let thumbPath = try getImagePath(for: name, format: outputExtension, usage: usage, size: .thumbnail, on: req)
-			
-			// Put the orientation value into the polyAllocated field, so that our code in the customized gd_jpeg.c file
-			// can store the original image orientation back in the jpeg as exif data.
-			image.internalImage.pointee.polyAllocated = origOrientation
-		
-			// save full image. If we didn't have to modify the input image, save the original in its original format.
-			// Jpeg images always get exported, to ensure the Q value isn't needlessly high.
-			let imageData = try outputType == .jpg ? image.export(as: .jpg(quality: 90)) : data
+			let fullPath = try getImagePath(for: name, format: "jpg", usage: usage, size: .full, on: req)
+			let thumbPath = try getImagePath(for: name, format: "jpg", usage: usage, size: .thumbnail, on: req)
+
+			// save full image as JPEG
+			let imageData = try image.exportAsJPEG(quality: 90)
 			try imageData.write(to: fullPath)
-			
+
 			// save thumbnail
-			try Self.createThumbnail(from: image, preserving: origOrientation, as: outputType, to: thumbPath, on: req)
+			try Self.createThumbnail(from: image, to: thumbPath, on: req)
 			return fullPath.lastPathComponent
 		}.get()
 	}
@@ -246,7 +215,7 @@ extension APIRouteCollection {
 		let imageName = imageSource.lastPathComponent
 		return try await req.application.threadPool.runIfActive(eventLoop: req.eventLoop) {
 			let data = try Data(contentsOf: imageSource)
-			let (image, imageType, origOrientation) = try Self.loadImageFromData(data)
+			let image = try Self.loadImageFromData(data)
 
 			let destinationDir = Settings.shared.userImagesRootPath
 					.appendingPathComponent(ImageSizeGroup.thumbnail.rawValue)
@@ -257,7 +226,7 @@ extension APIRouteCollection {
 			}
 			let thumbPath = destinationDir.appendingPathComponent(imageName)
 
-			try Self.createThumbnail(from: image, preserving: origOrientation, as: imageType, to: thumbPath, on: req)
+			try Self.createThumbnail(from: image, to: thumbPath, on: req)
 		}.get()
 	}
 
@@ -284,32 +253,6 @@ extension APIRouteCollection {
 
 		} catch let error {
 			req.logger.debug("could not archive image: \(error)")
-		}
-	}
-}
-
-extension ExportableFormat {
-	init(_ imp: ImportableFormat) {
-		switch imp {
-//		case .bmp: self = .bmp(compression: true)
-		case .gif: self = .gif
-		case .jpg: self = .jpg(quality: 90)
-		case .png: self = .png
-		case .tiff: self = .tiff
-		case .webp: self = .webp
-		default: self = .jpg(quality: 90)
-		}
-	}
-
-	func fileExtension() -> String {
-		switch self {
-		case .bmp: return "bmp"
-		case .gif: return "gif"
-		case .jpg: return "jpg"
-		case .png: return "png"
-		case .tiff: return "tiff"
-		case .wbmp: return "wbmp"
-		case .webp: return "webp"
 		}
 	}
 }
