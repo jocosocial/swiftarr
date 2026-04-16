@@ -68,6 +68,23 @@ func getImagePath(for image: String, format: String? = nil, usage: ImageUsage, s
 }
 
 extension APIRouteCollection {
+	/// Checks if data starts with GIF or WebP magic bytes (formats that can contain animation).
+	static func isAnimatableFormat(_ data: Data) -> Bool {
+		guard data.count >= 12 else { return false }
+		// GIF87a or GIF89a
+		if data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 { return true }
+		// RIFF....WEBP
+		if data[0] == 0x52 && data[1] == 0x49 && data[2] == 0x46 && data[3] == 0x46
+			&& data[8] == 0x57 && data[9] == 0x45 && data[10] == 0x42 && data[11] == 0x50 { return true }
+		return false
+	}
+
+	/// Returns the file extension for an animatable format.
+	static func animatableExtension(_ data: Data) -> String {
+		if data.count >= 3 && data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 { return "gif" }
+		return "webp"
+	}
+
 	/// Loads an image from data, auto-detecting format and applying EXIF rotation.
 	/// Flattens alpha channels onto a white background since we export as JPEG.
 	/// - Parameter data: The image data to load
@@ -194,16 +211,26 @@ extension APIRouteCollection {
 				}
 			}
 
+			// Preserve animated GIF/WebP if allowed — save original bytes to keep animation.
+			// Thumbnail is always a static JPEG regardless.
+			let isAnimatable = Self.isAnimatableFormat(data)
+			let outputFormat = (isAnimatable && Settings.shared.allowAnimatedImages)
+				? Self.animatableExtension(data) : "jpg"
+
 			// ensure directories exist
 			let name = UUID().uuidString
-			let fullPath = try getImagePath(for: name, format: "jpg", usage: usage, size: .full, on: req)
+			let fullPath = try getImagePath(for: name, format: outputFormat, usage: usage, size: .full, on: req)
 			let thumbPath = try getImagePath(for: name, format: "jpg", usage: usage, size: .thumbnail, on: req)
 
-			// save full image as JPEG
-			let imageData = try image.exportAsJPEG(quality: 90)
-			try imageData.write(to: fullPath)
+			// save full image — preserve original bytes for animated formats, re-encode otherwise
+			if isAnimatable && Settings.shared.allowAnimatedImages {
+				try data.write(to: fullPath)
+			} else {
+				let imageData = try image.exportAsJPEG(quality: 90)
+				try imageData.write(to: fullPath)
+			}
 
-			// save thumbnail
+			// save thumbnail (always static JPEG)
 			try Self.createThumbnail(from: image, to: thumbPath, on: req)
 			return fullPath.lastPathComponent
 		}.get()
