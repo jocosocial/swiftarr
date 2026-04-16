@@ -53,4 +53,9 @@ VipsImage *swiftarr_vips_image_new_from_memory(const void *data, size_t size,
 // Returns 0 on success, non-zero on failure.
 int swiftarr_vips_copy(VipsImage *in, VipsImage **out);
 
+// Resize image using nearest-neighbor interpolation (no smoothing).
+// Produces crisp pixel-art scaling for QR codes and identicons.
+// Returns a new VipsImage. Returns NULL on failure.
+VipsImage *swiftarr_vips_resize_nearest(VipsImage *in, int width, int height);
+
 #endif /* SWIFTARR_VIPS_SHIM_H */

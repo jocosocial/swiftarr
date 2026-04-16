@@ -192,7 +192,7 @@ struct ImageController: APIRouteCollection {
 		}
 
 		let srcImage = try SwiftarrImage(width: xSize, height: ySize, pixels: pixels)
-		guard let dstImage = srcImage.resizedTo(width: 400, height: 400) else {
+		guard let dstImage = srcImage.resizedToNearest(width: 400, height: 400) else {
 			throw Abort(.internalServerError, reason: "Could not resize QR Code image.")
 		}
 		let pngData = try dstImage.exportAsPNG()
@@ -302,7 +302,7 @@ struct ImageController: APIRouteCollection {
 		}
 
 		let srcImage = try SwiftarrImage(width: 5, height: 5, pixels: pixels)
-		guard let dstImage = srcImage.resizedTo(width: 40, height: 40) else {
+		guard let dstImage = srcImage.resizedToNearest(width: 40, height: 40) else {
 			throw Abort(.internalServerError, reason: "Could not resize identicon image.")
 		}
 		// JPEG compression was a bit faster than PNG, but produced images that were ~900 bytes,

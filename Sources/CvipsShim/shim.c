@@ -82,3 +82,14 @@ VipsImage *swiftarr_vips_image_new_from_memory(const void *data, size_t size,
 int swiftarr_vips_copy(VipsImage *in, VipsImage **out) {
     return vips_copy(in, out, NULL);
 }
+
+VipsImage *swiftarr_vips_resize_nearest(VipsImage *in, int width, int height) {
+    double hscale = (double)width / vips_image_get_width(in);
+    double vscale = (double)height / vips_image_get_height(in);
+    VipsImage *out = NULL;
+    if (vips_resize(in, &out, hscale, "vscale", vscale,
+                    "kernel", VIPS_KERNEL_NEAREST, NULL) != 0) {
+        return NULL;
+    }
+    return out;
+}

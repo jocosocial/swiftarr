@@ -103,6 +103,15 @@ public class SwiftarrImage {
 		return SwiftarrImage(vipsImage: result)
 	}
 
+	/// Resize to exact width and height using nearest-neighbor interpolation.
+	/// Produces crisp pixel-art scaling — use for QR codes and identicons.
+	public func resizedToNearest(width: Int, height: Int) -> SwiftarrImage? {
+		guard let result = swiftarr_vips_resize_nearest(vipsImage, Int32(width), Int32(height)) else {
+			return nil
+		}
+		return SwiftarrImage(vipsImage: result)
+	}
+
 	/// Resize to a target width, preserving aspect ratio.
 	public func resizedTo(width: Int) -> SwiftarrImage? {
 		let currentSize = size

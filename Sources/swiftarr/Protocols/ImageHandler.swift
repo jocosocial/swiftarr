@@ -236,8 +236,11 @@ extension APIRouteCollection {
 			// Always re-encode JPEGs — autorot already applied the EXIF orientation to
 			// the in-memory image, but the original bytes still carry the old tag.
 			// Saving original JPEG bytes would cause sideways display in some viewers.
+			// Also re-encode HEIC/AVIF/JXL — these aren't web-native formats and can't
+			// be served directly to browsers or the app.
 			let isJPEG = data.count >= 2 && data[0] == 0xFF && data[1] == 0xD8
-			if isJPEG {
+			let needsReencode = isJPEG || !["png", "gif", "webp"].contains(Self.detectExtension(data))
+			if needsReencode {
 				imageWasModified = true
 			}
 
