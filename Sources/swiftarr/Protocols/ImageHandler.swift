@@ -270,8 +270,15 @@ extension APIRouteCollection {
 				try data.write(to: fullPath)
 			}
 
-			// save thumbnail in same format as full image
-			try Self.createThumbnail(from: image, to: thumbPath, format: outputFormat, on: req)
+			// save thumbnail — animated formats get resized with all frames preserved
+			if isAnimatable && !imageWasModified && Settings.shared.allowAnimatedImages {
+				let isGIF = outputFormat == "gif"
+				let thumbData = try SwiftarrImage.animatedThumbnail(
+					from: data, height: Settings.shared.imageThumbnailSize, isGIF: isGIF)
+				try thumbData.write(to: thumbPath)
+			} else {
+				try Self.createThumbnail(from: image, to: thumbPath, format: outputFormat, on: req)
+			}
 			return fullPath.lastPathComponent
 		}.get()
 	}

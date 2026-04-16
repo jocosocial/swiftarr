@@ -59,6 +59,14 @@ void *swiftarr_vips_webpsave_buffer(VipsImage *in, int quality, size_t *out_len)
 VipsImage *swiftarr_vips_image_new_from_memory(const void *data, size_t size,
                                                 int width, int height, int bands);
 
+// Create a resized animated thumbnail from raw GIF/WebP bytes.
+// Loads all animation frames, resizes to target height, and exports.
+// Pass is_gif=1 for GIF output, is_gif=0 for WebP output.
+// Caller must g_free() the returned buffer. Returns NULL on failure.
+void *swiftarr_vips_animated_thumbnail(const void *buf, size_t buf_len,
+                                        int height, int is_gif,
+                                        size_t *out_len);
+
 // Copy an image (forces pixel data to be owned by the new image).
 // Returns 0 on success, non-zero on failure.
 int swiftarr_vips_copy(VipsImage *in, VipsImage **out);

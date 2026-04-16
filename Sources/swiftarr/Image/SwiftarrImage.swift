@@ -175,6 +175,22 @@ public class SwiftarrImage {
 		return Data(bytesNoCopy: buf, count: outLen, deallocator: .custom({ ptr, _ in g_free(ptr) }))
 	}
 
+	/// Create a resized animated thumbnail from raw GIF/WebP data, preserving all frames.
+	/// Returns the resized animation as Data in the original format.
+	public static func animatedThumbnail(from data: Data, height: Int, isGIF: Bool) throws -> Data {
+		var outLen: Int = 0
+		let result: UnsafeMutableRawPointer? = data.withUnsafeBytes { rawBuffer in
+			guard let base = rawBuffer.baseAddress else { return nil }
+			return swiftarr_vips_animated_thumbnail(base, rawBuffer.count, Int32(height), isGIF ? 1 : 0, &outLen)
+		}
+		guard let buf = result else {
+			defer { vips_error_clear() }
+			let errorMsg = String(cString: vips_error_buffer())
+			throw ImageError.invalidImage(reason: "Animated thumbnail failed: \(errorMsg)")
+		}
+		return Data(bytesNoCopy: buf, count: outLen, deallocator: .custom({ ptr, _ in g_free(ptr) }))
+	}
+
 	/// Export as GIF data (static single frame).
 	public func exportAsGIF() throws -> Data {
 		var outLen: Int = 0
