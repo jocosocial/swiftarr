@@ -123,7 +123,13 @@ extension APIRouteCollection {
 			req.logger.error("Failed to generate thumbnail: image.resizedTo returned nil for path \(thumbPath.path)")
 			return
 		}
-		let thumbnailData = format == "png" ? try thumbnail.exportAsPNG() : try thumbnail.exportAsJPEG(quality: 90)
+		let thumbnailData: Data
+		switch format {
+		case "png": thumbnailData = try thumbnail.exportAsPNG()
+		case "gif": thumbnailData = try thumbnail.exportAsGIF()
+		case "webp": thumbnailData = try thumbnail.exportAsWebP(quality: 90)
+		default: thumbnailData = try thumbnail.exportAsJPEG(quality: 90)
+		}
 		try thumbnailData.write(to: thumbPath)
 	}
 

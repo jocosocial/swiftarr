@@ -74,6 +74,26 @@ void *swiftarr_vips_pngsave_buffer(VipsImage *in, size_t *out_len) {
     return buf;
 }
 
+void *swiftarr_vips_gifsave_buffer(VipsImage *in, size_t *out_len) {
+    void *buf = NULL;
+    size_t len = 0;
+    if (vips_gifsave_buffer(in, &buf, &len, NULL) != 0) {
+        return NULL;
+    }
+    *out_len = len;
+    return buf;
+}
+
+void *swiftarr_vips_webpsave_buffer(VipsImage *in, int quality, size_t *out_len) {
+    void *buf = NULL;
+    size_t len = 0;
+    if (vips_webpsave_buffer(in, &buf, &len, "Q", quality, NULL) != 0) {
+        return NULL;
+    }
+    *out_len = len;
+    return buf;
+}
+
 VipsImage *swiftarr_vips_image_new_from_memory(const void *data, size_t size,
                                                 int width, int height, int bands) {
     return vips_image_new_from_memory(data, size, width, height, bands, VIPS_FORMAT_UCHAR);

@@ -175,6 +175,28 @@ public class SwiftarrImage {
 		return Data(bytesNoCopy: buf, count: outLen, deallocator: .custom({ ptr, _ in g_free(ptr) }))
 	}
 
+	/// Export as GIF data (static single frame).
+	public func exportAsGIF() throws -> Data {
+		var outLen: Int = 0
+		guard let buf = swiftarr_vips_gifsave_buffer(vipsImage, &outLen) else {
+			defer { vips_error_clear() }
+			let errorMsg = String(cString: vips_error_buffer())
+			throw ImageError.invalidImage(reason: "GIF export failed: \(errorMsg)")
+		}
+		return Data(bytesNoCopy: buf, count: outLen, deallocator: .custom({ ptr, _ in g_free(ptr) }))
+	}
+
+	/// Export as WebP data with the given quality (0-100).
+	public func exportAsWebP(quality: Int = 90) throws -> Data {
+		var outLen: Int = 0
+		guard let buf = swiftarr_vips_webpsave_buffer(vipsImage, Int32(quality), &outLen) else {
+			defer { vips_error_clear() }
+			let errorMsg = String(cString: vips_error_buffer())
+			throw ImageError.invalidImage(reason: "WebP export failed: \(errorMsg)")
+		}
+		return Data(bytesNoCopy: buf, count: outLen, deallocator: .custom({ ptr, _ in g_free(ptr) }))
+	}
+
 	deinit {
 		g_object_unref(vipsImage)
 	}

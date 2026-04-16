@@ -42,6 +42,16 @@ void *swiftarr_vips_jpegsave_buffer(VipsImage *in, int quality, size_t *out_len)
 // Caller must g_free() the returned buffer. Returns NULL on failure.
 void *swiftarr_vips_pngsave_buffer(VipsImage *in, size_t *out_len);
 
+// Export image to GIF in a memory buffer.
+// Sets *out_len to the size of the returned buffer.
+// Caller must g_free() the returned buffer. Returns NULL on failure.
+void *swiftarr_vips_gifsave_buffer(VipsImage *in, size_t *out_len);
+
+// Export image to WebP in a memory buffer.
+// Sets *out_len to the size of the returned buffer.
+// Caller must g_free() the returned buffer. Returns NULL on failure.
+void *swiftarr_vips_webpsave_buffer(VipsImage *in, int quality, size_t *out_len);
+
 // Create an image from raw pixel data in memory.
 // Data must be width * height * bands bytes of unsigned char.
 // The returned image does NOT own the data — caller must keep it alive.
