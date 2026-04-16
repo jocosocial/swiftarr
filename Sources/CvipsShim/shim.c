@@ -35,10 +35,10 @@ VipsImage *swiftarr_vips_thumbnail(VipsImage *in, int width, int height) {
     int result;
     if (height > 0) {
         result = vips_thumbnail_image(in, &out, width, "height", height,
-                                       "size", VIPS_SIZE_FORCE, NULL);
+                                       "size", VIPS_SIZE_BOTH, NULL);
     } else {
         result = vips_thumbnail_image(in, &out, width,
-                                       "size", VIPS_SIZE_FORCE, NULL);
+                                       "size", VIPS_SIZE_BOTH, NULL);
     }
     if (result != 0) {
         return NULL;

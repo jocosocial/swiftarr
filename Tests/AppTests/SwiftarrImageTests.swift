@@ -300,4 +300,74 @@ class SwiftarrImageTests: XCTestCase {
         XCTAssertEqual(image.size.width, 40)
         XCTAssertEqual(image.size.height, 40)
     }
+
+    // MARK: - Resize Aspect Ratio Preservation
+
+    func testResizePreservesAspectRatio_Landscape() throws {
+        let jpegData = try makeTestJPEG(width: 200, height: 100)
+        let image = try SwiftarrImage(data: jpegData)
+        // Resize by width — height should be proportional
+        let resized = image.resizedTo(width: 100)
+        XCTAssertNotNil(resized)
+        XCTAssertEqual(resized!.size.width, 100)
+        XCTAssertEqual(resized!.size.height, 50)
+    }
+
+    func testResizePreservesAspectRatio_Portrait() throws {
+        let jpegData = try makeTestJPEG(width: 100, height: 300)
+        let image = try SwiftarrImage(data: jpegData)
+        // Resize by height — width should be proportional
+        let resized = image.resizedTo(height: 100)
+        XCTAssertNotNil(resized)
+        // 100:300 ratio → width dominates at 33px, height scales to 99
+        // (vips fits within the bounding box, so rounding may lose 1px)
+        XCTAssertEqual(resized!.size.width, 33)
+        XCTAssertTrue(resized!.size.height >= 99 && resized!.size.height <= 100)
+    }
+
+    // MARK: - Larger Image Simulation
+
+    func testProcessLargerImage() throws {
+        // Simulate a 500x500 "photo" — bigger than identicon, exercises the resize path
+        let jpegData = try makeTestJPEG(width: 500, height: 500)
+        let image = try SwiftarrImage(data: jpegData)
+        XCTAssertEqual(image.size.width, 500)
+
+        // Simulate the thumbnail creation path (resize to height 100)
+        let thumb = image.resizedTo(height: 100)
+        XCTAssertNotNil(thumb)
+        XCTAssertEqual(thumb!.size.height, 100)
+        XCTAssertEqual(thumb!.size.width, 100)
+
+        // Export and verify it round-trips
+        let thumbData = try thumb!.exportAsJPEG(quality: 90)
+        let reloaded = try SwiftarrImage(data: thumbData)
+        XCTAssertEqual(reloaded.size.width, 100)
+        XCTAssertEqual(reloaded.size.height, 100)
+    }
+
+    func testCropThenResize() throws {
+        // Simulate the user profile pipeline: crop to square, then resize
+        let jpegData = try makeTestJPEG(width: 300, height: 200)
+        let image = try SwiftarrImage(data: jpegData)
+
+        // Crop to center square (200x200)
+        let size = min(image.size.width, image.size.height)
+        let cropX = (image.size.width - size) / 2
+        let rect = Rectangle(x: cropX, y: 0, width: size, height: size)
+        let cropped = image.cropped(to: rect)
+        XCTAssertNotNil(cropped)
+        XCTAssertEqual(cropped!.size.width, 200)
+        XCTAssertEqual(cropped!.size.height, 200)
+
+        // Resize down
+        let resized = cropped!.resizedTo(width: 100, height: 100)
+        XCTAssertNotNil(resized)
+        XCTAssertEqual(resized!.size.width, 100)
+
+        // Export as JPEG
+        let data = try resized!.exportAsJPEG(quality: 90)
+        XCTAssertEqual(data[0], 0xFF)
+        XCTAssertEqual(data[1], 0xD8)
+    }
 }
