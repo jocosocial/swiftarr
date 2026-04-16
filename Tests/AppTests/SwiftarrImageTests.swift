@@ -187,4 +187,117 @@ class SwiftarrImageTests: XCTestCase {
         let pngData = try resized!.exportAsPNG()
         XCTAssertGreaterThan(pngData.count, 0)
     }
+
+    // MARK: - HEIC/AVIF/JXL Format Loading
+
+    /// Path to test fixture files relative to the test source file.
+    private func fixtureData(_ filename: String) throws -> Data {
+        let fixturesDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .appendingPathComponent("Fixtures")
+        let path = fixturesDir.appendingPathComponent(filename)
+        return try Data(contentsOf: path)
+    }
+
+    func testLoadHEIC() throws {
+        let data = try fixtureData("test.heic")
+        let image = try SwiftarrImage(data: data)
+        XCTAssertEqual(image.size.width, 10)
+        XCTAssertEqual(image.size.height, 10)
+    }
+
+    func testLoadAVIF() throws {
+        let data = try fixtureData("test.avif")
+        let image = try SwiftarrImage(data: data)
+        XCTAssertEqual(image.size.width, 10)
+        XCTAssertEqual(image.size.height, 10)
+    }
+
+    func testLoadJXL() throws {
+        let data = try fixtureData("test.jxl")
+        let image = try SwiftarrImage(data: data)
+        XCTAssertEqual(image.size.width, 10)
+        XCTAssertEqual(image.size.height, 10)
+    }
+
+    func testLoadHEICAndExportAsJPEG() throws {
+        let data = try fixtureData("test.heic")
+        let image = try SwiftarrImage(data: data)
+        let jpegData = try image.exportAsJPEG(quality: 90)
+        XCTAssertGreaterThan(jpegData.count, 0)
+        XCTAssertEqual(jpegData[0], 0xFF)
+        XCTAssertEqual(jpegData[1], 0xD8)
+    }
+
+    // MARK: - Pipeline: loadImageFromData
+
+    func testLoadImageFromData_FlattensAlpha() throws {
+        let pngData = try makeTestPNGWithAlpha()
+        // Verify the raw PNG has alpha
+        let rawImage = try SwiftarrImage(data: pngData)
+        XCTAssertTrue(rawImage.hasAlpha)
+
+        // loadImageFromData should flatten it
+        let processed = try ImageController.loadImageFromData(pngData)
+        XCTAssertFalse(processed.hasAlpha)
+    }
+
+    func testLoadImageFromData_OpaqueImageUnchanged() throws {
+        let jpegData = try makeTestJPEG()
+        let processed = try ImageController.loadImageFromData(jpegData)
+        XCTAssertFalse(processed.hasAlpha)
+        XCTAssertEqual(processed.size.width, 10)
+        XCTAssertEqual(processed.size.height, 10)
+    }
+
+    func testLoadImageFromData_HEICWorks() throws {
+        let data = try fixtureData("test.heic")
+        let processed = try ImageController.loadImageFromData(data)
+        XCTAssertEqual(processed.size.width, 10)
+        XCTAssertEqual(processed.size.height, 10)
+    }
+
+    func testLoadImageFromData_InvalidDataThrows() {
+        let garbage = Data([0xDE, 0xAD, 0xBE, 0xEF])
+        XCTAssertThrowsError(try ImageController.loadImageFromData(garbage))
+    }
+
+    // MARK: - Identicon
+
+    func testIdenticonDeterministic() throws {
+        let controller = ImageController()
+        let uuid = UUID(uuidString: "12345678-1234-1234-1234-123456789ABC")!
+        let data1 = try controller.generateIdenticon(for: uuid)
+        let data2 = try controller.generateIdenticon(for: uuid)
+        XCTAssertEqual(data1, data2, "Same UUID should produce identical identicon data")
+    }
+
+    func testIdenticonDifferentForDifferentUUIDs() throws {
+        let controller = ImageController()
+        let uuid1 = UUID(uuidString: "12345678-1234-1234-1234-123456789ABC")!
+        let uuid2 = UUID(uuidString: "ABCDEF01-2345-6789-ABCD-EF0123456789")!
+        let data1 = try controller.generateIdenticon(for: uuid1)
+        let data2 = try controller.generateIdenticon(for: uuid2)
+        XCTAssertNotEqual(data1, data2, "Different UUIDs should produce different identicons")
+    }
+
+    func testIdenticonIsPNG() throws {
+        let controller = ImageController()
+        let uuid = UUID(uuidString: "12345678-1234-1234-1234-123456789ABC")!
+        let data = try controller.generateIdenticon(for: uuid)
+        XCTAssertGreaterThan(data.count, 0)
+        // PNG magic bytes
+        XCTAssertEqual(data[0], 0x89)
+        XCTAssertEqual(data[1], 0x50)
+        XCTAssertEqual(data[2], 0x4E)
+        XCTAssertEqual(data[3], 0x47)
+    }
+
+    func testIdenticonIs40x40() throws {
+        let controller = ImageController()
+        let uuid = UUID(uuidString: "12345678-1234-1234-1234-123456789ABC")!
+        let data = try controller.generateIdenticon(for: uuid)
+        let image = try SwiftarrImage(data: data)
+        XCTAssertEqual(image.size.width, 40)
+        XCTAssertEqual(image.size.height, 40)
+    }
 }
