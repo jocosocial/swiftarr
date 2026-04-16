@@ -110,19 +110,20 @@ extension APIRouteCollection {
 		return image
 	}
 
-	/// Creates a thumbnail from an image and exports it as JPEG.
+	/// Creates a thumbnail from an image and exports it in the specified format.
 	/// Silently skips thumbnail creation if resize fails (returns nil), matching the original behavior.
 	/// - Parameters:
 	///   - image: The source image to create a thumbnail from
 	///   - thumbPath: The file path where the thumbnail should be saved
+	///   - format: The output format extension ("jpg", "png", etc.)
 	///   - req: The incoming `Request`, used for logging
 	/// - Throws: Errors from export or file write operations
-	static func createThumbnail(from image: SwiftarrImage, to thumbPath: URL, on req: Request) throws {
+	static func createThumbnail(from image: SwiftarrImage, to thumbPath: URL, format: String, on req: Request) throws {
 		guard let thumbnail = image.resizedTo(height: Settings.shared.imageThumbnailSize) else {
 			req.logger.error("Failed to generate thumbnail: image.resizedTo returned nil for path \(thumbPath.path)")
 			return
 		}
-		let thumbnailData = try thumbnail.exportAsJPEG(quality: 90)
+		let thumbnailData = format == "png" ? try thumbnail.exportAsPNG() : try thumbnail.exportAsJPEG(quality: 90)
 		try thumbnailData.write(to: thumbPath)
 	}
 
@@ -250,8 +251,10 @@ extension APIRouteCollection {
 
 			// ensure directories exist
 			let name = UUID().uuidString
+			// Thumbnail must use the same extension as the full image because the UI
+			// looks up thumbnails by the stored filename (UUID.ext).
 			let fullPath = try getImagePath(for: name, format: outputFormat, usage: usage, size: .full, on: req)
-			let thumbPath = try getImagePath(for: name, format: "jpg", usage: usage, size: .thumbnail, on: req)
+			let thumbPath = try getImagePath(for: name, format: outputFormat, usage: usage, size: .thumbnail, on: req)
 
 			// save full image — preserve original bytes if unmodified, re-encode as JPEG otherwise
 			if imageWasModified {
@@ -261,8 +264,8 @@ extension APIRouteCollection {
 				try data.write(to: fullPath)
 			}
 
-			// save thumbnail (always static JPEG)
-			try Self.createThumbnail(from: image, to: thumbPath, on: req)
+			// save thumbnail in same format as full image
+			try Self.createThumbnail(from: image, to: thumbPath, format: outputFormat, on: req)
 			return fullPath.lastPathComponent
 		}.get()
 	}
@@ -284,7 +287,8 @@ extension APIRouteCollection {
 			}
 			let thumbPath = destinationDir.appendingPathComponent(imageName)
 
-			try Self.createThumbnail(from: image, to: thumbPath, on: req)
+			let format = URL(fileURLWithPath: imageName).pathExtension.lowercased()
+			try Self.createThumbnail(from: image, to: thumbPath, format: format, on: req)
 		}.get()
 	}
 
