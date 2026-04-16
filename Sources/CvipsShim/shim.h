@@ -49,4 +49,8 @@ void *swiftarr_vips_pngsave_buffer(VipsImage *in, size_t *out_len);
 VipsImage *swiftarr_vips_image_new_from_memory(const void *data, size_t size,
                                                 int width, int height, int bands);
 
+// Copy an image (forces pixel data to be owned by the new image).
+// Returns 0 on success, non-zero on failure.
+int swiftarr_vips_copy(VipsImage *in, VipsImage **out);
+
 #endif /* SWIFTARR_VIPS_SHIM_H */

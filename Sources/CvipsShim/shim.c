@@ -8,11 +8,7 @@ int swiftarr_vips_init(void) {
 }
 
 VipsImage *swiftarr_vips_load_buffer(const void *buf, size_t len) {
-    VipsImage *out = NULL;
-    if (vips_image_new_from_buffer(buf, len, "", &out, NULL) != 0) {
-        return NULL;
-    }
-    return out;
+    return vips_image_new_from_buffer(buf, len, "", NULL);
 }
 
 VipsImage *swiftarr_vips_autorot(VipsImage *in) {
@@ -39,10 +35,10 @@ VipsImage *swiftarr_vips_thumbnail(VipsImage *in, int width, int height) {
     int result;
     if (height > 0) {
         result = vips_thumbnail_image(in, &out, width, "height", height,
-                                       "size", VIPS_SIZE_DOWN, NULL);
+                                       "size", VIPS_SIZE_FORCE, NULL);
     } else {
         result = vips_thumbnail_image(in, &out, width,
-                                       "size", VIPS_SIZE_DOWN, NULL);
+                                       "size", VIPS_SIZE_FORCE, NULL);
     }
     if (result != 0) {
         return NULL;
@@ -81,4 +77,8 @@ void *swiftarr_vips_pngsave_buffer(VipsImage *in, size_t *out_len) {
 VipsImage *swiftarr_vips_image_new_from_memory(const void *data, size_t size,
                                                 int width, int height, int bands) {
     return vips_image_new_from_memory(data, size, width, height, bands, VIPS_FORMAT_UCHAR);
+}
+
+int swiftarr_vips_copy(VipsImage *in, VipsImage **out) {
+    return vips_copy(in, out, NULL);
 }
