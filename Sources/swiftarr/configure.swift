@@ -59,6 +59,9 @@ struct SwiftarrConfigurator {
 		ContentConfiguration.global.use(encoder: jsonEncoder, for: .json)
 		ContentConfiguration.global.use(decoder: jsonDecoder, for: .json)
 
+		// Initialize libvips for image processing
+		SwiftarrImage.initializeVips()
+
 		// Set up all the settings that we don't need Redis to acquire.
 		try configureBundle(app)
 		try configureBasicSettings(app)
