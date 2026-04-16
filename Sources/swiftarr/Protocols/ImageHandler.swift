@@ -79,10 +79,23 @@ extension APIRouteCollection {
 		return false
 	}
 
-	/// Returns the file extension for an animatable format.
-	static func animatableExtension(_ data: Data) -> String {
-		if data.count >= 3 && data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 { return "gif" }
-		return "webp"
+	/// Detects the file extension for image data based on magic bytes. Returns "jpg" for unknown formats.
+	static func detectExtension(_ data: Data) -> String {
+		guard data.count >= 12 else { return "jpg" }
+		// JPEG
+		if data[0] == 0xFF && data[1] == 0xD8 { return "jpg" }
+		// PNG
+		if data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47 { return "png" }
+		// GIF
+		if data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 { return "gif" }
+		// WebP (RIFF....WEBP)
+		if data[0] == 0x52 && data[1] == 0x49 && data[2] == 0x46 && data[3] == 0x46
+			&& data[8] == 0x57 && data[9] == 0x45 && data[10] == 0x42 && data[11] == 0x50 { return "webp" }
+		// TIFF (little-endian or big-endian)
+		if (data[0] == 0x49 && data[1] == 0x49) || (data[0] == 0x4D && data[1] == 0x4D) { return "tiff" }
+		// BMP
+		if data[0] == 0x42 && data[1] == 0x4D { return "bmp" }
+		return "jpg"
 	}
 
 	/// Loads an image from data, auto-detecting format and applying EXIF rotation.
@@ -171,6 +184,7 @@ extension APIRouteCollection {
 		}
 		return try await req.application.threadPool.runIfActive(eventLoop: req.eventLoop) {
 			var image = try Self.loadImageFromData(data)
+			var imageWasModified = false
 
 			// Disallow images with an aspect ratio > 10:1, as they're too often malicious (even if by 'malicious' it means
 			// "ha ha you have to scroll past this"). Also disallow extremely large widths and heights.
@@ -185,6 +199,7 @@ extension APIRouteCollection {
 
 			// attempt to crop to square if profile image
 			if usage == .userProfile {
+				imageWasModified = true
 				if image.size.height != image.size.width {
 					let size = min(image.size.height, image.size.width)
 					var cropOrigin: Point
@@ -204,6 +219,7 @@ extension APIRouteCollection {
 			// A 4:3 portrait photo at 1536x2048 would downscale slightly to 1242x1656. 2K should therefore
 			// be a reasonable size limit.
 			if image.size.height > 2048 || image.size.width > 2048 {
+				imageWasModified = true
 				let resizeAmt: Double = 2048.0 / Double(max(image.size.height, image.size.width))
 				if let resizedImage = image.resizedTo(width: Int(Double(image.size.width) * resizeAmt),
 						height: Int(Double(image.size.height) * resizeAmt)) {
@@ -211,23 +227,27 @@ extension APIRouteCollection {
 				}
 			}
 
-			// Preserve animated GIF/WebP if allowed — save original bytes to keep animation.
-			// Thumbnail is always a static JPEG regardless.
+			// If animated images are disabled, GIF/WebP must be re-encoded as JPEG
 			let isAnimatable = Self.isAnimatableFormat(data)
-			let outputFormat = (isAnimatable && Settings.shared.allowAnimatedImages)
-				? Self.animatableExtension(data) : "jpg"
+			if isAnimatable && !Settings.shared.allowAnimatedImages {
+				imageWasModified = true
+			}
+
+			// Determine output format. If the image wasn't modified, preserve the original
+			// format (PNG stays PNG, GIF stays GIF, etc). Modified images become JPEG.
+			let outputFormat = imageWasModified ? "jpg" : Self.detectExtension(data)
 
 			// ensure directories exist
 			let name = UUID().uuidString
 			let fullPath = try getImagePath(for: name, format: outputFormat, usage: usage, size: .full, on: req)
 			let thumbPath = try getImagePath(for: name, format: "jpg", usage: usage, size: .thumbnail, on: req)
 
-			// save full image — preserve original bytes for animated formats, re-encode otherwise
-			if isAnimatable && Settings.shared.allowAnimatedImages {
-				try data.write(to: fullPath)
-			} else {
+			// save full image — preserve original bytes if unmodified, re-encode as JPEG otherwise
+			if imageWasModified {
 				let imageData = try image.exportAsJPEG(quality: 90)
 				try imageData.write(to: fullPath)
+			} else {
+				try data.write(to: fullPath)
 			}
 
 			// save thumbnail (always static JPEG)
