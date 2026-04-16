@@ -1,4 +1,7 @@
-/// Represents errors that can be thrown within the SwiftGD module.
+// ABOUTME: Geometric primitives (Size, Point, Rectangle, Color, Angle) used by the image pipeline.
+// ABOUTME: Also defines ImageError for image processing failures.
+
+/// Represents errors that can be thrown by image processing operations.
 ///
 /// - invalidFormat: Image raster format mismatch on import/export
 /// - invalidImage: Contains the reason this error was thrown.
