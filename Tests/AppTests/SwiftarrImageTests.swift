@@ -370,4 +370,81 @@ class SwiftarrImageTests: XCTestCase {
 		XCTAssertEqual(data[0], 0xFF)
 		XCTAssertEqual(data[1], 0xD8)
 	}
+
+	// MARK: - Realistic Image Sizes
+
+	func testLargeJPEG_LoadResizeExport() throws {
+		// Simulate a 3000x2000 photo (typical phone camera output)
+		let jpegData = try makeTestJPEG(width: 3000, height: 2000)
+		let image = try SwiftarrImage(data: jpegData)
+		XCTAssertEqual(image.size.width, 3000)
+		XCTAssertEqual(image.size.height, 2000)
+
+		// Simulate the upload pipeline downscale (>2048 → fit within 2048)
+		let resizeAmt = 2048.0 / Double(max(image.size.width, image.size.height))
+		let resized = image.resizedTo(
+			width: Int(Double(image.size.width) * resizeAmt),
+			height: Int(Double(image.size.height) * resizeAmt)
+		)
+		XCTAssertNotNil(resized)
+		XCTAssertLessThanOrEqual(resized!.size.width, 2048)
+		XCTAssertLessThanOrEqual(resized!.size.height, 2048)
+
+		// Export and verify round-trip
+		let exported = try resized!.exportAsJPEG(quality: 90)
+		XCTAssertGreaterThan(exported.count, 0)
+		let reloaded = try SwiftarrImage(data: exported)
+		XCTAssertEqual(reloaded.size.width, resized!.size.width)
+		XCTAssertEqual(reloaded.size.height, resized!.size.height)
+	}
+
+	func testLargeHEIC_FullPipeline() throws {
+		// Generate a large HEIC-like image via JPEG (we can't generate HEIC programmatically,
+		// but we can test the full pipeline with a large JPEG to verify resize + export works)
+		let jpegData = try makeTestJPEG(width: 4032, height: 3024)
+		let image = try SwiftarrImage(data: jpegData)
+		XCTAssertEqual(image.size.width, 4032)
+		XCTAssertEqual(image.size.height, 3024)
+
+		// Flatten (no alpha on JPEG, should return nil)
+		XCTAssertNil(image.flattened())
+
+		// Resize
+		let resizeAmt = 2048.0 / 4032.0
+		let resized = image.resizedTo(
+			width: Int(4032.0 * resizeAmt),
+			height: Int(3024.0 * resizeAmt)
+		)
+		XCTAssertNotNil(resized)
+
+		// Thumbnail
+		let thumb = resized!.resizedTo(height: 100)
+		XCTAssertNotNil(thumb)
+		XCTAssertEqual(thumb!.size.height, 100)
+
+		// Both export cleanly
+		let fullData = try resized!.exportAsJPEG(quality: 90)
+		let thumbData = try thumb!.exportAsJPEG(quality: 90)
+		XCTAssertGreaterThan(fullData.count, 0)
+		XCTAssertGreaterThan(thumbData.count, 0)
+	}
+
+	func testProfileAvatar_CropAndResize() throws {
+		// Simulate a portrait photo cropped to square for profile avatar
+		let jpegData = try makeTestJPEG(width: 1200, height: 1600)
+		let image = try SwiftarrImage(data: jpegData)
+
+		// Crop to center square (same logic as processImage)
+		let size = min(image.size.width, image.size.height)  // 1200
+		let cropY = (image.size.height - size) / 2  // 200
+		let rect = Rectangle(x: 0, y: cropY, width: size, height: size)
+		let cropped = image.cropped(to: rect)
+		XCTAssertNotNil(cropped)
+		XCTAssertEqual(cropped!.size.width, 1200)
+		XCTAssertEqual(cropped!.size.height, 1200)
+
+		// Export as JPEG
+		let exported = try cropped!.exportAsJPEG(quality: 90)
+		XCTAssertGreaterThan(exported.count, 0)
+	}
 }
