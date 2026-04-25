@@ -134,6 +134,14 @@ duration-select:focus {
   background-color: #21252980 !important;
 }
 
+/* Bootstrap's .bg-light is hardcoded light gray and doesn't theme-switch.
+   Override in dark mode so cards using `card-body bg-light` (and similar)
+   get a dark surface and readable text. */
+[data-bs-theme="dark"] .bg-light {
+  background-color: var(--bs-tertiary-bg) !important;
+  color: var(--bs-body-color) !important;
+}
+
 .swiftarr-textfield {
   max-width: 300px;
 }
