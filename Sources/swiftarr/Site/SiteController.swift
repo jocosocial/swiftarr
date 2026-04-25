@@ -103,6 +103,15 @@ struct TrunkContext: Encodable {
 		newTweetAlertwords = alertCounts.alertWords.contains { $0.newTwarrtMentionCount > 0 }
 		newForumAlertwords = alertCounts.alertWords.contains { $0.newForumMentionCount > 0 }
 	}
+
+	/// Resolves a raw cookie value to a valid theme preference.
+	/// Returns "auto" for nil, empty, or any value not in the allowed set.
+	static func resolveTheme(from cookieValue: String?) -> String {
+		guard let value = cookieValue, ["auto", "light", "dark"].contains(value) else {
+			return "auto"
+		}
+		return value
+	}
 }
 
 /// Context required for a paginator control. A page may include "paginator.leaf" multiple times to place multiples of the same paginator, but
