@@ -1,6 +1,3 @@
-// ABOUTME: Serves user-uploaded images at full/thumb/archive sizes and generates QR codes and identicons.
-// ABOUTME: Routes under /api/v3/image for image retrieval, user avatars, and on-the-fly image generation.
-
 import FluentSQL
 import Foundation
 import Vapor

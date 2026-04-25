@@ -1,6 +1,3 @@
-// ABOUTME: C shim functions that wrap variadic libvips calls for Swift interop.
-// ABOUTME: Swift cannot call C variadic functions directly, so each shim provides a typed interface.
-
 #ifndef SWIFTARR_VIPS_SHIM_H
 #define SWIFTARR_VIPS_SHIM_H
 

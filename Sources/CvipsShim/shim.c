@@ -1,6 +1,3 @@
-// ABOUTME: Implements typed C wrappers around variadic libvips functions.
-// ABOUTME: Each function translates typed parameters into a variadic vips call.
-
 #include "shim.h"
 
 int swiftarr_vips_init(void) {

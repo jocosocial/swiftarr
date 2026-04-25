@@ -1,6 +1,3 @@
-// ABOUTME: Unit tests for SwiftarrImage, the libvips-backed image wrapper.
-// ABOUTME: Tests cover loading, resizing, cropping, alpha handling, and export.
-
 import XCTVapor
 @testable import swiftarr
 

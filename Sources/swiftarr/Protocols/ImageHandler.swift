@@ -1,6 +1,3 @@
-// ABOUTME: Defines image processing pipeline for user-uploaded images.
-// ABOUTME: Handles loading, validation, resizing, cropping, thumbnail generation, and archival.
-
 import Vapor
 
 /// The type of model for which an `ImageHandler` is processing. This defines the size of the thumbnail produced.

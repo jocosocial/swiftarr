@@ -1,6 +1,3 @@
-// ABOUTME: Swift wrapper around libvips image operations for the upload pipeline.
-// ABOUTME: Manages a VipsImage pointer with load, resize, crop, flatten, and export operations.
-
 import Foundation
 import CvipsShim
 

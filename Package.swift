@@ -32,7 +32,7 @@ let package = Package(
 		.package(url: "https://github.com/ApolloZhu/swift_qrcodejs.git", from: "2.2.2"),
 	],
 	targets: [
-		.systemLibrary(name: "Cvips", pkgConfig: "vips", providers: [.apt(["libvips-dev"]), .brew(["vips"])]),
+		.systemLibrary(name: "Cvips", pkgConfig: "vips", providers: [.apt(["libvips-dev"]), .brew(["vips"]), .yum(["vips-devel"])]),
 		.target(name: "CvipsShim", dependencies: ["Cvips"], publicHeadersPath: "."),
 		.executableTarget(
 			name: "swiftarr",
