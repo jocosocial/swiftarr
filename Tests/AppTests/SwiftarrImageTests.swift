@@ -237,13 +237,13 @@ class SwiftarrImageTests: XCTestCase {
 		XCTAssertTrue(rawImage.hasAlpha)
 
 		// loadImageFromData should flatten it
-		let processed = try ImageController.loadImageFromData(pngData)
+		let processed = try loadImageFromData(pngData)
 		XCTAssertFalse(processed.hasAlpha)
 	}
 
 	func testLoadImageFromData_OpaqueImageUnchanged() throws {
 		let jpegData = try makeTestJPEG()
-		let processed = try ImageController.loadImageFromData(jpegData)
+		let processed = try loadImageFromData(jpegData)
 		XCTAssertFalse(processed.hasAlpha)
 		XCTAssertEqual(processed.size.width, 10)
 		XCTAssertEqual(processed.size.height, 10)
@@ -251,14 +251,14 @@ class SwiftarrImageTests: XCTestCase {
 
 	func testLoadImageFromData_HEICWorks() throws {
 		let data = try fixtureData("test.heic")
-		let processed = try ImageController.loadImageFromData(data)
+		let processed = try loadImageFromData(data)
 		XCTAssertEqual(processed.size.width, 10)
 		XCTAssertEqual(processed.size.height, 10)
 	}
 
 	func testLoadImageFromData_InvalidDataThrows() {
 		let garbage = Data([0xDE, 0xAD, 0xBE, 0xEF])
-		XCTAssertThrowsError(try ImageController.loadImageFromData(garbage))
+		XCTAssertThrowsError(try loadImageFromData(garbage))
 	}
 
 	// MARK: - Identicon

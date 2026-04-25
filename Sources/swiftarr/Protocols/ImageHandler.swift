@@ -67,72 +67,72 @@ func getImagePath(for image: String, format: String? = nil, usage: ImageUsage, s
 	return fileURL
 }
 
+/// Checks if data starts with GIF or WebP magic bytes (formats that can contain animation).
+func isAnimatableFormat(_ data: Data) -> Bool {
+	guard data.count >= 12 else { return false }
+	// GIF87a or GIF89a
+	if data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 { return true }
+	// RIFF....WEBP
+	if data[0] == 0x52 && data[1] == 0x49 && data[2] == 0x46 && data[3] == 0x46
+		&& data[8] == 0x57 && data[9] == 0x45 && data[10] == 0x42 && data[11] == 0x50 { return true }
+	return false
+}
+
+/// Detects the file extension for image data based on magic bytes. Returns "jpg" for unknown formats.
+func detectExtension(_ data: Data) -> String {
+	guard data.count >= 12 else { return "jpg" }
+	// JPEG
+	if data[0] == 0xFF && data[1] == 0xD8 { return "jpg" }
+	// PNG
+	if data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47 { return "png" }
+	// GIF
+	if data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 { return "gif" }
+	// WebP (RIFF....WEBP)
+	if data[0] == 0x52 && data[1] == 0x49 && data[2] == 0x46 && data[3] == 0x46
+		&& data[8] == 0x57 && data[9] == 0x45 && data[10] == 0x42 && data[11] == 0x50 { return "webp" }
+	// TIFF (little-endian or big-endian)
+	if (data[0] == 0x49 && data[1] == 0x49) || (data[0] == 0x4D && data[1] == 0x4D) { return "tiff" }
+	// BMP
+	if data[0] == 0x42 && data[1] == 0x4D { return "bmp" }
+	return "jpg"
+}
+
+/// Loads an image from data, auto-detecting format and applying EXIF rotation.
+/// Flattens alpha channels onto a white background since we export as JPEG.
+/// - Parameter data: The image data to load
+/// - Returns: The loaded image, ready for processing
+func loadImageFromData(_ data: Data) throws -> SwiftarrImage {
+	var image = try SwiftarrImage(data: data)
+	if let flattened = image.flattened() {
+		image = flattened
+	}
+	return image
+}
+
+/// Creates a thumbnail from an image and exports it in the specified format.
+/// Silently skips thumbnail creation if resize fails (returns nil), matching the original behavior.
+/// - Parameters:
+///   - image: The source image to create a thumbnail from
+///   - thumbPath: The file path where the thumbnail should be saved
+///   - format: The output format extension ("jpg", "png", etc.)
+///   - req: The incoming `Request`, used for logging
+/// - Throws: Errors from export or file write operations
+func createThumbnail(from image: SwiftarrImage, to thumbPath: URL, format: String, on req: Request) throws {
+	guard let thumbnail = image.resizedTo(height: Settings.shared.imageThumbnailSize) else {
+		req.logger.error("Failed to generate thumbnail: image.resizedTo returned nil for path \(thumbPath.path)")
+		return
+	}
+	let thumbnailData: Data
+	switch format {
+	case "png": thumbnailData = try thumbnail.exportAsPNG()
+	case "gif": thumbnailData = try thumbnail.exportAsGIF()
+	case "webp": thumbnailData = try thumbnail.exportAsWebP(quality: 90)
+	default: thumbnailData = try thumbnail.exportAsJPEG(quality: 90)
+	}
+	try thumbnailData.write(to: thumbPath)
+}
+
 extension APIRouteCollection {
-	/// Checks if data starts with GIF or WebP magic bytes (formats that can contain animation).
-	static func isAnimatableFormat(_ data: Data) -> Bool {
-		guard data.count >= 12 else { return false }
-		// GIF87a or GIF89a
-		if data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 { return true }
-		// RIFF....WEBP
-		if data[0] == 0x52 && data[1] == 0x49 && data[2] == 0x46 && data[3] == 0x46
-			&& data[8] == 0x57 && data[9] == 0x45 && data[10] == 0x42 && data[11] == 0x50 { return true }
-		return false
-	}
-
-	/// Detects the file extension for image data based on magic bytes. Returns "jpg" for unknown formats.
-	static func detectExtension(_ data: Data) -> String {
-		guard data.count >= 12 else { return "jpg" }
-		// JPEG
-		if data[0] == 0xFF && data[1] == 0xD8 { return "jpg" }
-		// PNG
-		if data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47 { return "png" }
-		// GIF
-		if data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 { return "gif" }
-		// WebP (RIFF....WEBP)
-		if data[0] == 0x52 && data[1] == 0x49 && data[2] == 0x46 && data[3] == 0x46
-			&& data[8] == 0x57 && data[9] == 0x45 && data[10] == 0x42 && data[11] == 0x50 { return "webp" }
-		// TIFF (little-endian or big-endian)
-		if (data[0] == 0x49 && data[1] == 0x49) || (data[0] == 0x4D && data[1] == 0x4D) { return "tiff" }
-		// BMP
-		if data[0] == 0x42 && data[1] == 0x4D { return "bmp" }
-		return "jpg"
-	}
-
-	/// Loads an image from data, auto-detecting format and applying EXIF rotation.
-	/// Flattens alpha channels onto a white background since we export as JPEG.
-	/// - Parameter data: The image data to load
-	/// - Returns: The loaded image, ready for processing
-	static func loadImageFromData(_ data: Data) throws -> SwiftarrImage {
-		var image = try SwiftarrImage(data: data)
-		if let flattened = image.flattened() {
-			image = flattened
-		}
-		return image
-	}
-
-	/// Creates a thumbnail from an image and exports it in the specified format.
-	/// Silently skips thumbnail creation if resize fails (returns nil), matching the original behavior.
-	/// - Parameters:
-	///   - image: The source image to create a thumbnail from
-	///   - thumbPath: The file path where the thumbnail should be saved
-	///   - format: The output format extension ("jpg", "png", etc.)
-	///   - req: The incoming `Request`, used for logging
-	/// - Throws: Errors from export or file write operations
-	static func createThumbnail(from image: SwiftarrImage, to thumbPath: URL, format: String, on req: Request) throws {
-		guard let thumbnail = image.resizedTo(height: Settings.shared.imageThumbnailSize) else {
-			req.logger.error("Failed to generate thumbnail: image.resizedTo returned nil for path \(thumbPath.path)")
-			return
-		}
-		let thumbnailData: Data
-		switch format {
-		case "png": thumbnailData = try thumbnail.exportAsPNG()
-		case "gif": thumbnailData = try thumbnail.exportAsGIF()
-		case "webp": thumbnailData = try thumbnail.exportAsWebP(quality: 90)
-		default: thumbnailData = try thumbnail.exportAsJPEG(quality: 90)
-		}
-		try thumbnailData.write(to: thumbPath)
-	}
-
 	/// Takes an an array of `ImageUploadData` as input. Some of the input elements may be new image Data that needs procssing;
 	/// some of the input elements may refer to already-processed images in our image store. Once all the ImageUploadData elements are processed,
 	/// returns a `[String]` containing the filenames where al the images are stored. The use case here is for editing existing content with
@@ -190,7 +190,7 @@ extension APIRouteCollection {
 			throw Abort(.badRequest, reason: "Image too large. Size limit is \(maxMegabytes)MB.")
 		}
 		return try await req.application.threadPool.runIfActive(eventLoop: req.eventLoop) {
-			var image = try Self.loadImageFromData(data)
+			var image = try loadImageFromData(data)
 			var imageWasModified = false
 
 			// Disallow images with an aspect ratio > 10:1, as they're too often malicious (even if by 'malicious' it means
@@ -235,7 +235,7 @@ extension APIRouteCollection {
 			}
 
 			// If animated images are disabled, GIF/WebP must be re-encoded as JPEG
-			let isAnimatable = Self.isAnimatableFormat(data)
+			let isAnimatable = isAnimatableFormat(data)
 			if isAnimatable && !Settings.shared.allowAnimatedImages {
 				imageWasModified = true
 			}
@@ -246,14 +246,14 @@ extension APIRouteCollection {
 			// Also re-encode HEIC/AVIF/JXL — these aren't web-native formats and can't
 			// be served directly to browsers or the app.
 			let isJPEG = data.count >= 2 && data[0] == 0xFF && data[1] == 0xD8
-			let needsReencode = isJPEG || !["png", "gif", "webp"].contains(Self.detectExtension(data))
+			let needsReencode = isJPEG || !["png", "gif", "webp"].contains(detectExtension(data))
 			if needsReencode {
 				imageWasModified = true
 			}
 
 			// Determine output format. If the image wasn't modified, preserve the original
 			// format (PNG stays PNG, GIF stays GIF, etc). Modified images become JPEG.
-			let outputFormat = imageWasModified ? "jpg" : Self.detectExtension(data)
+			let outputFormat = imageWasModified ? "jpg" : detectExtension(data)
 
 			// ensure directories exist
 			let name = UUID().uuidString
@@ -277,7 +277,7 @@ extension APIRouteCollection {
 					from: data, height: Settings.shared.imageThumbnailSize, isGIF: isGIF)
 				try thumbData.write(to: thumbPath)
 			} else {
-				try Self.createThumbnail(from: image, to: thumbPath, format: outputFormat, on: req)
+				try createThumbnail(from: image, to: thumbPath, format: outputFormat, on: req)
 			}
 			return fullPath.lastPathComponent
 		}.get()
@@ -289,7 +289,7 @@ extension APIRouteCollection {
 		let imageName = imageSource.lastPathComponent
 		return try await req.application.threadPool.runIfActive(eventLoop: req.eventLoop) {
 			let data = try Data(contentsOf: imageSource)
-			let image = try Self.loadImageFromData(data)
+			let image = try loadImageFromData(data)
 
 			let destinationDir = Settings.shared.userImagesRootPath
 					.appendingPathComponent(ImageSizeGroup.thumbnail.rawValue)
@@ -301,7 +301,7 @@ extension APIRouteCollection {
 			let thumbPath = destinationDir.appendingPathComponent(imageName)
 
 			let format = URL(fileURLWithPath: imageName).pathExtension.lowercased()
-			try Self.createThumbnail(from: image, to: thumbPath, format: format, on: req)
+			try createThumbnail(from: image, to: thumbPath, format: format, on: req)
 		}.get()
 	}
 
