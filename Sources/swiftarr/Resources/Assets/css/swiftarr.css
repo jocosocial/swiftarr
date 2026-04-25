@@ -26,7 +26,7 @@ hr.newline:after {
   position: relative;
   top: -0.8em;
   padding: 0 0.25em;
-  background-color: #FFFFFF;
+  background-color: var(--bs-body-bg);
   opacity: 100%;
 }
 
@@ -55,12 +55,12 @@ hr.newline:after {
 
 .swiftarr-breadcrumb-item+.swiftarr-breadcrumb-item::before {
   padding-right: 0.5rem;
-  color: #6c757d;
+  color: var(--bs-secondary-color);
   content: "/";
 }
 
 .swiftarr-breadcrumb-item.active {
-  color: #6c757d;
+  color: var(--bs-secondary-color);
 }
 
 .duration-select {
@@ -70,17 +70,21 @@ hr.newline:after {
   font-size: 1rem;
   font-weight: 400;
   line-height: 1.5;
-  color: #212529;
-  background-color: #fff;
+  color: var(--bs-body-color);
+  background-color: var(--bs-body-bg);
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
   background-size: 16px 12px;
-  border: 1px solid #ced4da;
+  border: 1px solid var(--bs-border-color);
   border-radius: 0.25rem;
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
+}
+
+[data-bs-theme="dark"] .duration-select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23dee2e6' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
 }
 
 duration-select:focus {
@@ -124,6 +128,10 @@ duration-select:focus {
 
 .bg-light-50 {
   background-color: #f8f9fa80 !important;
+}
+
+[data-bs-theme="dark"] .bg-light-50 {
+  background-color: #21252980 !important;
 }
 
 .swiftarr-textfield {
@@ -180,4 +188,27 @@ duration-select:focus {
 .InkMarkdown h2 {
 	margin-top: 20px;
 	margin-bottom: 20px;
+}
+
+/* Body background — themed */
+body {
+  background-image: url('/img/background.png');
+  background-size: 100%;
+}
+[data-bs-theme="dark"] body {
+  background-image: url('/img/background-dark.png');
+}
+
+/* Theme toggle icon swap — show only the icon matching current preference */
+#themeToggle .theme-icon-auto,
+#themeToggle .theme-icon-light,
+#themeToggle .theme-icon-dark { display: none; }
+html[data-theme-pref="auto"]  #themeToggle .theme-icon-auto  { display: inline; }
+html[data-theme-pref="light"] #themeToggle .theme-icon-light { display: inline; }
+html[data-theme-pref="dark"]  #themeToggle .theme-icon-dark  { display: inline; }
+
+/* Subtle border for identicons/avatars in dark mode (drop if testing shows it's overkill) */
+[data-bs-theme="dark"] img[src*="/api/v3/image/user/"] {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.25rem;
 }
