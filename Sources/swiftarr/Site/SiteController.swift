@@ -48,6 +48,9 @@ struct TrunkContext: Encodable {
 	var newTweetAlertwords: Bool
 	var newForumAlertwords: Bool
 
+	/// Theme preference: "auto" | "light" | "dark". Read from the swiftarr_theme cookie.
+	var theme: String
+
 	init(_ req: Request, title: String, tab: Tab) {
 		var userAccessLevel: UserAccessLevel = .banned  // Not logged in is equivalent to can't log in, for our purposes here
 		if let user = req.auth.get(UserCacheData.self) {
@@ -102,6 +105,16 @@ struct TrunkContext: Encodable {
 
 		newTweetAlertwords = alertCounts.alertWords.contains { $0.newTwarrtMentionCount > 0 }
 		newForumAlertwords = alertCounts.alertWords.contains { $0.newForumMentionCount > 0 }
+		theme = Self.resolveTheme(from: req.cookies["swiftarr_theme"]?.string)
+	}
+
+	/// Resolves a raw cookie value to a valid theme preference.
+	/// Returns "auto" for nil, empty, or any value not in the allowed set.
+	static func resolveTheme(from cookieValue: String?) -> String {
+		guard let value = cookieValue, ["auto", "light", "dark"].contains(value) else {
+			return "auto"
+		}
+		return value
 	}
 }
 
