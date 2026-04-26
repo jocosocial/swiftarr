@@ -1,5 +1,5 @@
 {
-  "originHash" : "9356f2d649af63c6c7a1af3095de5ba9e5b4914b9337ef793c5fa39a489ca774",
+  "originHash" : "cf76c21720c95221debbc13a0aa4a60fee169a2ac49cf551c7e0e8454758d502",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -35,6 +35,15 @@
       "state" : {
         "revision" : "055a83391a49747774eac75abca12a3c49cdb3bb",
         "version" : "0.14.3"
+      }
+    },
+    {
+      "identity" : "filetype",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/velocityzen/FileType",
+      "state" : {
+        "revision" : "19c42ca6fb655f1a0ca2d88991e7159c8f6b75f9",
+        "version" : "2.2.0"
       }
     },
     {

@@ -1,4 +1,5 @@
 import Vapor
+import FileType
 
 /// The type of model for which an `ImageHandler` is processing. This defines the size of the thumbnail produced.
 enum ImageUsage: String {
@@ -64,34 +65,17 @@ func getImagePath(for image: String, format: String? = nil, usage: ImageUsage, s
 	return fileURL
 }
 
-/// Checks if data starts with GIF or WebP magic bytes (formats that can contain animation).
+/// Returns true when the image data is a format that can carry animation (GIF or WebP).
 func isAnimatableFormat(_ data: Data) -> Bool {
-	guard data.count >= 12 else { return false }
-	// GIF87a or GIF89a
-	if data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 { return true }
-	// RIFF....WEBP
-	if data[0] == 0x52 && data[1] == 0x49 && data[2] == 0x46 && data[3] == 0x46
-		&& data[8] == 0x57 && data[9] == 0x45 && data[10] == 0x42 && data[11] == 0x50 { return true }
-	return false
+	switch FileType.detect(in: data, matching: .image)?.type {
+	case .gif, .webp: return true
+	default: return false
+	}
 }
 
-/// Detects the file extension for image data based on magic bytes. Returns "jpg" for unknown formats.
+/// Detects the file extension for image data. Returns "jpg" for unrecognized formats.
 func detectExtension(_ data: Data) -> String {
-	guard data.count >= 12 else { return "jpg" }
-	// JPEG
-	if data[0] == 0xFF && data[1] == 0xD8 { return "jpg" }
-	// PNG
-	if data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47 { return "png" }
-	// GIF
-	if data[0] == 0x47 && data[1] == 0x49 && data[2] == 0x46 { return "gif" }
-	// WebP (RIFF....WEBP)
-	if data[0] == 0x52 && data[1] == 0x49 && data[2] == 0x46 && data[3] == 0x46
-		&& data[8] == 0x57 && data[9] == 0x45 && data[10] == 0x42 && data[11] == 0x50 { return "webp" }
-	// TIFF (little-endian or big-endian)
-	if (data[0] == 0x49 && data[1] == 0x49) || (data[0] == 0x4D && data[1] == 0x4D) { return "tiff" }
-	// BMP
-	if data[0] == 0x42 && data[1] == 0x4D { return "bmp" }
-	return "jpg"
+	FileType.detect(in: data, matching: .image)?.ext ?? "jpg"
 }
 
 /// Loads an image from data, auto-detecting format and applying EXIF rotation.
@@ -242,15 +226,15 @@ extension APIRouteCollection {
 			// Saving original JPEG bytes would cause sideways display in some viewers.
 			// Also re-encode HEIC/AVIF/JXL — these aren't web-native formats and can't
 			// be served directly to browsers or the app.
-			let isJPEG = data.count >= 2 && data[0] == 0xFF && data[1] == 0xD8
-			let needsReencode = isJPEG || !["png", "gif", "webp"].contains(detectExtension(data))
+			let detectedExt = detectExtension(data)
+			let needsReencode = !["png", "gif", "webp"].contains(detectedExt)
 			if needsReencode {
 				imageWasModified = true
 			}
 
 			// Determine output format. If the image wasn't modified, preserve the original
 			// format (PNG stays PNG, GIF stays GIF, etc). Modified images become JPEG.
-			let outputFormat = imageWasModified ? "jpg" : detectExtension(data)
+			let outputFormat = imageWasModified ? "jpg" : detectedExt
 
 			// ensure directories exist
 			let name = UUID().uuidString

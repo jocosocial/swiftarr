@@ -1,4 +1,4 @@
-// swift-tools-version:6.0
+// swift-tools-version:6.2
 import PackageDescription
 
 let package = Package(
@@ -30,6 +30,8 @@ let package = Package(
 	    .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.6.0"),
 	    // Cross-platform QR Code generator. Linux doesn't have access to Core Image
 		.package(url: "https://github.com/ApolloZhu/swift_qrcodejs.git", from: "2.2.2"),
+		// FileType is a Swift port of file-type, used to detect image formats from magic bytes.
+		.package(url: "https://github.com/velocityzen/FileType", from: "2.2.0"),
 	],
 	targets: [
 		.systemLibrary(name: "Cvips", pkgConfig: "vips", providers: [.apt(["libvips-dev"]), .brew(["vips"]), .yum(["vips-devel"])]),
@@ -50,6 +52,7 @@ let package = Package(
 				"CvipsShim",
 				"ZIPFoundation",
 				.product(name: "QRCodeSwift", package: "swift_qrcodejs"),
+				.product(name: "FileType", package: "FileType"),
 			],
 			resources: [
 				.copy("Resources"),
