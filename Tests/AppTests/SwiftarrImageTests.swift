@@ -444,4 +444,69 @@ class SwiftarrImageTests: XCTestCase {
 		let exported = try cropped!.exportAsJPEG(quality: 90)
 		XCTAssertGreaterThan(exported.count, 0)
 	}
+
+	// MARK: - Format Detection (FileType-backed)
+
+	func testDetectExtension_JPEG() throws {
+		let data = try makeTestJPEG()
+		XCTAssertEqual(detectExtension(data), "jpg")
+	}
+
+	func testDetectExtension_PNG() throws {
+		let data = try makeTestPNGWithAlpha()
+		XCTAssertEqual(detectExtension(data), "png")
+	}
+
+	func testDetectExtension_GIF() throws {
+		let pixels = [UInt8](repeating: 0, count: 10 * 10 * 3)
+		let image = try SwiftarrImage(width: 10, height: 10, pixels: pixels)
+		let data = try image.exportAsGIF()
+		XCTAssertEqual(detectExtension(data), "gif")
+	}
+
+	func testDetectExtension_WebP() throws {
+		let pixels = [UInt8](repeating: 0, count: 10 * 10 * 3)
+		let image = try SwiftarrImage(width: 10, height: 10, pixels: pixels)
+		let data = try image.exportAsWebP(quality: 90)
+		XCTAssertEqual(detectExtension(data), "webp")
+	}
+
+	func testDetectExtension_NonImageFallsBackToJpg() {
+		// FileType.detect(matching: .image) rejects non-image formats. Fallback is "jpg".
+		let zip = Data([0x50, 0x4B, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+		XCTAssertEqual(detectExtension(zip), "jpg")
+	}
+
+	func testDetectExtension_GarbageFallsBackToJpg() {
+		let garbage = Data([0xDE, 0xAD, 0xBE, 0xEF])
+		XCTAssertEqual(detectExtension(garbage), "jpg")
+	}
+
+	func testIsAnimatableFormat_GIFIsAnimatable() throws {
+		let pixels = [UInt8](repeating: 0, count: 10 * 10 * 3)
+		let image = try SwiftarrImage(width: 10, height: 10, pixels: pixels)
+		let data = try image.exportAsGIF()
+		XCTAssertTrue(isAnimatableFormat(data))
+	}
+
+	func testIsAnimatableFormat_WebPIsAnimatable() throws {
+		let pixels = [UInt8](repeating: 0, count: 10 * 10 * 3)
+		let image = try SwiftarrImage(width: 10, height: 10, pixels: pixels)
+		let data = try image.exportAsWebP(quality: 90)
+		XCTAssertTrue(isAnimatableFormat(data))
+	}
+
+	func testIsAnimatableFormat_JPEGIsNot() throws {
+		let data = try makeTestJPEG()
+		XCTAssertFalse(isAnimatableFormat(data))
+	}
+
+	func testIsAnimatableFormat_PNGIsNot() throws {
+		let data = try makeTestPNGWithAlpha()
+		XCTAssertFalse(isAnimatableFormat(data))
+	}
+
+	func testIsAnimatableFormat_GarbageIsNot() {
+		XCTAssertFalse(isAnimatableFormat(Data([0xDE, 0xAD, 0xBE, 0xEF])))
+	}
 }
