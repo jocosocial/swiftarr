@@ -22,7 +22,7 @@ jobs:
       - name: Confirm Swift Version
         run: swift --version
       - name: Install Swiftarr Dependencies
-        run: brew install gd
+        run: brew install vips
       - name: Checkout Swiftarr
         uses: actions/checkout@v2
       - name: Generate Docs
