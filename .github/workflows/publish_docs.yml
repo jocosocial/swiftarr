@@ -7,24 +7,24 @@ on:
       - master
 jobs:
   Build:
-    runs-on: macos-15
+    runs-on: ubuntu-24.04
+    container: docker.io/library/swift:6.2-noble
     steps:
-      - name: Install SourceKitten
-        run: brew install sourcekitten
+      - name: Install system dependencies
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends \
+            libvips-dev pkg-config ruby-full build-essential git
       - name: Install Jazzy
-        run: sudo gem install jazzy
-      # They don't support Swift 6 yet.
-      # https://github.com/swift-actions/setup-swift/issues/683
-      # - name: Install Swift
-      #   uses: swift-actions/setup-swift@v2
-      #   with:
-      #     swift-version: "5.10.0"
+        run: gem install jazzy --no-document
+      - name: Install SourceKitten
+        run: |
+          git clone --depth 1 https://github.com/jpsim/SourceKitten.git /tmp/sourcekitten
+          cd /tmp/sourcekitten && swift build -c release
+          cp .build/release/sourcekitten /usr/local/bin/sourcekitten
       - name: Confirm Swift Version
         run: swift --version
-      - name: Install Swiftarr Dependencies
-        run: brew install vips
       - name: Checkout Swiftarr
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Generate Docs
         run: scripts/generatedocs.sh
       - name: Upload Artifact
