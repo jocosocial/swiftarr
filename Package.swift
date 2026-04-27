@@ -31,7 +31,10 @@ let package = Package(
 	    // Cross-platform QR Code generator. Linux doesn't have access to Core Image
 		.package(url: "https://github.com/ApolloZhu/swift_qrcodejs.git", from: "2.2.2"),
 		// FileType is a Swift port of file-type, used to detect image formats from magic bytes.
-		.package(url: "https://github.com/velocityzen/FileType", from: "2.2.0"),
+		// Pinned to a fork until https://github.com/velocityzen/FileType/pull/3 is merged
+		// upstream — the fork renames its system zlib module to avoid colliding with
+		// ZIPFoundation's CZlib, which fails the Linux build.
+		.package(url: "https://github.com/penguinboi/FileType", revision: "acfd132f56e1c436276af13682a934d9364e3323"),
 	],
 	targets: [
 		.systemLibrary(name: "Cvips", pkgConfig: "vips", providers: [.apt(["libvips-dev"]), .brew(["vips"]), .yum(["vips-devel"])]),

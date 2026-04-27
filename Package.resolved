@@ -1,5 +1,5 @@
 {
-  "originHash" : "cf76c21720c95221debbc13a0aa4a60fee169a2ac49cf551c7e0e8454758d502",
+  "originHash" : "dfb5f1fc541737b46f305203be7909ba21fdce5899fc7fddc88eec43752ce17d",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -40,10 +40,9 @@
     {
       "identity" : "filetype",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/velocityzen/FileType",
+      "location" : "https://github.com/penguinboi/FileType",
       "state" : {
-        "revision" : "19c42ca6fb655f1a0ca2d88991e7159c8f6b75f9",
-        "version" : "2.2.0"
+        "revision" : "acfd132f56e1c436276af13682a934d9364e3323"
       }
     },
     {
