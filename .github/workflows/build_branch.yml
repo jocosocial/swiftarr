@@ -37,7 +37,7 @@ jobs:
         env:
           POSTGRES_USER: swiftarr
           POSTGRES_PASSWORD: password
-          POSTGRES_DB: swiftarr
+          POSTGRES_DB: swiftarr-test
         ports:
           - 5433:5432
         options: >-
