@@ -48,4 +48,4 @@ jobs:
         # SettingsTests and ClientControllerTests need a migrated+seeded database
         # which a pristine CI postgres can't satisfy without infrastructure work
         # outside the scope of this PR.
-        run: swift test --enable-test-discovery --filter "GeometryTests|ValidatingJSONDecoderTests|CruiseDateTests|ThemeCookieTests|CryptoHelperTests|DisabledFeaturesGroupTests|EventParserTests|TimeZoneChangeSetTests|UserStructValidationTests|ContentStructValidationTests|FezAndEventValidationTests|AdminStructValidationTests|DateExtensionTests|SettingsCalendarTests"
+        run: swift test --enable-test-discovery --filter "GeometryTests|ValidatingJSONDecoderTests|CruiseDateTests|ThemeCookieTests|CryptoHelperTests|DisabledFeaturesGroupTests|EventParserTests|TimeZoneChangeSetTests|UserStructValidationTests|ContentStructValidationTests|FezAndEventValidationTests|AdminStructValidationTests|DateExtensionTests|SettingsCalendarTests|ContentFilterableTests"
