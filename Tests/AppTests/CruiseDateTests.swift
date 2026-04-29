@@ -76,4 +76,29 @@ class CruiseDateTests: XCTestCase {
 	func testFixtureSetUpAppliesCruiseStart() {
 		XCTAssertEqual(Settings.shared.cruiseStartDate(), embarkationDate)
 	}
+
+	// MARK: - Mid-week projection (non-DST input → non-DST cruise day)
+
+	func testGetDateInCruiseWeek_WednesdayInput_ProjectsToWednesdayInCruiseWeek() {
+		// 2024-08-14 is a Wednesday (weekday=4) outside the cruise window.
+		// Cruise embarks Saturday 2024-03-09; the Wednesday during the cruise is 2024-03-13.
+		let testDate = ISO8601DateFormatter().date(from: "2024-08-14T16:00:00Z")!
+		let result = Settings.shared.getDateInCruiseWeek(from: testDate)
+		let cal = Calendar(identifier: .gregorian)
+		var comps = cal.dateComponents(in: TimeZone(identifier: "America/New_York")!, from: result)
+		// Should land in the 2024-03-09..03-16 window, on a Wednesday.
+		XCTAssertEqual(comps.year, 2024)
+		XCTAssertEqual(comps.month, 3)
+		XCTAssertEqual(comps.day, 13)
+	}
+
+	// MARK: - getCurrentFilterDate strips sub-second precision
+
+	func testGetCurrentFilterDate_StripsSubsecondPrecision() {
+		let dateWithFractional = Date(timeIntervalSince1970: 1_710_000_000.5678)
+		let stripped = Settings.shared.getCurrentFilterDate(from: dateWithFractional)
+		// Sub-second portion must be zero — this is the function's whole reason for existing.
+		let nanos = Calendar(identifier: .gregorian).component(.nanosecond, from: stripped)
+		XCTAssertEqual(nanos, 0)
+	}
 }
