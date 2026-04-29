@@ -79,19 +79,33 @@ func detectExtension(_ data: Data) -> String {
 }
 
 /// Loads an image from data, auto-detecting format and applying EXIF rotation.
-/// Flattens alpha channels onto a white background since we export as JPEG.
+/// Alpha is preserved — flattening only happens at JPEG export sites, since PNG/GIF/WebP
+/// outputs can carry transparency.
 /// - Parameter data: The image data to load
 /// - Returns: The loaded image, ready for processing
 func loadImageFromData(_ data: Data) throws -> SwiftarrImage {
-	var image = try SwiftarrImage(data: data)
-	if let flattened = image.flattened() {
-		image = flattened
-	}
-	return image
+	return try SwiftarrImage(data: data)
 }
 
-/// Creates a thumbnail from an image and exports it in the specified format.
-/// Silently skips thumbnail creation if resize fails (returns nil), matching the original behavior.
+/// Resizes an image to thumbnail size and encodes it in the requested format.
+/// Returns nil if resize fails. JPEG output flattens any alpha onto a white background;
+/// PNG/GIF/WebP outputs preserve transparency.
+func thumbnailData(from image: SwiftarrImage, format: String) throws -> Data? {
+	guard let thumbnail = image.resizedTo(height: Settings.shared.imageThumbnailSize) else {
+		return nil
+	}
+	switch format {
+	case "png": return try thumbnail.exportAsPNG()
+	case "gif": return try thumbnail.exportAsGIF()
+	case "webp": return try thumbnail.exportAsWebP(quality: 90)
+	default:
+		let opaque = thumbnail.flattened() ?? thumbnail
+		return try opaque.exportAsJPEG(quality: 90)
+	}
+}
+
+/// Creates a thumbnail from an image and writes it to disk in the specified format.
+/// Silently skips thumbnail creation if resize fails, matching the original behavior.
 /// - Parameters:
 ///   - image: The source image to create a thumbnail from
 ///   - thumbPath: The file path where the thumbnail should be saved
@@ -99,18 +113,11 @@ func loadImageFromData(_ data: Data) throws -> SwiftarrImage {
 ///   - req: The incoming `Request`, used for logging
 /// - Throws: Errors from export or file write operations
 func createThumbnail(from image: SwiftarrImage, to thumbPath: URL, format: String, on req: Request) throws {
-	guard let thumbnail = image.resizedTo(height: Settings.shared.imageThumbnailSize) else {
+	guard let data = try thumbnailData(from: image, format: format) else {
 		req.logger.error("Failed to generate thumbnail: image.resizedTo returned nil for path \(thumbPath.path)")
 		return
 	}
-	let thumbnailData: Data
-	switch format {
-	case "png": thumbnailData = try thumbnail.exportAsPNG()
-	case "gif": thumbnailData = try thumbnail.exportAsGIF()
-	case "webp": thumbnailData = try thumbnail.exportAsWebP(quality: 90)
-	default: thumbnailData = try thumbnail.exportAsJPEG(quality: 90)
-	}
-	try thumbnailData.write(to: thumbPath)
+	try data.write(to: thumbPath)
 }
 
 extension APIRouteCollection {
@@ -243,9 +250,12 @@ extension APIRouteCollection {
 			let fullPath = try getImagePath(for: name, format: outputFormat, usage: usage, size: .full, on: req)
 			let thumbPath = try getImagePath(for: name, format: outputFormat, usage: usage, size: .thumbnail, on: req)
 
-			// save full image — preserve original bytes if unmodified, re-encode as JPEG otherwise
+			// save full image — preserve original bytes if unmodified, re-encode as JPEG otherwise.
+			// JPEG can't carry alpha; flatten any transparency onto white so transparent regions
+			// don't composite onto JPEG's default black.
 			if imageWasModified {
-				let imageData = try image.exportAsJPEG(quality: 90)
+				let opaque = image.flattened() ?? image
+				let imageData = try opaque.exportAsJPEG(quality: 90)
 				try imageData.write(to: fullPath)
 			} else {
 				try data.write(to: fullPath)

@@ -227,15 +227,55 @@ class SwiftarrImageTests: XCTestCase {
 
 	// MARK: - Pipeline: loadImageFromData
 
-	func testLoadImageFromData_FlattensAlpha() throws {
+	func testLoadImageFromData_PreservesAlpha() throws {
 		let pngData = try makeTestPNGWithAlpha()
 		// Verify the raw PNG has alpha
 		let rawImage = try SwiftarrImage(data: pngData)
 		XCTAssertTrue(rawImage.hasAlpha)
 
-		// loadImageFromData should flatten it
+		// loadImageFromData must NOT flatten — alpha is only stripped at JPEG export time
+		// so PNG/GIF/WebP outputs can preserve transparency.
 		let processed = try loadImageFromData(pngData)
-		XCTAssertFalse(processed.hasAlpha)
+		XCTAssertTrue(processed.hasAlpha)
+	}
+
+	// MARK: - Pipeline: thumbnailData
+
+	func testThumbnailData_PNGPreservesAlpha() throws {
+		let pngData = try makeTestPNGWithAlpha(width: 400, height: 400)
+		let image = try loadImageFromData(pngData)
+		let thumbBytes = try XCTUnwrap(thumbnailData(from: image, format: "png"))
+		let thumb = try SwiftarrImage(data: thumbBytes)
+		XCTAssertTrue(thumb.hasAlpha, "PNG thumbnails must preserve transparency")
+	}
+
+	func testThumbnailData_WebPPreservesAlpha() throws {
+		let pngData = try makeTestPNGWithAlpha(width: 400, height: 400)
+		let image = try loadImageFromData(pngData)
+		let thumbBytes = try XCTUnwrap(thumbnailData(from: image, format: "webp"))
+		let thumb = try SwiftarrImage(data: thumbBytes)
+		XCTAssertTrue(thumb.hasAlpha, "WebP thumbnails must preserve transparency")
+	}
+
+	func testThumbnailData_JPEGFlattensAlpha() throws {
+		let pngData = try makeTestPNGWithAlpha(width: 400, height: 400)
+		let image = try loadImageFromData(pngData)
+		let thumbBytes = try XCTUnwrap(thumbnailData(from: image, format: "jpg"))
+		// JPEG output: must be valid JPEG and must not carry alpha (JPEG can't anyway, but the
+		// flatten step ensures the underlying transparent pixels composite onto white, not black).
+		XCTAssertEqual(thumbBytes[0], 0xFF)
+		XCTAssertEqual(thumbBytes[1], 0xD8)
+		let thumb = try SwiftarrImage(data: thumbBytes)
+		XCTAssertFalse(thumb.hasAlpha)
+	}
+
+	func testThumbnailData_OpaqueImageIsUnchanged() throws {
+		let jpegData = try makeTestJPEG(width: 400, height: 400)
+		let image = try loadImageFromData(jpegData)
+		let thumbBytes = try XCTUnwrap(thumbnailData(from: image, format: "jpg"))
+		let thumb = try SwiftarrImage(data: thumbBytes)
+		XCTAssertFalse(thumb.hasAlpha)
+		XCTAssertLessThanOrEqual(thumb.size.height, 200)
 	}
 
 	func testLoadImageFromData_OpaqueImageUnchanged() throws {
