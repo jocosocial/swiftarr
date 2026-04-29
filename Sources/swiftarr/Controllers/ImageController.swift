@@ -1,7 +1,6 @@
 import FluentSQL
 import Foundation
 import Vapor
-import gd
 import QRCodeSwift
 
 struct ImageController: APIRouteCollection {
@@ -174,20 +173,26 @@ struct ImageController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "QR Generation requires a string to generate in the 'string' query parameter.")
 		}
 		let code = try QRCode(urlString)
-		let xSize = Int32(code.imageCodes[0].count)
-		let ySize = Int32(code.imageCodes.count)
-		guard let srcImage = GDImage(width: Int(xSize), height: Int(ySize), type: .palette) else {
-			throw Abort(.internalServerError, reason: "Could not allocate image for QR Code.")
-		}
-		let white = gdImageColorAllocate(srcImage.internalImage, 0xFF, 0xFF, 0xFF)
-		let black = gdImageColorAllocate(srcImage.internalImage, 0, 0, 0)
-		for y: Int32 in 0..<ySize {
-			for x: Int32 in 0..<xSize {
-				gdImageSetPixel(srcImage.internalImage, x, y, code.imageCodes[Int(y)][Int(x)] ? black : white)
+		let xSize = code.imageCodes[0].count
+		let ySize = code.imageCodes.count
+
+		// Build an RGB pixel buffer from the QR code matrix
+		var pixels = [UInt8](repeating: 0, count: xSize * ySize * 3)
+		for y in 0..<ySize {
+			for x in 0..<xSize {
+				let offset = (y * xSize + x) * 3
+				let value: UInt8 = code.imageCodes[y][x] ? 0x00 : 0xFF
+				pixels[offset] = value
+				pixels[offset + 1] = value
+				pixels[offset + 2] = value
 			}
 		}
-		let dstImage = srcImage.resizedTo(width: 400, height: 400, applySmoothing: false)!
-		let pngData = try dstImage.export(as: .png)
+
+		let srcImage = try SwiftarrImage(width: xSize, height: ySize, pixels: pixels)
+		guard let dstImage = srcImage.resizedToNearest(width: 400, height: 400) else {
+			throw Abort(.internalServerError, reason: "Could not resize QR Code image.")
+		}
+		let pngData = try dstImage.exportAsPNG()
 		var headers: HTTPHeaders = [:]
 		// Check if file has been cached already and return NotModified response if the etags match
 		headers.replaceOrAdd(name: .eTag, value: "W/\"1\"")
@@ -256,41 +261,50 @@ struct ImageController: APIRouteCollection {
 		// This generator should then create a repeatable sequence of values for each user.
 		var gen = Xoshiro(seed: userID)
 
-		guard let srcImage = GDImage(width: 5, height: 5, type: .palette) else {
-			throw Abort(.internalServerError, reason: "Could not allocate image for identicon.")
-		}
-		let r1 = Int32.random(in: 0...127, using: &gen)
-		let g1 = Int32.random(in: 0...127, using: &gen)
-		let b1 = Int32.random(in: 0...127, using: &gen)
-		//		let color1 = gdImageColorClosest(srcImage.internalImage, r1, g1, b1)
-		let color1 = gdImageColorAllocate(srcImage.internalImage, r1, g1, b1)
-		var color2 = color1
+		let r1 = UInt8.random(in: 0...127, using: &gen)
+		let g1 = UInt8.random(in: 0...127, using: &gen)
+		let b1 = UInt8.random(in: 0...127, using: &gen)
+		var r2 = r1, g2 = g1, b2 = b1
 		for _ in 0...10 {
-			let r2 = Int32.random(in: 128...255, using: &gen)
-			let g2 = Int32.random(in: 128...255, using: &gen)
-			let b2 = Int32.random(in: 128...255, using: &gen)
-			if abs(r1 - r2) > 20 || abs(g1 - g2) > 20 || abs(b1 - b2) > 20 {
-				//				color2 = gdImageColorClosest(srcImage.internalImage, r1, g2, b2)
-				color2 = gdImageColorAllocate(srcImage.internalImage, r1, g2, b2)
+			let candidateR = UInt8.random(in: 128...255, using: &gen)
+			let candidateG = UInt8.random(in: 128...255, using: &gen)
+			let candidateB = UInt8.random(in: 128...255, using: &gen)
+			if abs(Int(r1) - Int(candidateR)) > 20 || abs(Int(g1) - Int(candidateG)) > 20 || abs(Int(b1) - Int(candidateB)) > 20 {
+				r2 = candidateR
+				g2 = candidateG
+				b2 = candidateB
 				break
 			}
 		}
 
-		for x: Int32 in 0...2 {
-			for y: Int32 in 0...4 {
-				let pixelColor = Bool.random(using: &gen) ? color1 : color2
-				gdImageSetPixel(srcImage.internalImage, x, y, pixelColor)
+		// Build a 5x5 RGB pixel buffer with mirror symmetry on the x-axis
+		var pixels = [UInt8](repeating: 0, count: 5 * 5 * 3)
+		for x in 0...2 {
+			for y in 0...4 {
+				let useColor1 = Bool.random(using: &gen)
+				let r: UInt8 = useColor1 ? r1 : r2
+				let g: UInt8 = useColor1 ? g1 : g2
+				let b: UInt8 = useColor1 ? b1 : b2
+				let offset = (y * 5 + x) * 3
+				pixels[offset] = r
+				pixels[offset + 1] = g
+				pixels[offset + 2] = b
 				if x < 2 {
-					gdImageSetPixel(srcImage.internalImage, 4 - x, y, pixelColor)
+					let mirrorOffset = (y * 5 + (4 - x)) * 3
+					pixels[mirrorOffset] = r
+					pixels[mirrorOffset + 1] = g
+					pixels[mirrorOffset + 2] = b
 				}
 			}
 		}
-		let dstImage = srcImage.resizedTo(width: 40, height: 40, applySmoothing: false)!
+
+		let srcImage = try SwiftarrImage(width: 5, height: 5, pixels: pixels)
+		guard let dstImage = srcImage.resizedToNearest(width: 40, height: 40) else {
+			throw Abort(.internalServerError, reason: "Could not resize identicon image.")
+		}
 		// JPEG compression was a bit faster than PNG, but produced images that were ~900 bytes,
 		// as opposed to ~200 bytes for PNGs.
-		// let jpegData = try dstImage.export(as: .jpg(quality: 70))
-		// return jpegData
-		let pngData = try dstImage.export(as: .png)
+		let pngData = try dstImage.exportAsPNG()
 		return pngData
 	}
 

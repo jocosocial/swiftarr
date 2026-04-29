@@ -43,11 +43,11 @@ Target: x86_64-unknown-linux-gnu
 
 ### Library Dependencies
 
-Swiftarr uses GD for image manipulation, and also links with jpeglib directly because of cases where GD is bad at its job. GD uses jpeglib, but chooses to ignore orientation directives in jpeg files, which necessitates a workaround.
+Swiftarr uses libvips for image manipulation, including format detection, EXIF orientation handling, alpha flattening, resizing, and animated GIF/WebP support.
 
-Install these with your system package manager:
-* Fedora: `gd-devel` `libjpeg-turbo-devel`
-* Ubuntu: `libgd-dev` `libjpeg-dev`
+Install with your system package manager:
+* Fedora: `vips-devel`
+* Ubuntu: `libvips-dev`
 
 ### Configuration (Optional)
 

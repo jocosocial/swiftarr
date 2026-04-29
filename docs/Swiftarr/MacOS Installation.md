@@ -51,10 +51,10 @@ Build config: +assertions
 
 ### Library Dependencies
 
-Swiftarr uses GD for image manipulation, and also links with jpeglib directly because of cases where GD is bad at its job. GD uses jpeglib, but chooses to ignore orientation directives in jpeg files, which necessitates a workaround.
+Swiftarr uses libvips for image manipulation, including format detection, EXIF orientation handling, alpha flattening, resizing, and animated GIF/WebP support.
 
 ```shell
-brew install gd
+brew install vips
 ```
 
 ### Configuration (Optional)

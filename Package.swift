@@ -1,4 +1,4 @@
-// swift-tools-version:6.0
+// swift-tools-version:6.2
 import PackageDescription
 
 let package = Package(
@@ -30,11 +30,15 @@ let package = Package(
 	    .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.6.0"),
 	    // Cross-platform QR Code generator. Linux doesn't have access to Core Image
 		.package(url: "https://github.com/ApolloZhu/swift_qrcodejs.git", from: "2.2.2"),
+		// FileType is a Swift port of file-type, used to detect image formats from magic bytes.
+		// Pinned to a fork until https://github.com/velocityzen/FileType/pull/3 is merged
+		// upstream — the fork renames its system zlib module to avoid colliding with
+		// ZIPFoundation's CZlib, which fails the Linux build.
+		.package(url: "https://github.com/penguinboi/FileType", revision: "acfd132f56e1c436276af13682a934d9364e3323"),
 	],
 	targets: [
-		.systemLibrary(name: "gd", pkgConfig: "gdlib", providers: [.apt(["libgd-dev"]), .brew(["gd"]), .yum(["gd-devel"])]),
-		.systemLibrary(name: "jpeg", pkgConfig: "libjpeg", providers: [.apt(["libjpeg-dev"]), .brew(["jpeg-turbo"]), .yum(["libjpeg-turbo-devel"])]),
-		.target(name: "gdOverrides", dependencies: ["gd", "jpeg"], publicHeadersPath: "."),
+		.systemLibrary(name: "Cvips", pkgConfig: "vips", providers: [.apt(["libvips-dev"]), .brew(["vips"]), .yum(["vips-devel"])]),
+		.target(name: "CvipsShim", dependencies: ["Cvips"], publicHeadersPath: "."),
 		.executableTarget(
 			name: "swiftarr",
 			dependencies: [
@@ -48,11 +52,10 @@ let package = Package(
 				.product(name: "Ink", package: "ink"),
 				.product(name: "CoreXLSX", package: "CoreXLSX"),
 				.product(name: "SwiftSoup", package: "SwiftSoup"),
-				"gd",
-				"jpeg",
-				"gdOverrides",
+				"CvipsShim",
 				"ZIPFoundation",
 				.product(name: "QRCodeSwift", package: "swift_qrcodejs"),
+				.product(name: "FileType", package: "FileType"),
 			],
 			resources: [
 				.copy("Resources"),
