@@ -100,4 +100,105 @@ class GeometryTests: XCTestCase {
 		XCTAssertEqual(color.greenComponent, 1.0, accuracy: 0.001)
 		XCTAssertEqual(color.blueComponent, 1.0, accuracy: 0.001)
 	}
+
+	// MARK: - Color int initializer (RGBA layout)
+
+	func testColor_IntInit_RGBA() {
+		// 0xFF000080: R=FF, G=00, B=00, A=80
+		let color = Color(hex: 0xFF000080)
+		XCTAssertEqual(color.redComponent, 1.0, accuracy: 0.001)
+		XCTAssertEqual(color.greenComponent, 0.0, accuracy: 0.001)
+		XCTAssertEqual(color.blueComponent, 0.0, accuracy: 0.001)
+		XCTAssertEqual(color.alphaComponent, 128.0 / 255.0, accuracy: 0.001)
+	}
+
+	func testColor_IntInit_RGBA_Opaque() {
+		// 0x00FF00FF: R=00, G=FF, B=00, A=FF (fully opaque green)
+		let color = Color(hex: 0x00FF00FF)
+		XCTAssertEqual(color.redComponent, 0.0, accuracy: 0.001)
+		XCTAssertEqual(color.greenComponent, 1.0, accuracy: 0.001)
+		XCTAssertEqual(color.blueComponent, 0.0, accuracy: 0.001)
+		XCTAssertEqual(color.alphaComponent, 1.0, accuracy: 0.001)
+	}
+
+	// MARK: - Color int initializer (ARGB layout)
+
+	func testColor_IntInit_ARGB() {
+		// 0x80FF0000 leadingAlpha=true: A=80, R=FF, G=00, B=00
+		let color = Color(hex: 0x80FF0000, leadingAlpha: true)
+		XCTAssertEqual(color.alphaComponent, 128.0 / 255.0, accuracy: 0.001)
+		XCTAssertEqual(color.redComponent, 1.0, accuracy: 0.001)
+		XCTAssertEqual(color.greenComponent, 0.0, accuracy: 0.001)
+		XCTAssertEqual(color.blueComponent, 0.0, accuracy: 0.001)
+	}
+
+	// MARK: - Color basic initializer + constants
+
+	func testColor_BasicInit() {
+		let color = Color(red: 0.25, green: 0.5, blue: 0.75, alpha: 1.0)
+		XCTAssertEqual(color.redComponent, 0.25, accuracy: 0.001)
+		XCTAssertEqual(color.greenComponent, 0.5, accuracy: 0.001)
+		XCTAssertEqual(color.blueComponent, 0.75, accuracy: 0.001)
+		XCTAssertEqual(color.alphaComponent, 1.0, accuracy: 0.001)
+	}
+
+	func testColor_NamedConstants() {
+		XCTAssertEqual(Color.red.redComponent, 1.0)
+		XCTAssertEqual(Color.green.greenComponent, 1.0)
+		XCTAssertEqual(Color.blue.blueComponent, 1.0)
+		XCTAssertEqual(Color.black.redComponent, 0.0)
+		XCTAssertEqual(Color.black.greenComponent, 0.0)
+		XCTAssertEqual(Color.black.blueComponent, 0.0)
+		XCTAssertEqual(Color.white.redComponent, 1.0)
+		XCTAssertEqual(Color.white.greenComponent, 1.0)
+		XCTAssertEqual(Color.white.blueComponent, 1.0)
+	}
+
+	// MARK: - Angle
+
+	func testAngle_RadiansInit() {
+		let angle = Angle(radians: .pi)
+		XCTAssertEqual(angle.radians, .pi, accuracy: 0.0001)
+		XCTAssertEqual(angle.degrees, 180.0, accuracy: 0.0001)
+	}
+
+	func testAngle_DegreesInit() {
+		let angle = Angle(degrees: 90)
+		XCTAssertEqual(angle.degrees, 90.0, accuracy: 0.0001)
+		XCTAssertEqual(angle.radians, .pi / 2.0, accuracy: 0.0001)
+	}
+
+	func testAngle_DegreesSetter_UpdatesRadians() {
+		var angle = Angle(degrees: 0)
+		angle.degrees = 360
+		XCTAssertEqual(angle.radians, 2 * .pi, accuracy: 0.0001)
+	}
+
+	func testAngle_Zero() {
+		XCTAssertEqual(Angle.zero.radians, 0.0, accuracy: 0.0001)
+		XCTAssertEqual(Angle.zero.degrees, 0.0, accuracy: 0.0001)
+	}
+
+	func testAngle_StaticFactories() {
+		XCTAssertEqual(Angle.radians(.pi).degrees, 180.0, accuracy: 0.0001)
+		XCTAssertEqual(Angle.degrees(180).radians, .pi, accuracy: 0.0001)
+	}
+
+	// MARK: - Point / Size / Rectangle
+
+	func testPoint_Int32InitMatchesIntInit() {
+		let pInt = Point(x: 5, y: 10)
+		let p32 = Point(x: Int32(5), y: Int32(10))
+		XCTAssertEqual(pInt.x, p32.x)
+		XCTAssertEqual(pInt.y, p32.y)
+	}
+
+	func testRectangle_ConvenienceInitMatchesPointSizeInit() {
+		let r1 = Rectangle(point: Point(x: 1, y: 2), size: Size(width: 3, height: 4))
+		let r2 = Rectangle(x: 1, y: 2, width: 3, height: 4)
+		XCTAssertEqual(r1.point.x, r2.point.x)
+		XCTAssertEqual(r1.point.y, r2.point.y)
+		XCTAssertEqual(r1.size.width, r2.size.width)
+		XCTAssertEqual(r1.size.height, r2.size.height)
+	}
 }
