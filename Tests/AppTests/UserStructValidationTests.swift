@@ -105,4 +105,58 @@ class UserStructValidationTests: XCTestCase {
 		let errs = try validationErrors(UserVerifyData.self, #"{"verification":"abc12345"}"#)
 		XCTAssertEqual(errs.count, 1)
 	}
+
+	// MARK: - UserCreateData
+
+	private func userCreateJSON(
+		username: String = "skyler",
+		password: String = "newpass1",
+		verification: String? = nil
+	) -> String {
+		var fields = [
+			#""username":"\#(username)""#,
+			#""password":"\#(password)""#,
+		]
+		if let v = verification {
+			fields.append(#""verification":"\#(v)""#)
+		}
+		return "{" + fields.joined(separator: ",") + "}"
+	}
+
+	func testUserCreate_Valid_NoVerification() throws {
+		XCTAssertEqual(try validationErrors(UserCreateData.self, userCreateJSON()), [])
+	}
+
+	func testUserCreate_Valid_WithVerification() throws {
+		let json = userCreateJSON(verification: "abc123")
+		XCTAssertEqual(try validationErrors(UserCreateData.self, json), [])
+	}
+
+	func testUserCreate_Valid_VerificationWithSpaces_NormalizedThenAccepted() throws {
+		// "abc 123" → "abc123" after lowercased + space-strip; 6 alphanumeric → valid
+		let json = userCreateJSON(verification: "abc 123")
+		XCTAssertEqual(try validationErrors(UserCreateData.self, json), [])
+	}
+
+	func testUserCreate_PasswordTooShort() throws {
+		let errs = try validationErrors(UserCreateData.self, userCreateJSON(password: "abc"))
+		XCTAssertTrue(errs.contains("password has a 6 character minimum"), "errs=\(errs)")
+	}
+
+	func testUserCreate_BadUsername_PropagatesUsernameValidations() throws {
+		let errs = try validationErrors(UserCreateData.self, userCreateJSON(username: "x"))
+		XCTAssertTrue(errs.contains("username has a 2 character minimum"), "errs=\(errs)")
+	}
+
+	func testUserCreate_VerificationWrongLength_Fails() throws {
+		let json = userCreateJSON(verification: "abc1234")
+		let errs = try validationErrors(UserCreateData.self, json)
+		XCTAssertTrue(errs.contains(where: { $0.contains("Malformed registration code") }), "errs=\(errs)")
+	}
+
+	func testUserCreate_VerificationNonAlphanumeric_Fails() throws {
+		let json = userCreateJSON(verification: "abc-12")
+		let errs = try validationErrors(UserCreateData.self, json)
+		XCTAssertTrue(errs.contains(where: { $0.contains("Malformed registration code") }), "errs=\(errs)")
+	}
 }
