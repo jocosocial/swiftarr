@@ -26,3 +26,26 @@ jobs:
         run: scripts/stack.sh -e production logs web
       - name: Test For Health
         run: .github/workflows/check_health.sh -e production
+
+  Test:
+    runs-on: ubuntu-24.04
+    container:
+      image: swift:6.2-noble
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install image system libraries
+        run: apt-get update && apt-get install -y libgd-dev libvips-dev
+      - name: Restore SwiftPM cache
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-swift-${{ hashFiles('Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-swift-
+      - name: Run tests
+        # Limited to pure-helper test classes that don't require app/DB spinup.
+        # SettingsTests and ClientControllerTests need a migrated+seeded database
+        # which a pristine CI postgres can't satisfy without infrastructure work
+        # outside the scope of this PR.
+        run: swift test --enable-test-discovery --filter "GeometryTests|ValidatingJSONDecoderTests|CruiseDateTests|ThemeCookieTests|CryptoHelperTests|DisabledFeaturesGroupTests|EventParserTests|TimeZoneChangeSetTests|UserStructValidationTests|ContentStructValidationTests|FezAndEventValidationTests|AdminStructValidationTests|DateExtensionTests|SettingsCalendarTests|ContentFilterableTests"
