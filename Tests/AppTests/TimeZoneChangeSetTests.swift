@@ -31,9 +31,11 @@ class TimeZoneChangeSetTests: XCTestCase {
 	func testAbbrevAtTime_EmptyChangeSet_ReturnsPortTimeZoneAbbrev() {
 		let set = TimeZoneChangeSet()
 		// With an empty set, falls through to Settings.shared.portTimeZone (default America/New_York).
-		// The abbreviation depends on whether the date is in DST, but it must be 3 chars and in {EST, EDT}.
+		// On macOS the abbreviation is "EDT"/"EST"; on Linux ICU returns "GMT-4"/"GMT-5" instead.
 		let summer = ISO8601DateFormatter().date(from: "2024-07-01T12:00:00Z")!
 		let abbrev = set.abbrevAtTime(summer)
-		XCTAssertTrue(["EDT", "EST"].contains(abbrev), "Got \(abbrev)")
+		let acceptable = ["EDT", "EST"]
+		let isGmtOffset = abbrev.range(of: #"^GMT[+-]\d+$"#, options: .regularExpression) != nil
+		XCTAssertTrue(acceptable.contains(abbrev) || isGmtOffset, "Got \(abbrev)")
 	}
 }
