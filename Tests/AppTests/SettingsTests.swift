@@ -73,9 +73,11 @@ class SettingsTests: XCTestCase, SwiftarrBaseTest {
 	// This date is in the past but is still within daylight time (UTC-4)
     // 2023 July 09 is a Sunday
 	func testPastDstDate() async throws {
-		let testDate = ISO8601DateFormatter().date(from: "2023-07-09T11:00:00Z")!
-		let resultDate = Settings.shared.getDateInCruiseWeek(from: testDate)
-		XCTAssertEqual(dstDate, resultDate)
+		try await withApp { app in
+			let testDate = ISO8601DateFormatter().date(from: "2023-07-09T11:00:00Z")!
+			let resultDate = Settings.shared.getDateInCruiseWeek(from: testDate)
+			XCTAssertEqual(dstDate, resultDate)
+		}
 	}
 
 	// This date is in the past but back in standard time (UTC-5).
