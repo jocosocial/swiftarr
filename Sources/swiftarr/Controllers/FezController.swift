@@ -1279,7 +1279,9 @@ extension FezController {
 		let readCount = pivot?.readCount ?? 0
 		let hiddenCount = pivot?.hiddenCount ?? 0
 		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
-		let start = (req.query[Int.self, at: "start"] ?? ((readCount - 1) / limit) * limit)
+		// `limit` can be 0; guard the division so ?limit=0 doesn't trap on `(readCount - 1) / limit`.
+		let defaultStart = limit > 0 ? ((readCount - 1) / limit) * limit : 0
+		let start = (req.query[Int.self, at: "start"] ?? defaultStart)
 			.clamped(to: 0...fez.postCount)
 		// get posts
 		let posts = try await FezPost.query(on: req.db)
