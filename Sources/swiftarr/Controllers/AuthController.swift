@@ -127,12 +127,13 @@ struct AuthController: APIRouteCollection {
 
 		// attempt data.recoveryKey match
 		var foundMatch = false
-		if normalizedKey == user.verification {
+		// A spent registration code is disabled by prefixing its stored `verification` with '*'.
+		// Only match an unspent verification, so the marked value ("*code") can't be replayed to
+		// reuse a spent code -- the password/recoveryKey paths below still accept any input.
+		if let verification = user.verification, !verification.hasPrefix("*"), normalizedKey == verification {
 			foundMatch = true
 			// prevent .verification from being used again
-			if let newVerification = user.verification {
-				user.verification = "*" + newVerification
-			}
+			user.verification = "*" + verification
 		}
 		else {
 			// password and recoveryKey require hash verification
