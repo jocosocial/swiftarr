@@ -1794,6 +1794,18 @@ public struct PostContentData: Content {
 	var postAsTwitarrTeam: Bool = false
 }
 
+extension PostContentData {
+	/// Decodes a post. `postAsModerator` and `postAsTwitarrTeam` may be omitted from the JSON,
+	/// in which case they decode as FALSE, matching their documented default semantics.
+	public init(from decoder: Decoder) throws {
+		let container = try decoder.container(keyedBy: CodingKeys.self)
+		text = try container.decode(String.self, forKey: .text)
+		images = try container.decode([ImageUploadData].self, forKey: .images)
+		postAsModerator = try container.decodeIfPresent(Bool.self, forKey: .postAsModerator) ?? false
+		postAsTwitarrTeam = try container.decodeIfPresent(Bool.self, forKey: .postAsTwitarrTeam) ?? false
+	}
+}
+
 extension PostContentData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
