@@ -50,21 +50,31 @@ extension Date {
 	}
 }
 
+/// Parses an ISO 8601 internet date-time, with or without fractional seconds.
+/// Swiftarr always emits fractional seconds but accepts timestamps that omit them.
+@available(OSX 10.13, *)
+private func dateFromISO8601(_ string: String) -> Date? {
+	if let date = ISO8601DateFormatter([.withInternetDateTime, .withFractionalSeconds]).date(from: string) {
+		return date
+	}
+	return ISO8601DateFormatter([.withInternetDateTime]).date(from: string)
+}
+
 @available(OSX 10.13, *)
 extension String {
-	/// Returns a `Date?` from an iso8601 string representation with milliseconds.
+	/// Returns a `Date?` from an iso8601 string representation, with or without fractional seconds.
 	var iso8601ms: Date? {
-		return ISO8601DateFormatter([.withInternetDateTime, .withFractionalSeconds]).date(from: self)
+		return dateFromISO8601(self)
 	}
 }
 
 @available(OSX 10.13, *)
 extension JSONDecoder.DateDecodingStrategy {
-	/// Custom decoding strategy for iso8601 strings with milliseconds.
+	/// Custom decoding strategy for iso8601 strings, with or without fractional seconds.
 	static let iso8601ms = custom {
 		let container = try $0.singleValueContainer()
 		let string = try container.decode(String.self)
-		guard let date = ISO8601DateFormatter([.withInternetDateTime, .withFractionalSeconds]).date(from: string) else {
+		guard let date = dateFromISO8601(string) else {
 			throw DecodingError.dataCorruptedError(
 				in: container,
 				debugDescription: "invalid format: " + string
