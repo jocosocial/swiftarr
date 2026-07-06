@@ -184,9 +184,9 @@ struct SwiftarrConfigurator {
 			}
 			Settings.shared.portTimeZone = portTimeZone
 		}
-		// This sets both the cruiseStartDateComponents and cruiseStartDayOfWeek from the same
-		// SWIFTARR_START_DATE value. If you don't specify this env var, the defaults in Settings.swift
-		// take over. That isn't quite as intelligent.
+		// This sets the cruiseStartDateComponents from the SWIFTARR_START_DATE value
+		// (cruiseStartDayOfWeek is derived from the components). If you don't specify this
+		// env var, the defaults in Settings.swift take over.
 		if let cruiseStartDate = Environment.get("SWIFTARR_START_DATE"), cruiseStartDate != "" {
 			let startFormatter = DateFormatter()
 			startFormatter.dateFormat = "yyyy-MM-dd"  // 2023-03-05
@@ -195,13 +195,9 @@ struct SwiftarrConfigurator {
 			}
 			Settings.shared.cruiseStartDateComponents = Calendar(identifier: .gregorian)
 				.dateComponents(
-					[.year, .month, .day, .weekday],
+					[.year, .month, .day],
 					from: date
 				)
-			guard let cruiseStartDayOfWeek = Settings.shared.cruiseStartDateComponents.weekday else {
-				fatalError("Cannot determine day-of-week from SWIFTARR_START_DATE.")
-			}
-			Settings.shared.cruiseStartDayOfWeek = cruiseStartDayOfWeek
 		}
 
 		// Late Day Flip in Site UI

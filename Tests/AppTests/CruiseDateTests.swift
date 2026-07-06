@@ -13,24 +13,18 @@ class CruiseDateTests: XCTestCase {
 
 	private var savedComponents: DateComponents!
 	private var savedLength: Int!
-	private var savedDayOfWeek: Int!
 
 	override func setUp() {
 		super.setUp()
 		savedComponents = Settings.shared.cruiseStartDateComponents
 		savedLength = Settings.shared.cruiseLengthInDays
-		savedDayOfWeek = Settings.shared.cruiseStartDayOfWeek
 		Settings.shared.cruiseStartDateComponents = fixtureStartComponents
 		Settings.shared.cruiseLengthInDays = 8
-		// Calendar weekday: Sunday=1, Saturday=7. The fixture cruise embarks on a Saturday,
-		// so this must align with cruiseStartDateComponents above.
-		Settings.shared.cruiseStartDayOfWeek = 7
 	}
 
 	override func tearDown() {
 		Settings.shared.cruiseStartDateComponents = savedComponents
 		Settings.shared.cruiseLengthInDays = savedLength
-		Settings.shared.cruiseStartDayOfWeek = savedDayOfWeek
 		super.tearDown()
 	}
 
@@ -100,5 +94,16 @@ class CruiseDateTests: XCTestCase {
 		// Sub-second portion must be zero — this is the function's whole reason for existing.
 		let nanos = Calendar(identifier: .gregorian).component(.nanosecond, from: stripped)
 		XCTAssertEqual(nanos, 0)
+	}
+
+	// MARK: - cruiseStartDayOfWeek derivation
+
+	func testCruiseStartDayOfWeek_DerivedFromStartDateComponents() {
+		// setUp pinned the fixture start to 2024-03-09, a Saturday.
+		XCTAssertEqual(Settings.shared.cruiseStartDayOfWeek, 7)
+		// Changing the start date must change the weekday with no separate bookkeeping.
+		// 2025-03-02 is a Sunday.
+		Settings.shared.cruiseStartDateComponents = DateComponents(year: 2025, month: 3, day: 2)
+		XCTAssertEqual(Settings.shared.cruiseStartDayOfWeek, 1)
 	}
 }
