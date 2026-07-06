@@ -7,6 +7,12 @@ public class SwiftarrImage {
 	/// The underlying libvips image pointer.
 	private var vipsImage: UnsafeMutablePointer<VipsImage>
 
+	/// Retains the encoded source buffer for images loaded via `init(data:)`. libvips loads encoded
+	/// buffers lazily and reads pixel data on demand, so the buffer must outlive the image. Holding it
+	/// here ties its lifetime to this instance instead of the caller's local `Data`. Nil for images
+	/// created from owned pixel data or derived from operations.
+	private let sourceData: Data?
+
 	/// Image dimensions.
 	public var size: Size {
 		let w = vips_image_get_width(vipsImage)
@@ -32,6 +38,7 @@ public class SwiftarrImage {
 		guard !data.isEmpty else {
 			throw ImageError.invalidImage(reason: "Image data is empty")
 		}
+		self.sourceData = data
 
 		let loaded: UnsafeMutablePointer<VipsImage>? = data.withUnsafeBytes { rawBuffer in
 			guard let baseAddress = rawBuffer.baseAddress else { return nil }
@@ -83,11 +90,13 @@ public class SwiftarrImage {
 		}
 		g_object_unref(memImage)
 		self.vipsImage = copyOut!
+		self.sourceData = nil
 	}
 
 	/// Internal init from an already-owned VipsImage pointer.
 	private init(vipsImage: UnsafeMutablePointer<VipsImage>) {
 		self.vipsImage = vipsImage
+		self.sourceData = nil
 	}
 
 	// MARK: - Operations
