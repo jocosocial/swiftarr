@@ -42,4 +42,16 @@ class EventParserTests: XCTestCase {
 			"Hello, world\nLine 2 & more"
 		)
 	}
+
+	// MARK: - parse edge cases
+
+	func testParse_EmptyString_ReturnsEmptyArray() throws {
+		// Empty input must not trap building `1..<0` (server-process crash).
+		XCTAssertEqual(try parser.parse("").count, 0)
+	}
+
+	func testParse_NewlineOnlyString_ReturnsEmptyArray() throws {
+		// split(whereSeparator:) drops empty subsequences, so a newline-only body is also empty.
+		XCTAssertEqual(try parser.parse("\n\n").count, 0)
+	}
 }

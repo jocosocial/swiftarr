@@ -14,6 +14,10 @@ final class EventParser {
 	/// - Returns: `[Event]` containing the events.
 	func parse(_ dataString: String) throws -> [Event] {
 		var icsArray = dataString.split(whereSeparator: \.isNewline)
+		// Empty input would make the unfold loop below build an invalid `1..<0` range and trap.
+		guard !icsArray.isEmpty else {
+			return []
+		}
 		// Unfold any folded lines
 		for icsIndex in (1..<icsArray.count).reversed() {
 			if let firstChar = icsArray[icsIndex].first, firstChar.isWhitespace {
