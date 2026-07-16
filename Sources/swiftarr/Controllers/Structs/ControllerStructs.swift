@@ -1142,7 +1142,9 @@ struct ImageUploadData: Content, Sendable {
 
 extension ImageUploadData {
 	init(_ filename: String? = nil, _ image: Data? = nil) {
-		self.filename = filename
+		// An empty filename comes from unused photo-form slots; treat it as "no image" so it
+		// doesn't get stored as a bogus empty filename on the post.
+		self.filename = filename?.isEmpty == true ? nil : filename
 		self.image = image
 	}
 }
