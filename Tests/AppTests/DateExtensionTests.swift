@@ -20,10 +20,11 @@ class DateExtensionTests: XCTestCase {
 		XCTAssertNotNil(parsed)
 	}
 
-	func testStringIso8601ms_RejectsStringWithoutMilliseconds() {
-		// Strict format — without fractional seconds, parser returns nil.
+	func testStringIso8601ms_ParsesStringWithoutMilliseconds() {
 		let parsed = "2024-03-12T15:00:00Z".iso8601ms
-		XCTAssertNil(parsed)
+		XCTAssertNotNil(parsed)
+		// Same instant as its fractional-seconds twin.
+		XCTAssertEqual(parsed, "2024-03-12T15:00:00.000Z".iso8601ms)
 	}
 
 	func testStringIso8601ms_RejectsGarbage() {
@@ -39,5 +40,21 @@ class DateExtensionTests: XCTestCase {
 		XCTAssertNotNil(parsed)
 		// Equality at millisecond precision.
 		XCTAssertEqual(parsed!.timeIntervalSince1970, original.timeIntervalSince1970, accuracy: 0.001)
+	}
+
+	// MARK: - JSONDecoder.DateDecodingStrategy.iso8601ms
+
+	func testIso8601msDecodingStrategy_AcceptsBothForms() throws {
+		let decoder = JSONDecoder()
+		decoder.dateDecodingStrategy = .iso8601ms
+		let json = #"["2024-03-12T15:00:00.000Z","2024-03-12T15:00:00Z"]"#
+		let dates = try decoder.decode([Date].self, from: json.data(using: .utf8)!)
+		XCTAssertEqual(dates[0], dates[1])
+	}
+
+	func testIso8601msDecodingStrategy_StillRejectsGarbage() {
+		let decoder = JSONDecoder()
+		decoder.dateDecodingStrategy = .iso8601ms
+		XCTAssertThrowsError(try decoder.decode([Date].self, from: #"["not a date"]"#.data(using: .utf8)!))
 	}
 }

@@ -97,4 +97,18 @@ class ContentStructValidationTests: XCTestCase {
 		let errs = try validationErrors(PostContentData.self, #"{"text":"\#(lines)","images":[],"postAsModerator":false,"postAsTwitarrTeam":false}"#)
 		XCTAssertTrue(errs.contains("posts are limited to 25 lines of text"), "errs=\(errs)")
 	}
+
+	func testPostContent_OmittedModeratorFlagsDecodeAsFalse() throws {
+		let data = #"{"text":"hello","images":[]}"#.data(using: .utf8)!
+		let post = try decoder.decode(PostContentData.self, from: data)
+		XCTAssertFalse(post.postAsModerator)
+		XCTAssertFalse(post.postAsTwitarrTeam)
+	}
+
+	func testPostContent_PresentModeratorFlagsAreRespected() throws {
+		let data = #"{"text":"hello","images":[],"postAsModerator":true,"postAsTwitarrTeam":true}"#.data(using: .utf8)!
+		let post = try decoder.decode(PostContentData.self, from: data)
+		XCTAssertTrue(post.postAsModerator)
+		XCTAssertTrue(post.postAsTwitarrTeam)
+	}
 }
