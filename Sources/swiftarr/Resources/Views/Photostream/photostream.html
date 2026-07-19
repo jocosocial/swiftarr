@@ -10,6 +10,8 @@
 							<span class="swiftarr-breadcrumb-item active" aria-current="page">#(currentEventTitle)</span>
 						#elseif(currentLocationName != nil):
 							<span class="swiftarr-breadcrumb-item active" aria-current="page">#(currentLocationName)</span>
+						#elseif(currentAuthor != nil):
+							<span class="swiftarr-breadcrumb-item active" aria-current="page">Photos by #userByline(currentAuthor, "short-nolink")</span>
 						#else:
 							<span class="swiftarr-breadcrumb-item active" aria-current="page">All Photos</span>
 						#endif
@@ -22,11 +24,13 @@
 						<b>Filtered by Location: #(currentLocationName)</b>
 					#elseif(currentEventID != nil):
 						<b>Filtered by Event</b>
+					#elseif(currentAuthor != nil):
+						<b>Photos by #userByline(currentAuthor)</b>
 					#else:
 						<b>All Photos</b>
 					#endif
 				</div>
-				#if(currentEventID == nil):
+				#if(currentEventID == nil && currentAuthor == nil):
 					<div class="col col-auto">
 						<div class="dropdown">
 							<button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="locationFilterMenu" data-bs-toggle="dropdown" aria-expanded="false">
@@ -60,6 +64,7 @@
 							#else:
 								<h5>#(photo.title)</h5>
 							#endif
+							<div>Posted by #userByline(photo.author)</div>
 							<div>#staticTime(photo.createdAt)</div>
 							<a class="btn btn-primary" role="button" href="photostream/#(photo.postID)">link</a>
 							<a class="btn btn-primary" role="button" href="photostream/report/#(photo.postID)">Report</a>
