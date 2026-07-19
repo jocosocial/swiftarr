@@ -185,8 +185,8 @@ struct ModerationController: APIRouteCollection {
 	/// - Throws: 403 error if the user is not an admin.
 	/// - Returns: An array of `ModeratorActionLogData` records.
 	func moderatorActionLogHandler(_ req: Request) async throws -> ModeratorActionLogResponseData {
-		let start = (req.query[Int.self, at: "start"] ?? 0)
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...200)
+		let start = Pagination.start(req.query[Int.self, at: "start"])
+		let limit = Pagination.limit(req.query[Int.self, at: "limit"], maximum: 200)
 		let query = ModeratorAction.query(on: req.db)
 		let totalActionCount = try await query.count()
 		let result = try await query.copy().range(start..<(start + limit)).sort(\.$createdAt, .descending).all()

@@ -47,8 +47,8 @@ struct BoardgameController: APIRouteCollection {
 		}
 		let user = req.auth.get(UserCacheData.self)
 		let filters = try req.query.decode(GameQueryOptions.self)
-		let start = filters.start ?? 0
-		let limit = (filters.limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+		let start = Pagination.start(filters.start)
+		let limit = Pagination.limit(filters.limit, maximum: Settings.shared.maximumTwarrts)
 		let query = Boardgame.query(on: req.db).with(\.$expansions)
 		if let search = filters.search {
 			query.fullTextFilter(\.$gameName, search)
@@ -164,8 +164,8 @@ struct BoardgameController: APIRouteCollection {
 	func recommendGames(_ req: Request) async throws -> BoardgameResponseData {
 		let user = req.auth.get(UserCacheData.self)
 		let data = try ValidatingJSONDecoder().decode(BoardgameRecommendationData.self, fromBodyOf: req)
-		let start = (req.query[Int.self, at: "start"] ?? 0)
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+		let start = Pagination.start(req.query[Int.self, at: "start"])
+		let limit = Pagination.limit(req.query[Int.self, at: "limit"], maximum: Settings.shared.maximumTwarrts)
 		let query = Boardgame.query(on: req.db).with(\.$expansions).filter(\.$minPlayers <= data.numPlayers)
 			.filter(\.$maxPlayers >= data.numPlayers)
 			.filter(\.$avgPlayingTime <= data.timeToPlay)

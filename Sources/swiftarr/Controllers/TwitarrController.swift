@@ -67,7 +67,7 @@ public struct TwarrtQueryOptions: Content {
 	}
 
 	func computedLimit() -> Int {
-		return limit ?? 50
+		return Pagination.limit(limit, maximum: Settings.shared.maximumTwarrts)
 	}
 
 	func buildQuery(baseURL: String, anchor: Int, startOffset: Int) -> String? {
@@ -290,8 +290,8 @@ struct TwitarrController: APIRouteCollection {
 		let filters = try req.query.decode(TwarrtQueryOptions.self)
 
 		// Query builder always filters out blocks and mutes, and the range always applies.
-		let start = filters.start ?? 0
-		let limit = (filters.limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+		let start = Pagination.start(filters.start)
+		let limit = Pagination.limit(filters.limit, maximum: Settings.shared.maximumTwarrts)
 		var postFilterMentions: String? = nil
 		var applyMutes = true
 		let twarrtQuery = Twarrt.query(on: req.db)

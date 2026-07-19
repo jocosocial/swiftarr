@@ -42,11 +42,11 @@ struct FezController: APIRouteCollection {
 		}
 
 		func calcStart() -> Int {
-			return start ?? 0
+			return Pagination.start(start)
 		}
 
 		func calcLimit() -> Int {
-			return (limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+			return Pagination.limit(limit, maximum: Settings.shared.maximumTwarrts)
 		}
 
 		// Used for: dbQuery.range(urlQuery.calcRange())
@@ -228,8 +228,8 @@ struct FezController: APIRouteCollection {
 	func ownerHandler(_ req: Request) async throws -> FezListData {
 		let urlQuery = try req.query.decode(FezURLQueryStruct.self)
 		let user = try req.auth.require(UserCacheData.self)
-		let start = (req.query[Int.self, at: "start"] ?? 0)
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+		let start = Pagination.start(req.query[Int.self, at: "start"])
+		let limit = Pagination.limit(req.query[Int.self, at: "limit"], maximum: Settings.shared.maximumTwarrts)
 		let query = FriendlyFez.query(on: req.db).filter(\.$owner.$id == user.userID)
 			.join(FezParticipant.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
 			.filter(FezParticipant.self, \.$user.$id == user.userID)
@@ -1278,10 +1278,9 @@ extension FezController {
 	{
 		let readCount = pivot?.readCount ?? 0
 		let hiddenCount = pivot?.hiddenCount ?? 0
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
-		// `limit` can be 0; guard the division so ?limit=0 doesn't trap on `(readCount - 1) / limit`.
-		let defaultStart = limit > 0 ? ((readCount - 1) / limit) * limit : 0
-		let start = (req.query[Int.self, at: "start"] ?? defaultStart)
+		let limit = Pagination.limit(req.query[Int.self, at: "limit"], maximum: Settings.shared.maximumTwarrts)
+		let defaultStart = ((readCount - 1) / limit) * limit
+		let start = Pagination.start(req.query[Int.self, at: "start"], default: defaultStart)
 			.clamped(to: 0...fez.postCount)
 		// get posts
 		let posts = try await FezPost.query(on: req.db)

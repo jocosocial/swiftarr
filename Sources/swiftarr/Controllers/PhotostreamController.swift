@@ -43,8 +43,12 @@ struct PhotostreamController: APIRouteCollection {
 		var limit = 30
 		var photoCount = 0
 		if user.accessLevel.hasAccess(.moderator) {
-			start = req.query[Int.self, at: "start"] ?? 0
-			limit = req.query[Int.self, at: "limit"] ?? 30
+			start = Pagination.start(req.query[Int.self, at: "start"])
+			limit = Pagination.limit(
+				req.query[Int.self, at: "limit"],
+				default: 30,
+				maximum: Settings.shared.maximumTwarrts
+			)
 		}
 		
 		// Get filter parameters
@@ -263,4 +267,3 @@ struct PhotostreamController: APIRouteCollection {
 	}
 
 }
-

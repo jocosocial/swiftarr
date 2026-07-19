@@ -51,8 +51,8 @@ struct KaraokeController: APIRouteCollection {
 			var limit: Int?
 		}
 		let filters = try req.query.decode(SongQueryOptions.self)
-		let start = filters.start ?? 0
-		let limit = (filters.limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+		let start = Pagination.start(filters.start)
+		let limit = Pagination.limit(filters.limit, maximum: Settings.shared.maximumTwarrts)
 		let songQuery = KaraokeSong.query(on: req.db).sort(\.$artist, .ascending).sort(\.$title, .ascending)
 		var filteringLetters = false
 		if let search = filters.search {
@@ -154,8 +154,8 @@ struct KaraokeController: APIRouteCollection {
 			var limit: Int?
 		}
 		let filters = try req.query.decode(QueryOptions.self)
-		let start = filters.start ?? 0
-		let limit = (filters.limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+		let start = Pagination.start(filters.start)
+		let limit = Pagination.limit(filters.limit, maximum: Settings.shared.maximumTwarrts)
 		let songQuery = KaraokePlayedSong.query(on: req.db)
 		if let search = filters.search {
 			songQuery.join(KaraokeSong.self, on: \KaraokePlayedSong.$song.$id == \KaraokeSong.$id).group(.or) { (or) in

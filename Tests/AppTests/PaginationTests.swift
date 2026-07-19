@@ -30,6 +30,10 @@ class PaginationTests: XCTestCase {
 		XCTAssertEqual(Pagination.limit(201, maximum: 200), 200)
 	}
 
+	func testLimitStaysNonzeroWhenMaximumIsMisconfigured() {
+		XCTAssertEqual(Pagination.limit(10, maximum: 0), 1)
+	}
+
 	func testLimitPreservesInRangeValues() {
 		XCTAssertEqual(Pagination.limit(25, maximum: 200), 25)
 	}
