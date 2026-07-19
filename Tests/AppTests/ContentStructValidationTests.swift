@@ -111,4 +111,14 @@ class ContentStructValidationTests: XCTestCase {
 		XCTAssertTrue(post.postAsModerator)
 		XCTAssertTrue(post.postAsTwitarrTeam)
 	}
+
+	// MARK: - ClientSettingsData
+
+	func testClientSettings_EncodesMaxImageSize() throws {
+		let settings = ClientSettingsData(installationID: "test-installation")
+		let data = try JSONEncoder().encode(settings)
+		let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+		XCTAssertEqual(json["maxImageSize"] as? Int, Settings.shared.maxImageSize)
+	}
 }
