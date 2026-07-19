@@ -1,8 +1,7 @@
 import XCTVapor
 @testable import swiftarr
 
-// Tests for the RCFValidatable conformances on content-creation request structs:
-// ForumCreateData, NoteCreateData, PostContentData.
+// Tests for content-creation request validation and lightweight Content response encoding.
 class ContentStructValidationTests: XCTestCase {
 
 	private let decoder = ValidatingJSONDecoder()
