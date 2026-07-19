@@ -113,7 +113,7 @@ struct PhotostreamController: APIRouteCollection {
 	/// `/api/v3/photostream/placenames`.
 	/// 
 	/// - Parameter `PhotostreamUploadData`: In the request body.
-	/// - Returns: 200 OK if upload successful.
+	/// - Returns: 200 OK with the created `PhotostreamImageData` if upload is successful.
 	func photostreamUploadHandler(_ req: Request) async throws -> Response {
 		let user = try req.auth.require(UserCacheData.self)
 		try user.guardCanCreateContent(customErrorString: "user cannot post to photostream")
@@ -147,8 +147,14 @@ struct PhotostreamController: APIRouteCollection {
 		let streamPhoto = StreamPhoto(image: filename, captureTime: newPostData.createdAt, user: user, atEvent: matchingEvent,
 				boatLocation: boatLocation)
 		try await streamPhoto.save(on: req.db)
+		let photoData = try PhotostreamImageData(streamPhoto: streamPhoto, author: user.makeHeader())
+		return try makeUploadResponse(photo: photoData, rateLimit: Settings.shared.photostreamUploadRateLimit)
+	}
+
+	func makeUploadResponse(photo: PhotostreamImageData, rateLimit: TimeInterval) throws -> Response {
 		let response = Response(status: .ok)
-		response.headers.add(name: "Retry-After", value: "\(Settings.shared.photostreamUploadRateLimit)")
+		response.headers.add(name: "Retry-After", value: "\(rateLimit)")
+		try response.content.encode(photo)
 		return response
 	}
 	
@@ -263,4 +269,3 @@ struct PhotostreamController: APIRouteCollection {
 	}
 
 }
-

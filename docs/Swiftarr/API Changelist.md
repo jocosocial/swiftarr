@@ -223,3 +223,7 @@ associated AddedToChat field value increase.
 
 ## Mar 01, 2026
 * `GET /api/v3/fez/joined` with `onlynew=[true,false]` now include/exclude newly added-to fezzes.
+
+## Jul 19, 2026
+* `POST /api/v3/photostream/upload` now returns the created
+  `PhotostreamImageData` in its successful response body.

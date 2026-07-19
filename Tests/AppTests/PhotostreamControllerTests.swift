@@ -1,5 +1,6 @@
-import XCTest
 import XCTVapor
+import XCTest
+
 @testable import swiftarr
 
 final class PhotostreamControllerTests: XCTestCase {
@@ -20,10 +21,11 @@ final class PhotostreamControllerTests: XCTestCase {
 			location: PhotoStreamBoatLocation.onBoat.rawValue
 		)
 
-		let response = try PhotostreamController().makeUploadResponse(
-			photo: photo,
-			rateLimit: 900
-		)
+		let response = try PhotostreamController()
+			.makeUploadResponse(
+				photo: photo,
+				rateLimit: 900
+			)
 
 		XCTAssertEqual(response.status, .ok)
 		XCTAssertEqual(response.headers.first(name: "Retry-After"), "900.0")
