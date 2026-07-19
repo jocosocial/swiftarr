@@ -1,8 +1,7 @@
 import XCTVapor
 @testable import swiftarr
 
-// Tests for the RCFValidatable conformances on content-creation request structs:
-// ForumCreateData, NoteCreateData, PostContentData.
+// Tests for content-creation request validation and lightweight Content response encoding.
 class ContentStructValidationTests: XCTestCase {
 
 	private let decoder = ValidatingJSONDecoder()
@@ -110,5 +109,15 @@ class ContentStructValidationTests: XCTestCase {
 		let post = try decoder.decode(PostContentData.self, from: data)
 		XCTAssertTrue(post.postAsModerator)
 		XCTAssertTrue(post.postAsTwitarrTeam)
+	}
+
+	// MARK: - ClientSettingsData
+
+	func testClientSettings_EncodesMaxImageSize() throws {
+		let settings = ClientSettingsData(installationID: "test-installation")
+		let data = try JSONEncoder().encode(settings)
+		let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+		XCTAssertEqual(json["maxImageSize"] as? Int, Settings.shared.maxImageSize)
 	}
 }

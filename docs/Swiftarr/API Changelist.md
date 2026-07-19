@@ -223,3 +223,6 @@ associated AddedToChat field value increase.
 
 ## Mar 01, 2026
 * `GET /api/v3/fez/joined` with `onlynew=[true,false]` now include/exclude newly added-to fezzes.
+
+## Jul 19, 2026
+* `GET /api/v3/client/settings` now also includes `maxImageSize`, the maximum uploadable image size in bytes.
