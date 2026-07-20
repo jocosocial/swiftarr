@@ -21,26 +21,31 @@ struct SitePhotostreamController: SiteControllerUtils {
 	// user confusion as to which photo you'd be reporting play a part.
 	//
 	// Mods get pagination when seeing this page; the `start` and `limit` query parameters work.
-	// Supports filtering by `eventID` or `locationName` query parameters.
+	// Supports filtering by `eventID`, `locationName`, or `byUser` query parameters.
 	func showPhotostream(_ req: Request) async throws -> View {
-		// Get query parameters for filtering
-		let eventID = req.query[UUID.self, at: "eventID"]
-		let locationName = req.query[String.self, at: "locationName"]
-		let start = req.query[Int.self, at: "start"]
-		let limit = req.query[Int.self, at: "limit"]
+		let filters = PhotostreamQueryOptions(
+			start: req.query[Int.self, at: "start"],
+			limit: req.query[Int.self, at: "limit"],
+			eventID: req.query[UUID.self, at: "eventID"],
+			locationName: req.query[String.self, at: "locationName"],
+			byUser: req.query[UUID.self, at: "byUser"]
+		)
 		
 		// Build query items for API call
 		var queryItems: [URLQueryItem] = []
-		if let eventID = eventID {
+		if let eventID = filters.eventID {
 			queryItems.append(URLQueryItem(name: "eventID", value: eventID.uuidString))
 		}
-		if let locationName = locationName {
+		if let locationName = filters.locationName {
 			queryItems.append(URLQueryItem(name: "locationName", value: locationName))
 		}
-		if let start = start {
+		if let byUser = filters.byUser {
+			queryItems.append(URLQueryItem(name: "byUser", value: byUser.uuidString))
+		}
+		if let start = filters.start {
 			queryItems.append(URLQueryItem(name: "start", value: String(start)))
 		}
-		if let limit = limit {
+		if let limit = filters.limit {
 			queryItems.append(URLQueryItem(name: "limit", value: String(limit)))
 		}
 		
@@ -111,15 +116,17 @@ struct SitePhotostreamController: SiteControllerUtils {
 			var currentEventID: UUID?
 			var currentEventTitle: String?
 			var currentLocationName: String?
+			var currentAuthor: UserHeader?
 
-			init(_ req: Request, photostream: PhotostreamListData, locations: [String], eventID: UUID?, locationName: String?) {
+			init(_ req: Request, photostream: PhotostreamListData, locations: [String], filters: PhotostreamQueryOptions) {
 				trunk = .init(req, title: "Twitarr", tab: .home)
 				self.photos = photostream.photos.map { PhotostreamPhotoContext($0) }
 				self.locations = locations.map { LocationFilterItem($0) }
-				self.currentEventID = eventID
-				self.currentLocationName = locationName
+				self.currentEventID = filters.eventID
+				self.currentLocationName = filters.locationName
+				self.currentAuthor = filters.byUser.flatMap { try? req.userCache.getHeader($0) }
 				// Get event title from first photo if filtering by event
-				if let eventID = eventID, let firstPhoto = photostream.photos.first, let event = firstPhoto.event, event.eventID == eventID {
+				if let eventID = filters.eventID, let firstPhoto = photostream.photos.first, let event = firstPhoto.event, event.eventID == eventID {
 					self.currentEventTitle = event.title
 				} else {
 					self.currentEventTitle = nil
@@ -132,18 +139,21 @@ struct SitePhotostreamController: SiteControllerUtils {
 					var queryItems: [URLQueryItem] = []
 					queryItems.append(URLQueryItem(name: "start", value: String(pageIndex * photostream.paginator.limit)))
 					queryItems.append(URLQueryItem(name: "limit", value: String(photostream.paginator.limit)))
-					if let eventID = eventID {
+					if let eventID = filters.eventID {
 						queryItems.append(URLQueryItem(name: "eventID", value: eventID.uuidString))
 					}
-					if let locationName = locationName {
+					if let locationName = filters.locationName {
 						queryItems.append(URLQueryItem(name: "locationName", value: locationName))
+					}
+					if let byUser = filters.byUser {
+						queryItems.append(URLQueryItem(name: "byUser", value: byUser.uuidString))
 					}
 					components.queryItems = queryItems
 					return components.string ?? "/photostream"
 				}
 			}
 		}
-		let ctx = PhotostreamPageContext(req, photostream: photostream, locations: locationsData.locations, eventID: eventID, locationName: locationName)
+		let ctx = PhotostreamPageContext(req, photostream: photostream, locations: locationsData.locations, filters: filters)
 		return try await req.view.render("Photostream/photostream", ctx)		
 	}
 
