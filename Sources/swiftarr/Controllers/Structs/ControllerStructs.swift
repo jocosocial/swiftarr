@@ -2798,6 +2798,8 @@ public struct ClientSettingsData: Content {
 	var minAccessLevel: String
 	/// Maximum number of images allowed per forum post.
 	var maxForumPostImages: Int
+	/// Maximum size of a single uploaded image, in bytes.
+	var maxImageSize: Int
 	/// Unique identifier for this Postgres database installation (from pg_control_system())
 	var installationID: String
 }
@@ -2815,6 +2817,7 @@ extension ClientSettingsData {
 		self.enablePreregistration = Settings.shared.enablePreregistration
 		self.minAccessLevel = Settings.shared.minAccessLevel.rawValue
 		self.maxForumPostImages = Settings.shared.maxForumPostImages
+		self.maxImageSize = Settings.shared.maxImageSize
 		self.installationID = installationID
 	}
 }
