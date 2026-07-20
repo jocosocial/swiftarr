@@ -227,3 +227,5 @@ associated AddedToChat field value increase.
 ## Jul 19, 2026
 * `GET /api/v3/client/settings` now also includes `maxImageSize`, the maximum uploadable image size in bytes.
 * `GET /api/v3/photostream` now supports a `byUser` UUID query parameter.
+* `POST /api/v3/photostream/upload` now returns the created
+  `PhotostreamImageData` in its successful response body.
