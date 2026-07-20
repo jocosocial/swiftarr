@@ -39,15 +39,21 @@ struct PhotostreamController: APIRouteCollection {
 		guard user.accessLevel != .banned else {
 			throw Abort(.unauthorized, reason: "User is banned, and cannot access this resource.")
 		}
-		var start = 0
-		var limit = 30
+		let pagination: Pagination
 		var photoCount = 0
 		if user.accessLevel.hasAccess(.moderator) {
-			start = Pagination.start(req.query[Int.self, at: "start"])
-			limit = Pagination.limit(
-				req.query[Int.self, at: "limit"],
-				default: 30,
-				maximum: Settings.shared.maximumTwarrts
+			pagination = Pagination(
+				on: req,
+				defaultLimit: 30,
+				maxPageSize: Settings.shared.maximumTwarrts
+			)
+		}
+		else {
+			pagination = Pagination(
+				start: nil,
+				limit: nil,
+				defaultLimit: 30,
+				maxPageSize: Settings.shared.maximumTwarrts
 			)
 		}
 		
@@ -72,7 +78,10 @@ struct PhotostreamController: APIRouteCollection {
 				query = query.filter(\.$boatLocation == boatLocation)
 			} else {
 				// Invalid location name, return empty results
-				return PhotostreamListData(photos: [], paginator: Paginator(total: 0, start: start, limit: limit))
+				return PhotostreamListData(
+					photos: [],
+					paginator: Paginator(total: 0, start: pagination.start, limit: pagination.limit)
+				)
 			}
 		}
 		
@@ -84,8 +93,7 @@ struct PhotostreamController: APIRouteCollection {
 		// Fetch photos with pagination
 		let photos = try await query
 			.sort(\.$id, .descending)
-			.offset(start)
-			.limit(limit)
+			.range(pagination.range)
 			.with(\.$atEvent, withDeleted: true)
 			.all()
 		
@@ -96,7 +104,10 @@ struct PhotostreamController: APIRouteCollection {
 		if photoCount == 0 {
 			photoCount = imageData.count
 		}
-		return PhotostreamListData(photos: imageData, paginator: Paginator(total: photoCount, start: start, limit: limit))
+		return PhotostreamListData(
+			photos: imageData,
+			paginator: Paginator(total: photoCount, start: pagination.start, limit: pagination.limit)
+		)
 	}
 	
 	/// `GET /api/v3/photostream/placenames`

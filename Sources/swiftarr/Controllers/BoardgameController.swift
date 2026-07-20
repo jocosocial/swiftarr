@@ -47,8 +47,11 @@ struct BoardgameController: APIRouteCollection {
 		}
 		let user = req.auth.get(UserCacheData.self)
 		let filters = try req.query.decode(GameQueryOptions.self)
-		let start = Pagination.start(filters.start)
-		let limit = Pagination.limit(filters.limit, maximum: Settings.shared.maximumTwarrts)
+		let pagination = Pagination(
+			start: filters.start,
+			limit: filters.limit,
+			maxPageSize: Settings.shared.maximumTwarrts
+		)
 		let query = Boardgame.query(on: req.db).with(\.$expansions)
 		if let search = filters.search {
 			query.fullTextFilter(\.$gameName, search)
@@ -58,9 +61,12 @@ struct BoardgameController: APIRouteCollection {
 				.filter(BoardgameFavorite.self, \.$user.$id == user.userID)
 		}
 		let totalGames = try await query.copy().count()
-		let games = try await query.sort(\.$bggGameName, .ascending).range(start..<(start + limit)).all()
+		let games = try await query.sort(\.$bggGameName, .ascending).range(pagination.range).all()
 		let gamesArray = try await buildBoardgameData(for: user, games: games, on: req.db)
-		return BoardgameResponseData(gameArray: gamesArray, paginator: Paginator(total: totalGames, start: start, limit: limit))
+		return BoardgameResponseData(
+			gameArray: gamesArray,
+			paginator: Paginator(total: totalGames, start: pagination.start, limit: pagination.limit)
+		)
 	}
 
 	/// `GET /api/v3/boardgames/:boardgameID
@@ -164,8 +170,7 @@ struct BoardgameController: APIRouteCollection {
 	func recommendGames(_ req: Request) async throws -> BoardgameResponseData {
 		let user = req.auth.get(UserCacheData.self)
 		let data = try ValidatingJSONDecoder().decode(BoardgameRecommendationData.self, fromBodyOf: req)
-		let start = Pagination.start(req.query[Int.self, at: "start"])
-		let limit = Pagination.limit(req.query[Int.self, at: "limit"], maximum: Settings.shared.maximumTwarrts)
+		let pagination = Pagination(on: req, maxPageSize: Settings.shared.maximumTwarrts)
 		let query = Boardgame.query(on: req.db).with(\.$expansions).filter(\.$minPlayers <= data.numPlayers)
 			.filter(\.$maxPlayers >= data.numPlayers)
 			.filter(\.$avgPlayingTime <= data.timeToPlay)
@@ -201,9 +206,12 @@ struct BoardgameController: APIRouteCollection {
 			.sorted { $0.score > $1.score }
 
 		let orderedPageOfGames = orderedGames.enumerated()
-			.compactMap { (start...(start + limit)).contains($0.0) ? $0.1.game : nil }
+			.compactMap { pagination.range.contains($0.0) ? $0.1.game : nil }
 		let gamesArray = try await buildBoardgameData(for: user, games: orderedPageOfGames, on: req.db)
-		return BoardgameResponseData(gameArray: gamesArray, paginator: Paginator(total: orderedGames.count, start: start, limit: limit))
+		return BoardgameResponseData(
+			gameArray: gamesArray,
+			paginator: Paginator(total: orderedGames.count, start: pagination.start, limit: pagination.limit)
+		)
 	}
 
 	/// `POST /api/v3/boardgames/reload`

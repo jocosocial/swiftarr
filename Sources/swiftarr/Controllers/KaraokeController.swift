@@ -51,8 +51,11 @@ struct KaraokeController: APIRouteCollection {
 			var limit: Int?
 		}
 		let filters = try req.query.decode(SongQueryOptions.self)
-		let start = Pagination.start(filters.start)
-		let limit = Pagination.limit(filters.limit, maximum: Settings.shared.maximumTwarrts)
+		let pagination = Pagination(
+			start: filters.start,
+			limit: filters.limit,
+			maxPageSize: Settings.shared.maximumTwarrts
+		)
 		let songQuery = KaraokeSong.query(on: req.db).sort(\.$artist, .ascending).sort(\.$title, .ascending)
 		var filteringLetters = false
 		if let search = filters.search {
@@ -112,7 +115,7 @@ struct KaraokeController: APIRouteCollection {
 		}
 
 		let totalFoundSongs = try await songQuery.count()
-		let songs = try await songQuery.range(start..<(start + limit)).with(\.$sungBy).all()
+		let songs = try await songQuery.range(pagination.range).with(\.$sungBy).all()
 		let songData = try songs.map { song -> KaraokeSongData in
 			// Fluent doesn't seem to have an optional joined() variant; if we do a left join to join KaraokeFavorite,
 			// there can be songs that aren't favorited in the results. But joined() always returns a model, or throws if it can't.
@@ -121,7 +124,12 @@ struct KaraokeController: APIRouteCollection {
 			let isFavorite = filteringFavorites ? true : (try? song.joined(KaraokeFavorite.self)) != nil
 			return try KaraokeSongData(with: song, isFavorite: isFavorite)
 		}
-		return KaraokeSongResponseData(totalSongs: totalFoundSongs, start: start, limit: limit, songs: songData)
+		return KaraokeSongResponseData(
+			totalSongs: totalFoundSongs,
+			start: pagination.start,
+			limit: pagination.limit,
+			songs: songData
+		)
 	}
 
 	/// `GET /api/v3/karaoke/:song_id`
@@ -154,8 +162,11 @@ struct KaraokeController: APIRouteCollection {
 			var limit: Int?
 		}
 		let filters = try req.query.decode(QueryOptions.self)
-		let start = Pagination.start(filters.start)
-		let limit = Pagination.limit(filters.limit, maximum: Settings.shared.maximumTwarrts)
+		let pagination = Pagination(
+			start: filters.start,
+			limit: filters.limit,
+			maxPageSize: Settings.shared.maximumTwarrts
+		)
 		let songQuery = KaraokePlayedSong.query(on: req.db)
 		if let search = filters.search {
 			songQuery.join(KaraokeSong.self, on: \KaraokePlayedSong.$song.$id == \KaraokeSong.$id).group(.or) { (or) in
@@ -165,7 +176,7 @@ struct KaraokeController: APIRouteCollection {
 			}
 		}
 		let songCount = try await songQuery.count()
-		let recentSongs = try await songQuery.sort(\.$createdAt, .descending).range(start..<(start + limit)).with(\.$song).all()
+		let recentSongs = try await songQuery.sort(\.$createdAt, .descending).range(pagination.range).with(\.$song).all()
 		let favoriteSongIDs: Set<UUID>
 		if let user = try? req.auth.require(UserCacheData.self) {
 			let favorites = try await KaraokeFavorite.query(on: req.db).filter(\.$user.$id == user.userID).all()
@@ -176,7 +187,10 @@ struct KaraokeController: APIRouteCollection {
 		let results = recentSongs.map {
 			KaraokePerformedSongsData(songID: $0.$song.id, artist: $0.song.artist, songName: $0.song.title, performers: $0.performers, time: $0.createdAt ?? Date(), isFavorite: favoriteSongIDs.contains($0.$song.id))
 		}
-		return KaraokePerformedSongsResult(songs: results, paginator: Paginator(total: songCount, start: start, limit: limit))
+		return KaraokePerformedSongsResult(
+			songs: results,
+			paginator: Paginator(total: songCount, start: pagination.start, limit: pagination.limit)
+		)
 	}
 
 	/// `POST /api/v3/karaoke/:songID/favorite`

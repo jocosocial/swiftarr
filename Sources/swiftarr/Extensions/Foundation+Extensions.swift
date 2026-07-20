@@ -129,18 +129,6 @@ extension Comparable {
 	}
 }
 
-/// Normalizes the common `start` and `limit` URL query parameters before they
-/// are used to build database ranges.
-enum Pagination {
-	static func start(_ requested: Int?, default defaultValue: Int = 0) -> Int {
-		return max(requested ?? defaultValue, 0)
-	}
-
-	static func limit(_ requested: Int?, default defaultValue: Int = 50, maximum: Int) -> Int {
-		return (requested ?? defaultValue).clamped(to: 1...max(maximum, 1))
-	}
-}
-
 // Another thing Foundation ought to have. String(substring) requires a non-optional substring.
 // let x: String? = substring?.string -- uses chaining to allow an optional substring to be converted into an optional String.
 extension Substring {

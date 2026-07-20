@@ -354,8 +354,7 @@ struct SiteForumController: SiteControllerUtils {
 		guard let catID = req.parameters.get(categoryIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw "Invalid forum category ID"
 		}
-		let start = Pagination.start(req.query[Int.self, at: "start"])
-		let limit = Pagination.limit(req.query[Int.self, at: "limit"], maximum: 200)
+		let pagination = Pagination(on: req, maxPageSize: 200)
 
 		let response = try await apiQuery(req, endpoint: "/forum/categories/\(catID)")
 		let forums = try response.content.decode(CategoryData.self)
@@ -402,7 +401,12 @@ struct SiteForumController: SiteControllerUtils {
 				}
 			}
 		}
-		let ctx = try ForumsPageContext(req, forums: forums, start: start, limit: limit)
+		let ctx = try ForumsPageContext(
+			req,
+			forums: forums,
+			start: pagination.start,
+			limit: pagination.limit
+		)
 		return try await req.view.render("Forums/forums", ctx)
 	}
 
