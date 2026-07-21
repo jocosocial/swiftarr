@@ -2,6 +2,14 @@ import Fluent
 import FluentSQL
 import Vapor
 
+struct PhotostreamQueryOptions: Content, Sendable {
+	var start: Int? = nil
+	var limit: Int? = nil
+	var eventID: UUID? = nil
+	var locationName: String? = nil
+	var byUser: UUID? = nil
+}
+
 struct PhotostreamController: APIRouteCollection {
 
 	/// Required. Registers routes to the incoming router.
@@ -32,6 +40,7 @@ struct PhotostreamController: APIRouteCollection {
 	/// * `?limit=INT` - Moderators only. The max # of entries to return. Defaults to 30.
 	/// * `?eventID=UUID` - Filter results to photos tagged with the specified event ID.
 	/// * `?locationName=STRING` - Filter results to photos tagged with the specified location name.
+	/// * `?byUser=UUID` - Filter results to photos uploaded by the specified user.
 	/// 
 	/// - Returns: `PhotostreamListData`, a paginated array of `PhotostreamImageData`
 	func photostreamHandler(_ req: Request) async throws -> PhotostreamListData {
@@ -39,11 +48,19 @@ struct PhotostreamController: APIRouteCollection {
 		guard user.accessLevel != .banned else {
 			throw Abort(.unauthorized, reason: "User is banned, and cannot access this resource.")
 		}
+		let filters = PhotostreamQueryOptions(
+			start: req.query[Int.self, at: "start"],
+			limit: req.query[Int.self, at: "limit"],
+			eventID: req.query[UUID.self, at: "eventID"],
+			locationName: req.query[String.self, at: "locationName"],
+			byUser: req.query[UUID.self, at: "byUser"]
+		)
 		let pagination: Pagination
 		var photoCount = 0
 		if user.accessLevel.hasAccess(.moderator) {
 			pagination = Pagination(
-				on: req,
+				start: filters.start,
+				limit: filters.limit,
 				defaultLimit: 30,
 				maxPageSize: Settings.shared.maximumTwarrts
 			)
@@ -57,23 +74,19 @@ struct PhotostreamController: APIRouteCollection {
 			)
 		}
 		
-		// Get filter parameters
-		let eventID = req.query[UUID.self, at: "eventID"]
-		let locationName = req.query[String.self, at: "locationName"]
-		
-		// Validate that only one filter is provided, not both
-		if eventID != nil && locationName != nil {
-			throw Abort(.badRequest, reason: "Cannot filter by both eventID and locationName at the same time. Please specify only one filter.")
+		let filterCount = [filters.eventID != nil, filters.locationName != nil, filters.byUser != nil].filter { $0 }.count
+		if filterCount > 1 {
+			throw Abort(.badRequest, reason: "Cannot combine eventID, locationName, and byUser filters. Please specify only one filter.")
 		}
 		
 		// Build base query
 		var query = StreamPhoto.query(on: req.db).filter(\.$moderationStatus !~ [.autoQuarantined, .quarantined])
 		
 		// Apply filters
-		if let eventID = eventID {
+		if let eventID = filters.eventID {
 			query = query.filter(\.$atEvent.$id == eventID)
 		}
-		if let locationName = locationName {
+		if let locationName = filters.locationName {
 			if let boatLocation = PhotoStreamBoatLocation(rawValue: locationName) {
 				query = query.filter(\.$boatLocation == boatLocation)
 			} else {
@@ -83,6 +96,9 @@ struct PhotostreamController: APIRouteCollection {
 					paginator: Paginator(total: 0, start: pagination.start, limit: pagination.limit)
 				)
 			}
+		}
+		if let byUser = filters.byUser {
+			query = query.filter(\.$author.$id == byUser)
 		}
 		
 		// Get total count for pagination (mods only)
@@ -128,7 +144,7 @@ struct PhotostreamController: APIRouteCollection {
 	/// `/api/v3/photostream/placenames`.
 	/// 
 	/// - Parameter `PhotostreamUploadData`: In the request body.
-	/// - Returns: 200 OK if upload successful.
+	/// - Returns: 200 OK with the created `PhotostreamImageData` if upload is successful.
 	func photostreamUploadHandler(_ req: Request) async throws -> Response {
 		let user = try req.auth.require(UserCacheData.self)
 		try user.guardCanCreateContent(customErrorString: "user cannot post to photostream")
@@ -162,8 +178,14 @@ struct PhotostreamController: APIRouteCollection {
 		let streamPhoto = StreamPhoto(image: filename, captureTime: newPostData.createdAt, user: user, atEvent: matchingEvent,
 				boatLocation: boatLocation)
 		try await streamPhoto.save(on: req.db)
+		let photoData = try PhotostreamImageData(streamPhoto: streamPhoto, author: user.makeHeader())
+		return try makeUploadResponse(photo: photoData, rateLimit: Settings.shared.photostreamUploadRateLimit)
+	}
+
+	func makeUploadResponse(photo: PhotostreamImageData, rateLimit: TimeInterval) throws -> Response {
 		let response = Response(status: .ok)
-		response.headers.add(name: "Retry-After", value: "\(Settings.shared.photostreamUploadRateLimit)")
+		response.headers.add(name: "Retry-After", value: "\(rateLimit)")
+		try response.content.encode(photo)
 		return response
 	}
 	
