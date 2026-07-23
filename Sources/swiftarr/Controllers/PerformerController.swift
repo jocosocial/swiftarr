@@ -56,13 +56,15 @@ struct PerformerController: APIRouteCollection {
 	///	* `?start=INT` - Offset from start of results set
 	/// * `?limit=INT` - the maximum number of games to retrieve: 1-200, default is 50.
 	func getOfficialPerformers(_ req: Request) async throws -> PerformerResponseData {
-		let start = req.query[Int.self, at: "start"] ?? 0
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+		let pagination = Pagination(on: req, maxPageSize: Settings.shared.maximumTwarrts)
 		let query = Performer.query(on: req.db).filter(\.$officialPerformer == true).sort(\.$sortOrder)
 		let performerCount = try await query.count()
-		let performers = try await query.copy().range(start..<(start+limit)).all()
+		let performers = try await query.copy().range(pagination.range).all()
 		let performerDataArray = try performers.map { try PerformerHeaderData($0) }
-		return PerformerResponseData(performers: performerDataArray, paginator: Paginator(total: performerCount, start: start, limit: limit))
+		return PerformerResponseData(
+			performers: performerDataArray,
+			paginator: Paginator(total: performerCount, start: pagination.start, limit: pagination.limit)
+		)
 	}
 	
 	/// `GET /api/v3/performer/shadow`
@@ -77,15 +79,21 @@ struct PerformerController: APIRouteCollection {
 	///	* `?start=INT` - Offset from start of results set
 	/// * `?limit=INT` - the maximum number of games to retrieve: 1-200, default is 50.
 	func getShadowPerformers(_ req: Request) async throws -> PerformerResponseData {
-		let start = req.query[Int.self, at: "start"] ?? 0
-		let limit = (req.query[Int.self, at: "limit"] ?? 100).clamped(to: 0...Settings.shared.maximumTwarrts)
+		let pagination = Pagination(
+			on: req,
+			defaultLimit: 100,
+			maxPageSize: Settings.shared.maximumTwarrts
+		)
 		let query = Performer.query(on: req.db).filter(\.$officialPerformer == false).sort(\.$sortOrder)
 				.join(User.self, on: \Performer.$user.$id == \User.$id)
 				.filter(User.self, \.$accessLevel != .banned)
 		let performerCount = try await query.count()
-		let performers = try await query.copy().range(start..<(start+limit)).with(\.$events).all()
+		let performers = try await query.copy().range(pagination.range).with(\.$events).all()
 		let performerDataArray = try performers.map { try PerformerHeaderData($0) }
-		return PerformerResponseData(performers: performerDataArray, paginator: Paginator(total: performerCount, start: start, limit: limit))
+		return PerformerResponseData(
+			performers: performerDataArray,
+			paginator: Paginator(total: performerCount, start: pagination.start, limit: pagination.limit)
+		)
 	}
 		
 	/// `GET /api/v3/performer/self`

@@ -41,18 +41,8 @@ struct FezController: APIRouteCollection {
 			return excludeTypes.count > 0 ? excludeTypes : nil
 		}
 
-		func calcStart() -> Int {
-			return start ?? 0
-		}
-
-		func calcLimit() -> Int {
-			return (limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
-		}
-
-		// Used for: dbQuery.range(urlQuery.calcRange())
-		func calcRange() -> Range<Int> {
-			let rangeStart = calcStart()
-			return rangeStart..<(rangeStart + calcLimit())
+		var pagination: Pagination {
+			return Pagination(start: start, limit: limit, maxPageSize: Settings.shared.maximumTwarrts)
 		}
 	}
 
@@ -124,6 +114,7 @@ struct FezController: APIRouteCollection {
 	/// - Returns: An array of `FezData` containing current fezzes with open slots.
 	func openHandler(_ req: Request) async throws -> FezListData {
 		let urlQuery = try req.query.decode(FezURLQueryStruct.self)
+		let pagination = urlQuery.pagination
 		let cacheUser = try req.auth.require(UserCacheData.self)
 
 		let fezQuery = FriendlyFez.query(on: req.db)
@@ -159,7 +150,7 @@ struct FezController: APIRouteCollection {
 		}
 		let fezCount = try await fezQuery.count()
 		let fezzes = try await fezQuery.sort(\.$startTime, .ascending).sort(\.$title, .ascending)
-			.range(urlQuery.calcRange()).all()
+			.range(pagination.range).all()
 		let fezDataArray: [FezData] = try fezzes.compactMap { fez in
 			// Fezzes are only 'open' if their waitlist is < 1/2 the size of their capacity. A fez with a max of 10 people
 			// could have a waitlist of 5, then it stops showing up in 'open' searches.
@@ -171,7 +162,7 @@ struct FezController: APIRouteCollection {
 			return nil
 		}
 		return FezListData(
-			paginator: Paginator(total: fezCount, start: urlQuery.calcStart(), limit: urlQuery.calcLimit()),
+			paginator: Paginator(total: fezCount, start: pagination.start, limit: pagination.limit),
 			fezzes: fezDataArray
 		)
 	}
@@ -227,9 +218,8 @@ struct FezController: APIRouteCollection {
 	/// - Returns: An array of `FezData` containing all the fezzes created by the user.
 	func ownerHandler(_ req: Request) async throws -> FezListData {
 		let urlQuery = try req.query.decode(FezURLQueryStruct.self)
+		let pagination = urlQuery.pagination
 		let user = try req.auth.require(UserCacheData.self)
-		let start = (req.query[Int.self, at: "start"] ?? 0)
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
 		let query = FriendlyFez.query(on: req.db).filter(\.$owner.$id == user.userID)
 			.join(FezParticipant.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
 			.filter(FezParticipant.self, \.$user.$id == user.userID)
@@ -267,13 +257,16 @@ struct FezController: APIRouteCollection {
 
 		// get owned fezzes
 		let fezCount = try await query.count()
-		let fezzes = try await query.range(start..<(start + limit)).sort(\.$createdAt, .descending).all()
+		let fezzes = try await query.range(pagination.range).sort(\.$createdAt, .descending).all()
 		// convert to FezData
 		let fezDataArray = try fezzes.map { (fez) -> FezData in
 			let userParticipant = try fez.joined(FezParticipant.self)
 			return try buildFezData(from: fez, with: userParticipant, for: user, on: req)
 		}
-		return FezListData(paginator: Paginator(total: fezCount, start: start, limit: limit), fezzes: fezDataArray)
+		return FezListData(
+			paginator: Paginator(total: fezCount, start: pagination.start, limit: pagination.limit),
+			fezzes: fezDataArray
+		)
 	}
 
 	/// `GET /api/v3/fez/:fez_ID`
@@ -351,6 +344,7 @@ struct FezController: APIRouteCollection {
 	/// closed Seamails or Personal Events as their member lists cannot change.
 	func formerlyJoinedFezHandler(_ req: Request) async throws -> FezListData {
 		let urlQuery = try req.query.decode(FezURLQueryStruct.self)
+		let pagination = urlQuery.pagination
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let effectiveUser = try getEffectiveUser(user: cacheUser, req: req)
 		// .withDeleted keeps Fluent from filtering out soft-deleted FriendlyFezzes and FezParticipants. The deletedAt filter then matches
@@ -360,12 +354,15 @@ struct FezController: APIRouteCollection {
 				.filter(FriendlyFez.self, \.$fezType !~ [.closed, .personalEvent])
 				.withDeleted().filter(\.$deletedAt < Date())
 		let fezCount = try await query.count()
-		let pivots = try await query.copy().sort(FriendlyFez.self, \.$createdAt, .descending).range(urlQuery.calcRange()).all()
+		let pivots = try await query.copy().sort(FriendlyFez.self, \.$createdAt, .descending).range(pagination.range).all()
 		let fezDataArray = try pivots.map { pivot -> FezData in
 			let fez = try pivot.joined(FriendlyFez.self)
 			return try buildFezData(from: fez, with: nil, for: effectiveUser, on: req)
 		}
-		return FezListData(paginator: Paginator(total: fezCount, start: urlQuery.calcStart(), limit: urlQuery.calcLimit()), fezzes: fezDataArray)
+		return FezListData(
+			paginator: Paginator(total: fezCount, start: pagination.start, limit: pagination.limit),
+			fezzes: fezDataArray
+		)
 	}
 
 	// MARK: Membership
@@ -1008,6 +1005,7 @@ extension FezController {
 	// This is the bulk of the joinedHandler, pulled out into a separate fn. This allows us to modify the urlQuery arguments
 	// before calling.
 	func getJoinedChats(_ req: Request, urlQuery: FezURLQueryStruct) async throws -> FezListData {
+		let pagination = urlQuery.pagination
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let effectiveUser = try getEffectiveUser(user: cacheUser, req: req)
 
@@ -1106,12 +1104,12 @@ extension FezController {
 		}
 		let fezCount = try await query.count()
 		let pivots = try await query.copy().sort(FezParticipant.self, \.$isMuted, .descending)
-			.sort(FriendlyFez.self, \.$updatedAt, .descending).range(urlQuery.calcRange()).all()
+			.sort(FriendlyFez.self, \.$updatedAt, .descending).range(pagination.range).all()
 		let fezDataArray = try pivots.map { pivot -> FezData in
 			let fez = try pivot.joined(FriendlyFez.self)
 			return try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
 		}
-		return FezListData(paginator: Paginator(total: fezCount, start: urlQuery.calcStart(), limit: urlQuery.calcLimit()),
+		return FezListData(paginator: Paginator(total: fezCount, start: pagination.start, limit: pagination.limit),
 				fezzes: fezDataArray)
 	}
 
@@ -1278,26 +1276,38 @@ extension FezController {
 	{
 		let readCount = pivot?.readCount ?? 0
 		let hiddenCount = pivot?.hiddenCount ?? 0
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
-		// `limit` can be 0; guard the division so ?limit=0 doesn't trap on `(readCount - 1) / limit`.
-		let defaultStart = limit > 0 ? ((readCount - 1) / limit) * limit : 0
-		let start = (req.query[Int.self, at: "start"] ?? defaultStart)
-			.clamped(to: 0...fez.postCount)
+		let requestedPagination = Pagination(on: req, maxPageSize: Settings.shared.maximumTwarrts)
+		let defaultStart = ((readCount - 1) / requestedPagination.limit) * requestedPagination.limit
+		let pagination = Pagination(
+			start: req.query[Int.self, at: "start"],
+			limit: requestedPagination.limit,
+			defaultStart: defaultStart,
+			maxPageSize: Settings.shared.maximumTwarrts
+		)
+		let boundedPagination = Pagination(
+			start: pagination.start.clamped(to: 0...fez.postCount),
+			limit: pagination.limit,
+			maxPageSize: Settings.shared.maximumTwarrts
+		)
 		// get posts
 		let posts = try await FezPost.query(on: req.db)
 			.filter(\.$fez.$id == fez.requireID())
 			.filter(\.$author.$id !~ user.getBlocks())
 			.filter(\.$author.$id !~ user.getMutes())
 			.sort(\.$createdAt, .ascending)
-			.range(start..<(start + limit))
+			.range(boundedPagination.range)
 			.all()
 		let postDatas = try posts.map { try FezPostData(post: $0, author: req.userCache.getHeader($0.$author.id)) }
-		let paginator = Paginator(total: fez.postCount - hiddenCount, start: start, limit: limit)
+		let paginator = Paginator(
+			total: fez.postCount - hiddenCount,
+			start: boundedPagination.start,
+			limit: boundedPagination.limit
+		)
 
 		// If this batch of posts is farther into the thread than the user has previously read, increase
 		// the user's read count.
-		if let pivot = pivot, start + limit > pivot.readCount {
-			pivot.readCount = min(start + limit, fez.postCount - pivot.hiddenCount)
+		if let pivot = pivot, boundedPagination.range.upperBound > pivot.readCount {
+			pivot.readCount = min(boundedPagination.range.upperBound, fez.postCount - pivot.hiddenCount)
 			try await pivot.save(on: req.db)
 			// If the user has now read all the posts (except those hidden from them) mark this notification as viewed.
 			// Only mark as read for the current user, not all users in the privileged mailbox group.

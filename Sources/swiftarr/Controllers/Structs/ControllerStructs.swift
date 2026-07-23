@@ -1470,6 +1470,46 @@ extension NoteData {
 	}
 }
 
+/// Normalizes the common `start` and `limit` URL query parameters before they are used to build database ranges.
+struct Pagination {
+	/// The normalized index of the first item to return.
+	let start: Int
+	/// The normalized maximum number of items to return.
+	let limit: Int
+	/// The range to apply to a database query.
+	var range: Range<Int> {
+		return start..<(start + limit)
+	}
+
+	/// Creates pagination values from decoded query parameters.
+	init(
+		start: Int?,
+		limit: Int?,
+		defaultStart: Int = 0,
+		defaultLimit: Int = 50,
+		maxPageSize: Int
+	) {
+		self.start = max(start ?? defaultStart, 0)
+		self.limit = (limit ?? defaultLimit).clamped(to: 1...max(maxPageSize, 1))
+	}
+
+	/// Decodes and normalizes pagination values from a request's URL query.
+	init(
+		on req: Request,
+		defaultStart: Int = 0,
+		defaultLimit: Int = 50,
+		maxPageSize: Int
+	) {
+		self.init(
+			start: req.query[Int.self, at: "start"],
+			limit: req.query[Int.self, at: "limit"],
+			defaultStart: defaultStart,
+			defaultLimit: defaultLimit,
+			maxPageSize: maxPageSize
+		)
+	}
+}
+
 /// Composes into other structs to add pagination.
 ///
 /// Generally this will be added to a top-level struct along with an array of some result type, like this:
