@@ -354,8 +354,7 @@ struct SiteForumController: SiteControllerUtils {
 		guard let catID = req.parameters.get(categoryIDParam.paramString)?.percentEncodeFilePathEntry() else {
 			throw "Invalid forum category ID"
 		}
-		let start = (req.query[Int.self, at: "start"] ?? 0)
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...200)
+		let pagination = Pagination(on: req, maxPageSize: 200)
 
 		let response = try await apiQuery(req, endpoint: "/forum/categories/\(catID)")
 		let forums = try response.content.decode(CategoryData.self)
@@ -402,7 +401,12 @@ struct SiteForumController: SiteControllerUtils {
 				}
 			}
 		}
-		let ctx = try ForumsPageContext(req, forums: forums, start: start, limit: limit)
+		let ctx = try ForumsPageContext(
+			req,
+			forums: forums,
+			start: pagination.start,
+			limit: pagination.limit
+		)
 		return try await req.view.render("Forums/forums", ctx)
 	}
 
@@ -904,7 +908,7 @@ struct SiteForumController: SiteControllerUtils {
 			let responseData = try response.content.decode(PostSearchData.self)
 			var ctx = try PostSearchPageContext(req, posts: responseData, searchType: .textSearch, formData: formData)
 			if let forumID = formData.forum {
-				let forumResponse = try await apiQuery(req, endpoint: "/forum/\(forumID)", query: [URLQueryItem(name: "limit", value: "0")])
+				let forumResponse = try await apiQuery(req, endpoint: "/forum/\(forumID)", query: [URLQueryItem(name: "limit", value: "1")])
 				ctx.forumData = try forumResponse.content.decode(ForumData.self)
 			}
 			if let categoryID = ctx.forumData?.categoryID ?? formData.category {

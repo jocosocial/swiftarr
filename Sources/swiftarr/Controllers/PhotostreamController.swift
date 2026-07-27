@@ -55,12 +55,23 @@ struct PhotostreamController: APIRouteCollection {
 			locationName: req.query[String.self, at: "locationName"],
 			byUser: req.query[UUID.self, at: "byUser"]
 		)
-		var start = 0
-		var limit = 30
+		let pagination: Pagination
 		var photoCount = 0
 		if user.accessLevel.hasAccess(.moderator) {
-			start = filters.start ?? 0
-			limit = filters.limit ?? 30
+			pagination = Pagination(
+				start: filters.start,
+				limit: filters.limit,
+				defaultLimit: 30,
+				maxPageSize: Settings.shared.maximumTwarrts
+			)
+		}
+		else {
+			pagination = Pagination(
+				start: nil,
+				limit: nil,
+				defaultLimit: 30,
+				maxPageSize: Settings.shared.maximumTwarrts
+			)
 		}
 		
 		let filterCount = [filters.eventID != nil, filters.locationName != nil, filters.byUser != nil].filter { $0 }.count
@@ -80,7 +91,10 @@ struct PhotostreamController: APIRouteCollection {
 				query = query.filter(\.$boatLocation == boatLocation)
 			} else {
 				// Invalid location name, return empty results
-				return PhotostreamListData(photos: [], paginator: Paginator(total: 0, start: start, limit: limit))
+				return PhotostreamListData(
+					photos: [],
+					paginator: Paginator(total: 0, start: pagination.start, limit: pagination.limit)
+				)
 			}
 		}
 		if let byUser = filters.byUser {
@@ -95,8 +109,7 @@ struct PhotostreamController: APIRouteCollection {
 		// Fetch photos with pagination
 		let photos = try await query
 			.sort(\.$id, .descending)
-			.offset(start)
-			.limit(limit)
+			.range(pagination.range)
 			.with(\.$atEvent, withDeleted: true)
 			.all()
 		
@@ -107,7 +120,10 @@ struct PhotostreamController: APIRouteCollection {
 		if photoCount == 0 {
 			photoCount = imageData.count
 		}
-		return PhotostreamListData(photos: imageData, paginator: Paginator(total: photoCount, start: start, limit: limit))
+		return PhotostreamListData(
+			photos: imageData,
+			paginator: Paginator(total: photoCount, start: pagination.start, limit: pagination.limit)
+		)
 	}
 	
 	/// `GET /api/v3/photostream/placenames`

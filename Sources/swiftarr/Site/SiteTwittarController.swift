@@ -116,14 +116,14 @@ struct TweetPageContext: Encodable {
 					topMorePostsURL = queryStruct.buildQuery(
 						baseURL: "/tweets",
 						anchor: anchorID,
-						startOffset: 0 - queryStruct.computedLimit()
+						startOffset: 0 - queryStruct.pagination.limit
 					)
 					topMorePostsLabel = "Older"
 				}
 				bottomMorePostsURL = queryStruct.buildQuery(
 					baseURL: "/tweets",
 					anchor: anchorID,
-					startOffset: queryStruct.computedLimit()
+					startOffset: queryStruct.pagination.limit
 				)
 				bottomMorePostsLabel = "Newer"
 			}
@@ -140,7 +140,7 @@ struct TweetPageContext: Encodable {
 					topMorePostsURL = queryStruct.buildQuery(
 						baseURL: "/tweets",
 						anchor: anchorID,
-						startOffset: 0 - queryStruct.computedLimit()
+						startOffset: 0 - queryStruct.pagination.limit
 					)
 					topMorePostsLabel = "Newer"
 				}
@@ -148,7 +148,7 @@ struct TweetPageContext: Encodable {
 					bottomMorePostsURL = queryStruct.buildQuery(
 						baseURL: "/tweets",
 						anchor: anchorID,
-						startOffset: queryStruct.computedLimit()
+						startOffset: queryStruct.pagination.limit
 					)
 					bottomMorePostsLabel = "Older"
 				}
