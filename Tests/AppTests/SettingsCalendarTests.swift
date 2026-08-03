@@ -20,6 +20,12 @@ class SettingsCalendarTests: XCTestCase {
 	func testCalendarForDate_FallsBackToPortTimeZone_WithEmptyChangeSet() {
 		// With the default (empty) timeZoneChanges, calendarForDate returns a calendar
 		// whose timezone is the port timezone — fall-through behavior of tzAtTime.
+		// Settings is process-global, so pin the change set here rather than relying on
+		// no earlier test having loaded one from the database.
+		let savedChanges = Settings.shared.timeZoneChanges
+		defer { Settings.shared.timeZoneChanges = savedChanges }
+		Settings.shared.timeZoneChanges = TimeZoneChangeSet()
+
 		let date = Date()
 		let cal = Settings.shared.calendarForDate(date)
 		XCTAssertEqual(cal.timeZone.identifier, Settings.shared.portTimeZone.identifier)

@@ -120,4 +120,16 @@ class ContentStructValidationTests: XCTestCase {
 
 		XCTAssertEqual(json["maxImageSize"] as? Int, Settings.shared.maxImageSize)
 	}
+
+	// MARK: - ImageUploadData
+
+	func testImageUploadData_EmptyFilenameBecomesNil() {
+		// Unused photo-form slots submit filename="" -- it must not be stored as a real image.
+		XCTAssertNil(ImageUploadData("").filename)
+		XCTAssertNil(ImageUploadData(nil).filename)
+	}
+
+	func testImageUploadData_RealFilenamePreserved() {
+		XCTAssertEqual(ImageUploadData("photo.jpg").filename, "photo.jpg")
+	}
 }

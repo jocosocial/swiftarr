@@ -723,8 +723,13 @@ struct ForumController: APIRouteCollection {
 			case .none: break
 			}
 		}
-		// init return struct
-		var postDetailData = try PostDetailData(post: post, author: req.userCache.getHeader(post.$author.id))
+		// init return struct. Editors (moderators) see the real text/images of quarantined posts so
+		// that editing one preserves its images instead of wiping them; matches ModerationController.
+		var postDetailData = try PostDetailData(
+			post: post,
+			author: req.userCache.getHeader(post.$author.id),
+			overrideQuarantine: cacheUser.accessLevel.canEditOthersContent()
+		)
 		postDetailData.isBookmarked = isFavorite
 		postDetailData.laughs = req.userCache.getHeaders(laughUsers)
 		postDetailData.likes = req.userCache.getHeaders(likeUsers)
