@@ -50,6 +50,12 @@ final class StreamPhoto: Model, @unchecked Sendable {
 		self.moderationStatus = .normal
 		if let event = atEvent {
 			self.$atEvent.id = event.id
+			// Keep the relation loaded, not just referenced. `@OptionalParent`'s getter is
+			// `self.value ?? nil`, so an id-only relation reads back as "no event" instead of
+			// trapping — and anything that builds a response off this instance before a
+			// re-fetch (`photostreamUploadHandler` does) silently reports the photo as
+			// untagged.
+			self.$atEvent.value = event
 		}
 		self.boatLocation = boatLocation
 	}
