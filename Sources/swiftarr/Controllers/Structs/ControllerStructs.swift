@@ -750,6 +750,169 @@ extension FezData {
 	}
 }
 
+// MARK: - Quartermaster
+
+/// A single item in a batch-create request. Provides the name and optional description for one
+/// `QuartermasterItem`; category, location, and contact user are shared across the whole batch
+/// and specified in the enclosing `QuartermasterCreateData`.
+public struct QuartermasterItemEntry: Content {
+	/// A short name or title for the item. Required; 2–100 characters.
+	var itemName: String
+	/// An optional longer description of the item. ≤2048 characters when present.
+	var itemDescription: String?
+}
+
+/// Used to batch-create one or more `QuartermasterItem`s.
+///
+/// Required by: `POST /api/v3/quartermaster/create`
+///
+/// See: `QuartermasterController.createHandler(_:)`
+public struct QuartermasterCreateData: Content {
+	/// Whether the items are on offer (`have`) or wanted (`need`). Applies to all items in the batch.
+	var category: QuartermasterCategory
+	/// Optional free-text location where items can be picked up / exchanged. 3–100 characters when present.
+	/// At least one of `location` or `contactUsername` must be supplied.
+	var location: String?
+	/// Optional contact username (a registered Twitarr user). At least one of `location` or `contactUsername`
+	/// must be supplied.
+	var contactUsername: String?
+	/// One or more items to create. 1–50 items per call. Each item has its own name and optional description.
+	var items: [QuartermasterItemEntry]
+}
+
+extension QuartermasterCreateData: RCFValidatable {
+	func runValidations(using decoder: ValidatingDecoder) throws {
+		let tester = try decoder.validator(keyedBy: CodingKeys.self)
+		tester.validate(!items.isEmpty, forKey: .items, or: "must include at least one item")
+		tester.validate(items.count <= 50, forKey: .items, or: "cannot create more than 50 items at once")
+		if let loc = location {
+			tester.validate(loc.count >= 3, forKey: .location, or: "location field has a 3 character minimum")
+			tester.validate(loc.count <= 100, forKey: .location, or: "location field has a 100 character limit")
+		}
+		let noLocation = location == nil || location?.isEmpty == true
+		let noContact = contactUsername == nil || contactUsername?.isEmpty == true
+		if noLocation && noContact {
+			throw Abort(.badRequest, reason: "An item must have a location, a contact user, or both.")
+		}
+		for (index, entry) in items.enumerated() {
+			guard entry.itemName.count >= 2 else {
+				throw Abort(.badRequest, reason: "Item \(index + 1): itemName has a 2 character minimum")
+			}
+			guard entry.itemName.count <= 100 else {
+				throw Abort(.badRequest, reason: "Item \(index + 1): itemName has a 100 character limit")
+			}
+			if let desc = entry.itemDescription {
+				guard desc.count <= 2048 else {
+					throw Abort(.badRequest, reason: "Item \(index + 1): itemDescription is over the 2048 character limit")
+				}
+			}
+		}
+	}
+}
+
+/// Used to update a single `QuartermasterItem`.
+///
+/// Required by: `POST /api/v3/quartermaster/ID/update`
+///
+/// See: `QuartermasterController.updateHandler(_:)`
+public struct QuartermasterContentData: Content {
+	/// The updated category.
+	var category: QuartermasterCategory
+	/// The updated item name. 2–100 characters.
+	var itemName: String
+	/// The updated description. ≤2048 characters when present.
+	var itemDescription: String?
+	/// The updated location. 3–100 characters when present. At least one of `location` or
+	/// `contactUsername` must be supplied.
+	var location: String?
+	/// The updated contact username. Must be a registered Twitarr user when non-nil. At least one
+	/// of `location` or `contactUsername` must be supplied.
+	var contactUsername: String?
+}
+
+extension QuartermasterContentData: RCFValidatable {
+	func runValidations(using decoder: ValidatingDecoder) throws {
+		let tester = try decoder.validator(keyedBy: CodingKeys.self)
+		tester.validate(itemName.count >= 2, forKey: .itemName, or: "itemName field has a 2 character minimum")
+		tester.validate(itemName.count <= 100, forKey: .itemName, or: "itemName field has a 100 character limit")
+		if let desc = itemDescription {
+			tester.validate(
+				desc.count <= 2048,
+				forKey: .itemDescription,
+				or: "itemDescription length of \(desc.count) is over the 2048 character limit"
+			)
+		}
+		if let loc = location {
+			tester.validate(loc.count >= 3, forKey: .location, or: "location field has a 3 character minimum")
+			tester.validate(loc.count <= 100, forKey: .location, or: "location field has a 100 character limit")
+		}
+		let noLocation = location == nil || location?.isEmpty == true
+		let noContact = contactUsername == nil || contactUsername?.isEmpty == true
+		if noLocation && noContact {
+			throw Abort(.badRequest, reason: "An item must have a location, a contact user, or both.")
+		}
+	}
+}
+
+/// Used to return a `QuartermasterItem`'s data.
+///
+/// Returned by:
+/// * `GET /api/v3/quartermaster`
+/// * `GET /api/v3/quartermaster/ID`
+/// * `POST /api/v3/quartermaster/create`
+/// * `POST /api/v3/quartermaster/ID/update`
+///
+/// See: `QuartermasterController`
+public struct QuartermasterData: Content, ResponseEncodable {
+	/// The item's ID.
+	var itemID: UUID
+	/// Whether the owner has or needs the item.
+	var category: QuartermasterCategory
+	/// A short name/title for the item. Masked to a review notice when the item is quarantined.
+	var itemName: String
+	/// An optional longer description. Masked when quarantined.
+	var itemDescription: String?
+	/// An optional free-text pickup/exchange location. Masked when quarantined.
+	var location: String?
+	/// The item's creator.
+	var owner: UserHeader
+	/// An optional contact user. May be the same as `owner` or a different user.
+	var contactUser: UserHeader?
+	/// The item's current moderation status.
+	var moderationStatus: ContentModerationStatus
+	/// The time of the item's most recent modification.
+	var lastModificationTime: Date
+}
+
+extension QuartermasterData {
+	init(item: QuartermasterItem, owner: UserHeader, contactUser: UserHeader?) throws {
+		self.itemID = try item.requireID()
+		self.category = item.category
+		let showContent = item.moderationStatus.showsContent()
+		self.itemName = showContent ? item.itemName : "Item name is under moderator review"
+		self.itemDescription = showContent ? item.itemDescription : "Item description is under moderator review"
+		self.location = showContent ? item.location : "Item location is under moderator review"
+		self.owner = owner
+		self.contactUser = contactUser
+		self.moderationStatus = item.moderationStatus
+		self.lastModificationTime = item.updatedAt ?? Date()
+	}
+}
+
+/// Used to return a paginated list of `QuartermasterItem`s.
+///
+/// Returned by: `GET /api/v3/quartermaster`
+///
+/// See: `QuartermasterController.listHandler(_:)`
+public struct QuartermasterListData: Content {
+	/// Pagination into the result set.
+	var paginator: Paginator
+	/// The items in the result set.
+	var items: [QuartermasterData]
+}
+
+// MARK: -
+
 /// Used to return a `FezPost`'s data.
 ///
 /// Returned by:

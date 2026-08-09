@@ -30,6 +30,7 @@ public func routes(_ app: Application) throws {
 		PerformerController(),
 		PersonalEventController(),
 		EventFeedbackController(),
+		QuartermasterController(),
 	]
 	try apiControllers.forEach { try $0.registerRoutes(app) }
 

@@ -1,0 +1,634 @@
+import XCTVapor
+@testable import swiftarr
+
+// Tests for Quartermaster Phase 2: DTO validation and HTTP controller behaviour.
+//
+// Validation tests (QuartermasterValidationTests) are pure-Swift — no DB or network required.
+// Controller tests (QuartermasterControllerTests) use SwiftarrBaseTest and a live Postgres instance
+// (port 5433) plus Redis (port 6380) in the same way as ForumQuarantineVisibilityTests.
+
+// MARK: - DTO Validation
+
+class QuartermasterValidationTests: XCTestCase {
+
+	private let decoder = ValidatingJSONDecoder()
+
+	// Collect tester.validate() failures for a given JSON string.
+	// Returns an empty array when validation passes.
+	// Throws when runValidations() calls `throw Abort(...)` (cross-field / throw-based checks).
+	private func validationErrors<T: Decodable>(_ type: T.Type, _ json: String) throws -> [String] {
+		let data = json.data(using: .utf8)!
+		let result = try decoder.validate(type, from: data)
+		return result?.validationFailures.map { $0.errorString } ?? []
+	}
+
+	// MARK: - QuartermasterCreateData — location/contact cross-field rule
+
+	func testCreate_BothLocationAndContactNil_Throws() {
+		let json = #"{"category":"have","items":[{"itemName":"Widget"}]}"#
+		XCTAssertThrowsError(try validationErrors(QuartermasterCreateData.self, json)) { err in
+			let abort = err as? Abort
+			XCTAssertEqual(abort?.status, .badRequest)
+			XCTAssertTrue(abort?.reason.contains("location") ?? false || abort?.reason.contains("contact") ?? false)
+		}
+	}
+
+	func testCreate_LocationPresent_PassesCrossFieldCheck() throws {
+		let json = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Widget"}]}"#
+		let errs = try validationErrors(QuartermasterCreateData.self, json)
+		// Only check cross-field did not throw; length errors are separate.
+		XCTAssertFalse(errs.isEmpty == false && errs.allSatisfy { $0.contains("location") || $0.contains("contact") },
+			"cross-field check should not fire when location is present")
+	}
+
+	func testCreate_ContactUsernamePresent_PassesCrossFieldCheck() throws {
+		let json = #"{"category":"need","contactUsername":"someuser","items":[{"itemName":"Widget"}]}"#
+		let errs = try validationErrors(QuartermasterCreateData.self, json)
+		XCTAssertFalse(errs.contains { $0.contains("location") && $0.contains("contact") })
+	}
+
+	// MARK: - QuartermasterCreateData — items array bounds
+
+	func testCreate_EmptyItemsArray_FailsValidation() throws {
+		let json = #"{"category":"have","location":"Deck 5","items":[]}"#
+		let errs = try validationErrors(QuartermasterCreateData.self, json)
+		XCTAssertTrue(errs.contains("must include at least one item"), "errs=\(errs)")
+	}
+
+	func testCreate_51Items_FailsValidation() throws {
+		let items = Array(repeating: #"{"itemName":"Widget"}"#, count: 51).joined(separator: ",")
+		let json = #"{"category":"have","location":"Deck 5","items":[\#(items)]}"#
+		let errs = try validationErrors(QuartermasterCreateData.self, json)
+		XCTAssertTrue(errs.contains("cannot create more than 50 items at once"), "errs=\(errs)")
+	}
+
+	func testCreate_50Items_PassesValidation() throws {
+		let items = Array(repeating: #"{"itemName":"Widget"}"#, count: 50).joined(separator: ",")
+		let json = #"{"category":"have","location":"Deck 5","items":[\#(items)]}"#
+		XCTAssertNoThrow(try validationErrors(QuartermasterCreateData.self, json))
+	}
+
+	// MARK: - QuartermasterCreateData — per-item itemName bounds
+
+	func testCreate_ItemNameTooShort_Throws() {
+		let json = #"{"category":"have","location":"Deck 5","items":[{"itemName":"x"}]}"#
+		XCTAssertThrowsError(try validationErrors(QuartermasterCreateData.self, json)) { err in
+			let abort = err as? Abort
+			XCTAssertEqual(abort?.status, .badRequest)
+			XCTAssertTrue(abort?.reason.contains("2 character minimum") ?? false, "reason=\(abort?.reason ?? "")")
+		}
+	}
+
+	func testCreate_ItemNameTooLong_Throws() {
+		let name = String(repeating: "a", count: 101)
+		let json = #"{"category":"have","location":"Deck 5","items":[{"itemName":"\#(name)"}]}"#
+		XCTAssertThrowsError(try validationErrors(QuartermasterCreateData.self, json)) { err in
+			let abort = err as? Abort
+			XCTAssertEqual(abort?.status, .badRequest)
+			XCTAssertTrue(abort?.reason.contains("100 character limit") ?? false)
+		}
+	}
+
+	func testCreate_ItemDescriptionTooLong_Throws() {
+		let desc = String(repeating: "a", count: 2049)
+		let json = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Widget","itemDescription":"\#(desc)"}]}"#
+		XCTAssertThrowsError(try validationErrors(QuartermasterCreateData.self, json)) { err in
+			let abort = err as? Abort
+			XCTAssertEqual(abort?.status, .badRequest)
+			XCTAssertTrue(abort?.reason.contains("2048 character limit") ?? false)
+		}
+	}
+
+	// MARK: - QuartermasterCreateData — shared location bounds
+
+	func testCreate_LocationTooShort_FailsValidation() throws {
+		let json = #"{"category":"have","location":"ab","items":[{"itemName":"Widget"}]}"#
+		let errs = try validationErrors(QuartermasterCreateData.self, json)
+		XCTAssertTrue(errs.contains("location field has a 3 character minimum"), "errs=\(errs)")
+	}
+
+	func testCreate_LocationTooLong_FailsValidation() throws {
+		let loc = String(repeating: "a", count: 101)
+		let json = #"{"category":"have","location":"\#(loc)","items":[{"itemName":"Widget"}]}"#
+		let errs = try validationErrors(QuartermasterCreateData.self, json)
+		XCTAssertTrue(errs.contains("location field has a 100 character limit"), "errs=\(errs)")
+	}
+
+	// MARK: - QuartermasterCreateData — happy paths
+
+	func testCreate_HappyPath_WithLocation() throws {
+		let json = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Widget","itemDescription":"Nice widget"}]}"#
+		let errs = try validationErrors(QuartermasterCreateData.self, json)
+		XCTAssertEqual(errs, [], "unexpected validation errors: \(errs)")
+	}
+
+	func testCreate_HappyPath_WithContact() throws {
+		let json = #"{"category":"need","contactUsername":"alice","items":[{"itemName":"Sunscreen"}]}"#
+		let errs = try validationErrors(QuartermasterCreateData.self, json)
+		XCTAssertEqual(errs, [], "unexpected validation errors: \(errs)")
+	}
+
+	func testCreate_HappyPath_WithBothLocationAndContact() throws {
+		let json = #"{"category":"have","location":"Lido Deck","contactUsername":"bob","items":[{"itemName":"Sunscreen"},{"itemName":"Hat"}]}"#
+		let errs = try validationErrors(QuartermasterCreateData.self, json)
+		XCTAssertEqual(errs, [], "unexpected validation errors: \(errs)")
+	}
+
+	// MARK: - QuartermasterContentData (update) — cross-field rule
+
+	func testUpdate_BothLocationAndContactNil_Throws() {
+		let json = #"{"category":"have","itemName":"Widget"}"#
+		XCTAssertThrowsError(try validationErrors(QuartermasterContentData.self, json)) { err in
+			XCTAssertEqual((err as? Abort)?.status, .badRequest)
+		}
+	}
+
+	// MARK: - QuartermasterContentData — itemName bounds
+
+	func testUpdate_ItemNameTooShort_FailsValidation() throws {
+		let json = #"{"category":"have","itemName":"x","location":"Deck 5"}"#
+		let errs = try validationErrors(QuartermasterContentData.self, json)
+		XCTAssertTrue(errs.contains("itemName field has a 2 character minimum"), "errs=\(errs)")
+	}
+
+	func testUpdate_ItemNameTooLong_FailsValidation() throws {
+		let name = String(repeating: "a", count: 101)
+		let json = #"{"category":"have","itemName":"\#(name)","location":"Deck 5"}"#
+		let errs = try validationErrors(QuartermasterContentData.self, json)
+		XCTAssertTrue(errs.contains("itemName field has a 100 character limit"), "errs=\(errs)")
+	}
+
+	func testUpdate_DescriptionTooLong_FailsValidation() throws {
+		let desc = String(repeating: "a", count: 2049)
+		let json = #"{"category":"have","itemName":"Widget","location":"Deck 5","itemDescription":"\#(desc)"}"#
+		let errs = try validationErrors(QuartermasterContentData.self, json)
+		XCTAssertTrue(errs.first(where: { $0.contains("2048 character limit") }) != nil, "errs=\(errs)")
+	}
+
+	func testUpdate_HappyPath() throws {
+		let json = #"{"category":"need","itemName":"Widget","location":"Deck 5"}"#
+		let errs = try validationErrors(QuartermasterContentData.self, json)
+		XCTAssertEqual(errs, [], "unexpected validation errors: \(errs)")
+	}
+}
+
+// MARK: - HTTP Controller Tests
+
+final class QuartermasterControllerTests: XCTestCase, SwiftarrBaseTest {
+
+	// MARK: - Helpers
+
+	private func makeUser(_ app: Application, username: String, accessLevel: UserAccessLevel) async throws -> User {
+		let user = User(
+			username: username,
+			password: try Bcrypt.hash("password1"),
+			recoveryKey: try Bcrypt.hash("recovery key"),
+			accessLevel: accessLevel
+		)
+		try await user.save(on: app.db)
+		return user
+	}
+
+	private func makeToken(_ app: Application, for user: User) async throws -> String {
+		let token = try Token.generate(for: user)
+		try await token.save(on: app.db)
+		return token.token
+	}
+
+	private func bearer(_ token: String) -> HTTPHeaders {
+		var headers = HTTPHeaders()
+		headers.bearerAuthorization = BearerAuthorization(token: token)
+		return headers
+	}
+
+	private func contentHeaders(_ token: String) -> HTTPHeaders {
+		var headers = bearer(token)
+		headers.contentType = .json
+		return headers
+	}
+
+	/// Builds a valid batch-create JSON payload with a single item.
+	private func createPayload(
+		category: String = "have",
+		itemName: String = "Extra sunscreen",
+		itemDescription: String? = nil,
+		location: String? = "Deck 5",
+		contactUsername: String? = nil
+	) -> String {
+		var fields = [#""category":"\#(category)""#]
+		if let loc = location { fields.append(#""location":"\#(loc)""#) }
+		if let cu = contactUsername { fields.append(#""contactUsername":"\#(cu)""#) }
+		var itemFields = [#""itemName":"\#(itemName)""#]
+		if let desc = itemDescription { itemFields.append(#""itemDescription":"\#(desc)""#) }
+		let itemJSON = "{" + itemFields.joined(separator: ",") + "}"
+		fields.append(#""items":[\#(itemJSON)]"#)
+		return "{" + fields.joined(separator: ",") + "}"
+	}
+
+	// MARK: - Test: unauthenticated access is rejected
+
+	func testList_Unauthenticated_Returns401() async throws {
+		try await withApp { app in
+			try await app.asyncBoot()
+			try await app.test(.GET, "/api/v3/quartermaster") { res async throws in
+				XCTAssertEqual(res.status, .unauthorized)
+			}
+		}
+	}
+
+	// MARK: - Test: batch create
+
+	func testCreate_BatchCreate_ReturnsCreatedItems() async throws {
+		try await withApp { app in
+			let user = try await makeUser(app, username: "qm-creator-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let token = try await makeToken(app, for: user)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+
+			// Two items in one call sharing location.
+			let items = Array(repeating: #"{"itemName":"Extra sunscreen"},{"itemName":"Spare hat"}"#, count: 1)
+			let _ = items
+			let payload = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Extra sunscreen"},{"itemName":"Spare hat"}]}"#
+
+			try await app.test(
+				.POST, "/api/v3/quartermaster/create",
+				headers: contentHeaders(token),
+				body: ByteBuffer(string: payload)
+			) { res async throws in
+				XCTAssertEqual(res.status, .created, "body=\(String(buffer: res.body))")
+				let created = try res.content.decode([QuartermasterData].self)
+				XCTAssertEqual(created.count, 2, "expected 2 created items")
+				XCTAssertEqual(created[0].itemName, "Extra sunscreen")
+				XCTAssertEqual(created[1].itemName, "Spare hat")
+				XCTAssertTrue(created.allSatisfy { $0.location == "Deck 5" }, "shared location should apply to all")
+				XCTAssertTrue(created.allSatisfy { $0.category == .have }, "shared category should apply to all")
+			}
+
+			// Verify rows persisted.
+			let count = try await QuartermasterItem.query(on: app.db).count()
+			XCTAssertEqual(count, 2, "expected 2 rows in the database")
+		}
+	}
+
+	// MARK: - Test: list
+
+	func testList_Returns200() async throws {
+		try await withApp { app in
+			let user = try await makeUser(app, username: "qm-lister-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let token = try await makeToken(app, for: user)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+
+			try await app.test(.GET, "/api/v3/quartermaster", headers: bearer(token)) { res async throws in
+				XCTAssertEqual(res.status, .ok, "body=\(String(buffer: res.body))")
+				let list = try res.content.decode(QuartermasterListData.self)
+				XCTAssertNotNil(list.paginator)
+			}
+		}
+	}
+
+	// MARK: - Test: category filter
+
+	func testList_CategoryFilter_ReturnsOnlyMatchingCategory() async throws {
+		try await withApp { app in
+			let user = try await makeUser(app, username: "qm-cat-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let token = try await makeToken(app, for: user)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+
+			// Create one "have" and one "need".
+			let havePayload = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Sunscreen"}]}"#
+			let needPayload = #"{"category":"need","location":"Deck 5","items":[{"itemName":"Sunscreen"}]}"#
+			for payload in [havePayload, needPayload] {
+				try await app.test(.POST, "/api/v3/quartermaster/create",
+					headers: contentHeaders(token), body: ByteBuffer(string: payload)) { _ async throws in }
+			}
+
+			try await app.test(.GET, "/api/v3/quartermaster?category=have", headers: bearer(token)) { res async throws in
+				XCTAssertEqual(res.status, .ok)
+				let list = try res.content.decode(QuartermasterListData.self)
+				XCTAssertTrue(list.items.allSatisfy { $0.category == .have },
+					"?category=have should return only 'have' items")
+			}
+		}
+	}
+
+	// MARK: - Test: mine filter
+
+	func testList_MineFilter_ReturnsOnlyCallerItems() async throws {
+		try await withApp { app in
+			let userA = try await makeUser(app, username: "qm-mine-a-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let userB = try await makeUser(app, username: "qm-mine-b-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let tokenA = try await makeToken(app, for: userA)
+			let tokenB = try await makeToken(app, for: userB)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+
+			let payloadA = #"{"category":"have","location":"Lido Deck","items":[{"itemName":"User A item"}]}"#
+			let payloadB = #"{"category":"have","location":"Pool Deck","items":[{"itemName":"User B item"}]}"#
+			try await app.test(.POST, "/api/v3/quartermaster/create",
+				headers: contentHeaders(tokenA), body: ByteBuffer(string: payloadA)) { _ async throws in }
+			try await app.test(.POST, "/api/v3/quartermaster/create",
+				headers: contentHeaders(tokenB), body: ByteBuffer(string: payloadB)) { _ async throws in }
+
+			try await app.test(.GET, "/api/v3/quartermaster?mine=true", headers: bearer(tokenA)) { res async throws in
+				XCTAssertEqual(res.status, .ok)
+				let list = try res.content.decode(QuartermasterListData.self)
+				XCTAssertTrue(list.items.allSatisfy { $0.owner.username == userA.username },
+					"?mine=true should return only the caller's own items, not other users'")
+				XCTAssertFalse(list.items.contains { $0.itemName == "User B item" },
+					"user B's item should not appear in user A's mine list")
+			}
+		}
+	}
+
+	// MARK: - Test: get single item
+
+	func testGet_ExistingItem_Returns200() async throws {
+		try await withApp { app in
+			let user = try await makeUser(app, username: "qm-get-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let token = try await makeToken(app, for: user)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+
+			var createdID: UUID?
+			let payload = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Widget"}]}"#
+			try await app.test(.POST, "/api/v3/quartermaster/create",
+				headers: contentHeaders(token), body: ByteBuffer(string: payload)
+			) { res async throws in
+				let items = try res.content.decode([QuartermasterData].self)
+				createdID = items.first?.itemID
+			}
+
+			guard let id = createdID else { XCTFail("no created ID"); return }
+			try await app.test(.GET, "/api/v3/quartermaster/\(id)", headers: bearer(token)) { res async throws in
+				XCTAssertEqual(res.status, .ok)
+				let item = try res.content.decode(QuartermasterData.self)
+				XCTAssertEqual(item.itemID, id)
+				XCTAssertEqual(item.itemName, "Widget")
+			}
+		}
+	}
+
+	// MARK: - Test: update creates edit record when text changes
+
+	func testUpdate_TextChange_CreatesEditRecord() async throws {
+		try await withApp { app in
+			let user = try await makeUser(app, username: "qm-upd-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let token = try await makeToken(app, for: user)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+
+			var itemID: UUID?
+			let createPayload = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Original name"}]}"#
+			try await app.test(.POST, "/api/v3/quartermaster/create",
+				headers: contentHeaders(token), body: ByteBuffer(string: createPayload)
+			) { res async throws in
+				itemID = try res.content.decode([QuartermasterData].self).first?.itemID
+			}
+			guard let id = itemID else { XCTFail("no item"); return }
+
+			let updatePayload = #"{"category":"have","itemName":"Updated name","location":"Deck 5"}"#
+			try await app.test(.POST, "/api/v3/quartermaster/\(id)/update",
+				headers: contentHeaders(token), body: ByteBuffer(string: updatePayload)
+			) { res async throws in
+				XCTAssertEqual(res.status, .ok, "body=\(String(buffer: res.body))")
+				let updated = try res.content.decode(QuartermasterData.self)
+				XCTAssertEqual(updated.itemName, "Updated name")
+			}
+
+			guard let savedItem = try await QuartermasterItem.find(id, on: app.db) else {
+				XCTFail("item not found after update"); return
+			}
+			try await savedItem.$edits.load(on: app.db)
+			XCTAssertEqual(savedItem.edits.count, 1, "a text change should create a QuartermasterItemEdit")
+		}
+	}
+
+	func testUpdate_CategoryOnlyChange_CreatesNoEditRecord() async throws {
+		try await withApp { app in
+			let user = try await makeUser(app, username: "qm-cat-upd-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let token = try await makeToken(app, for: user)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+
+			var itemID: UUID?
+			let createPayload = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Widget"}]}"#
+			try await app.test(.POST, "/api/v3/quartermaster/create",
+				headers: contentHeaders(token), body: ByteBuffer(string: createPayload)
+			) { res async throws in
+				itemID = try res.content.decode([QuartermasterData].self).first?.itemID
+			}
+			guard let id = itemID else { XCTFail("no item"); return }
+
+			// Only category changes; text fields stay identical.
+			let updatePayload = #"{"category":"need","itemName":"Widget","location":"Deck 5"}"#
+			try await app.test(.POST, "/api/v3/quartermaster/\(id)/update",
+				headers: contentHeaders(token), body: ByteBuffer(string: updatePayload)
+			) { res async throws in
+				XCTAssertEqual(res.status, .ok)
+			}
+
+			guard let savedItem = try await QuartermasterItem.find(id, on: app.db) else {
+				XCTFail("item not found after update"); return
+			}
+			try await savedItem.$edits.load(on: app.db)
+			XCTAssertEqual(savedItem.edits.count, 0, "category-only change must not create a QuartermasterItemEdit")
+		}
+	}
+
+	func testUpdate_ContactUserChange_CreatesEditRecord() async throws {
+		try await withApp { app in
+			let user = try await makeUser(app, username: "qm-cu-upd-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let contact = try await makeUser(app, username: "qm-cu-ct-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let token = try await makeToken(app, for: user)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+
+			var itemID: UUID?
+			let createPayload = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Widget"}]}"#
+			try await app.test(.POST, "/api/v3/quartermaster/create",
+				headers: contentHeaders(token), body: ByteBuffer(string: createPayload)
+			) { res async throws in
+				itemID = try res.content.decode([QuartermasterData].self).first?.itemID
+			}
+			guard let id = itemID else { XCTFail("no item"); return }
+
+			// Only the contact user changes; text fields and category stay identical.
+			let updatePayload = "{\"category\":\"have\",\"itemName\":\"Widget\",\"location\":\"Deck 5\",\"contactUsername\":\"\(contact.username)\"}"
+			try await app.test(.POST, "/api/v3/quartermaster/\(id)/update",
+				headers: contentHeaders(token), body: ByteBuffer(string: updatePayload)
+			) { res async throws in
+				XCTAssertEqual(res.status, .ok)
+			}
+
+			guard let savedItem = try await QuartermasterItem.find(id, on: app.db) else {
+				XCTFail("item not found after update"); return
+			}
+			try await savedItem.$edits.load(on: app.db)
+			XCTAssertEqual(savedItem.edits.count, 1, "a contact user change should create a QuartermasterItemEdit")
+		}
+	}
+
+	// MARK: - Test: delete
+
+	func testDelete_Owner_Succeeds() async throws {
+		try await withApp { app in
+			let user = try await makeUser(app, username: "qm-del-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let token = try await makeToken(app, for: user)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+
+			var itemID: UUID?
+			let createPayload = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Delete me"}]}"#
+			try await app.test(.POST, "/api/v3/quartermaster/create",
+				headers: contentHeaders(token), body: ByteBuffer(string: createPayload)
+			) { res async throws in
+				itemID = try res.content.decode([QuartermasterData].self).first?.itemID
+			}
+			guard let id = itemID else { XCTFail("no item"); return }
+
+			try await app.test(.POST, "/api/v3/quartermaster/\(id)/delete", headers: bearer(token)) { res async throws in
+				XCTAssertEqual(res.status, .noContent)
+			}
+			// Verify the row is soft-deleted (not found without withDeleted).
+			let found = try await QuartermasterItem.find(id, on: app.db)
+			XCTAssertNil(found, "deleted item should not appear in normal queries (soft-delete)")
+		}
+	}
+
+	func testDelete_OtherUserAsNonMod_Returns403() async throws {
+		try await withApp { app in
+			let owner = try await makeUser(app, username: "qm-del-own-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let other = try await makeUser(app, username: "qm-del-oth-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let ownerToken = try await makeToken(app, for: owner)
+			let otherToken = try await makeToken(app, for: other)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+
+			var itemID: UUID?
+			let createPayload = #"{"category":"have","location":"Deck 5","items":[{"itemName":"My item"}]}"#
+			try await app.test(.POST, "/api/v3/quartermaster/create",
+				headers: contentHeaders(ownerToken), body: ByteBuffer(string: createPayload)
+			) { res async throws in
+				itemID = try res.content.decode([QuartermasterData].self).first?.itemID
+			}
+			guard let id = itemID else { XCTFail("no item"); return }
+
+			try await app.test(.POST, "/api/v3/quartermaster/\(id)/delete", headers: bearer(otherToken)) { res async throws in
+				XCTAssertEqual(res.status, .forbidden, "non-owner non-mod must not delete another user's item")
+			}
+		}
+	}
+
+	func testDelete_ModeratorCanDeleteOthers() async throws {
+		try await withApp { app in
+			let owner = try await makeUser(app, username: "qm-del-own2-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let mod = try await makeUser(app, username: "qm-del-mod-\(UUID().uuidString.prefix(6))", accessLevel: .moderator)
+			let ownerToken = try await makeToken(app, for: owner)
+			let modToken = try await makeToken(app, for: mod)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+
+			var itemID: UUID?
+			let createPayload = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Mod target"}]}"#
+			try await app.test(.POST, "/api/v3/quartermaster/create",
+				headers: contentHeaders(ownerToken), body: ByteBuffer(string: createPayload)
+			) { res async throws in
+				itemID = try res.content.decode([QuartermasterData].self).first?.itemID
+			}
+			guard let id = itemID else { XCTFail("no item"); return }
+
+			try await app.test(.POST, "/api/v3/quartermaster/\(id)/delete", headers: bearer(modToken)) { res async throws in
+				XCTAssertEqual(res.status, .noContent, "moderator must be able to delete any item")
+			}
+		}
+	}
+
+	// MARK: - Test: block-list filtering
+
+	func testList_BlockedUserItems_HiddenFromBlocker() async throws {
+		try await withApp { app in
+			let blocker = try await makeUser(app, username: "qm-blk-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let blocked = try await makeUser(app, username: "qm-blkd-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let blockerToken = try await makeToken(app, for: blocker)
+			let blockedToken = try await makeToken(app, for: blocked)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+
+			// Post from the blocked user.
+			let payload = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Should be hidden"}]}"#
+			try await app.test(.POST, "/api/v3/quartermaster/create",
+				headers: contentHeaders(blockedToken), body: ByteBuffer(string: payload)) { _ async throws in }
+
+			// Block that user.
+			let blockedID = try blocked.requireID()
+			try await app.test(.POST, "/api/v3/users/\(blockedID)/block", headers: bearer(blockerToken)) { res async throws in
+				// Accept 200 or 201; just make sure the block request doesn't error.
+				XCTAssertTrue([.ok, .created].contains(res.status),
+					"block request failed: \(res.status)")
+			}
+
+			try await app.test(.GET, "/api/v3/quartermaster", headers: bearer(blockerToken)) { res async throws in
+				XCTAssertEqual(res.status, .ok)
+				let list = try res.content.decode(QuartermasterListData.self)
+				XCTAssertFalse(list.items.contains { $0.itemName == "Should be hidden" },
+					"items from a blocked user must not appear in the list")
+			}
+		}
+	}
+
+	// MARK: - Test: report
+
+	func testReport_Creates201() async throws {
+		try await withApp { app in
+			let owner = try await makeUser(app, username: "qm-rpt-own-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let reporter = try await makeUser(app, username: "qm-rpt-usr-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let ownerToken = try await makeToken(app, for: owner)
+			let reporterToken = try await makeToken(app, for: reporter)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+
+			var itemID: UUID?
+			let createPayload = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Reportable item"}]}"#
+			try await app.test(.POST, "/api/v3/quartermaster/create",
+				headers: contentHeaders(ownerToken), body: ByteBuffer(string: createPayload)
+			) { res async throws in
+				itemID = try res.content.decode([QuartermasterData].self).first?.itemID
+			}
+			guard let id = itemID else { XCTFail("no item"); return }
+
+			let reportPayload = #"{"message":"Inappropriate content"}"#
+			try await app.test(
+				.POST, "/api/v3/quartermaster/\(id)/report",
+				headers: contentHeaders(reporterToken),
+				body: ByteBuffer(string: reportPayload)
+			) { res async throws in
+				XCTAssertEqual(res.status, .created, "report should return 201 Created")
+			}
+
+			// Verify a Report row was created (fresh test DB so any report is from this test).
+			let reports = try await Report.query(on: app.db).all()
+			let quartermasterReports = reports.filter { $0.reportType == .quartermasterItem }
+			XCTAssertEqual(quartermasterReports.count, 1, "filing a report should create one Report row")
+		}
+	}
+
+	// MARK: - Test: create rejects empty batch
+
+	func testCreate_EmptyBatch_Returns400() async throws {
+		try await withApp { app in
+			let user = try await makeUser(app, username: "qm-emp-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let token = try await makeToken(app, for: user)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+
+			let payload = #"{"category":"have","location":"Deck 5","items":[]}"#
+			try await app.test(.POST, "/api/v3/quartermaster/create",
+				headers: contentHeaders(token), body: ByteBuffer(string: payload)
+			) { res async throws in
+				XCTAssertEqual(res.status, .badRequest, "empty items array must be rejected with 400")
+			}
+		}
+	}
+}
