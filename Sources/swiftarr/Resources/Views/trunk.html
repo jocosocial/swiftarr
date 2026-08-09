@@ -72,11 +72,13 @@
 									</span>
 								</a>
 							</div>
-							<div class="col-auto px-0">
-								<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "quartermaster"): active#endif" #if(trunk.tab == "quartermaster"):aria-current="page"#endif href="/quartermaster">
-									Have/Need
-								</a>
-							</div>
+							#if(trunk.showQuartermasterNav):
+								<div class="col-auto px-0">
+									<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "quartermaster"): active#endif" #if(trunk.tab == "quartermaster"):aria-current="page"#endif href="/quartermaster">
+										Have/Need
+									</a>
+								</div>
+							#endif
 						</div>
 						<div class="col-auto px-0 mt-1 d-flex align-items-center">
 							<button id="themeToggle" type="button"
