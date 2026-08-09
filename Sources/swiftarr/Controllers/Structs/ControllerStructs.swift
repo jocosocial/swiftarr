@@ -900,10 +900,10 @@ public struct QuartermasterData: Content, ResponseEncodable {
 }
 
 extension QuartermasterData {
-	init(item: QuartermasterItem, owner: UserHeader, contactUser: UserHeader?) throws {
+	init(item: QuartermasterItem, owner: UserHeader, contactUser: UserHeader?, overrideQuarantine: Bool = false) throws {
 		self.itemID = try item.requireID()
 		self.category = item.category
-		let showContent = item.moderationStatus.showsContent()
+		let showContent = overrideQuarantine || item.moderationStatus.showsContent()
 		self.itemName = showContent ? item.itemName : "Item name is under moderator review"
 		self.itemDescription = showContent ? item.itemDescription : "Item description is under moderator review"
 		self.location = showContent ? item.location : "Item location is under moderator review"
