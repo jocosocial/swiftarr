@@ -46,12 +46,18 @@
 								</div>
 								<div class="row mb-1">
 									<div class="input-group">
-										<input type="text" class="form-control" placeholder="Contact username (optional)" name="contactUsername" aria-label="Contact username" value="#(contactUsername)">
+										<span class="input-group-text" id="contactUsernameAddon">@</span>
+										<input type="text" class="form-control user-autocomplete" placeholder="Contact username (optional)"
+												name="contactUsername" aria-label="Contact username" aria-describedby="contactUsernameAddon"
+												autocapitalize="off" autocomplete="off"
+												data-nameusage="quartermaster" value="#(contactUsername)">
 									</div>
 								</div>
+								<ul class="list-group mb-2 mx-0" id="name_suggestions">
+								</ul>
 								<div class="row mb-3">
 									<div class="col">
-										<small class="text-muted">A location, a contact username, or both are required.</small>
+										<small class="text-muted">A location, a contact username, or both are required. Type at least 2 characters of a username to search for a user.</small>
 									</div>
 								</div>
 
@@ -112,5 +118,22 @@
     			</div>
 			</div>
 		</div>
+
+		<template id="potentialMemberTemplate">
+			<li class="list-group-item list-group-item-action swiftarr-namecell">
+				<div class="row justify-content-between align-items-baseline">
+					<div class="col col-auto username-here"></div>
+					<label class="col col-auto btn btn-sm btn-primary px-3">
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload">
+						<span class="button-title-here">Select</span>
+						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+						<span class="visually-hidden">Loading...</span>
+					</label>
+				</div>
+				<div class="row text-end text-danger error-display d-none">
+					Could not add user: <span class="errortext"></span>
+				</div>
+			</li>
+		</template>
     #endexport
 #endextend

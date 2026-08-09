@@ -777,6 +777,7 @@ userSearch?.addEventListener('input', function (event) {
 				for (user of userHeaders) {
 					let listItem = document.getElementById('potentialMemberTemplate').content.firstElementChild.cloneNode(true);
 					listItem.dataset.userid = user.userID;
+					listItem.dataset.username = user.username;
 					listItem.querySelector('.username-here').innerHTML = ["@", user.username, " <b>", user.displayName, "</b>"].join('');
 					suggestionDiv.append(listItem);
 					let checkbox = listItem.querySelector('.btn-check');
@@ -786,6 +787,9 @@ userSearch?.addEventListener('input', function (event) {
 						listItem.querySelector('.error-display').id = "waitlisterror_" + user.userID;
 						if (userSearch.dataset.nameusage == "seamail") {
 							checkbox.addEventListener('click', addToNamedParticipants);
+						}
+						else if (userSearch.dataset.nameusage == "quartermaster") {
+							checkbox.addEventListener('click', selectContactUsername);
 						}
 						else {
 							checkbox.addEventListener('click', spinnerButtonAction);
@@ -826,6 +830,16 @@ function updateParticipantFormElement(participantsDiv) {
 	}
 	let hiddenFormElem = document.getElementById('participants_hidden');
 	hiddenFormElem.value = names;
+}
+
+// Fills the (single) contact-username field with the selected suggestion and clears the list.
+// Used by forms -- like Quartermaster's create/edit form -- where the autocomplete input doubles
+// as the field actually submitted with the form, rather than feeding a separate hidden field.
+function selectContactUsername(event) {
+	event.preventDefault();
+	let listItem = event.target.closest('li');
+	userSearch.value = listItem.dataset.username;
+	document.getElementById('name_suggestions').innerHTML = "";
 }
 
 // MARK: - User Profile Handlers
