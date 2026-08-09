@@ -103,9 +103,20 @@ struct QuartermasterController: APIRouteCollection {
 		let total = try await query.copy().count()
 		let items = try await query.sort(\.$updatedAt, .descending).range(pagination.range).all()
 
+		// Batch-fetch owner + contact user headers in one call instead of one getHeader() call per item.
+		var headerIDs = Set(items.map { $0.$owner.id })
+		headerIDs.formUnion(items.compactMap { $0.$contactUser.id })
+		let headers = Dictionary(uniqueKeysWithValues: req.userCache.getHeaders(headerIDs).map { ($0.userID, $0) })
+		func requireHeader(_ userID: UUID) throws -> UserHeader {
+			guard let header = headers[userID] else {
+				throw Abort(.internalServerError, reason: "No user found with userID \(userID).")
+			}
+			return header
+		}
+
 		let itemDataArray: [QuartermasterData] = try items.map { item in
-			let ownerHeader = try req.userCache.getHeader(item.$owner.id)
-			let contactHeader = try item.$contactUser.id.map { try req.userCache.getHeader($0) }
+			let ownerHeader = try requireHeader(item.$owner.id)
+			let contactHeader = try item.$contactUser.id.map(requireHeader)
 			return try QuartermasterData(item: item, owner: ownerHeader, contactUser: contactHeader)
 		}
 		return QuartermasterListData(
