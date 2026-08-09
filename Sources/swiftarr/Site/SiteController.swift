@@ -17,6 +17,7 @@ struct TrunkContext: Encodable {
 		// Under the Twitarr title
 		case home
 		case lfg
+		case quartermaster
 		case games
 		case karaoke
 		case moderator
@@ -452,6 +453,14 @@ struct ReportPageContext: Encodable {
 		reportFormAction = "/photostream/report/\(photostreamID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/photostream)"
 	}
+
+	// For reporting a Quartermaster item
+	init(_ req: Request, quartermasterItemID: String) throws {
+		trunk = .init(req, title: "Report Item", tab: .quartermaster)
+		reportTitle = "Report a Quartermaster Item"
+		reportFormAction = "/quartermaster/report/\(quartermasterItemID)"
+		reportSuccessURL = req.headers.first(name: "Referer") ?? "/quartermaster"
+	}
 }
 
 /// Route gorup that only manages one route: the root route "/".
@@ -681,6 +690,7 @@ extension SiteControllerUtils {
 	var forumIDParam: PathComponent { PathComponent(":forum_id") }
 	var postIDParam: PathComponent { PathComponent(":post_id") }
 	var fezIDParam: PathComponent { PathComponent(":fez_id") }
+	var quartermasterIDParam: PathComponent { PathComponent(":quartermaster_id") }
 	var userIDParam: PathComponent { PathComponent(":user_id") }
 	var eventIDParam: PathComponent { PathComponent(":event_id") }
 	var reportIDParam: PathComponent { PathComponent(":report_id") }

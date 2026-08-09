@@ -53,6 +53,8 @@
 										<a href="/moderate/microkaraoke">song snippet</a>
 									#elseif(report.contentType == "streamPhoto"):
 										<a href="/moderate/photostream/#(report.contentID)">photostream photo</a>
+									#elseif(report.contentType == "quartermasterItem"):
+										<a href="/moderate/quartermaster/#(report.contentID)">quartermaster item</a>
 									#else:
 										#(report.contentType)
 									#endif	

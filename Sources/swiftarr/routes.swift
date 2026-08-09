@@ -46,6 +46,7 @@ public func routes(_ app: Application) throws {
 		SiteTwitarrController(),
 		SiteSeamailController(),
 		SiteFriendlyFezController(),
+		SiteQuartermasterController(),
 		SiteForumController(),
 		SiteEventsController(),
 		SiteUserController(),
