@@ -785,15 +785,11 @@ extension QuartermasterCreateData: RCFValidatable {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
 		tester.validate(!items.isEmpty, forKey: .items, or: "must include at least one item")
 		tester.validate(items.count <= 50, forKey: .items, or: "cannot create more than 50 items at once")
-		if let loc = location {
-			tester.validate(loc.count >= 3, forKey: .location, or: "location field has a 3 character minimum")
-			tester.validate(loc.count <= 100, forKey: .location, or: "location field has a 100 character limit")
-		}
-		let noLocation = location == nil || location?.isEmpty == true
-		let noContact = contactUsername == nil || contactUsername?.isEmpty == true
-		if noLocation && noContact {
-			throw Abort(.badRequest, reason: "An item must have a location, a contact user, or both.")
-		}
+		quartermasterLocationValidations(location: location)
+			.forEach {
+				tester.addValidationError(forKey: .location, errorString: $0)
+			}
+		try validateQuartermasterHasLocationOrContact(location: location, contactUsername: contactUsername)
 		for (index, entry) in items.enumerated() {
 			guard entry.itemName.count >= 2 else {
 				throw Abort(.badRequest, reason: "Item \(index + 1): itemName has a 2 character minimum")
@@ -842,15 +838,34 @@ extension QuartermasterContentData: RCFValidatable {
 				or: "itemDescription length of \(desc.count) is over the 2048 character limit"
 			)
 		}
-		if let loc = location {
-			tester.validate(loc.count >= 3, forKey: .location, or: "location field has a 3 character minimum")
-			tester.validate(loc.count <= 100, forKey: .location, or: "location field has a 100 character limit")
-		}
-		let noLocation = location == nil || location?.isEmpty == true
-		let noContact = contactUsername == nil || contactUsername?.isEmpty == true
-		if noLocation && noContact {
-			throw Abort(.badRequest, reason: "An item must have a location, a contact user, or both.")
-		}
+		quartermasterLocationValidations(location: location)
+			.forEach {
+				tester.addValidationError(forKey: .location, errorString: $0)
+			}
+		try validateQuartermasterHasLocationOrContact(location: location, contactUsername: contactUsername)
+	}
+}
+
+// MARK: - Quartermaster Validation
+
+/// `QuartermasterCreateData` and `QuartermasterContentData` both carry an optional `location` field with the same
+/// bounds; this fn exists to ensure they validate it the same way. Returns a list of validation failure
+/// strings--if it returns an empty array the location is valid (or absent, which is allowed).
+private func quartermasterLocationValidations(location: String?) -> [String] {
+	guard let loc = location else { return [] }
+	var errorStrings: [String] = []
+	if loc.count < 3 { errorStrings.append("location field has a 3 character minimum") }
+	if loc.count > 100 { errorStrings.append("location field has a 100 character limit") }
+	return errorStrings
+}
+
+/// `QuartermasterCreateData` and `QuartermasterContentData` both require at least one of `location` or
+/// `contactUsername` to be present; this fn exists to ensure they enforce that the same way.
+private func validateQuartermasterHasLocationOrContact(location: String?, contactUsername: String?) throws {
+	let noLocation = location == nil || location?.isEmpty == true
+	let noContact = contactUsername == nil || contactUsername?.isEmpty == true
+	if noLocation && noContact {
+		throw Abort(.badRequest, reason: "An item must have a location, a contact user, or both.")
 	}
 }
 
