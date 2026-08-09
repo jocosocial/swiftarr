@@ -12,18 +12,23 @@ class QuartermasterSchemaTests: XCTestCase, SwiftarrBaseTest {
 
 	/// Verifies that the new migrations apply cleanly: if the app boots and autoMigrate()
 	/// succeeds inside withApp, the quartermaster_item table exists.
+	///
+	/// The test DB is shared across the whole test run (not reset per-test), so this can't assert
+	/// the table is empty -- it only asserts the table is queryable, which is proof enough that the
+	/// migration created it (a query against a missing table throws before returning).
 	func testSchema_TablesExistAfterMigration() async throws {
 		try await withApp { app in
 			let count = try await QuartermasterItem.query(on: app.db).count()
-			XCTAssertEqual(count, 0, "Expected empty quartermaster_item table after migration")
+			XCTAssertGreaterThanOrEqual(count, 0, "Expected quartermaster_item table to exist and be queryable after migration")
 		}
 	}
 
-	/// Verifies the edit table also exists.
+	/// Verifies the edit table also exists. See `testSchema_TablesExistAfterMigration` for why this
+	/// doesn't assert emptiness.
 	func testSchema_EditTableExistsAfterMigration() async throws {
 		try await withApp { app in
 			let count = try await QuartermasterItemEdit.query(on: app.db).count()
-			XCTAssertEqual(count, 0, "Expected empty quartermaster_item_edit table after migration")
+			XCTAssertGreaterThanOrEqual(count, 0, "Expected quartermaster_item_edit table to exist and be queryable after migration")
 		}
 	}
 
