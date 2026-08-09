@@ -160,16 +160,7 @@ struct QuartermasterController: APIRouteCollection {
 		try cacheUser.guardCanCreateContent()
 
 		// Resolve the optional shared contact user once, before entering the transaction.
-		let contactUserID: UUID?
-		if let username = data.contactUsername, !username.isEmpty {
-			guard let contactUser = req.userCache.getUser(username: username) else {
-				throw Abort(.badRequest, reason: "User '@\(username)' not found.")
-			}
-			contactUserID = contactUser.userID
-		}
-		else {
-			contactUserID = nil
-		}
+		let contactUserID = try resolveContactUser(username: data.contactUsername, on: req)
 
 		let ownerHeader = cacheUser.makeHeader()
 		let contactHeader = try contactUserID.map { try req.userCache.getHeader($0) }
@@ -215,16 +206,7 @@ struct QuartermasterController: APIRouteCollection {
 		try cacheUser.guardCanModifyContent(item)
 
 		// Resolve the new contact user if specified.
-		let newContactUserID: UUID?
-		if let username = data.contactUsername, !username.isEmpty {
-			guard let contactUser = req.userCache.getUser(username: username) else {
-				throw Abort(.badRequest, reason: "User '@\(username)' not found.")
-			}
-			newContactUserID = contactUser.userID
-		}
-		else {
-			newContactUserID = nil
-		}
+		let newContactUserID = try resolveContactUser(username: data.contactUsername, on: req)
 
 		// Snapshot the current text fields before applying changes, only when text actually changed.
 		let contentChanged = data.itemName != item.itemName
@@ -284,6 +266,18 @@ struct QuartermasterController: APIRouteCollection {
 		catch let abort as Abort where abort.status == .notFound {
 			throw Abort(.badRequest, reason: abort.reason)
 		}
+	}
+
+	/// Resolves an optional `contactUsername` to a user ID, treating a nil or empty username as "no contact user".
+	/// Used by both `createHandler(_:)` and `updateHandler(_:)`.
+	private func resolveContactUser(username: String?, on req: Request) throws -> UUID? {
+		guard let username, !username.isEmpty else {
+			return nil
+		}
+		guard let contactUser = req.userCache.getUser(username: username) else {
+			throw Abort(.badRequest, reason: "User '@\(username)' not found.")
+		}
+		return contactUser.userID
 	}
 
 	/// `POST /api/v3/quartermaster/:quartermaster_id/report`
