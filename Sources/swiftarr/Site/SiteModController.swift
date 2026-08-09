@@ -963,6 +963,7 @@ func generateContentGroups(from reports: [ReportModerationData]) -> [ReportConte
 		case .mkSongSnippet: contentURL = "/moderate/microkaraoke/song/\(report.reportedID)"  // Individual snippets aren't actually reportable yet.
 		case .streamPhoto: contentURL = "/moderate/photostream/\(report.reportedID)"
 		case .personalEvent: contentURL = "/moderate/personalevent/\(report.reportedID)"
+		case .quartermasterItem: contentURL = "/moderate/quartermaster/\(report.reportedID)"
 		}
 		var newGroup = ReportContentGroup(
 			reportType: report.type,
