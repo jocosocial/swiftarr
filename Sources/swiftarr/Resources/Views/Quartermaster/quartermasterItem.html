@@ -2,56 +2,54 @@
 #comment("Context must contain 'item' of type QuartermasterData -- usually done with #for(item in list)")
 #comment("Enclosing <li> must carry class 'has-action-bar' and data-postid=item.itemID for the collapse/delete JS")
 
-<div class="row">
-	<div class="col">
-		#if(showCategoryBadge):
-			<span class="badge #if(item.category == "have"):bg-success#else:bg-info text-dark#endif">#if(item.category == "have"):Have#else:Need#endif</span>
-		#endif
-		<b>#(item.itemName)</b>
-	</div>
-	<div class="col col-auto text-muted text-end">
-		#if(item.location):#(item.location)#endif
-		#if(item.location && item.contactUser): &middot; #endif
-		#if(item.contactUser):#userByline(item.contactUser, "short")#endif
-	</div>
-</div>
-#if(item.moderationStatus != "normal"):
+<div class="container-fluid">
 	<div class="row">
 		<div class="col">
-			<span class="badge bg-warning text-dark">#(item.moderationStatus)</span>
+			#if(showCategoryBadge):
+				<span class="badge #if(item.category == "have"):bg-success#else:bg-info text-dark#endif">#if(item.category == "have"):Have#else:Need#endif</span>
+			#endif
+			<b>#(item.itemName)</b>
+			#if(item.moderationStatus != "normal"):
+				<span class="badge bg-warning text-dark">#(item.moderationStatus)</span>
+			#endif
+		</div>
+		<div class="col col-auto text-muted text-end">
+			#if(item.location):#(item.location)#endif
+			#if(item.location && item.contactUser): &middot; #endif
+			#if(item.contactUser):#userByline(item.contactUser, "short")#endif
 		</div>
 	</div>
-#endif
 
-<div class="collapse" data-label="actionbar">
-	#if(item.itemDescription):
-		<div class="row mt-2">
-			<div class="col">
-				#(item.itemDescription)
+	<div class="collapse" data-label="actionbar">
+		#if(item.itemDescription):
+			<div class="row mt-2">
+				<div class="col">
+					#(item.itemDescription)
+				</div>
+			</div>
+		#endif
+		<div class="row mt-1">
+			<div class="col text-muted">
+				<span title="#localTime(item.lastModificationTime)">Updated #relativeTime(item.lastModificationTime)</span>
 			</div>
 		</div>
-	#endif
-	<div class="row mt-1">
-		<div class="col text-muted">
-			<span title="#localTime(item.lastModificationTime)">Updated #relativeTime(item.lastModificationTime)</span>
-		</div>
-	</div>
-	<div class="row justify-content-center mt-2">
-		<div class="col col-auto btn-group btn-group-sm">
-			#if(item.contactUser):
-				<a class="btn btn-outline-primary" href="/user/#(item.contactUser.userID)">Contact Profile</a>
-				#if(item.contactUser.userID != trunk.userID):
-					<a class="btn btn-outline-primary" href="/seamail/create?withuser=#(item.contactUser.userID)">Seamail</a>
+		<div class="row justify-content-center mt-2">
+			<div class="col col-auto btn-group btn-group-sm">
+				#if(item.contactUser):
+					<a class="btn btn-outline-primary" href="/user/#(item.contactUser.userID)">Contact Profile</a>
+					#if(item.contactUser.userID != trunk.userID):
+						<a class="btn btn-outline-primary" href="/seamail/create?withuser=#(item.contactUser.userID)">Seamail</a>
+					#endif
 				#endif
-			#endif
-			<a class="btn btn-outline-primary" href="/quartermaster/report/#(item.itemID)">Report</a>
-			#if(item.owner.userID == trunk.userID || trunk.userIsMod):
-				<a class="btn btn-outline-primary" href="/quartermaster/#(item.itemID)/edit">Edit</a>
-				<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
-			#endif
-			#if(trunk.userIsMod):
-				<a class="btn btn-outline-primary" href="/moderate/quartermaster/#(item.itemID)">Moderate</a>
-			#endif
+				<a class="btn btn-outline-primary" href="/quartermaster/report/#(item.itemID)">Report</a>
+				#if(item.owner.userID == trunk.userID || trunk.userIsMod):
+					<a class="btn btn-outline-primary" href="/quartermaster/#(item.itemID)/edit">Edit</a>
+					<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
+				#endif
+				#if(trunk.userIsMod):
+					<a class="btn btn-outline-primary" href="/moderate/quartermaster/#(item.itemID)">Moderate</a>
+				#endif
+			</div>
 		</div>
 	</div>
 </div>
