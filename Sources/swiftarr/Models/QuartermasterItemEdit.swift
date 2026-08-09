@@ -28,6 +28,9 @@ final class QuartermasterItemEdit: Model, @unchecked Sendable {
 	/// The previous location string (empty string when nil at edit time).
 	@Field(key: "location") var location: String
 
+	/// The previous contact user UUID (nil when no contact user was set at edit time).
+	@OptionalField(key: "contact_user") var contactUser: UUID?
+
 	/// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
 
@@ -57,6 +60,7 @@ final class QuartermasterItemEdit: Model, @unchecked Sendable {
 		self.itemName = item.itemName
 		self.itemDescription = item.itemDescription ?? ""
 		self.location = item.location ?? ""
+		self.contactUser = item.$contactUser.id
 	}
 }
 
@@ -67,6 +71,7 @@ struct CreateQuartermasterItemEditSchema: AsyncMigration {
 			.field("item_name", .string, .required)
 			.field("item_description", .string, .required)
 			.field("location", .string, .required)
+			.field("contact_user", .uuid, .references("user", "id", onDelete: .setNull))
 			.field("created_at", .datetime)
 			.field("item", .uuid, .required, .references("quartermaster_item", "id"))
 			.field("editor", .uuid, .required, .references("user", "id"))
