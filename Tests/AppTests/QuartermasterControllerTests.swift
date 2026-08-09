@@ -1,3 +1,4 @@
+import Fluent
 import XCTVapor
 @testable import swiftarr
 
@@ -246,10 +247,9 @@ final class QuartermasterControllerTests: XCTestCase, SwiftarrBaseTest {
 			try await app.initializeUserCache(app)
 
 			// Two items in one call sharing location.
-			let items = Array(repeating: #"{"itemName":"Extra sunscreen"},{"itemName":"Spare hat"}"#, count: 1)
-			let _ = items
 			let payload = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Extra sunscreen"},{"itemName":"Spare hat"}]}"#
 
+			var createdIDs: [UUID] = []
 			try await app.test(
 				.POST, "/api/v3/quartermaster/create",
 				headers: contentHeaders(token),
@@ -262,10 +262,12 @@ final class QuartermasterControllerTests: XCTestCase, SwiftarrBaseTest {
 				XCTAssertEqual(created[1].itemName, "Spare hat")
 				XCTAssertTrue(created.allSatisfy { $0.location == "Deck 5" }, "shared location should apply to all")
 				XCTAssertTrue(created.allSatisfy { $0.category == .have }, "shared category should apply to all")
+				createdIDs = created.map { $0.itemID }
 			}
 
-			// Verify rows persisted.
-			let count = try await QuartermasterItem.query(on: app.db).count()
+			// Verify rows persisted (the DB is shared across the test run, so scope by the IDs
+			// this call actually returned rather than counting the whole table).
+			let count = try await QuartermasterItem.query(on: app.db).filter(\.$id ~~ createdIDs).count()
 			XCTAssertEqual(count, 2, "expected 2 rows in the database")
 		}
 	}
@@ -309,6 +311,48 @@ final class QuartermasterControllerTests: XCTestCase, SwiftarrBaseTest {
 				let list = try res.content.decode(QuartermasterListData.self)
 				XCTAssertTrue(list.items.allSatisfy { $0.category == .have },
 					"?category=have should return only 'have' items")
+			}
+		}
+	}
+
+	// MARK: - Test: search filter
+
+	func testList_SearchFilter_MatchesDescription() async throws {
+		try await withApp { app in
+			let user = try await makeUser(app, username: "qm-search-desc-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let token = try await makeToken(app, for: user)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+
+			let payload = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Widget","itemDescription":"a rare narwhal figurine"}]}"#
+			try await app.test(.POST, "/api/v3/quartermaster/create",
+				headers: contentHeaders(token), body: ByteBuffer(string: payload)) { _ async throws in }
+
+			try await app.test(.GET, "/api/v3/quartermaster?search=narwhal", headers: bearer(token)) { res async throws in
+				XCTAssertEqual(res.status, .ok, "body=\(String(buffer: res.body))")
+				let list = try res.content.decode(QuartermasterListData.self)
+				XCTAssertTrue(list.items.contains { $0.itemName == "Widget" },
+					"search=narwhal should match items via itemDescription")
+			}
+		}
+	}
+
+	func testList_SearchFilter_MatchesLocation() async throws {
+		try await withApp { app in
+			let user = try await makeUser(app, username: "qm-search-loc-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let token = try await makeToken(app, for: user)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+
+			let payload = #"{"category":"have","location":"Promenade Deck","items":[{"itemName":"Gadget"}]}"#
+			try await app.test(.POST, "/api/v3/quartermaster/create",
+				headers: contentHeaders(token), body: ByteBuffer(string: payload)) { _ async throws in }
+
+			try await app.test(.GET, "/api/v3/quartermaster?search=promenade", headers: bearer(token)) { res async throws in
+				XCTAssertEqual(res.status, .ok, "body=\(String(buffer: res.body))")
+				let list = try res.content.decode(QuartermasterListData.self)
+				XCTAssertTrue(list.items.contains { $0.itemName == "Gadget" },
+					"search=promenade should match items via location")
 			}
 		}
 	}
@@ -557,9 +601,13 @@ final class QuartermasterControllerTests: XCTestCase, SwiftarrBaseTest {
 			try await app.initializeUserCache(app)
 
 			// Post from the blocked user.
+			var hiddenItemID: UUID?
 			let payload = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Should be hidden"}]}"#
 			try await app.test(.POST, "/api/v3/quartermaster/create",
-				headers: contentHeaders(blockedToken), body: ByteBuffer(string: payload)) { _ async throws in }
+				headers: contentHeaders(blockedToken), body: ByteBuffer(string: payload)) { res async throws in
+				hiddenItemID = try res.content.decode([QuartermasterData].self).first?.itemID
+			}
+			guard let hiddenItemID else { XCTFail("no item"); return }
 
 			// Block that user.
 			let blockedID = try blocked.requireID()
@@ -572,7 +620,9 @@ final class QuartermasterControllerTests: XCTestCase, SwiftarrBaseTest {
 			try await app.test(.GET, "/api/v3/quartermaster", headers: bearer(blockerToken)) { res async throws in
 				XCTAssertEqual(res.status, .ok)
 				let list = try res.content.decode(QuartermasterListData.self)
-				XCTAssertFalse(list.items.contains { $0.itemName == "Should be hidden" },
+				// Match on the ID this test actually created, not the item name: the DB is shared
+				// across the test run, and "Should be hidden" isn't unique to this test.
+				XCTAssertFalse(list.items.contains { $0.itemID == hiddenItemID },
 					"items from a blocked user must not appear in the list")
 			}
 		}
@@ -607,10 +657,13 @@ final class QuartermasterControllerTests: XCTestCase, SwiftarrBaseTest {
 				XCTAssertEqual(res.status, .created, "report should return 201 Created")
 			}
 
-			// Verify a Report row was created (fresh test DB so any report is from this test).
-			let reports = try await Report.query(on: app.db).all()
-			let quartermasterReports = reports.filter { $0.reportType == .quartermasterItem }
-			XCTAssertEqual(quartermasterReports.count, 1, "filing a report should create one Report row")
+			// Verify a Report row was created for this specific item (the DB is shared across the
+			// test run, so scope by reportedID rather than counting all Report rows).
+			let reportCount = try await Report.query(on: app.db)
+				.filter(\.$reportType == .quartermasterItem)
+				.filter(\.$reportedID == id.uuidString)
+				.count()
+			XCTAssertEqual(reportCount, 1, "filing a report should create one Report row")
 		}
 	}
 
