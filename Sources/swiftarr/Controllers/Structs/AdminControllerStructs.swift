@@ -415,6 +415,10 @@ struct ServerRollupData: Content {
 		// Moderation
 		case report
 		case moderationAction			// Note that 'moderationAction' includes instances of Mods using the 'Post as Moderator' option.
+
+		// Quartermaster
+		case quartermasterItem
+		case quartermasterItemEdit
 	}
 }
 
