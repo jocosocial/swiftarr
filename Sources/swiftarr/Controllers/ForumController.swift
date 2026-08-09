@@ -294,14 +294,11 @@ struct ForumController: APIRouteCollection {
 			}
 			
 			mutating func afterDecode() throws {
-				// postgres "_" and "%" are wildcards, so escape for literals
-				search = search?.replacingOccurrences(of: "_", with: "\\_").replacingOccurrences(of: "%", with: "\\%")
-						.trimmingCharacters(in: .whitespacesAndNewlines)
+				search = search?.escapedForSQLWildcards()
 				if let search = search, search.isEmpty {
 					throw Abort(.badRequest, reason: "Search string, while optional, must not be empty if it exists.")
 				}
-				searchposts = searchposts?.replacingOccurrences(of: "_", with: "\\_").replacingOccurrences(of: "%", with: "\\%")
-						.trimmingCharacters(in: .whitespacesAndNewlines)
+				searchposts = searchposts?.escapedForSQLWildcards()
 				if let searchposts = searchposts, searchposts.isEmpty {
 					throw Abort(.badRequest, reason: "Search string, while optional, must not be empty if it exists.")
 				}
@@ -814,19 +811,14 @@ struct ForumController: APIRouteCollection {
 		}
 
 		if var searchStr = req.query[String.self, at: "search"] {
-			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
-				.replacingOccurrences(of: "%", with: "\\%")
-				.trimmingCharacters(in: .whitespacesAndNewlines)
+			searchStr = searchStr.escapedForSQLWildcards()
 			query.fullTextFilter(\.$text, searchStr)
 			if !searchStr.contains(" ") && pagination.start == 0 {
 				try await markNotificationViewed(user: cacheUser, type: .alertwordPost(searchStr, 0), on: req)
 			}
 		}
 		if var hashtag = req.query[String.self, at: "hashtag"] {
-			// postgres "_" and "%" are wildcards, so escape for literals
-			hashtag = hashtag.replacingOccurrences(of: "_", with: "\\_")
-				.replacingOccurrences(of: "%", with: "\\%")
-				.trimmingCharacters(in: .whitespacesAndNewlines)
+			hashtag = hashtag.escapedForSQLWildcards()
 			if !hashtag.hasPrefix("#") {
 				hashtag = "#\(hashtag)"
 			}

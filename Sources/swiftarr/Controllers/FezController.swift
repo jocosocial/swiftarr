@@ -140,9 +140,7 @@ struct FezController: APIRouteCollection {
 			fezQuery.filter(\.$startTime >= dayStart).filter(\.$startTime < dayEnd)
 		}
 		if var searchStr = urlQuery.search {
-			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
-				.replacingOccurrences(of: "%", with: "\\%")
-				.trimmingCharacters(in: .whitespacesAndNewlines)
+			searchStr = searchStr.escapedForSQLWildcards()
 			fezQuery.group(.or) { group in
 				group.fullTextFilter(FriendlyFez.self, \.$title, searchStr)
 					.fullTextFilter(FriendlyFez.self, \.$info, searchStr)
@@ -246,9 +244,7 @@ struct FezController: APIRouteCollection {
 		}
 
 		if var searchStr = urlQuery.search {
-			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
-				.replacingOccurrences(of: "%", with: "\\%")
-				.trimmingCharacters(in: .whitespacesAndNewlines)
+			searchStr = searchStr.escapedForSQLWildcards()
 			query.group(.or) { group in
 				group.fullTextFilter(FriendlyFez.self, \.$title, searchStr)
 					.fullTextFilter(FriendlyFez.self, \.$info, searchStr)
@@ -1087,9 +1083,7 @@ extension FezController {
 			}
 		}
 		if var searchStr = urlQuery.search {
-			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
-				.replacingOccurrences(of: "%", with: "\\%")
-				.trimmingCharacters(in: .whitespacesAndNewlines)
+			searchStr = searchStr.escapedForSQLWildcards()
 			query.join(FezPost.self, on: \FezPost.$fez.$id == \FriendlyFez.$id, method: .left)
 			query.group(.or) { group in
 				group.fullTextFilter(FezPost.self, \.$text, searchStr)

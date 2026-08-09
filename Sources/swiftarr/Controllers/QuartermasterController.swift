@@ -90,11 +90,13 @@ struct QuartermasterController: APIRouteCollection {
 			query.filter(\.$category == cat)
 		}
 		if var searchStr = urlQuery.search {
-			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
-				.replacingOccurrences(of: "%", with: "\\%")
-				.trimmingCharacters(in: .whitespacesAndNewlines)
+			searchStr = searchStr.escapedForSQLWildcards()
 			if !searchStr.isEmpty {
-				query.fullTextFilter(\.$itemName, searchStr)
+				query.group(.or) { or in
+					or.fullTextFilter(\.$itemName, searchStr)
+					or.fullTextFilter(\.$itemDescription, searchStr)
+					or.fullTextFilter(\.$location, searchStr)
+				}
 			}
 		}
 
