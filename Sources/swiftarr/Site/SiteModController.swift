@@ -957,7 +957,7 @@ struct SiteModController: SiteControllerUtils {
 			var finalEditAuthor: UserHeader?
 
 			init(_ req: Request, modData: QuartermasterModerationData) throws {
-				trunk = .init(req, title: "Quartermaster Item Moderation", tab: .moderator)
+				trunk = .init(req, title: "Quartermastarr Item Moderation", tab: .moderator)
 				self.modData = modData
 				firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 				finalEditAuthor = modData.edits.last?.author

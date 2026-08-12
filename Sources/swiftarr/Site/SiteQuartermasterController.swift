@@ -95,16 +95,16 @@ struct QuartermasterListPageContext: Encodable {
 		let basePath: String
 		switch tab {
 			case .about:
-				title = "Quartermaster"
+				title = "Quartermastarr"
 				basePath = "/quartermaster/about"
 			case .have:
-				title = "Quartermaster: Have"
+				title = "Quartermastarr: Have"
 				basePath = "/quartermaster"
 			case .need:
-				title = "Quartermaster: Need"
+				title = "Quartermastarr: Need"
 				basePath = "/quartermaster/need"
 			case .owned:
-				title = "Quartermaster: Owned"
+				title = "Quartermastarr: Owned"
 				basePath = "/quartermaster/owned"
 		}
 		trunk = .init(req, title: title, tab: .quartermaster)
@@ -166,7 +166,7 @@ struct QuartermasterCreateUpdatePageContext: Encodable {
 
 	// Create: empty header, one blank starting row, name shown by default.
 	init(_ req: Request) throws {
-		trunk = .init(req, title: "Add Quartermaster Item(s)", tab: .quartermaster)
+		trunk = .init(req, title: "Add Quartermastarr Item(s)", tab: .quartermaster)
 		pageTitle = "Add Item(s)"
 		formAction = "/quartermaster/create"
 		items = [ItemRow(itemName: "", itemDescription: "")]
@@ -175,7 +175,7 @@ struct QuartermasterCreateUpdatePageContext: Encodable {
 
 	// Edit: prefill everything from the existing item; exactly one row, locked.
 	init(_ req: Request, item: QuartermasterData) throws {
-		trunk = .init(req, title: "Edit Quartermaster Item", tab: .quartermaster)
+		trunk = .init(req, title: "Edit Quartermastarr Item", tab: .quartermaster)
 		pageTitle = "Edit Item"
 		formAction = "/quartermaster/\(item.itemID)/update"
 		submitButtonTitle = "Save"
@@ -196,10 +196,10 @@ struct SiteQuartermasterController: SiteControllerUtils {
 		// this URL and both see the content.
 		let globalRoutes = getGlobalRoutes(app).grouped("quartermaster")
 			.grouped(DisabledSiteSectionMiddleware(feature: .quartermaster))
-		globalRoutes.get("", use: haveListPageHandler).destination("the Quartermaster Have list")
-		globalRoutes.get("need", use: needListPageHandler).destination("the Quartermaster Need list")
-		globalRoutes.get("owned", use: ownedListPageHandler).destination("your Quartermaster items")
-		globalRoutes.get("about", use: aboutPageHandler).destination("the Quartermaster description")
+		globalRoutes.get("", use: haveListPageHandler).destination("the Quartermastarr Have list")
+		globalRoutes.get("need", use: needListPageHandler).destination("the Quartermastarr Need list")
+		globalRoutes.get("owned", use: ownedListPageHandler).destination("your Quartermastarr items")
+		globalRoutes.get("about", use: aboutPageHandler).destination("the Quartermastarr description")
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app).grouped("quartermaster")
@@ -255,7 +255,7 @@ struct SiteQuartermasterController: SiteControllerUtils {
 			var tab: QuartermasterListPageContext.QMTab
 
 			init(_ req: Request) throws {
-				trunk = .init(req, title: "Quartermaster", tab: .quartermaster)
+				trunk = .init(req, title: "Quartermastarr", tab: .quartermaster)
 				tab = .about
 			}
 		}

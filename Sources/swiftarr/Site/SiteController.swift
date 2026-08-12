@@ -461,7 +461,7 @@ struct ReportPageContext: Encodable {
 	// For reporting a Quartermaster item
 	init(_ req: Request, quartermasterItemID: String) throws {
 		trunk = .init(req, title: "Report Item", tab: .quartermaster)
-		reportTitle = "Report a Quartermaster Item"
+		reportTitle = "Report a Quartermastarr Item"
 		reportFormAction = "/quartermaster/report/\(quartermasterItemID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/quartermaster"
 	}
