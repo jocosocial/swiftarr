@@ -83,7 +83,7 @@ struct QuartermasterListPageContext: Encodable {
 	var searchPlaceholder: String
 	var searchActionPath: String
 	var categorySelection: String  // "all" | "have" | "need" -- Owned tab only; ignored elsewhere.
-	var showAddButton: Bool
+	var addItemURL: String  // Pre-selects the Have/Need category on the create page; Owned defaults to Have.
 	var showCategoryBadge: Bool
 	var filterAllURL: String
 	var filterHaveURL: String
@@ -120,7 +120,11 @@ struct QuartermasterListPageContext: Encodable {
 		}
 		searchActionPath = basePath
 		categorySelection = Self.categorySelection(from: params.category)
-		showAddButton = tab == .owned
+		switch tab {
+			case .have: addItemURL = "/quartermaster/create?category=have"
+			case .need: addItemURL = "/quartermaster/create?category=need"
+			case .owned, .about: addItemURL = "/quartermaster/create"
+		}
 		showCategoryBadge = tab == .owned
 
 		let searchQueryPart = searchText.isEmpty
@@ -164,11 +168,18 @@ struct QuartermasterCreateUpdatePageContext: Encodable {
 	var items: [ItemRow]
 	var isEdit: Bool
 
-	// Create: empty header, one blank starting row, name shown by default.
+	// Create: empty header, one blank starting row, name shown by default. The category dropdown
+	// preselects to whichever of Have/Need the caller followed the "Add Item(s)" link from, via an
+	// optional `?category=` query param; an absent or invalid value falls back to the "have" default.
 	init(_ req: Request) throws {
 		trunk = .init(req, title: "Add Quartermastarr Item(s)", tab: .quartermaster)
 		pageTitle = "Add Item(s)"
 		formAction = "/quartermaster/create"
+		if let requestedCategory = req.query[String.self, at: "category"],
+			let parsedCategory = try? QuartermasterCategory.fromAPIString(requestedCategory)
+		{
+			category = parsedCategory.rawValue
+		}
 		items = [ItemRow(itemName: "", itemDescription: "")]
 		isEdit = false
 	}

@@ -8,11 +8,9 @@
 				<div class="col">
 					<b>#if(tab == "have"):Have#elseif(tab == "need"):Need#else:Owned#endif</b>
 				</div>
-				#if(showAddButton):
-					<div class="col col-auto">
-						<a class="btn btn-primary btn-sm" role="button" href="/quartermaster/create">Add Item(s)</a>
-					</div>
-				#endif
+				<div class="col col-auto">
+					<a class="btn btn-primary btn-sm" role="button" href="#(addItemURL)">Add Item(s)</a>
+				</div>
 			</div>
 			<form class="d-flex my-1" action="#(searchActionPath)">
 				<input class="form-control" type="search" name="search" placeholder="#(searchPlaceholder)" value="#(searchText)" aria-label="Search" autocapitalize="off" required>
