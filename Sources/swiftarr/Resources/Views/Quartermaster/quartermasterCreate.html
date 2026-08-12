@@ -71,7 +71,7 @@
 												<input type="text" class="form-control" placeholder="Description (optional)" name="itemDescription" maxlength="2048" value="#(row.itemDescription)">
 											</div>
 											<div class="col-12 col-md-1">
-												#if(!isEdit):
+												#if(!isEdit && !isFirst):
 													<button type="button" class="btn btn-outline-danger btn-sm qm-remove-row" aria-label="Remove item">&times;</button>
 												#endif
 											</div>
