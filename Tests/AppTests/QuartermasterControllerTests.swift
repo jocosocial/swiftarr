@@ -23,29 +23,28 @@ class QuartermasterValidationTests: XCTestCase {
 		return result?.validationFailures.map { $0.errorString } ?? []
 	}
 
-	// MARK: - QuartermasterCreateData — location/contact cross-field rule
+	// MARK: - QuartermasterCreateData — location required when hiding name
 
-	func testCreate_BothLocationAndContactNil_Throws() {
-		let json = #"{"category":"have","items":[{"itemName":"Widget"}]}"#
+	func testCreate_HideOwnerNameWithoutLocation_Throws() {
+		let json = #"{"category":"have","hideOwnerName":true,"items":[{"itemName":"Widget"}]}"#
 		XCTAssertThrowsError(try validationErrors(QuartermasterCreateData.self, json)) { err in
 			let abort = err as? Abort
 			XCTAssertEqual(abort?.status, .badRequest)
-			XCTAssertTrue(abort?.reason.contains("location") ?? false || abort?.reason.contains("contact") ?? false)
+			XCTAssertTrue(abort?.reason.contains("location") ?? false)
 		}
 	}
 
-	func testCreate_LocationPresent_PassesCrossFieldCheck() throws {
-		let json = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Widget"}]}"#
+	func testCreate_NoLocationNoHide_PassesCrossFieldCheck() throws {
+		let json = #"{"category":"have","items":[{"itemName":"Widget"}]}"#
 		let errs = try validationErrors(QuartermasterCreateData.self, json)
-		// Only check cross-field did not throw; length errors are separate.
-		XCTAssertFalse(errs.isEmpty == false && errs.allSatisfy { $0.contains("location") || $0.contains("contact") },
-			"cross-field check should not fire when location is present")
+		XCTAssertFalse(errs.contains { $0.contains("location") },
+			"location should not be required when hideOwnerName is absent/false")
 	}
 
-	func testCreate_ContactUsernamePresent_PassesCrossFieldCheck() throws {
-		let json = #"{"category":"need","contactUsername":"someuser","items":[{"itemName":"Widget"}]}"#
+	func testCreate_HideOwnerNameWithLocation_PassesCrossFieldCheck() throws {
+		let json = #"{"category":"need","location":"Deck 5","hideOwnerName":true,"items":[{"itemName":"Widget"}]}"#
 		let errs = try validationErrors(QuartermasterCreateData.self, json)
-		XCTAssertFalse(errs.contains { $0.contains("location") && $0.contains("contact") })
+		XCTAssertFalse(errs.contains { $0.contains("location") && $0.contains("hid") })
 	}
 
 	// MARK: - QuartermasterCreateData — items array bounds
@@ -123,25 +122,32 @@ class QuartermasterValidationTests: XCTestCase {
 		XCTAssertEqual(errs, [], "unexpected validation errors: \(errs)")
 	}
 
-	func testCreate_HappyPath_WithContact() throws {
-		let json = #"{"category":"need","contactUsername":"alice","items":[{"itemName":"Sunscreen"}]}"#
+	func testCreate_HappyPath_NoLocationNoHide() throws {
+		let json = #"{"category":"need","items":[{"itemName":"Sunscreen"}]}"#
 		let errs = try validationErrors(QuartermasterCreateData.self, json)
 		XCTAssertEqual(errs, [], "unexpected validation errors: \(errs)")
 	}
 
-	func testCreate_HappyPath_WithBothLocationAndContact() throws {
-		let json = #"{"category":"have","location":"Lido Deck","contactUsername":"bob","items":[{"itemName":"Sunscreen"},{"itemName":"Hat"}]}"#
+	func testCreate_HappyPath_WithLocationAndHide() throws {
+		let json = #"{"category":"have","location":"Lido Deck","hideOwnerName":true,"items":[{"itemName":"Sunscreen"},{"itemName":"Hat"}]}"#
 		let errs = try validationErrors(QuartermasterCreateData.self, json)
 		XCTAssertEqual(errs, [], "unexpected validation errors: \(errs)")
 	}
 
-	// MARK: - QuartermasterContentData (update) — cross-field rule
+	// MARK: - QuartermasterContentData (update) — location required when hiding name
 
-	func testUpdate_BothLocationAndContactNil_Throws() {
-		let json = #"{"category":"have","itemName":"Widget"}"#
+	func testUpdate_HideOwnerNameWithoutLocation_Throws() {
+		let json = #"{"category":"have","itemName":"Widget","hideOwnerName":true}"#
 		XCTAssertThrowsError(try validationErrors(QuartermasterContentData.self, json)) { err in
 			XCTAssertEqual((err as? Abort)?.status, .badRequest)
 		}
+	}
+
+	func testUpdate_NoLocationNoHide_PassesCrossFieldCheck() throws {
+		let json = #"{"category":"have","itemName":"Widget"}"#
+		let errs = try validationErrors(QuartermasterContentData.self, json)
+		XCTAssertFalse(errs.contains { $0.contains("location") },
+			"location should not be required when hideOwnerName is absent/false")
 	}
 
 	// MARK: - QuartermasterContentData — itemName bounds
@@ -214,11 +220,11 @@ final class QuartermasterControllerTests: XCTestCase, SwiftarrBaseTest {
 		itemName: String = "Extra sunscreen",
 		itemDescription: String? = nil,
 		location: String? = "Deck 5",
-		contactUsername: String? = nil
+		hideOwnerName: Bool = false
 	) -> String {
 		var fields = [#""category":"\#(category)""#]
 		if let loc = location { fields.append(#""location":"\#(loc)""#) }
-		if let cu = contactUsername { fields.append(#""contactUsername":"\#(cu)""#) }
+		if hideOwnerName { fields.append(#""hideOwnerName":true"#) }
 		var itemFields = [#""itemName":"\#(itemName)""#]
 		if let desc = itemDescription { itemFields.append(#""itemDescription":"\#(desc)""#) }
 		let itemJSON = "{" + itemFields.joined(separator: ",") + "}"
@@ -378,7 +384,7 @@ final class QuartermasterControllerTests: XCTestCase, SwiftarrBaseTest {
 			try await app.test(.GET, "/api/v3/quartermaster?mine=true", headers: bearer(tokenA)) { res async throws in
 				XCTAssertEqual(res.status, .ok)
 				let list = try res.content.decode(QuartermasterListData.self)
-				XCTAssertTrue(list.items.allSatisfy { $0.owner.username == userA.username },
+				XCTAssertTrue(list.items.allSatisfy { $0.owner?.username == userA.username },
 					"?mine=true should return only the caller's own items, not other users'")
 				XCTAssertFalse(list.items.contains { $0.itemName == "User B item" },
 					"user B's item should not appear in user A's mine list")
@@ -410,6 +416,70 @@ final class QuartermasterControllerTests: XCTestCase, SwiftarrBaseTest {
 				let item = try res.content.decode(QuartermasterData.self)
 				XCTAssertEqual(item.itemID, id)
 				XCTAssertEqual(item.itemName, "Widget")
+			}
+		}
+	}
+
+	// MARK: - Test: hideOwnerName masking
+
+	func testGet_HideOwnerName_MasksOwnerFromOtherUsers() async throws {
+		try await withApp { app in
+			let owner = try await makeUser(app, username: "qm-hide-own-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let other = try await makeUser(app, username: "qm-hide-oth-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let ownerToken = try await makeToken(app, for: owner)
+			let otherToken = try await makeToken(app, for: other)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+
+			var itemID: UUID?
+			let payload = #"{"category":"have","location":"Deck 5","hideOwnerName":true,"items":[{"itemName":"Hidden widget"}]}"#
+			try await app.test(.POST, "/api/v3/quartermaster/create",
+				headers: contentHeaders(ownerToken), body: ByteBuffer(string: payload)
+			) { res async throws in
+				let items = try res.content.decode([QuartermasterData].self)
+				itemID = items.first?.itemID
+				XCTAssertNotNil(items.first?.owner, "the owner should see their own identity in the create response")
+			}
+			guard let id = itemID else { XCTFail("no item"); return }
+
+			try await app.test(.GET, "/api/v3/quartermaster/\(id)", headers: bearer(otherToken)) { res async throws in
+				XCTAssertEqual(res.status, .ok)
+				let item = try res.content.decode(QuartermasterData.self)
+				XCTAssertNil(item.owner, "owner must be masked from other users when hideOwnerName is true")
+				XCTAssertTrue(item.hideOwnerName)
+				XCTAssertEqual(item.location, "Deck 5", "location must remain visible so the item can still be found")
+			}
+
+			try await app.test(.GET, "/api/v3/quartermaster/\(id)", headers: bearer(ownerToken)) { res async throws in
+				XCTAssertEqual(res.status, .ok)
+				let item = try res.content.decode(QuartermasterData.self)
+				XCTAssertNotNil(item.owner, "the owner must still see their own identity")
+			}
+		}
+	}
+
+	func testGet_HideOwnerNameFalse_ShowsOwnerToOtherUsers() async throws {
+		try await withApp { app in
+			let owner = try await makeUser(app, username: "qm-show-own-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let other = try await makeUser(app, username: "qm-show-oth-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let ownerToken = try await makeToken(app, for: owner)
+			let otherToken = try await makeToken(app, for: other)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+
+			var itemID: UUID?
+			let payload = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Visible widget"}]}"#
+			try await app.test(.POST, "/api/v3/quartermaster/create",
+				headers: contentHeaders(ownerToken), body: ByteBuffer(string: payload)
+			) { res async throws in
+				itemID = try res.content.decode([QuartermasterData].self).first?.itemID
+			}
+			guard let id = itemID else { XCTFail("no item"); return }
+
+			try await app.test(.GET, "/api/v3/quartermaster/\(id)", headers: bearer(otherToken)) { res async throws in
+				XCTAssertEqual(res.status, .ok)
+				let item = try res.content.decode(QuartermasterData.self)
+				XCTAssertEqual(item.owner?.username, owner.username, "owner should be visible when hideOwnerName is false")
 			}
 		}
 	}
@@ -481,10 +551,9 @@ final class QuartermasterControllerTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
-	func testUpdate_ContactUserChange_CreatesEditRecord() async throws {
+	func testUpdate_HideOwnerNameChange_CreatesEditRecord() async throws {
 		try await withApp { app in
-			let user = try await makeUser(app, username: "qm-cu-upd-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
-			let contact = try await makeUser(app, username: "qm-cu-ct-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let user = try await makeUser(app, username: "qm-hon-upd-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
 			let token = try await makeToken(app, for: user)
 			try await app.asyncBoot()
 			try await app.initializeUserCache(app)
@@ -498,8 +567,8 @@ final class QuartermasterControllerTests: XCTestCase, SwiftarrBaseTest {
 			}
 			guard let id = itemID else { XCTFail("no item"); return }
 
-			// Only the contact user changes; text fields and category stay identical.
-			let updatePayload = "{\"category\":\"have\",\"itemName\":\"Widget\",\"location\":\"Deck 5\",\"contactUsername\":\"\(contact.username)\"}"
+			// Only hideOwnerName changes; text fields and category stay identical.
+			let updatePayload = #"{"category":"have","itemName":"Widget","location":"Deck 5","hideOwnerName":true}"#
 			try await app.test(.POST, "/api/v3/quartermaster/\(id)/update",
 				headers: contentHeaders(token), body: ByteBuffer(string: updatePayload)
 			) { res async throws in
@@ -510,7 +579,7 @@ final class QuartermasterControllerTests: XCTestCase, SwiftarrBaseTest {
 				XCTFail("item not found after update"); return
 			}
 			try await savedItem.$edits.load(on: app.db)
-			XCTAssertEqual(savedItem.edits.count, 1, "a contact user change should create a QuartermasterItemEdit")
+			XCTAssertEqual(savedItem.edits.count, 1, "a hideOwnerName change should create a QuartermasterItemEdit")
 		}
 	}
 

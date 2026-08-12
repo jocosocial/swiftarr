@@ -7,7 +7,8 @@ import Vapor
 struct QuartermasterFormContent: Codable {
 	var category: String
 	var location: String?
-	var contactUsername: String?
+	// Checkbox input: present (value "on") when checked, absent from the form body when unchecked.
+	var hideOwnerName: String?
 	var itemName: [String]
 	var itemDescription: [String]
 
@@ -40,7 +41,7 @@ struct QuartermasterFormContent: Codable {
 		return QuartermasterCreateData(
 			category: try QuartermasterCategory.fromAPIString(category),
 			location: Self.nilIfEmpty(location),
-			contactUsername: Self.nilIfEmpty(contactUsername),
+			hideOwnerName: hideOwnerName == "on",
 			items: try buildItemEntries()
 		)
 	}
@@ -53,7 +54,7 @@ struct QuartermasterFormContent: Codable {
 			itemName: firstEntry.itemName,
 			itemDescription: firstEntry.itemDescription,
 			location: Self.nilIfEmpty(location),
-			contactUsername: Self.nilIfEmpty(contactUsername)
+			hideOwnerName: hideOwnerName == "on"
 		)
 	}
 }
@@ -159,16 +160,15 @@ struct QuartermasterCreateUpdatePageContext: Encodable {
 	var submitButtonTitle: String = "Add Item(s)"
 	var category: String = "have"
 	var location: String = ""
-	var contactUsername: String
+	var hideOwnerName: Bool = false
 	var items: [ItemRow]
 	var isEdit: Bool
 
-	// Create: empty header, one blank starting row, contact defaults to the caller's own username.
+	// Create: empty header, one blank starting row, name shown by default.
 	init(_ req: Request) throws {
 		trunk = .init(req, title: "Add Quartermaster Item(s)", tab: .quartermaster)
 		pageTitle = "Add Item(s)"
 		formAction = "/quartermaster/create"
-		contactUsername = trunk.username
 		items = [ItemRow(itemName: "", itemDescription: "")]
 		isEdit = false
 	}
@@ -181,7 +181,7 @@ struct QuartermasterCreateUpdatePageContext: Encodable {
 		submitButtonTitle = "Save"
 		category = item.category.rawValue
 		location = item.location ?? ""
-		contactUsername = item.contactUser?.username ?? ""
+		hideOwnerName = item.hideOwnerName
 		items = [ItemRow(itemName: item.itemName, itemDescription: item.itemDescription ?? "")]
 		isEdit = true
 	}

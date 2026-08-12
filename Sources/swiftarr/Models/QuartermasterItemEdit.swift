@@ -2,11 +2,11 @@ import Fluent
 import Vapor
 
 /// 	When the TEXT FIELDS of a `QuartermasterItem` are edited, a `QuartermasterItemEdit` is created
-/// 	to save the previous values of those text fields.
+/// 	to save the previous values of those text fields, plus the `hideOwnerName` setting.
 ///
-/// 	Edits that only change the category — without touching item_name, item_description, or location —
-/// 	do not create a QuartermasterItemEdit. This is done for accountability purposes; the data collected
-/// 	is intended to be viewable only by moderators.
+/// 	Edits that only change the category — without touching item_name, item_description, location, or
+/// 	hideOwnerName — do not create a QuartermasterItemEdit. This is done for accountability purposes;
+/// 	the data collected is intended to be viewable only by moderators.
 ///
 /// 	- See Also: [QuartermasterModerationData](QuartermasterModerationData) the DTO returning data
 /// 	  moderators need to review items. Specifically, [QuartermasterEditLogData](QuartermasterEditLogData)
@@ -28,8 +28,8 @@ final class QuartermasterItemEdit: Model, @unchecked Sendable {
 	/// The previous location string (empty string when nil at edit time).
 	@Field(key: "location") var location: String
 
-	/// The previous contact user UUID (nil when no contact user was set at edit time).
-	@OptionalField(key: "contact_user") var contactUser: UUID?
+	/// Whether the owner's name was hidden at edit time.
+	@Field(key: "hide_owner_name") var hideOwnerName: Bool
 
 	/// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
@@ -60,7 +60,7 @@ final class QuartermasterItemEdit: Model, @unchecked Sendable {
 		self.itemName = item.itemName
 		self.itemDescription = item.itemDescription ?? ""
 		self.location = item.location ?? ""
-		self.contactUser = item.$contactUser.id
+		self.hideOwnerName = item.hideOwnerName
 	}
 }
 
@@ -71,7 +71,7 @@ struct CreateQuartermasterItemEditSchema: AsyncMigration {
 			.field("item_name", .string, .required)
 			.field("item_description", .string, .required)
 			.field("location", .string, .required)
-			.field("contact_user", .uuid, .references("user", "id", onDelete: .setNull))
+			.field("hide_owner_name", .bool, .required)
 			.field("created_at", .datetime)
 			.field("item", .uuid, .required, .references("quartermaster_item", "id"))
 			.field("editor", .uuid, .required, .references("user", "id"))

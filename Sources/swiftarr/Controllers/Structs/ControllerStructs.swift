@@ -771,11 +771,10 @@ public struct QuartermasterCreateData: Content {
 	/// Whether the items are on offer (`have`) or wanted (`need`). Applies to all items in the batch.
 	var category: QuartermasterCategory
 	/// Optional free-text location where items can be picked up / exchanged. 3–100 characters when present.
-	/// At least one of `location` or `contactUsername` must be supplied.
+	/// Required when `hideOwnerName` is `true`.
 	var location: String?
-	/// Optional contact username (a registered Twitarr user). At least one of `location` or `contactUsername`
-	/// must be supplied.
-	var contactUsername: String?
+	/// When `true`, the owner's identity is hidden from other users on the created items. Requires `location`.
+	var hideOwnerName: Bool = false
 	/// One or more items to create. 1–50 items per call. Each item has its own name and optional description.
 	var items: [QuartermasterItemEntry]
 }
@@ -789,7 +788,7 @@ extension QuartermasterCreateData: RCFValidatable {
 			.forEach {
 				tester.addValidationError(forKey: .location, errorString: $0)
 			}
-		try validateQuartermasterHasLocationOrContact(location: location, contactUsername: contactUsername)
+		try validateQuartermasterLocationRequiredIfHidden(location: location, hideOwnerName: hideOwnerName)
 		for (index, entry) in items.enumerated() {
 			guard entry.itemName.count >= 2 else {
 				throw Abort(.badRequest, reason: "Item \(index + 1): itemName has a 2 character minimum")
@@ -806,6 +805,17 @@ extension QuartermasterCreateData: RCFValidatable {
 	}
 }
 
+extension QuartermasterCreateData {
+	/// Decodes a create request. `hideOwnerName` may be omitted from the JSON, in which case it decodes as FALSE.
+	public init(from decoder: Decoder) throws {
+		let container = try decoder.container(keyedBy: CodingKeys.self)
+		category = try container.decode(QuartermasterCategory.self, forKey: .category)
+		location = try container.decodeIfPresent(String.self, forKey: .location)
+		hideOwnerName = try container.decodeIfPresent(Bool.self, forKey: .hideOwnerName) ?? false
+		items = try container.decode([QuartermasterItemEntry].self, forKey: .items)
+	}
+}
+
 /// Used to update a single `QuartermasterItem`.
 ///
 /// Required by: `POST /api/v3/quartermaster/ID/update`
@@ -818,12 +828,10 @@ public struct QuartermasterContentData: Content {
 	var itemName: String
 	/// The updated description. ≤2048 characters when present.
 	var itemDescription: String?
-	/// The updated location. 3–100 characters when present. At least one of `location` or
-	/// `contactUsername` must be supplied.
+	/// The updated location. 3–100 characters when present. Required when `hideOwnerName` is `true`.
 	var location: String?
-	/// The updated contact username. Must be a registered Twitarr user when non-nil. At least one
-	/// of `location` or `contactUsername` must be supplied.
-	var contactUsername: String?
+	/// When `true`, the owner's identity is hidden from other users on this item. Requires `location`.
+	var hideOwnerName: Bool = false
 }
 
 extension QuartermasterContentData: RCFValidatable {
@@ -842,7 +850,19 @@ extension QuartermasterContentData: RCFValidatable {
 			.forEach {
 				tester.addValidationError(forKey: .location, errorString: $0)
 			}
-		try validateQuartermasterHasLocationOrContact(location: location, contactUsername: contactUsername)
+		try validateQuartermasterLocationRequiredIfHidden(location: location, hideOwnerName: hideOwnerName)
+	}
+}
+
+extension QuartermasterContentData {
+	/// Decodes an update request. `hideOwnerName` may be omitted from the JSON, in which case it decodes as FALSE.
+	public init(from decoder: Decoder) throws {
+		let container = try decoder.container(keyedBy: CodingKeys.self)
+		category = try container.decode(QuartermasterCategory.self, forKey: .category)
+		itemName = try container.decode(String.self, forKey: .itemName)
+		itemDescription = try container.decodeIfPresent(String.self, forKey: .itemDescription)
+		location = try container.decodeIfPresent(String.self, forKey: .location)
+		hideOwnerName = try container.decodeIfPresent(Bool.self, forKey: .hideOwnerName) ?? false
 	}
 }
 
@@ -859,13 +879,13 @@ private func quartermasterLocationValidations(location: String?) -> [String] {
 	return errorStrings
 }
 
-/// `QuartermasterCreateData` and `QuartermasterContentData` both require at least one of `location` or
-/// `contactUsername` to be present; this fn exists to ensure they enforce that the same way.
-private func validateQuartermasterHasLocationOrContact(location: String?, contactUsername: String?) throws {
+/// `QuartermasterCreateData` and `QuartermasterContentData` both require `location` to be present when
+/// `hideOwnerName` is `true`, since it becomes the only way for other users to identify the item; this fn
+/// exists to ensure they enforce that the same way.
+private func validateQuartermasterLocationRequiredIfHidden(location: String?, hideOwnerName: Bool) throws {
 	let noLocation = location == nil || location?.isEmpty == true
-	let noContact = contactUsername == nil || contactUsername?.isEmpty == true
-	if noLocation && noContact {
-		throw Abort(.badRequest, reason: "An item must have a location, a contact user, or both.")
+	if hideOwnerName && noLocation {
+		throw Abort(.badRequest, reason: "A location is required when hiding your name.")
 	}
 }
 
@@ -889,10 +909,11 @@ public struct QuartermasterData: Content, ResponseEncodable {
 	var itemDescription: String?
 	/// An optional free-text pickup/exchange location. Masked when quarantined.
 	var location: String?
-	/// The item's creator.
-	var owner: UserHeader
-	/// An optional contact user. May be the same as `owner` or a different user.
-	var contactUser: UserHeader?
+	/// The item's creator. `nil` when `hideOwnerName` is `true` and the viewer is neither the owner
+	/// nor a moderator.
+	var owner: UserHeader?
+	/// Whether the owner has chosen to hide their identity from other users.
+	var hideOwnerName: Bool
 	/// The item's current moderation status.
 	var moderationStatus: ContentModerationStatus
 	/// The time of the item's most recent modification.
@@ -900,15 +921,18 @@ public struct QuartermasterData: Content, ResponseEncodable {
 }
 
 extension QuartermasterData {
-	init(item: QuartermasterItem, owner: UserHeader, contactUser: UserHeader?, overrideQuarantine: Bool = false) throws {
+	/// - Parameters:
+	///   - showOwner: Whether to reveal the real owner in this response. Should be `true` when the
+	///     viewer is the item's owner, a moderator, or `hideOwnerName` is `false`; `false` otherwise.
+	init(item: QuartermasterItem, owner: UserHeader, showOwner: Bool, overrideQuarantine: Bool = false) throws {
 		self.itemID = try item.requireID()
 		self.category = item.category
 		let showContent = overrideQuarantine || item.moderationStatus.showsContent()
 		self.itemName = showContent ? item.itemName : "Item name is under moderator review"
 		self.itemDescription = showContent ? item.itemDescription : "Item description is under moderator review"
 		self.location = showContent ? item.location : "Item location is under moderator review"
-		self.owner = owner
-		self.contactUser = contactUser
+		self.owner = showOwner ? owner : nil
+		self.hideOwnerName = item.hideOwnerName
 		self.moderationStatus = item.moderationStatus
 		self.lastModificationTime = item.updatedAt ?? Date()
 	}

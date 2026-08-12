@@ -103,9 +103,8 @@ struct QuartermasterController: APIRouteCollection {
 		let total = try await query.copy().count()
 		let items = try await query.sort(\.$updatedAt, .descending).range(pagination.range).all()
 
-		// Batch-fetch owner + contact user headers in one call instead of one getHeader() call per item.
-		var headerIDs = Set(items.map { $0.$owner.id })
-		headerIDs.formUnion(items.compactMap { $0.$contactUser.id })
+		// Batch-fetch owner headers in one call instead of one getHeader() call per item.
+		let headerIDs = Set(items.map { $0.$owner.id })
 		let headers = Dictionary(uniqueKeysWithValues: req.userCache.getHeaders(headerIDs).map { ($0.userID, $0) })
 		func requireHeader(_ userID: UUID) throws -> UserHeader {
 			guard let header = headers[userID] else {
@@ -116,8 +115,8 @@ struct QuartermasterController: APIRouteCollection {
 
 		let itemDataArray: [QuartermasterData] = try items.map { item in
 			let ownerHeader = try requireHeader(item.$owner.id)
-			let contactHeader = try item.$contactUser.id.map(requireHeader)
-			return try QuartermasterData(item: item, owner: ownerHeader, contactUser: contactHeader)
+			let showOwner = !item.hideOwnerName || item.$owner.id == cacheUser.userID
+			return try QuartermasterData(item: item, owner: ownerHeader, showOwner: showOwner)
 		}
 		return QuartermasterListData(
 			paginator: Paginator(total: total, start: pagination.start, limit: pagination.limit),
@@ -138,20 +137,20 @@ struct QuartermasterController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Item not found.")
 		}
 		let ownerHeader = try req.userCache.getHeader(item.$owner.id)
-		let contactHeader = try item.$contactUser.id.map { try req.userCache.getHeader($0) }
-		return try QuartermasterData(item: item, owner: ownerHeader, contactUser: contactHeader)
+		let showOwner = !item.hideOwnerName || item.$owner.id == cacheUser.userID
+		return try QuartermasterData(item: item, owner: ownerHeader, showOwner: showOwner)
 	}
 
 	/// `POST /api/v3/quartermaster/create`
 	///
 	/// Creates one or more `QuartermasterItem`s in a single batch. All items share the same
-	/// `category`, `location`, and `contactUsername`; each item has its own `itemName` and
+	/// `category`, `location`, and `hideOwnerName`; each item has its own `itemName` and
 	/// optional `itemDescription`. All items are saved inside a single transaction so the batch
 	/// is all-or-nothing.
 	///
-	/// At least one of `location` or `contactUsername` must be supplied.
+	/// `location` is required when `hideOwnerName` is `true`.
 	///
-	/// - Throws: 400 on validation failure or unknown `contactUsername`; 401 if unauthenticated;
+	/// - Throws: 400 on validation failure; 401 if unauthenticated;
 	///   403 if the user cannot create content (banned/quarantined).
 	/// - Returns: `[QuartermasterData]` with HTTP 201 Created.
 	func createHandler(_ req: Request) async throws -> Response {
@@ -159,11 +158,7 @@ struct QuartermasterController: APIRouteCollection {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		try cacheUser.guardCanCreateContent()
 
-		// Resolve the optional shared contact user once, before entering the transaction.
-		let contactUserID = try resolveContactUser(username: data.contactUsername, on: req)
-
 		let ownerHeader = cacheUser.makeHeader()
-		let contactHeader = try contactUserID.map { try req.userCache.getHeader($0) }
 
 		let savedItems: [QuartermasterData] = try await req.db.transaction { db in
 			var results: [QuartermasterData] = []
@@ -174,10 +169,10 @@ struct QuartermasterController: APIRouteCollection {
 					itemName: entry.itemName,
 					itemDescription: entry.itemDescription,
 					location: data.location,
-					contactUserID: contactUserID
+					hideOwnerName: data.hideOwnerName
 				)
 				try await item.save(on: db)
-				results.append(try QuartermasterData(item: item, owner: ownerHeader, contactUser: contactHeader))
+				results.append(try QuartermasterData(item: item, owner: ownerHeader, showOwner: true))
 			}
 			return results
 		}
@@ -192,11 +187,11 @@ struct QuartermasterController: APIRouteCollection {
 	/// Updates a single Quartermaster item. The owner may update any field; a moderator may also
 	/// update items belonging to other users.
 	///
-	/// When any text field (`itemName`, `itemDescription`, or `location`) changes, a
+	/// When any text field (`itemName`, `itemDescription`, or `location`) or `hideOwnerName` changes, a
 	/// `QuartermasterItemEdit` is created first to snapshot the prior state for mod accountability.
 	/// Category-only changes do **not** create an edit record.
 	///
-	/// - Throws: 400 on validation failure, unknown `contactUsername`, or item not found;
+	/// - Throws: 400 on validation failure or item not found;
 	///   401 if unauthenticated; 403 if the caller cannot modify this item.
 	/// - Returns: `QuartermasterData`
 	func updateHandler(_ req: Request) async throws -> QuartermasterData {
@@ -205,14 +200,11 @@ struct QuartermasterController: APIRouteCollection {
 		let item = try await findItem(on: req)
 		try cacheUser.guardCanModifyContent(item)
 
-		// Resolve the new contact user if specified.
-		let newContactUserID = try resolveContactUser(username: data.contactUsername, on: req)
-
 		// Snapshot the current text fields before applying changes, only when text actually changed.
 		let contentChanged = data.itemName != item.itemName
 			|| data.itemDescription != item.itemDescription
 			|| data.location != item.location
-			|| newContactUserID != item.$contactUser.id
+			|| data.hideOwnerName != item.hideOwnerName
 		if contentChanged {
 			let edit = try QuartermasterItemEdit(item: item, editorID: cacheUser.userID)
 			try await item.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: req)
@@ -224,12 +216,13 @@ struct QuartermasterController: APIRouteCollection {
 		item.itemName = data.itemName
 		item.itemDescription = data.itemDescription
 		item.location = data.location
-		item.$contactUser.id = newContactUserID
+		item.hideOwnerName = data.hideOwnerName
 		try await item.save(on: req.db)
 
+		// guardCanModifyContent(_:) above already establishes the caller is either the owner or a
+		// moderator, so it's always safe to show them the real owner here.
 		let ownerHeader = try req.userCache.getHeader(item.$owner.id)
-		let contactHeader = try newContactUserID.map { try req.userCache.getHeader($0) }
-		return try QuartermasterData(item: item, owner: ownerHeader, contactUser: contactHeader)
+		return try QuartermasterData(item: item, owner: ownerHeader, showOwner: true)
 	}
 
 	/// `POST /api/v3/quartermaster/:quartermaster_id/delete`
@@ -266,18 +259,6 @@ struct QuartermasterController: APIRouteCollection {
 		catch let abort as Abort where abort.status == .notFound {
 			throw Abort(.badRequest, reason: abort.reason)
 		}
-	}
-
-	/// Resolves an optional `contactUsername` to a user ID, treating a nil or empty username as "no contact user".
-	/// Used by both `createHandler(_:)` and `updateHandler(_:)`.
-	private func resolveContactUser(username: String?, on req: Request) throws -> UUID? {
-		guard let username, !username.isEmpty else {
-			return nil
-		}
-		guard let contactUser = req.userCache.getUser(username: username) else {
-			throw Abort(.badRequest, reason: "User '@\(username)' not found.")
-		}
-		return contactUser.userID
 	}
 
 	/// `POST /api/v3/quartermaster/:quartermaster_id/report`

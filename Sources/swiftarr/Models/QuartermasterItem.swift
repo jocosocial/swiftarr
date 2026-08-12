@@ -5,8 +5,9 @@ import Vapor
 /// 	A QuartermasterItem is a single entry on the Quartermaster "have / need" board.
 ///
 /// 	Any logged-in user can post an item they have to offer or an item they are looking for. Each entry
-/// 	may optionally specify a free-text location and/or a contact user (another registered Twitarr user).
-/// 	At least one of {location, contact user} must be present (validated in the controller).
+/// 	may optionally specify a free-text location, and may hide the owner's name from other users. When
+/// 	the owner's name is hidden, a location is required, since it becomes the only way for other users
+/// 	to identify how to find the item (validated in the controller).
 ///
 /// 	Items are searchable, filterable by category (have/need) and by owner, and are individually
 /// 	reportable to the mod queue. Moderators may quarantine or delete entries exactly as they do
@@ -44,10 +45,9 @@ final class QuartermasterItem: Model, Searchable, @unchecked Sendable {
 	/// The user who created this item listing.
 	@Parent(key: "owner") var owner: User
 
-	/// An optional contact user — the person to approach about this item. Defaults to the owner
-	/// in clients, but may be overridden to any real Twitarr user. When this user is deleted,
-	/// the field is nulled out rather than cascading deletion to the item.
-	@OptionalParent(key: "contact_user") var contactUser: User?
+	/// When `true`, the owner's identity is hidden from other users viewing this item (the owner
+	/// and moderators can still see it). A location is required when this is set.
+	@Field(key: "hide_owner_name") var hideOwnerName: Bool
 
 	/// The child `QuartermasterItemEdit` accountability records for this item.
 	@Children(for: \.$item) var edits: [QuartermasterItemEdit]
@@ -77,21 +77,21 @@ final class QuartermasterItem: Model, Searchable, @unchecked Sendable {
 	///   - itemName: A short name for the item (2–100 chars).
 	///   - itemDescription: An optional longer description (≤2048 chars).
 	///   - location: An optional free-text pickup/exchange location.
-	///   - contactUserID: An optional UUID of the contact user; nil means no contact user is set.
+	///   - hideOwnerName: Whether to hide the owner's identity from other users. Defaults to `false`.
 	init(
 		ownerID: UUID,
 		category: QuartermasterCategory,
 		itemName: String,
 		itemDescription: String? = nil,
 		location: String? = nil,
-		contactUserID: UUID? = nil
+		hideOwnerName: Bool = false
 	) {
 		self.$owner.id = ownerID
 		self.category = category
 		self.itemName = itemName
 		self.itemDescription = itemDescription
 		self.location = location
-		self.$contactUser.id = contactUserID
+		self.hideOwnerName = hideOwnerName
 		self.moderationStatus = .normal
 	}
 }
@@ -133,7 +133,7 @@ struct CreateQuartermasterItemSchema: AsyncMigration {
 			.field("location", .string)
 			.field("mod_status", modStatusEnum, .required)
 			.field("owner", .uuid, .required, .references("user", "id", onDelete: .cascade))
-			.field("contact_user", .uuid, .references("user", "id", onDelete: .setNull))
+			.field("hide_owner_name", .bool, .required)
 			.field("created_at", .datetime)
 			.field("updated_at", .datetime)
 			.field("deleted_at", .datetime)

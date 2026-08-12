@@ -15,8 +15,8 @@
 		</div>
 		<div class="col col-auto text-muted text-end">
 			#if(item.location):#(item.location)#endif
-			#if(item.location && item.contactUser): &middot; #endif
-			#if(item.contactUser):#userByline(item.contactUser, "short")#endif
+			#if(item.location && item.owner): &middot; #endif
+			#if(item.owner):#userByline(item.owner, "short")#elseif(item.hideOwnerName):Anonymous#endif
 		</div>
 	</div>
 
@@ -35,14 +35,14 @@
 		</div>
 		<div class="row justify-content-center mt-2">
 			<div class="col col-auto btn-group btn-group-sm">
-				#if(item.contactUser):
-					<a class="btn btn-outline-primary" href="/user/#(item.contactUser.userID)">Contact Profile</a>
-					#if(item.contactUser.userID != trunk.userID):
-						<a class="btn btn-outline-primary" href="/seamail/create?withuser=#(item.contactUser.userID)">Seamail</a>
+				#if(item.owner):
+					<a class="btn btn-outline-primary" href="/user/#(item.owner.userID)">Contact Profile</a>
+					#if(item.owner.userID != trunk.userID):
+						<a class="btn btn-outline-primary" href="/seamail/create?withuser=#(item.owner.userID)">Seamail</a>
 					#endif
 				#endif
 				<a class="btn btn-outline-primary" href="/quartermaster/report/#(item.itemID)">Report</a>
-				#if(item.owner.userID == trunk.userID || trunk.userIsMod):
+				#if(trunk.userIsMod || (item.owner && item.owner.userID == trunk.userID)):
 					<a class="btn btn-outline-primary" href="/quartermaster/#(item.itemID)/edit">Edit</a>
 					<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
 				#endif

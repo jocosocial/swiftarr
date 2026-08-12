@@ -9,14 +9,14 @@ class QuartermasterFormTests: XCTestCase {
 	private func makeForm(
 		category: String = "have",
 		location: String? = "Deck 5",
-		contactUsername: String? = nil,
+		hideOwnerName: String? = nil,
 		names: [String],
 		descriptions: [String]? = nil
 	) -> QuartermasterFormContent {
 		QuartermasterFormContent(
 			category: category,
 			location: location,
-			contactUsername: contactUsername,
+			hideOwnerName: hideOwnerName,
 			itemName: names,
 			itemDescription: descriptions ?? names.map { _ in "" }
 		)
@@ -58,7 +58,7 @@ class QuartermasterFormTests: XCTestCase {
 		let form = QuartermasterFormContent(
 			category: "have",
 			location: "Deck 5",
-			contactUsername: nil,
+			hideOwnerName: nil,
 			itemName: ["Widget", "Gadget"],
 			itemDescription: ["Only one"]
 		)
@@ -84,19 +84,19 @@ class QuartermasterFormTests: XCTestCase {
 	// MARK: - buildCreateData (Add Item(s) -- batch create)
 
 	func testBuildCreateData_HappyPath() throws {
-		let form = makeForm(category: "need", location: "  Deck 9  ", contactUsername: "  sam  ", names: ["Widget"])
+		let form = makeForm(category: "need", location: "  Deck 9  ", hideOwnerName: "on", names: ["Widget"])
 		let data = try form.buildCreateData()
 		XCTAssertEqual(data.category, .need)
 		XCTAssertEqual(data.location, "Deck 9")
-		XCTAssertEqual(data.contactUsername, "sam")
+		XCTAssertTrue(data.hideOwnerName)
 		XCTAssertEqual(data.items.count, 1)
 	}
 
-	func testBuildCreateData_EmptyLocationAndContact_BecomeNil() throws {
-		let form = makeForm(location: "", contactUsername: "   ", names: ["Widget"])
+	func testBuildCreateData_EmptyLocationAndNoHide_BecomesNilFalse() throws {
+		let form = makeForm(location: "", hideOwnerName: nil, names: ["Widget"])
 		let data = try form.buildCreateData()
 		XCTAssertNil(data.location)
-		XCTAssertNil(data.contactUsername)
+		XCTAssertFalse(data.hideOwnerName)
 	}
 
 	func testBuildCreateData_InvalidCategory_Throws() {

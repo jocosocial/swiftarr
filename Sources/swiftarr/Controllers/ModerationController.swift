@@ -595,8 +595,7 @@ struct ModerationController: APIRouteCollection {
 		let editData: [QuartermasterEditLogData] = try edits.map { try QuartermasterEditLogData($0, on: req) }
 		let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
 		let ownerHeader = try req.userCache.getHeader(item.$owner.id)
-		let contactHeader = item.$contactUser.id.flatMap { req.userCache.getHeaders([$0]).first }
-		let itemData = try QuartermasterData(item: item, owner: ownerHeader, contactUser: contactHeader, overrideQuarantine: true)
+		let itemData = try QuartermasterData(item: item, owner: ownerHeader, showOwner: true, overrideQuarantine: true)
 		let modData = QuartermasterModerationData(
 			item: itemData,
 			isDeleted: item.deletedAt != nil,

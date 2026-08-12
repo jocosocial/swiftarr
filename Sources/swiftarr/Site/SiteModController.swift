@@ -970,8 +970,10 @@ struct SiteModController: SiteControllerUtils {
 							"\(self.modData.edits[index + 1].author.username) edited to:"
 					}
 				}
-				if self.modData.edits.count > 0 {
-					self.modData.edits[0].author = modData.item.owner
+				if self.modData.edits.count > 0, let owner = modData.item.owner {
+					// `owner` is always non-nil here: the moderation endpoint always reveals the real
+					// owner to moderators, regardless of the item's hideOwnerName setting.
+					self.modData.edits[0].author = owner
 					self.modData.edits[0].author.username = "\(self.modData.edits[0].author.username) initially wrote:"
 				}
 			}

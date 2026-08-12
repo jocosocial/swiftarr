@@ -396,7 +396,7 @@ extension UserModerationData {
 }
 
 /// Used to return `QuartermasterItemEdit` data for moderators. The only primary data an edit stores is the item
-/// name, description, and location text fields, plus the contact user at the time of the edit.
+/// name, description, and location text fields, plus whether the owner's name was hidden at the time of the edit.
 ///
 ///	Included in:
 ///	* `QuartermasterModerationData`
@@ -420,8 +420,8 @@ public struct QuartermasterEditLogData: Content {
 	var itemDescription: String
 	/// The location just before `author` edited it. Empty string if there was none.
 	var location: String
-	/// The contact user just before `author` edited it, if any.
-	var contactUser: UserHeader?
+	/// Whether the owner's name was hidden from other users just before `author` edited it.
+	var hideOwnerName: Bool
 }
 
 extension QuartermasterEditLogData {
@@ -433,7 +433,7 @@ extension QuartermasterEditLogData {
 		itemName = edit.itemName
 		itemDescription = edit.itemDescription
 		location = edit.location
-		contactUser = edit.contactUser.flatMap { req.userCache.getHeaders([$0]).first }
+		hideOwnerName = edit.hideOwnerName
 	}
 }
 

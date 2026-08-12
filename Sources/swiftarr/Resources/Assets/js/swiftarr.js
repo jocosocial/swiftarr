@@ -788,9 +788,6 @@ userSearch?.addEventListener('input', function (event) {
 						if (userSearch.dataset.nameusage == "seamail") {
 							checkbox.addEventListener('click', addToNamedParticipants);
 						}
-						else if (userSearch.dataset.nameusage == "quartermaster") {
-							checkbox.addEventListener('click', selectContactUsername);
-						}
 						else {
 							checkbox.addEventListener('click', spinnerButtonAction);
 						}
@@ -830,16 +827,6 @@ function updateParticipantFormElement(participantsDiv) {
 	}
 	let hiddenFormElem = document.getElementById('participants_hidden');
 	hiddenFormElem.value = names;
-}
-
-// Fills the (single) contact-username field with the selected suggestion and clears the list.
-// Used by forms -- like Quartermaster's create/edit form -- where the autocomplete input doubles
-// as the field actually submitted with the form, rather than feeding a separate hidden field.
-function selectContactUsername(event) {
-	event.preventDefault();
-	let listItem = event.target.closest('li');
-	userSearch.value = listItem.dataset.username;
-	document.getElementById('name_suggestions').innerHTML = "";
 }
 
 // MARK: - User Profile Handlers
