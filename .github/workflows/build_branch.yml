@@ -31,6 +31,35 @@ jobs:
     runs-on: ubuntu-24.04
     container:
       image: swift:6.2-noble
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: swiftarr
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: swiftarr-test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # The job runs inside a container, so services are reachable by label on their own
+      # default ports. These overrides matter because configure.swift defaults .testing to
+      # 5433/6380, which are the host-side ports of the docker-compose stack.
+      DATABASE_HOSTNAME: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: swiftarr
+      DATABASE_PASSWORD: password
+      REDIS_HOSTNAME: redis
+      REDIS_PORT: 6379
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,9 +72,19 @@ jobs:
           key: ${{ runner.os }}-swift-${{ hashFiles('Package.resolved') }}
           restore-keys: |
             ${{ runner.os }}-swift-
+      - name: Build
+        run: swift build
+      - name: Migrate the test database
+        # Required, and the failure it prevents is misleading. Application.testable() calls
+        # SwiftarrConfigurator.configure() and then Settings.shared.readTimeZoneChanges(app)
+        # BEFORE withApp reaches app.autoMigrate(). Against an empty database that read fails
+        # with `relation "time_zone_change" does not exist`, which surfaces as a generic
+        # PSQLError at Application+Testable.swift:17 on every single test — it reads like a
+        # broken harness rather than a missing schema.
+        run: ./.build/debug/swiftarr migrate --env testing --yes
       - name: Run tests
-        # Limited to pure-helper test classes that don't require app/DB spinup.
-        # SettingsTests and ClientControllerTests need a migrated+seeded database
-        # which a pristine CI postgres can't satisfy without infrastructure work
-        # outside the scope of this PR.
-        run: swift test --enable-test-discovery --filter "GeometryTests|ValidatingJSONDecoderTests|CruiseDateTests|ThemeCookieTests|CryptoHelperTests|DisabledFeaturesGroupTests|EventParserTests|TimeZoneChangeSetTests|UserStructValidationTests|ContentStructValidationTests|FezAndEventValidationTests|AdminStructValidationTests|DateExtensionTests|SettingsCalendarTests|ContentFilterableTests|PaginationTests|QuartermasterValidationTests|QuartermasterFormTests"
+        # SettingsTests is the one suite still excluded, and not for infrastructure reasons:
+        # it fails against a migrated database because its expectations are stale
+        # (testEmbarkationStartDate expects 2024-03-09, master produces 2025-03-02). Everything
+        # else in the suite passes with the services above.
+        run: swift test --enable-test-discovery --skip SettingsTests
