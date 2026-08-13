@@ -305,16 +305,36 @@ function copyToClipboard() {
 
 // MARK: - Quartermaster Add Item(s) form
 
+// Each row's three fields need names unique to their position (itemName0/itemDescription0/itemImage0,
+// itemName1/..., ...) -- Vapor's multipart decoder can't collect repeated same-named parts into an
+// array the way a plain form-urlencoded body can, and mixing an array field into the same keyed
+// container as several sibling Optional fields corrupts decoding of the array field too (see
+// QuartermasterFormContent's doc comment), so the server expects discrete per-slot fields for all
+// three instead. Rows can be added/removed after page load, so this renumbers every row's fields by
+// current DOM position whenever the row list changes, keeping names contiguous.
+function renumberQmRowInputs() {
+	document.querySelectorAll("#itemRows .qm-item-row").forEach(function (row, index) {
+		let nameInput = row.querySelector(".qm-item-name");
+		let descInput = row.querySelector(".qm-item-description");
+		let fileInput = row.querySelector(".qm-item-image");
+		if (nameInput) { nameInput.name = "itemName" + index; }
+		if (descInput) { descInput.name = "itemDescription" + index; }
+		if (fileInput) { fileInput.name = "itemImage" + index; }
+	});
+}
+renumberQmRowInputs();
+
 // Clones the row <template> into the rows container, up to data-max rows. Button lookups happen by
 // ID (data-container, data-template) so this works regardless of how many rows already exist.
 function addQuartermasterRowAction() {
 	let btn = event.currentTarget;
 	let container = document.getElementById(btn.dataset.container);
 	let template = document.getElementById(btn.dataset.template);
-	let max = parseInt(btn.dataset.max || "50", 10);
+	let max = parseInt(btn.dataset.max || "10", 10);
 	if (!container || !template) { return; }
 	if (container.children.length >= max) { return; }
 	container.appendChild(template.content.cloneNode(true));
+	renumberQmRowInputs();
 	if (container.children.length >= max) {
 		btn.disabled = true;
 	}
@@ -329,7 +349,47 @@ document.addEventListener("click", function (event) {
 	let container = row?.parentElement;
 	if (!row || !container || container.children.length <= 1) { return; }
 	row.remove();
+	renumberQmRowInputs();
 	document.getElementById("qmAddRowBtn")?.removeAttribute("disabled");
+});
+
+// Shows/hides a Quartermaster item row's photo preview based on its current state: a newly-chosen
+// file wins, then the existing server-side image (unless "Remove photo" is checked), then nothing.
+function updateQmImagePreview(row) {
+	let fileInput = row?.querySelector(".qm-item-image");
+	let img = row?.querySelector(".qm-item-image-preview");
+	if (!fileInput || !img) { return; }
+	let removeCheckbox = row.querySelector(".qm-remove-item-image");
+	let currentImageInput = row.querySelector(".qm-current-item-image");
+	if (fileInput.files.length > 0) {
+		img.src = window.URL.createObjectURL(fileInput.files[0]);
+		img.classList.remove("d-none");
+		if (removeCheckbox) { removeCheckbox.checked = false; }
+	}
+	else if (currentImageInput?.value && !removeCheckbox?.checked) {
+		img.src = "/api/v3/image/thumb/" + currentImageInput.value;
+		img.classList.remove("d-none");
+	}
+	else {
+		img.src = "";
+		img.classList.add("d-none");
+	}
+}
+
+// Delegated listeners for per-row image controls -- rows can be added after page load, and both
+// `change` events bubble, so delegation covers rows added later without extra rebinding.
+document.addEventListener("change", function (event) {
+	if (event.target.matches(".qm-item-image") || event.target.matches(".qm-remove-item-image")) {
+		updateQmImagePreview(event.target.closest(".qm-item-row"));
+	}
+});
+document.addEventListener("click", function (event) {
+	let clearBtn = event.target.closest(".qm-item-image-clear");
+	if (!clearBtn) { return; }
+	let row = clearBtn.closest(".qm-item-row");
+	let fileInput = row?.querySelector(".qm-item-image");
+	if (fileInput) { fileInput.value = null; }
+	updateQmImagePreview(row);
 });
 
 // MARK: - messagePostForm Handlers

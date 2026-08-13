@@ -420,6 +420,8 @@ public struct QuartermasterEditLogData: Content {
 	var itemDescription: String
 	/// The location just before `author` edited it. Empty string if there was none.
 	var location: String
+	/// The image filename just before `author` edited it. Empty string if there was none.
+	var image: String
 	/// Whether the owner's name was hidden from other users just before `author` edited it.
 	var hideOwnerName: Bool
 }
@@ -433,6 +435,7 @@ extension QuartermasterEditLogData {
 		itemName = edit.itemName
 		itemDescription = edit.itemDescription
 		location = edit.location
+		image = edit.image
 		hideOwnerName = edit.hideOwnerName
 	}
 }

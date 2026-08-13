@@ -21,6 +21,15 @@
 	</div>
 
 	<div class="collapse" data-label="actionbar">
+		#if(item.image):
+			<div class="row mt-2">
+				<div class="col col-auto">
+					<button type="button" class="btn p-0 border-0" data-bs-toggle="modal" data-bs-target="\#imageCarouselModal">
+						<img src="/api/v3/image/thumb/#(item.image)" class="swiftarr-post-image" alt="Item photo">
+					</button>
+				</div>
+			</div>
+		#endif
 		#if(item.itemDescription):
 			<div class="row mt-2">
 				<div class="col">

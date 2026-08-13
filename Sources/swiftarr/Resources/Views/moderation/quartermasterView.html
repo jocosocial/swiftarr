@@ -69,6 +69,16 @@
 								<b>Name hidden from other users:</b> #(modData.item.hideOwnerName)
 							</div>
 						</div>
+						#if(modData.item.image):
+							<div class="row mt-1">
+								<div class="col">
+									<b>Photo:</b>
+									<button type="button" class="btn p-0 border-0" data-bs-toggle="modal" data-bs-target="\#imageCarouselModal">
+										<img src="/api/v3/image/thumb/#(modData.item.image)" class="swiftarr-post-image" alt="Item photo">
+									</button>
+								</div>
+							</div>
+						#endif
 					</div>
 				</div>
 			</div>
@@ -122,6 +132,16 @@
 										<b>Name hidden from other users:</b> #(edit.hideOwnerName)
 									</div>
 								</div>
+								#if(edit.image):
+									<div class="row mt-1">
+										<div class="col">
+											<b>Photo:</b>
+											<button type="button" class="btn p-0 border-0" data-bs-toggle="modal" data-bs-target="\#imageCarouselModal">
+												<img src="/api/v3/image/thumb/#(edit.image)" class="swiftarr-post-image" alt="Item photo">
+											</button>
+										</div>
+									</div>
+								#endif
 							</div>
 						</div>
 					</div>
@@ -176,6 +196,9 @@
 				</div>
 			</div>
 		</div>
+
+		#extend("imageOverlay")
+
 		<script src="/js/swiftarrModeration.js"></script>
     #endexport
 #endextend

@@ -760,6 +760,8 @@ public struct QuartermasterItemEntry: Content {
 	var itemName: String
 	/// An optional longer description of the item. ≤2048 characters when present.
 	var itemDescription: String?
+	/// An optional photo of the item. At most one image per item.
+	var image: ImageUploadData?
 }
 
 /// Used to batch-create one or more `QuartermasterItem`s.
@@ -775,7 +777,8 @@ public struct QuartermasterCreateData: Content {
 	var location: String?
 	/// When `true`, the owner's identity is hidden from other users on the created items. Requires `location`.
 	var hideOwnerName: Bool = false
-	/// One or more items to create. 1–50 items per call. Each item has its own name and optional description.
+	/// One or more items to create. 1–10 items per call. Each item has its own name, optional
+	/// description, and optional photo.
 	var items: [QuartermasterItemEntry]
 }
 
@@ -783,7 +786,7 @@ extension QuartermasterCreateData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
 		tester.validate(!items.isEmpty, forKey: .items, or: "must include at least one item")
-		tester.validate(items.count <= 50, forKey: .items, or: "cannot create more than 50 items at once")
+		tester.validate(items.count <= 10, forKey: .items, or: "cannot create more than 10 items at once")
 		quartermasterLocationValidations(location: location)
 			.forEach {
 				tester.addValidationError(forKey: .location, errorString: $0)
@@ -832,6 +835,11 @@ public struct QuartermasterContentData: Content {
 	var location: String?
 	/// When `true`, the owner's identity is hidden from other users on this item. Requires `location`.
 	var hideOwnerName: Bool = false
+	/// The item's photo, always fully replacing whatever image (if any) the item currently has --
+	/// there's no "leave unchanged" state distinct from "keep this same filename". `nil` (or an
+	/// `ImageUploadData` with both `filename` and `image` nil) clears the item's photo. To keep an
+	/// existing photo across an otherwise-unrelated edit, echo its filename back as `.filename`.
+	var image: ImageUploadData?
 }
 
 extension QuartermasterContentData: RCFValidatable {
@@ -863,6 +871,7 @@ extension QuartermasterContentData {
 		itemDescription = try container.decodeIfPresent(String.self, forKey: .itemDescription)
 		location = try container.decodeIfPresent(String.self, forKey: .location)
 		hideOwnerName = try container.decodeIfPresent(Bool.self, forKey: .hideOwnerName) ?? false
+		image = try container.decodeIfPresent(ImageUploadData.self, forKey: .image)
 	}
 }
 
@@ -909,6 +918,8 @@ public struct QuartermasterData: Content, ResponseEncodable {
 	var itemDescription: String?
 	/// An optional free-text pickup/exchange location. Masked when quarantined.
 	var location: String?
+	/// An optional filename for the item's photo. `nil` when there's no photo, or when quarantined.
+	var image: String?
 	/// The item's creator. `nil` when `hideOwnerName` is `true` and the viewer is neither the owner
 	/// nor a moderator.
 	var owner: UserHeader?
@@ -931,6 +942,7 @@ extension QuartermasterData {
 		self.itemName = showContent ? item.itemName : "Item name is under moderator review"
 		self.itemDescription = showContent ? item.itemDescription : "Item description is under moderator review"
 		self.location = showContent ? item.location : "Item location is under moderator review"
+		self.image = showContent ? item.image : nil
 		self.owner = showOwner ? owner : nil
 		self.hideOwnerName = item.hideOwnerName
 		self.moderationStatus = item.moderationStatus

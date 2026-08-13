@@ -37,6 +37,9 @@ final class QuartermasterItem: Model, Searchable, @unchecked Sendable {
 	/// When present: 3–100 characters (validated in the controller DTO).
 	@OptionalField(key: "location") var location: String?
 
+	/// An optional filename referencing an uploaded photo of the item. At most one image per item.
+	@OptionalField(key: "image") var image: String?
+
 	/// Moderators can set several statuses on items that modify editability and visibility.
 	@Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
 
@@ -78,13 +81,15 @@ final class QuartermasterItem: Model, Searchable, @unchecked Sendable {
 	///   - itemDescription: An optional longer description (≤2048 chars).
 	///   - location: An optional free-text pickup/exchange location.
 	///   - hideOwnerName: Whether to hide the owner's identity from other users. Defaults to `false`.
+	///   - image: An optional filename referencing an already-processed uploaded photo.
 	init(
 		ownerID: UUID,
 		category: QuartermasterCategory,
 		itemName: String,
 		itemDescription: String? = nil,
 		location: String? = nil,
-		hideOwnerName: Bool = false
+		hideOwnerName: Bool = false,
+		image: String? = nil
 	) {
 		self.$owner.id = ownerID
 		self.category = category
@@ -92,6 +97,7 @@ final class QuartermasterItem: Model, Searchable, @unchecked Sendable {
 		self.itemDescription = itemDescription
 		self.location = location
 		self.hideOwnerName = hideOwnerName
+		self.image = image
 		self.moderationStatus = .normal
 	}
 }
@@ -131,6 +137,7 @@ struct CreateQuartermasterItemSchema: AsyncMigration {
 			.field("item_name", .string, .required)
 			.field("item_description", .string)
 			.field("location", .string)
+			.field("image", .string)
 			.field("mod_status", modStatusEnum, .required)
 			.field("owner", .uuid, .required, .references("user", "id", onDelete: .cascade))
 			.field("hide_owner_name", .bool, .required)

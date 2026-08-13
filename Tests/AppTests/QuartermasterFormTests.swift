@@ -6,20 +6,53 @@ import XCTVapor
 // QuartermasterValidationTests (Phase 2).
 class QuartermasterFormTests: XCTestCase {
 
+	private static let nameSlots: [WritableKeyPath<QuartermasterFormContent, String?>] = [
+		\.itemName0, \.itemName1, \.itemName2, \.itemName3, \.itemName4,
+		\.itemName5, \.itemName6, \.itemName7, \.itemName8, \.itemName9,
+	]
+	private static let descriptionSlots: [WritableKeyPath<QuartermasterFormContent, String?>] = [
+		\.itemDescription0, \.itemDescription1, \.itemDescription2, \.itemDescription3, \.itemDescription4,
+		\.itemDescription5, \.itemDescription6, \.itemDescription7, \.itemDescription8, \.itemDescription9,
+	]
+	private static let imageSlots: [WritableKeyPath<QuartermasterFormContent, Data?>] = [
+		\.itemImage0, \.itemImage1, \.itemImage2, \.itemImage3, \.itemImage4,
+		\.itemImage5, \.itemImage6, \.itemImage7, \.itemImage8, \.itemImage9,
+	]
+
+	// Builds a form from parallel row arrays, spreading them across the discrete itemNameN /
+	// itemDescriptionN / itemImageN slots the way the real multipart form does (see
+	// QuartermasterFormContent's doc comment for why these aren't array-typed fields).
 	private func makeForm(
 		category: String = "have",
 		location: String? = "Deck 5",
 		hideOwnerName: String? = nil,
-		names: [String],
-		descriptions: [String]? = nil
+		names: [String?],
+		descriptions: [String?]? = nil,
+		images: [Data?]? = nil,
+		currentItemImage: String? = nil,
+		removeItemImage: String? = nil
 	) -> QuartermasterFormContent {
-		QuartermasterFormContent(
+		var form = QuartermasterFormContent(
 			category: category,
 			location: location,
 			hideOwnerName: hideOwnerName,
-			itemName: names,
-			itemDescription: descriptions ?? names.map { _ in "" }
+			currentItemImage: currentItemImage,
+			removeItemImage: removeItemImage
 		)
+		for (index, name) in names.enumerated() {
+			form[keyPath: Self.nameSlots[index]] = name
+		}
+		if let descriptions {
+			for (index, desc) in descriptions.enumerated() {
+				form[keyPath: Self.descriptionSlots[index]] = desc
+			}
+		}
+		if let images {
+			for (index, data) in images.enumerated() {
+				form[keyPath: Self.imageSlots[index]] = data
+			}
+		}
+		return form
 	}
 
 	// MARK: - buildItemEntries
@@ -53,15 +86,10 @@ class QuartermasterFormTests: XCTestCase {
 		XCTAssertNil(entries[0].itemDescription)
 	}
 
-	func testBuildItemEntries_MissingDescriptionSlot_TreatedAsBlank() throws {
-		// itemDescription can be shorter than itemName if a browser omits an empty trailing field.
-		let form = QuartermasterFormContent(
-			category: "have",
-			location: "Deck 5",
-			hideOwnerName: nil,
-			itemName: ["Widget", "Gadget"],
-			itemDescription: ["Only one"]
-		)
+	func testBuildItemEntries_UnsetDescriptionSlot_TreatedAsBlank() throws {
+		// itemDescription1 is left nil, the way a row whose description field the browser omitted
+		// (or a freshly-cloned row nobody touched) would submit it.
+		let form = makeForm(names: ["Widget", "Gadget"], descriptions: ["Only one"])
 		let entries = try form.buildItemEntries()
 		XCTAssertEqual(entries[0].itemDescription, "Only one")
 		XCTAssertNil(entries[1].itemDescription)
@@ -74,11 +102,35 @@ class QuartermasterFormTests: XCTestCase {
 		XCTAssertEqual(entries[0].itemDescription, "Has spaces")
 	}
 
-	func testBuildItemEntries_50Rows_Succeeds() throws {
-		let names = (1...50).map { "Item \($0)" }
+	func testBuildItemEntries_10Rows_Succeeds() throws {
+		let names: [String?] = (1...10).map { "Item \($0)" }
 		let form = makeForm(names: names)
 		let entries = try form.buildItemEntries()
-		XCTAssertEqual(entries.count, 50)
+		XCTAssertEqual(entries.count, 10)
+	}
+
+	// MARK: - buildItemEntries — images
+
+	func testBuildItemEntries_NewImageData_SetsEntryImage() throws {
+		let imageBytes = Data([0x01, 0x02, 0x03])
+		let form = makeForm(names: ["Widget"], images: [imageBytes])
+		let entries = try form.buildItemEntries()
+		XCTAssertEqual(entries[0].image?.image, imageBytes)
+		XCTAssertNil(entries[0].image?.filename)
+	}
+
+	func testBuildItemEntries_EmptyImageData_LeavesEntryImageNil() throws {
+		let form = makeForm(names: ["Widget"], images: [Data()])
+		let entries = try form.buildItemEntries()
+		XCTAssertNil(entries[0].image)
+	}
+
+	func testBuildItemEntries_UnsetImageSlot_TreatedAsNoImage() throws {
+		// Row 1's itemImage1 slot is left nil, the way a row with no file chosen submits it.
+		let form = makeForm(names: ["Widget", "Gadget"], descriptions: ["", ""], images: [Data([0x01])])
+		let entries = try form.buildItemEntries()
+		XCTAssertNotNil(entries[0].image)
+		XCTAssertNil(entries[1].image)
 	}
 
 	// MARK: - buildCreateData (Add Item(s) -- batch create)
@@ -111,11 +163,11 @@ class QuartermasterFormTests: XCTestCase {
 		XCTAssertThrowsError(try form.buildCreateData())
 	}
 
-	func testBuildCreateData_50Rows_Succeeds() throws {
-		let names = (1...50).map { "Item \($0)" }
+	func testBuildCreateData_10Rows_Succeeds() throws {
+		let names: [String?] = (1...10).map { "Item \($0)" }
 		let form = makeForm(names: names)
 		let data = try form.buildCreateData()
-		XCTAssertEqual(data.items.count, 50)
+		XCTAssertEqual(data.items.count, 10)
 	}
 
 	// MARK: - buildContentData (Edit Item -- single-item update, row 0 only)
@@ -137,6 +189,43 @@ class QuartermasterFormTests: XCTestCase {
 	func testBuildContentData_BlankName_Throws() {
 		let form = makeForm(names: [""])
 		XCTAssertThrowsError(try form.buildContentData())
+	}
+
+	// MARK: - buildContentData — image reconciliation
+
+	func testBuildContentData_NoNewFileNoRemove_KeepsExistingImage() throws {
+		let form = makeForm(names: ["Widget"], currentItemImage: "existing.jpg")
+		let data = try form.buildContentData()
+		XCTAssertEqual(data.image?.filename, "existing.jpg")
+		XCTAssertNil(data.image?.image)
+	}
+
+	func testBuildContentData_NewFile_ReplacesExistingImage() throws {
+		let imageBytes = Data([0x01, 0x02])
+		let form = makeForm(names: ["Widget"], images: [imageBytes], currentItemImage: "existing.jpg")
+		let data = try form.buildContentData()
+		XCTAssertEqual(data.image?.image, imageBytes)
+	}
+
+	func testBuildContentData_RemoveChecked_ClearsImage() throws {
+		let form = makeForm(names: ["Widget"], currentItemImage: "existing.jpg", removeItemImage: "on")
+		let data = try form.buildContentData()
+		XCTAssertNil(data.image)
+	}
+
+	func testBuildContentData_RemoveCheckedButNewFileChosen_NewFileWins() throws {
+		let imageBytes = Data([0x01, 0x02])
+		let form = makeForm(
+			names: ["Widget"], images: [imageBytes], currentItemImage: "existing.jpg", removeItemImage: "on"
+		)
+		let data = try form.buildContentData()
+		XCTAssertEqual(data.image?.image, imageBytes)
+	}
+
+	func testBuildContentData_NoExistingNoNewImage_ImageIsNil() throws {
+		let form = makeForm(names: ["Widget"])
+		let data = try form.buildContentData()
+		XCTAssertNil(data.image)
 	}
 
 	// MARK: - QMTab / Owned category filter parsing

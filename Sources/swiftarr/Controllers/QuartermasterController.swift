@@ -29,8 +29,12 @@ struct QuartermasterController: APIRouteCollection {
 		let tokenAuth = base.tokenRoutes(feature: .quartermaster)
 		tokenAuth.get("", use: listHandler)
 		tokenAuth.get(quartermasterIDParam, use: getHandler)
-		tokenAuth.post("create", use: createHandler)
-		tokenAuth.post(quartermasterIDParam, "update", use: updateHandler)
+		tokenAuth.on(.POST, "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: createHandler)
+		tokenAuth.on(
+			.POST, quartermasterIDParam, "update",
+			body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)),
+			use: updateHandler
+		)
 		tokenAuth.post(quartermasterIDParam, "delete", use: deleteHandler)
 		tokenAuth.delete(quartermasterIDParam, use: deleteHandler)
 		tokenAuth.post(quartermasterIDParam, "report", use: reportHandler)
@@ -163,13 +167,15 @@ struct QuartermasterController: APIRouteCollection {
 		let savedItems: [QuartermasterData] = try await req.db.transaction { db in
 			var results: [QuartermasterData] = []
 			for entry in data.items {
+				let imageFilename = try await resolvedImageFilename(from: entry.image, on: req)
 				let item = QuartermasterItem(
 					ownerID: cacheUser.userID,
 					category: data.category,
 					itemName: entry.itemName,
 					itemDescription: entry.itemDescription,
 					location: data.location,
-					hideOwnerName: data.hideOwnerName
+					hideOwnerName: data.hideOwnerName,
+					image: imageFilename
 				)
 				try await item.save(on: db)
 				results.append(try QuartermasterData(item: item, owner: ownerHeader, showOwner: true))
@@ -200,11 +206,17 @@ struct QuartermasterController: APIRouteCollection {
 		let item = try await findItem(on: req)
 		try cacheUser.guardCanModifyContent(item)
 
-		// Snapshot the current text fields before applying changes, only when text actually changed.
+		// `data.image` always describes the item's full desired image state (see QuartermasterContentData),
+		// so this resolves to the new filename whenever a photo was uploaded, the existing filename when
+		// the caller echoed it back unchanged, or nil to clear the photo.
+		let newImageFilename = try await resolvedImageFilename(from: data.image, on: req)
+
+		// Snapshot the current text fields before applying changes, only when the content actually changed.
 		let contentChanged = data.itemName != item.itemName
 			|| data.itemDescription != item.itemDescription
 			|| data.location != item.location
 			|| data.hideOwnerName != item.hideOwnerName
+			|| newImageFilename != item.image
 		if contentChanged {
 			let edit = try QuartermasterItemEdit(item: item, editorID: cacheUser.userID)
 			try await item.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: req)
@@ -212,12 +224,22 @@ struct QuartermasterController: APIRouteCollection {
 		}
 
 		// Apply new values.
+		let oldImageFilename = item.image
 		item.category = data.category
 		item.itemName = data.itemName
 		item.itemDescription = data.itemDescription
 		item.location = data.location
 		item.hideOwnerName = data.hideOwnerName
+		item.image = newImageFilename
 		try await item.save(on: req.db)
+
+		// Archive the replaced/removed image after the new state is saved, matching the pattern used
+		// when a user replaces their profile avatar.
+		if let oldImageFilename, oldImageFilename != newImageFilename {
+			DispatchQueue.global(qos: .background).async {
+				self.archiveImage(oldImageFilename, on: req)
+			}
+		}
 
 		// guardCanModifyContent(_:) above already establishes the caller is either the owner or a
 		// moderator, so it's always safe to show them the real owner here.
@@ -248,6 +270,17 @@ struct QuartermasterController: APIRouteCollection {
 	}
 
 	// MARK: - Private Helpers
+
+	/// Resolves an optional `ImageUploadData` to the filename that should be stored on the item: processes
+	/// and saves new image data when present, otherwise passes an existing filename through unchanged
+	/// (or `nil`, when there's no image at all).
+	private func resolvedImageFilename(from upload: ImageUploadData?, on req: Request) async throws -> String? {
+		guard let upload else { return nil }
+		if let newData = upload.image {
+			return try await processImage(data: newData, usage: .quartermasterItem, on: req)
+		}
+		return upload.filename
+	}
 
 	/// Looks up the `QuartermasterItem` identified by `quartermasterIDParam`, converting a
 	/// not-found result to a 400 Bad Request per the Swiftarr API convention (404 is reserved

@@ -28,6 +28,9 @@ final class QuartermasterItemEdit: Model, @unchecked Sendable {
 	/// The previous location string (empty string when nil at edit time).
 	@Field(key: "location") var location: String
 
+	/// The previous image filename (empty string when there was no image at edit time).
+	@Field(key: "image") var image: String
+
 	/// Whether the owner's name was hidden at edit time.
 	@Field(key: "hide_owner_name") var hideOwnerName: Bool
 
@@ -60,6 +63,7 @@ final class QuartermasterItemEdit: Model, @unchecked Sendable {
 		self.itemName = item.itemName
 		self.itemDescription = item.itemDescription ?? ""
 		self.location = item.location ?? ""
+		self.image = item.image ?? ""
 		self.hideOwnerName = item.hideOwnerName
 	}
 }
@@ -71,6 +75,7 @@ struct CreateQuartermasterItemEditSchema: AsyncMigration {
 			.field("item_name", .string, .required)
 			.field("item_description", .string, .required)
 			.field("location", .string, .required)
+			.field("image", .string, .required)
 			.field("hide_owner_name", .bool, .required)
 			.field("created_at", .datetime)
 			.field("item", .uuid, .required, .references("quartermaster_item", "id"))

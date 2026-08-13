@@ -1,16 +1,78 @@
 import Vapor
 
-// Form data from the Add Item(s) / Edit Item form. `itemName` and `itemDescription` are parallel
-// arrays -- one entry per item row. The browser sends repeated `itemName=`/`itemDescription=` pairs
-// (one per row, all sharing the same field name), which Vapor's URLEncodedFormDecoder collects into
-// arrays without needing a `[]` suffix on the field name.
+// Form data from the Add Item(s) / Edit Item form. Each row is a fixed slot of THREE discrete,
+// independently-optional fields (itemNameN / itemDescriptionN / itemImageN) rather than parallel
+// arrays -- earlier this used shared-name `itemName`/`itemDescription` arrays (relying on Vapor's
+// multipart decoder to collect repeated same-named text parts into `[String]`), which happened to
+// work in isolation, but broke the moment file fields were added alongside: mixing an array-typed
+// field into the same keyed multipart container as several sibling Optional scalar fields corrupted
+// decoding of the array field too (confirmed empirically: even 2 rows failed with "expected array but
+// encountered single value" once file fields joined the struct). `messagePostForm.html`'s
+// `MessagePostFormContent` sidesteps this the same way, with discrete `localPhoto1...8` fields instead
+// of an array -- this struct now follows that same proven pattern for every per-row field.
+//
+// Rows are kept aligned with their slot index by `swiftarr.js`'s `renumberQmRowInputs()`, which
+// renumbers every row's three field names by DOM position after any add/remove.
 struct QuartermasterFormContent: Codable {
+	static let maxRows = 10
+
 	var category: String
 	var location: String?
 	// Checkbox input: present (value "on") when checked, absent from the form body when unchecked.
 	var hideOwnerName: String?
-	var itemName: [String]
-	var itemDescription: [String]
+	var itemName0: String?
+	var itemDescription0: String?
+	var itemImage0: Data?
+	var itemName1: String?
+	var itemDescription1: String?
+	var itemImage1: Data?
+	var itemName2: String?
+	var itemDescription2: String?
+	var itemImage2: Data?
+	var itemName3: String?
+	var itemDescription3: String?
+	var itemImage3: Data?
+	var itemName4: String?
+	var itemDescription4: String?
+	var itemImage4: Data?
+	var itemName5: String?
+	var itemDescription5: String?
+	var itemImage5: Data?
+	var itemName6: String?
+	var itemDescription6: String?
+	var itemImage6: Data?
+	var itemName7: String?
+	var itemDescription7: String?
+	var itemImage7: Data?
+	var itemName8: String?
+	var itemDescription8: String?
+	var itemImage8: Data?
+	var itemName9: String?
+	var itemDescription9: String?
+	var itemImage9: Data?
+	// Edit-only (row 0 always): the item's existing image filename, carried in a hidden field so
+	// re-submitting without picking a new file doesn't drop the photo.
+	var currentItemImage: String?
+	// Edit-only: checkbox, present (value "on") when the user wants to remove the item's photo
+	// without replacing it.
+	var removeItemImage: String?
+
+	// One tuple per row slot, in position order (see the type-level doc comment for why these are
+	// discrete fields rather than parallel arrays).
+	private var rows: [(name: String?, description: String?, image: Data?)] {
+		[
+			(itemName0, itemDescription0, itemImage0),
+			(itemName1, itemDescription1, itemImage1),
+			(itemName2, itemDescription2, itemImage2),
+			(itemName3, itemDescription3, itemImage3),
+			(itemName4, itemDescription4, itemImage4),
+			(itemName5, itemDescription5, itemImage5),
+			(itemName6, itemDescription6, itemImage6),
+			(itemName7, itemDescription7, itemImage7),
+			(itemName8, itemDescription8, itemImage8),
+			(itemName9, itemDescription9, itemImage9),
+		]
+	}
 
 	// Trims a field down to nil-if-empty, the way the API expects optional text fields.
 	private static func nilIfEmpty(_ str: String?) -> String? {
@@ -20,15 +82,22 @@ struct QuartermasterFormContent: Codable {
 		return trimmed
 	}
 
-	// Zips `itemName` and `itemDescription` into entries, trimming whitespace, dropping rows whose
-	// name is blank, and normalizing blank descriptions to nil. Throws if no usable rows remain.
+	// Builds entries from every row slot with a non-blank name, trimming whitespace and normalizing
+	// blank descriptions/images to nil. Throws if no usable rows remain. `image` here only ever
+	// reflects a newly-chosen file -- reconciling that against an existing image is
+	// `buildContentData()`'s job, since only the single-row edit form has one.
 	func buildItemEntries() throws -> [QuartermasterItemEntry] {
 		var entries: [QuartermasterItemEntry] = []
-		for index in 0..<itemName.count {
-			let name = itemName[index].trimmingCharacters(in: .whitespacesAndNewlines)
-			guard !name.isEmpty else { continue }
-			let rawDescription = index < itemDescription.count ? itemDescription[index] : ""
-			entries.append(QuartermasterItemEntry(itemName: name, itemDescription: Self.nilIfEmpty(rawDescription)))
+		for row in rows {
+			guard let name = row.name?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else {
+				continue
+			}
+			let imageData = row.image
+			entries.append(QuartermasterItemEntry(
+				itemName: name,
+				itemDescription: Self.nilIfEmpty(row.description),
+				image: (imageData?.isEmpty ?? true) ? nil : ImageUploadData(nil, imageData)
+			))
 		}
 		guard !entries.isEmpty else {
 			throw Abort(.badRequest, reason: "At least one item must have a name.")
@@ -47,14 +116,21 @@ struct QuartermasterFormContent: Codable {
 	}
 
 	// Builds the single-item update DTO from row 0 only. Used by POST /quartermaster/ID/update.
+	// Combines the new-file-per-row zip from buildItemEntries() with the edit form's existing-image
+	// and remove-image fields to produce the item's full desired image state.
 	func buildContentData() throws -> QuartermasterContentData {
 		let firstEntry = try buildItemEntries()[0]
+		let keepExistingFilename = removeItemImage == "on" ? nil : Self.nilIfEmpty(currentItemImage)
+		let image: ImageUploadData? = (firstEntry.image != nil || keepExistingFilename != nil)
+			? ImageUploadData(keepExistingFilename, firstEntry.image?.image)
+			: nil
 		return QuartermasterContentData(
 			category: try QuartermasterCategory.fromAPIString(category),
 			itemName: firstEntry.itemName,
 			itemDescription: firstEntry.itemDescription,
 			location: Self.nilIfEmpty(location),
-			hideOwnerName: hideOwnerName == "on"
+			hideOwnerName: hideOwnerName == "on",
+			image: image
 		)
 	}
 }
@@ -156,6 +232,16 @@ struct QuartermasterCreateUpdatePageContext: Encodable {
 	struct ItemRow: Encodable {
 		var itemName: String
 		var itemDescription: String
+		// The existing image's filename (edit only; empty for a fresh create row). Rendered into a
+		// hidden `currentItemImage` field so re-submitting without picking a new file keeps the photo.
+		var itemImage: String = ""
+		// Thumbnail URL for the existing image, or "" when there isn't one. Precomputed here rather
+		// than in Leaf since it's just string concatenation over `itemImage`.
+		var itemImageThumbURL: String = ""
+		// Leaf's `#if` doesn't treat an empty String as falsy the way it does Bool/Optional, so the
+		// template needs an explicit Bool to decide whether to show the existing-photo preview. Must
+		// be a stored property (not computed) since synthesized Encodable only encodes stored ones.
+		var hasImage: Bool = false
 	}
 
 	var trunk: TrunkContext
@@ -167,6 +253,7 @@ struct QuartermasterCreateUpdatePageContext: Encodable {
 	var hideOwnerName: Bool = false
 	var items: [ItemRow]
 	var isEdit: Bool
+	var maxRows: Int = QuartermasterFormContent.maxRows
 
 	// Create: empty header, one blank starting row, name shown by default. The category dropdown
 	// preselects to whichever of Have/Need the caller followed the "Add Item(s)" link from, via an
@@ -193,7 +280,14 @@ struct QuartermasterCreateUpdatePageContext: Encodable {
 		category = item.category.rawValue
 		location = item.location ?? ""
 		hideOwnerName = item.hideOwnerName
-		items = [ItemRow(itemName: item.itemName, itemDescription: item.itemDescription ?? "")]
+		let imageFilename = item.image ?? ""
+		items = [ItemRow(
+			itemName: item.itemName,
+			itemDescription: item.itemDescription ?? "",
+			itemImage: imageFilename,
+			itemImageThumbURL: imageFilename.isEmpty ? "" : "/api/v3/image/thumb/\(imageFilename)",
+			hasImage: !imageFilename.isEmpty
+		)]
 		isEdit = true
 	}
 }
@@ -216,9 +310,17 @@ struct SiteQuartermasterController: SiteControllerUtils {
 		let privateRoutes = getPrivateRoutes(app).grouped("quartermaster")
 			.grouped(DisabledSiteSectionMiddleware(feature: .quartermaster))
 		privateRoutes.get("create", use: createPageHandler)
-		privateRoutes.post("create", use: createPostHandler)
+		privateRoutes.on(
+			.POST, "create",
+			body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)),
+			use: createPostHandler
+		)
 		privateRoutes.get(quartermasterIDParam, "edit", use: editPageHandler)
-		privateRoutes.post(quartermasterIDParam, "update", use: updatePostHandler)
+		privateRoutes.on(
+			.POST, quartermasterIDParam, "update",
+			body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)),
+			use: updatePostHandler
+		)
 		privateRoutes.post(quartermasterIDParam, "delete", use: deletePostHandler)
 		privateRoutes.delete(quartermasterIDParam, use: deletePostHandler)
 		privateRoutes.get("report", quartermasterIDParam, use: reportPageHandler)

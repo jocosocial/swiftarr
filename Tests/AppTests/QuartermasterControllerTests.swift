@@ -55,15 +55,15 @@ class QuartermasterValidationTests: XCTestCase {
 		XCTAssertTrue(errs.contains("must include at least one item"), "errs=\(errs)")
 	}
 
-	func testCreate_51Items_FailsValidation() throws {
-		let items = Array(repeating: #"{"itemName":"Widget"}"#, count: 51).joined(separator: ",")
+	func testCreate_11Items_FailsValidation() throws {
+		let items = Array(repeating: #"{"itemName":"Widget"}"#, count: 11).joined(separator: ",")
 		let json = #"{"category":"have","location":"Deck 5","items":[\#(items)]}"#
 		let errs = try validationErrors(QuartermasterCreateData.self, json)
-		XCTAssertTrue(errs.contains("cannot create more than 50 items at once"), "errs=\(errs)")
+		XCTAssertTrue(errs.contains("cannot create more than 10 items at once"), "errs=\(errs)")
 	}
 
-	func testCreate_50Items_PassesValidation() throws {
-		let items = Array(repeating: #"{"itemName":"Widget"}"#, count: 50).joined(separator: ",")
+	func testCreate_10Items_PassesValidation() throws {
+		let items = Array(repeating: #"{"itemName":"Widget"}"#, count: 10).joined(separator: ",")
 		let json = #"{"category":"have","location":"Deck 5","items":[\#(items)]}"#
 		XCTAssertNoThrow(try validationErrors(QuartermasterCreateData.self, json))
 	}
@@ -176,6 +176,45 @@ class QuartermasterValidationTests: XCTestCase {
 		let json = #"{"category":"need","itemName":"Widget","location":"Deck 5"}"#
 		let errs = try validationErrors(QuartermasterContentData.self, json)
 		XCTAssertEqual(errs, [], "unexpected validation errors: \(errs)")
+	}
+
+	// MARK: - QuartermasterContentData — image decoding
+
+	func testUpdate_ImageOmitted_DecodesNil() throws {
+		let json = #"{"category":"need","itemName":"Widget"}"#
+		let data = try JSONDecoder().decode(QuartermasterContentData.self, from: json.data(using: .utf8)!)
+		XCTAssertNil(data.image)
+	}
+
+	func testUpdate_ImageWithFilename_DecodesFilename() throws {
+		let json = #"{"category":"need","itemName":"Widget","image":{"filename":"existing.jpg"}}"#
+		let data = try JSONDecoder().decode(QuartermasterContentData.self, from: json.data(using: .utf8)!)
+		XCTAssertEqual(data.image?.filename, "existing.jpg")
+	}
+
+	// MARK: - QuartermasterData — quarantine masks the image
+
+	func testQuartermasterData_Quarantined_MasksImage() throws {
+		let ownerID = UUID()
+		let item = QuartermasterItem(
+			ownerID: ownerID, category: .have, itemName: "Widget", image: "photo.jpg"
+		)
+		item.id = UUID()
+		item.moderationStatus = .quarantined
+		let owner = UserHeader(userID: ownerID, username: "tester", displayName: nil, userImage: "", preferredPronoun: nil)
+		let data = try QuartermasterData(item: item, owner: owner, showOwner: true)
+		XCTAssertNil(data.image, "image should be masked while quarantined")
+	}
+
+	func testQuartermasterData_Normal_ShowsImage() throws {
+		let ownerID = UUID()
+		let item = QuartermasterItem(
+			ownerID: ownerID, category: .have, itemName: "Widget", image: "photo.jpg"
+		)
+		item.id = UUID()
+		let owner = UserHeader(userID: ownerID, username: "tester", displayName: nil, userImage: "", preferredPronoun: nil)
+		let data = try QuartermasterData(item: item, owner: owner, showOwner: true)
+		XCTAssertEqual(data.image, "photo.jpg")
 	}
 }
 

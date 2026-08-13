@@ -70,14 +70,26 @@
 									#for(row in items):
 										<div class="qm-item-row row mb-2 g-2 align-items-start">
 											<div class="col-12 col-md-4">
-												<input type="text" class="form-control" placeholder="Item name" name="itemName" maxlength="100" value="#(row.itemName)">
+												<input type="text" class="form-control qm-item-name" placeholder="Item name" name="itemName#(index)" maxlength="100" value="#(row.itemName)">
 											</div>
 											<div class="col-12 col-md-7">
-												<input type="text" class="form-control" placeholder="Description (optional)" name="itemDescription" maxlength="2048" value="#(row.itemDescription)">
+												<input type="text" class="form-control qm-item-description" placeholder="Description (optional)" name="itemDescription#(index)" maxlength="2048" value="#(row.itemDescription)">
 											</div>
 											<div class="col-12 col-md-1">
 												#if(!isEdit && !isFirst):
 													<button type="button" class="btn btn-outline-danger btn-sm qm-remove-row" aria-label="Remove item">&times;</button>
+												#endif
+											</div>
+											<div class="col-12 d-flex align-items-center gap-2">
+												<img class="qm-item-image-preview #if(!row.hasImage):d-none#endif" src="#(row.itemImageThumbURL)" alt="Item photo preview" style="height:2.5rem;width:2.5rem;object-fit:cover;">
+												<input type="file" class="form-control form-control-sm qm-item-image" style="max-width:16rem;" name="itemImage#(index)" accept="image/jpeg,image/png,image/gif,image/webp" aria-label="Item photo (optional)">
+												<button type="button" class="btn btn-outline-secondary btn-sm qm-item-image-clear">Clear photo</button>
+												#if(isEdit):
+													<input type="hidden" class="qm-current-item-image" name="currentItemImage" value="#(row.itemImage)">
+													<div class="form-check form-check-inline ms-1">
+														<input type="checkbox" class="form-check-input qm-remove-item-image" id="removeItemImageCheck" name="removeItemImage">
+														<label class="form-check-label" for="removeItemImageCheck">Remove photo</label>
+													</div>
 												#endif
 											</div>
 										</div>
@@ -87,19 +99,24 @@
 								#if(!isEdit):
 									<div class="row mb-3">
 										<div class="col">
-											<button type="button" id="qmAddRowBtn" class="btn btn-outline-primary btn-sm" data-action="addQuartermasterRow" data-container="itemRows" data-template="qmItemRowTemplate" data-max="50">Add another item</button>
+											<button type="button" id="qmAddRowBtn" class="btn btn-outline-primary btn-sm" data-action="addQuartermasterRow" data-container="itemRows" data-template="qmItemRowTemplate" data-max="#(maxRows)">Add another item</button>
 										</div>
 									</div>
 									<template id="qmItemRowTemplate">
 										<div class="qm-item-row row mb-2 g-2 align-items-start">
 											<div class="col-12 col-md-4">
-												<input type="text" class="form-control" placeholder="Item name" name="itemName" maxlength="100">
+												<input type="text" class="form-control qm-item-name" placeholder="Item name" maxlength="100">
 											</div>
 											<div class="col-12 col-md-7">
-												<input type="text" class="form-control" placeholder="Description (optional)" name="itemDescription" maxlength="2048">
+												<input type="text" class="form-control qm-item-description" placeholder="Description (optional)" maxlength="2048">
 											</div>
 											<div class="col-12 col-md-1">
 												<button type="button" class="btn btn-outline-danger btn-sm qm-remove-row" aria-label="Remove item">&times;</button>
+											</div>
+											<div class="col-12 d-flex align-items-center gap-2">
+												<img class="qm-item-image-preview d-none" src="" alt="Item photo preview" style="height:2.5rem;width:2.5rem;object-fit:cover;">
+												<input type="file" class="form-control form-control-sm qm-item-image" style="max-width:16rem;" accept="image/jpeg,image/png,image/gif,image/webp" aria-label="Item photo (optional)">
+												<button type="button" class="btn btn-outline-secondary btn-sm qm-item-image-clear">Clear photo</button>
 											</div>
 										</div>
 									</template>
