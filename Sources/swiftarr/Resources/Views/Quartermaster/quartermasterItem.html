@@ -34,18 +34,19 @@
 			</div>
 		</div>
 		<div class="row justify-content-center mt-2">
-			<div class="col col-auto btn-group btn-group-sm">
-				#if(item.owner):
-					<a class="btn btn-outline-primary" href="/user/#(item.owner.userID)">Contact Profile</a>
-					#if(item.owner.userID != trunk.userID):
-						<a class="btn btn-outline-primary" href="/seamail/create?withuser=#(item.owner.userID)">Seamail</a>
+			#if(trunk.userIsMod || item.owner):
+				<div class="col col-auto btn-group btn-group-sm">
+					#if(item.owner && item.owner.userID != trunk.userID):
+						<a class="btn btn-outline-primary" href="/seamail/create?withuser=#(item.owner.userID)&subject=Re%3A%20Quartermastarr%20Item%20-%20#urlEncode(item.itemName)">Send Seamail</a>
 					#endif
-				#endif
+					#if(trunk.userIsMod || (item.owner && item.owner.userID == trunk.userID)):
+						<a class="btn btn-outline-primary" href="/quartermaster/#(item.itemID)/edit">Edit</a>
+						<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
+					#endif
+				</div>
+			#endif
+			<div class="col col-auto btn-group btn-group-sm">
 				<a class="btn btn-outline-primary" href="/quartermaster/report/#(item.itemID)">Report</a>
-				#if(trunk.userIsMod || (item.owner && item.owner.userID == trunk.userID)):
-					<a class="btn btn-outline-primary" href="/quartermaster/#(item.itemID)/edit">Edit</a>
-					<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
-				#endif
 				#if(trunk.userIsMod):
 					<a class="btn btn-outline-primary" href="/moderate/quartermaster/#(item.itemID)">Moderate</a>
 				#endif

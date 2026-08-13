@@ -671,6 +671,27 @@ struct DinnerTeamTag: LeafTag {
 	}
 }
 
+// Percent-encodes a string for safe use as a single value in a URL query string -- e.g. a piece of
+// user-generated text being spliced into an href. Escapes "&", "=", and "+" in addition to the usual
+// urlQueryAllowed set, since those are still meaningful as query-string structure even though they're
+// technically legal characters within one.
+//
+// Usage: #urlEncode(string)
+struct URLEncodeTag: LeafTag {
+	static let queryValueAllowed: CharacterSet = {
+		var allowed = CharacterSet.urlQueryAllowed
+		allowed.remove(charactersIn: "&=+")
+		return allowed
+	}()
+
+	func render(_ ctx: LeafContext) throws -> LeafData {
+		guard ctx.parameters.count == 1, let value = ctx.parameters[0].string else {
+			throw "Leaf: urlEncode tag unable to get string value."
+		}
+		return LeafData.string(value.addingPercentEncoding(withAllowedCharacters: Self.queryValueAllowed) ?? value)
+	}
+}
+
 // Similar to the built-in `isEmpty` Leaf tag, except it returns LeafData(false) if its argument is LeafData(nil).
 // isEmpty() throws an error if presented with nil, and is not a great choice for optional strings.
 // Note that we can't distinguish between a value that was nil in the context before it got serialized and a variable name

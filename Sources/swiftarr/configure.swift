@@ -521,6 +521,7 @@ struct SwiftarrConfigurator {
 		app.leaf.tags["dinnerTeamTag"] = DinnerTeamTag()
 		app.leaf.tags["lfgLabel"] = LFGLabelTag()
 		app.leaf.tags["notEmpty"] = NotEmptyTag()
+		app.leaf.tags["urlEncode"] = URLEncodeTag()
 		app.leaf.tags["countOrZero"] = CountZeroTag()
 	}
 
