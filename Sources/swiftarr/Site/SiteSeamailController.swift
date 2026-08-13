@@ -138,7 +138,7 @@ struct SiteSeamailController: SiteControllerUtils {
 	//
 	// Query Parameters:
 	// * `?withuser=UUID` - prefills the participant list with the given user. Currently can only be applied once.
-	// * `?subject=STRING` - prefills the subject line.
+	// * `?withsubject=STRING` - prefills the subject line.
 	//
 	// Shows the Create New Seamail page. This page lets you add users to the chat, and give the chat a subject and initial message.
 	func seamailCreatePageHandler(_ req: Request) async throws -> View {
@@ -152,12 +152,12 @@ struct SiteSeamailController: SiteControllerUtils {
 			var trunk: TrunkContext
 			var post: MessagePostContext
 			var withUser: UserHeader?
-			var subject: String
+			var withSubject: String
 
 			init(_ req: Request, withUser: UserHeader?) throws {
 				trunk = .init(req, title: "New Seamail", tab: .seamail)
 				self.withUser = withUser
-				subject = req.query[String.self, at: "subject"] ?? ""
+				withSubject = req.query[String.self, at: "withsubject"] ?? ""
 				post = .init(forType: .seamail)
 			}
 		}

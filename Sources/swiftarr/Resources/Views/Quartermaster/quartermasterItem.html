@@ -37,7 +37,7 @@
 			#if(trunk.userIsMod || item.owner):
 				<div class="col col-auto btn-group btn-group-sm">
 					#if(item.owner && item.owner.userID != trunk.userID):
-						<a class="btn btn-outline-primary" href="/seamail/create?withuser=#(item.owner.userID)&subject=Re%3A%20Quartermastarr%20Item%20-%20#urlEncode(item.itemName)">Send Seamail</a>
+						<a class="btn btn-outline-primary" href="/seamail/create?withuser=#(item.owner.userID)&withsubject=Re%3A%20Quartermastarr%20Item%20-%20#urlEncode(item.itemName)">Send Seamail</a>
 					#endif
 					#if(trunk.userIsMod || (item.owner && item.owner.userID == trunk.userID)):
 						<a class="btn btn-outline-primary" href="/quartermaster/#(item.itemID)/edit">Edit</a>
