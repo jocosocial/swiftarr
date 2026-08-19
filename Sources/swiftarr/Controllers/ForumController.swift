@@ -1470,16 +1470,8 @@ struct ForumController: APIRouteCollection {
 			try await forumEdit.save(on: req.db)
 			try await post.save(on: req.db)
 		}
-		// Return the updated post. Editors (moderators) see the real text/images of a quarantined
-		// post, so the response shows what was just saved rather than the quarantine placeholder;
-		// matches `postHandler` and `ModerationController`. Only moderators reach this line for a
-		// quarantined post — `guardCanModifyContent` requires `canEditOthersContent()`.
-		let postDataArray = try await buildPostData(
-			[post],
-			userID: cacheUser.userID,
-			on: req,
-			overrideQuarantine: cacheUser.accessLevel.canEditOthersContent()
-		)
+		// return updated post as PostData
+		let postDataArray = try await buildPostData([post], userID: cacheUser.userID, on: req)
 		return postDataArray[0]
 	}
 
@@ -1842,8 +1834,7 @@ extension ForumController {
 		mutewords: [String]? = nil,
 		assumeBookmarked: Bool? = nil,
 		assumeLikeType: LikeType? = nil,
-		matchHashtag: String? = nil,
-		overrideQuarantine: Bool = false
+		matchHashtag: String? = nil
 	) async throws -> [PostData] {
 		// remove muteword posts
 		var filteredPosts = posts
@@ -1880,8 +1871,7 @@ extension ForumController {
 				author: author,
 				bookmarked: bookmarked,
 				userLike: userLike,
-				likeCount: likeCount,
-				overrideQuarantine: overrideQuarantine
+				likeCount: likeCount
 			)
 		}
 		return postDataArray

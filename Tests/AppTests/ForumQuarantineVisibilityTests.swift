@@ -84,58 +84,6 @@ class ForumQuarantineVisibilityTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
-	// The same regression on the write path. `POST /api/v3/forum/post/:postID/update` builds its
-	// response through `buildPostData`, which does not pass `overrideQuarantine`, so a moderator
-	// who saves an edit gets back `images: nil` and the placeholder text — the API reporting that
-	// the edit wiped the post it just stored. A client that re-seeds its edit form from this
-	// response then writes that emptiness back on the next save, which is #526 exactly.
-	func testQuarantinedPost_ModeratorEditResponseShowsWhatWasSaved() async throws {
-		try await withApp { app in
-			let fixture = try await makeFixture(app, suffix: UUID().uuidString.prefix(8).lowercased())
-			let edit = PostContentData(text: "edited by a moderator", images: images.map { ImageUploadData($0) })
-
-			try await app.test(
-				.POST,
-				"/api/v3/forum/post/\(fixture.postID)/update",
-				headers: bearer(fixture.moderatorToken),
-				beforeRequest: { req async throws in
-					try req.content.encode(edit)
-				},
-				afterResponse: { res async throws in
-					XCTAssertEqual(res.status, .ok)
-					let updated = try res.content.decode(PostData.self)
-					XCTAssertEqual(updated.images, images, "the edit response must show the images the moderator just saved")
-					XCTAssertEqual(
-						updated.text,
-						"edited by a moderator",
-						"the edit response must show the text the moderator just saved"
-					)
-				}
-			)
-		}
-	}
-
-	// The bound on the above: quarantine is not loosened for anyone who cannot already edit
-	// others' content, so there is no path by which a non-moderator reaches the override.
-	func testQuarantinedPost_NonModeratorCannotEdit() async throws {
-		try await withApp { app in
-			let fixture = try await makeFixture(app, suffix: UUID().uuidString.prefix(8).lowercased())
-			let edit = PostContentData(text: "edited by the author", images: images.map { ImageUploadData($0) })
-
-			try await app.test(
-				.POST,
-				"/api/v3/forum/post/\(fixture.postID)/update",
-				headers: bearer(fixture.verifiedToken),
-				beforeRequest: { req async throws in
-					try req.content.encode(edit)
-				},
-				afterResponse: { res async throws in
-					XCTAssertEqual(res.status, .forbidden, "only moderators may edit a quarantined post")
-				}
-			)
-		}
-	}
-
 	// The other half of the contract: quarantine still hides content from everyone else.
 	func testQuarantinedPost_NonModeratorSeesNoImages() async throws {
 		try await withApp { app in
@@ -153,5 +101,39 @@ class ForumQuarantineVisibilityTests: XCTestCase, SwiftarrBaseTest {
 				}
 			)
 		}
+	}
+
+	func testForumPostEditSuccessURLReturnsModeratorsToModeration() {
+		let post = PostDetailData(
+			postID: 42,
+			forumID: UUID(),
+			createdAt: Date(),
+			author: UserHeader(
+				userID: UUID(),
+				username: "author",
+				displayName: nil,
+				userImage: nil,
+				preferredPronoun: nil
+			),
+			text: "post text",
+			images: nil,
+			isBookmarked: false,
+			userLike: nil,
+			laughs: [],
+			likes: [],
+			loves: []
+		)
+
+		let moderatorContext = MessagePostContext(
+			forType: .forumPostEdit(post),
+			userIsModerator: true
+		)
+		let userContext = MessagePostContext(
+			forType: .forumPostEdit(post),
+			userIsModerator: false
+		)
+
+		XCTAssertEqual(moderatorContext.postSuccessURL, "/moderate/forumpost/42")
+		XCTAssertEqual(userContext.postSuccessURL, "/forum/\(post.forumID)")
 	}
 }

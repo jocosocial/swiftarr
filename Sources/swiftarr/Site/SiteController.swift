@@ -210,7 +210,11 @@ struct MessagePostContext: Encodable {
 		case themeEdit(DailyThemeData)
 	}
 
-	init(forType: InitType, userRoles: Set<UserRoleType>? = nil) {
+	init(
+		forType: InitType,
+		userRoles: Set<UserRoleType>? = nil,
+		userIsModerator: Bool = false
+	) {
 		allowedImageTypes = Settings.shared.validImageInputTypes.joined(separator: ", ")
 		// Determine max images based on user role (shutternauts get 8, others get setting value)
 		let maxImages: Int
@@ -272,7 +276,11 @@ struct MessagePostContext: Encodable {
 				photoFilenames.append("")
 			}
 			formAction = "/forumpost/edit/\(withForumPost.postID)"
-			postSuccessURL = "/forum/\(withForumPost.forumID)"
+			if userIsModerator {
+				postSuccessURL = "/moderate/forumpost/\(withForumPost.postID)"
+			} else {
+				postSuccessURL = "/forum/\(withForumPost.forumID)"
+			}
 			isEdit = true
 		// For creating a new Seamail thread
 		case .seamail:
