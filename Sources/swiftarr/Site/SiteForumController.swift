@@ -726,8 +726,11 @@ struct SiteForumController: SiteControllerUtils {
 
 			init(_ req: Request, post: PostDetailData) throws {
 				trunk = .init(req, title: "Edit Forum Post", tab: .forums)
-				let userRoles = req.auth.get(UserCacheData.self)?.userRoles
-				self.post = .init(forType: .forumPostEdit(post), userRoles: userRoles)
+				self.post = .init(
+					forType: .forumPostEdit(post),
+					userRoles: req.auth.get(UserCacheData.self)?.userRoles,
+					editIntent: .init(req)
+				)
 			}
 		}
 		var ctx = try ForumPostEditPageContext(req, post: post)

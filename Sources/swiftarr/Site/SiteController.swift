@@ -210,7 +210,28 @@ struct MessagePostContext: Encodable {
 		case themeEdit(DailyThemeData)
 	}
 
-	init(forType: InitType, userRoles: Set<UserRoleType>? = nil) {
+	/// Why the user opened an edit form. Set from the `intent` query parameter on the edit page's URL,
+	/// which the moderation views append to their Edit links. It is deliberately not inferred from the
+	/// user's access level: a moderator editing one of their own posts from the forum is an ordinary
+	/// edit and should return to the forum, not to the moderation view.
+	enum EditIntent: String {
+		/// The user reached the edit form the ordinary way, from the content itself.
+		case normal
+		/// The user reached the edit form from a moderation view, and should be returned there.
+		case modEdit
+
+		/// Reads the intent from a request's `intent` query parameter. An absent or unrecognized
+		/// value is `.normal`, so a hand-edited URL cannot do anything but the default.
+		init(_ req: Request) {
+			self = req.query[String.self, at: "intent"].flatMap(EditIntent.init(rawValue:)) ?? .normal
+		}
+	}
+
+	init(
+		forType: InitType,
+		userRoles: Set<UserRoleType>? = nil,
+		editIntent: EditIntent = .normal
+	) {
 		allowedImageTypes = Settings.shared.validImageInputTypes.joined(separator: ", ")
 		// Determine max images based on user role (shutternauts get 8, others get setting value)
 		let maxImages: Int
@@ -272,7 +293,10 @@ struct MessagePostContext: Encodable {
 				photoFilenames.append("")
 			}
 			formAction = "/forumpost/edit/\(withForumPost.postID)"
-			postSuccessURL = "/forum/\(withForumPost.forumID)"
+			switch editIntent {
+			case .modEdit: postSuccessURL = "/moderate/forumpost/\(withForumPost.postID)"
+			case .normal: postSuccessURL = "/forum/\(withForumPost.forumID)"
+			}
 			isEdit = true
 		// For creating a new Seamail thread
 		case .seamail:

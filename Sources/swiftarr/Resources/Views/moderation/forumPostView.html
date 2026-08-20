@@ -9,7 +9,7 @@
 			<div class="row mb-3">
 				<div class="col" data-reportabletype="forumpost" data-reportableid="#(modData.forumPost.postID)">
 					#if(!modData.isDeleted):
-						<a class="btn btn-outline-primary btn-sm" href="/forumpost/edit/#(modData.forumPost.postID)">Edit</a>
+						<a class="btn btn-outline-primary btn-sm" href="/forumpost/edit/#(modData.forumPost.postID)?intent=modEdit">Edit</a>
 						<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
 						<span class="dropdown">
 							<button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
