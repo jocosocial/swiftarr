@@ -15,7 +15,15 @@ jobs:
           apt-get update && apt-get install -y --no-install-recommends \
             libvips-dev pkg-config ruby-full build-essential git
       - name: Install Jazzy
-        run: gem install jazzy --no-document
+        # mustache 1.1.3 (released 2026-08-20) rewrote template_path= to expect a String or
+        # Array; jazzy 0.15.4 hands it a Pathname, so `jazzy` aborts before it renders a page:
+        # "undefined method `map' for #<Pathname:...>". jazzy allows `mustache ~> 1.1`, so an
+        # unpinned install picks 1.1.3 and every docs run fails. Install 1.1.2 first; the
+        # resolver leaves an already-satisfied dependency alone. Drop the pin once jazzy ships
+        # a release that passes a String.
+        run: |
+          gem install mustache -v 1.1.2 --no-document
+          gem install jazzy --no-document
       - name: Install SourceKitten
         run: |
           git clone --depth 1 https://github.com/jpsim/SourceKitten.git /tmp/sourcekitten
