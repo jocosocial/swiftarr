@@ -103,8 +103,8 @@ class ForumQuarantineVisibilityTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
-	func testForumPostEditSuccessURLReturnsModeratorsToModeration() {
-		let post = PostDetailData(
+	private func editFixturePost() -> PostDetailData {
+		PostDetailData(
 			postID: 42,
 			forumID: UUID(),
 			createdAt: Date(),
@@ -123,17 +123,52 @@ class ForumQuarantineVisibilityTests: XCTestCase, SwiftarrBaseTest {
 			likes: [],
 			loves: []
 		)
+	}
 
-		let moderatorContext = MessagePostContext(
-			forType: .forumPostEdit(post),
-			userIsModerator: true
-		)
-		let userContext = MessagePostContext(
-			forType: .forumPostEdit(post),
-			userIsModerator: false
-		)
+	// A moderator who opened the edit form from the moderation view is returned to it; every other
+	// edit goes back to the forum.
+	func testForumPostEditSuccessURLFollowsEditIntent() {
+		let post = editFixturePost()
 
-		XCTAssertEqual(moderatorContext.postSuccessURL, "/moderate/forumpost/42")
-		XCTAssertEqual(userContext.postSuccessURL, "/forum/\(post.forumID)")
+		let fromModeration = MessagePostContext(forType: .forumPostEdit(post), editIntent: .modEdit)
+		let fromForum = MessagePostContext(forType: .forumPostEdit(post), editIntent: .normal)
+
+		XCTAssertEqual(fromModeration.postSuccessURL, "/moderate/forumpost/42")
+		XCTAssertEqual(fromForum.postSuccessURL, "/forum/\(post.forumID)")
+	}
+
+	// The default matters as much as the modEdit case: omitting `editIntent` must behave like an
+	// ordinary edit, because every caller other than the moderation-view link omits it.
+	func testForumPostEditSuccessURLDefaultsToTheForum() {
+		let post = editFixturePost()
+
+		XCTAssertEqual(
+			MessagePostContext(forType: .forumPostEdit(post)).postSuccessURL,
+			"/forum/\(post.forumID)"
+		)
+	}
+
+	// The intent is read from the URL, never inferred from who is asking. A moderator editing one of
+	// their own posts from the forum sends no `intent`, so they get `.normal` and return to the forum
+	// — the case that made an access-level check the wrong signal.
+	func testEditIntentComesFromTheQueryParameter() async throws {
+		try await withApp { app in
+			func intent(for url: String) -> MessagePostContext.EditIntent {
+				MessagePostContext.EditIntent(
+					Request(
+						application: app,
+						method: .GET,
+						url: URI(string: url),
+						on: app.eventLoopGroup.next()
+					)
+				)
+			}
+
+			XCTAssertEqual(intent(for: "/forumpost/edit/42?intent=modEdit"), .modEdit)
+			XCTAssertEqual(intent(for: "/forumpost/edit/42"), .normal, "no intent means an ordinary edit")
+			XCTAssertEqual(intent(for: "/forumpost/edit/42?intent="), .normal)
+			XCTAssertEqual(intent(for: "/forumpost/edit/42?intent=modedit"), .normal, "the value is exact")
+			XCTAssertEqual(intent(for: "/forumpost/edit/42?intent=javascript:alert(1)"), .normal)
+		}
 	}
 }

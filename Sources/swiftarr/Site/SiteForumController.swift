@@ -726,11 +726,10 @@ struct SiteForumController: SiteControllerUtils {
 
 			init(_ req: Request, post: PostDetailData) throws {
 				trunk = .init(req, title: "Edit Forum Post", tab: .forums)
-				let user = req.auth.get(UserCacheData.self)
 				self.post = .init(
 					forType: .forumPostEdit(post),
-					userRoles: user?.userRoles,
-					userIsModerator: user?.accessLevel.canEditOthersContent() == true
+					userRoles: req.auth.get(UserCacheData.self)?.userRoles,
+					editIntent: .init(req)
 				)
 			}
 		}
