@@ -329,6 +329,11 @@ public struct RegistrationCodeUserData: Content {
 	var isForDiscordUser: Bool
 	/// If this reg code has been allocated to a Discord user, the name of the user. Nil if not a Discord regcode or if not yet allocated.
 	var discordUsername: String?
+	/// TRUE if this account already used its registration code for password recovery
+	/// (stored as a '*' prefix on User.verification; see AuthController.recoveryHandler).
+	var hasUsedRegCodeForPasswordRecovery: Bool
+	/// Account creation time of the primary user. Nil if the code has not been used to create an account.
+	var accountCreatedAt: Date?
 }
 
 /// Returns general info about registration codes.

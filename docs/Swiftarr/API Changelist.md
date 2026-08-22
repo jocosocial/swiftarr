@@ -229,3 +229,10 @@ associated AddedToChat field value increase.
 * `GET /api/v3/photostream` now supports a `byUser` UUID query parameter.
 * `POST /api/v3/photostream/upload` now returns the created
   `PhotostreamImageData` in its successful response body.
+
+## Aug 22, 2026
+* Added `hasUsedRegCodeForPasswordRecovery` and `accountCreatedAt` to `RegistrationCodeUserData`.
+* `GET /api/v3/admin/regcodes/stats`, `GET /api/v3/admin/regcodes/find/:search_string`, and `GET /api/v3/admin/regcodes/findbyuser/:userID` are now accessible to TwitarrTeam and above **or** users with the `accountmanager` role.
+* New endpoint `POST /api/v3/admin/regcodes/unlock/:userID` re-enables one-time registration-code password recovery (strips the spent `*` prefix on `User.verification` and clears `recoveryAttempts`). TwitarrTeam or `accountmanager` only.
+
+

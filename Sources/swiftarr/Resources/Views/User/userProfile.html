@@ -100,6 +100,9 @@
 							<a class="btn btn-sm btn-outline-primary" href="/moderate/userprofile/#(profile.header.userID)">Mod Profile</a>
 							<a class="btn btn-sm btn-outline-primary" href="/moderate/user/#(profile.header.userID)">Mod User</a>
 						#endif
+						#if(trunk.userCanManageAccounts):
+							<a class="btn btn-sm btn-outline-primary" href="/admin/regcodes/showuser/#(profile.header.userID)">Registration Code</a>
+						#endif
 					#endif
 				</div>
 			</div>

@@ -84,7 +84,7 @@ struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 }
 
 /// Renders arbitrary Markdown text
-/// 
+///
 /// Usage: #markdownTextTag(String) -> String
 struct MarkdownTextTag: UnsafeUnescapedLeafTag {
 	func render(_ ctx: LeafContext) throws -> LeafData {
@@ -92,9 +92,9 @@ struct MarkdownTextTag: UnsafeUnescapedLeafTag {
 		guard var string = ctx.parameters[0].string else {
 			return LeafData.string("")
 		}
-		
+
 		// Sanitize any HTML entities in the source string. Although Markdown allows HTML tags to be used in a .md document,
-		// we don't want to allow that as it's a security hole. 
+		// we don't want to allow that as it's a security hole.
 		string = string.htmlEscaped()
 
 		let parser = MarkdownParser()
@@ -133,16 +133,21 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		// Which also means it came from YouKnowWhere.
 		let mentionPattern = "(?<!\\S)(@[A-Za-z0-9]+(?:[-.+_][A-Za-z0-9]+)*)"
 		let mentionRegex = try NSRegularExpression(pattern: mentionPattern, options: [])
-		let mentionMatches = mentionRegex.matches(in: string, options: [], range: NSRange(location: 0, length: string.utf16.count))
+		let mentionMatches = mentionRegex.matches(
+			in: string,
+			options: [],
+			range: NSRange(location: 0, length: string.utf16.count)
+		)
 
 		var modifiedText = string
 		for mentionMatch in mentionMatches.reversed() {
 			let range = Range(mentionMatch.range(at: 1), in: modifiedText)!
 			let mention = String(modifiedText[range])
-			let username = String(mention.dropFirst()) // Drop the initial "@"
-			let linkStyle = ["admin", "THO", "TwitarrTeam", "moderator"].contains(username) ? "link-danger" : "link-primary"
-            let link = "<a class=\"\(linkStyle)\" href=\"/username/\(username)\">\(mention)</a>"
-            modifiedText.replaceSubrange(range, with: link)
+			let username = String(mention.dropFirst())  // Drop the initial "@"
+			let linkStyle =
+				["admin", "THO", "TwitarrTeam", "moderator"].contains(username) ? "link-danger" : "link-primary"
+			let link = "<a class=\"\(linkStyle)\" href=\"/username/\(username)\">\(mention)</a>"
+			modifiedText.replaceSubrange(range, with: link)
 		}
 		string = modifiedText
 
@@ -153,14 +158,18 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		// * Contain alphanumberic characters with no separators
 		let hashtagPattern = "(?<!\\S)(#[A-Za-z0-9]+)(?!\\S)"
 		let hashtagRegex = try NSRegularExpression(pattern: hashtagPattern, options: [])
-		let hashtagMatches = hashtagRegex.matches(in: string, options: [], range: NSRange(location: 0, length: string.utf16.count))
+		let hashtagMatches = hashtagRegex.matches(
+			in: string,
+			options: [],
+			range: NSRange(location: 0, length: string.utf16.count)
+		)
 
 		for hashtagMatch in hashtagMatches.reversed() {
 			let range = Range(hashtagMatch.range(at: 1), in: modifiedText)!
 			let mention = String(modifiedText[range])
-			let hashtag = String(mention.dropFirst()) // Drop the initial "#"
-            let link = "<a class=\"link-primary\" href=\"/forumpost/search?hashtag=\(hashtag)\">\(mention)</a>"
-            modifiedText.replaceSubrange(range, with: link)
+			let hashtag = String(mention.dropFirst())  // Drop the initial "#"
+			let link = "<a class=\"link-primary\" href=\"/forumpost/search?hashtag=\(hashtag)\">\(mention)</a>"
+			modifiedText.replaceSubrange(range, with: link)
 		}
 		string = modifiedText
 
@@ -530,7 +539,7 @@ struct CruiseDayIndexTag: LeafTag {
 	}
 }
 
-// MARK: - Tags for Styling Users 
+// MARK: - Tags for Styling Users
 
 /// Inserts an <img> tag for the given user's avatar image. Presents a default image if the user doesn't have an image.
 /// Note: If we implement identicons at the API level, users will always have images, and the 'generic user' image here is just a fallback.
@@ -587,9 +596,9 @@ struct UserBylineTag: UnsafeUnescapedLeafTag {
 			}
 			return false
 		}
-		let shortStyle = stylingSearch(style: "short", in: &styling) 
-		let nolinkStyle = stylingSearch(style: "nolink", in: &styling) 
-		let pronounStyle = stylingSearch(style: "pronoun", in: &styling) 
+		let shortStyle = stylingSearch(style: "short", in: &styling)
+		let nolinkStyle = stylingSearch(style: "nolink", in: &styling)
+		let pronounStyle = stylingSearch(style: "pronoun", in: &styling)
 		if ["admin", "THO", "TwitarrTeam", "moderator"].contains(username) {
 			styling.append(" text-danger")
 		}
@@ -627,7 +636,7 @@ struct UserBylineTag: UnsafeUnescapedLeafTag {
 
 // MARK: - Other Tags
 
-/// Gets the user-formatted label string for the given tyhpe of LFG. 
+/// Gets the user-formatted label string for the given tyhpe of LFG.
 ///
 /// Usage: #lfgLabel(String)
 struct LFGLabelTag: LeafTag {
@@ -678,35 +687,60 @@ struct DinnerTeamTag: LeafTag {
 //
 // Usage: #notEmpty(value)
 struct NotEmptyTag: LeafTag {
-    func render(_ ctx: LeafContext) throws -> LeafData {
+	func render(_ ctx: LeafContext) throws -> LeafData {
 		try ctx.requireParameterCount(1)
 		guard let leafData = ctx.parameters.first else {
-            throw "Couldn't extract first parameter to NotEmpty tag"
+			throw "Couldn't extract first parameter to NotEmpty tag"
 		}
 		if leafData.isNil {
 			return .bool(false)
 		}
-    	guard let str = leafData.string else {
-            throw "unable to check for empty value unexpected data"
-        }
-        return .bool(!str.isEmpty)
-    }
+		guard let str = leafData.string else {
+			throw "unable to check for empty value unexpected data"
+		}
+		return .bool(!str.isEmpty)
+	}
 }
 
-// Have I become that guy? Is inserting obvious references to forty year old Gibson books still cool? 
+// Have I become that guy? Is inserting obvious references to forty year old Gibson books still cool?
 // Anyway, unlike Leaf's #count(), this returns 0 if the parameter isn't an array or dict. Most useful
 // when the parameter is an optional that may be nil.
 //
 // Usage: #countOrZero(value)
 struct CountZeroTag: LeafTag {
-    func render(_ ctx: LeafContext) throws -> LeafData {
-        try ctx.requireParameterCount(1)
-        if let array = ctx.parameters[0].array {
-            return LeafData.int(array.count)
-        } else if let dictionary = ctx.parameters[0].dictionary {
-            return LeafData.int(dictionary.count)
-        } else {
-            return .int(0)
-        }
-    }
+	func render(_ ctx: LeafContext) throws -> LeafData {
+		try ctx.requireParameterCount(1)
+		if let array = ctx.parameters[0].array {
+			return LeafData.int(array.count)
+		}
+		else if let dictionary = ctx.parameters[0].dictionary {
+			return LeafData.int(dictionary.count)
+		}
+		else {
+			return .int(0)
+		}
+	}
+}
+
+/// Renders a registration code as bold monospace text, uppercased.
+/// For example, "abcabc" is displayed as "ABCABC".
+///
+/// We don't yet have one consistent place to format registration codes.
+/// I don't even know where the format definition came from (like was that THO thing
+/// or a Twitarr thing).
+///
+/// Usage: #regCode(String)
+struct RegCodeTag: UnsafeUnescapedLeafTag {
+	static func format(_ code: String) -> String {
+		code.filter { !$0.isWhitespace }.uppercased()
+	}
+
+	func render(_ ctx: LeafContext) throws -> LeafData {
+		try ctx.requireParameterCount(1)
+		guard let string = ctx.parameters[0].string, !string.isEmpty else {
+			return LeafData.string("")
+		}
+		let display = RegCodeTag.format(string).htmlEscaped()
+		return LeafData.string("<b class=\"font-monospace\">\(display)</b>")
+	}
 }

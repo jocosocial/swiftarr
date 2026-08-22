@@ -34,6 +34,7 @@ struct TrunkContext: Encodable {
 	var userIsMod: Bool
 	var userIsTwitarrTeam: Bool
 	var userIsTHO: Bool
+	var userCanManageAccounts: Bool
 	var userRoles: [String]  // Use "contains(trunk.userRoles, "shutternautmanager")" or similar to check
 	var minAccessLevel: String?  // Minimum access required to view Twitarr pages; Value from Settings.
 	var preregistrationMode: Bool  // Mirrors the value in Settings.
@@ -59,6 +60,7 @@ struct TrunkContext: Encodable {
 			userIsMod = userAccessLevel.hasAccess(.moderator)
 			userIsTwitarrTeam = userAccessLevel.hasAccess(.twitarrteam)
 			userIsTHO = userAccessLevel.hasAccess(.tho)
+			userCanManageAccounts = user.canManageAccounts
 			username = user.username
 			userID = user.userID
 			userRoles = user.userRoles.map { $0.rawValue }
@@ -68,6 +70,7 @@ struct TrunkContext: Encodable {
 			userIsMod = false
 			userIsTwitarrTeam = false
 			userIsTHO = false
+			userCanManageAccounts = false
 			username = ""
 			userID = UUID()
 			userRoles = []

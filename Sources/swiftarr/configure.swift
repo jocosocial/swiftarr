@@ -522,6 +522,7 @@ struct SwiftarrConfigurator {
 		app.leaf.tags["lfgLabel"] = LFGLabelTag()
 		app.leaf.tags["notEmpty"] = NotEmptyTag()
 		app.leaf.tags["countOrZero"] = CountZeroTag()
+		app.leaf.tags["regCode"] = RegCodeTag()
 	}
 
 	func configureQueues(_ app: Application) throws {

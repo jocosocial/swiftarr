@@ -7,6 +7,7 @@
 				</div>
 			</div>
 			
+			#if(trunk.userIsTwitarrTeam):
 			<ul class="list-group">
 				<li class="list-group-item active">
 					<b>Communication</b>
@@ -33,45 +34,51 @@
 					<b>Event Feedback</b>: View Shadow Event Feedback responses.
 				</a>
 			</ul>
+			#endif
 			
 			<ul class="list-group mt-2">
 				<li class="list-group-item active">
 					<b>Configuration</b>
 				</li>
-				<a class="list-group-item list-group-item-action" href="/admin/serversettings">
-					<b>Server Settings</b>: Lots of inscrutable toggles and buttons here.
-				</a>
+				#if(trunk.userIsTwitarrTeam):
+					<a class="list-group-item list-group-item-action" href="/admin/serversettings">
+						<b>Server Settings</b>: Lots of inscrutable toggles and buttons here.
+					</a>
+				#endif
 				<a class="list-group-item list-group-item-action" href="/admin/regcodes">
 					<b>Registration Codes</b>: View/Manage registration code table.
 				</a>
-				<a class="list-group-item list-group-item-action" href="/admin/regcodes/discord/assign">
-					<b>Assign Reg Code</b>: Assign a reg code to a Discord user. Does not work on boat.
-				</a>
-				#if(trunk.userIsTHO):
-					#if(trunk.username == "admin"):
-						<a class="list-group-item list-group-item-action" href="/admin/tho">
-							<b>Manage THO</b>: View/Manage THO members.
+				#if(trunk.userIsTwitarrTeam):
+					<a class="list-group-item list-group-item-action" href="/admin/regcodes/discord/assign">
+						<b>Assign Reg Code</b>: Assign a reg code to a Discord user. Does not work on boat.
+					</a>
+					#if(trunk.userIsTHO):
+						#if(trunk.username == "admin"):
+							<a class="list-group-item list-group-item-action" href="/admin/tho">
+								<b>Manage THO</b>: View/Manage THO members.
+							</a>
+						#else:
+							<a class="list-group-item list-group-item-action" href="/admin/tho">
+								<b>Manage THO</b>: View THO members.
+							</a>
+						#endif
+						<a class="list-group-item list-group-item-action" href="/admin/twitarrteam">
+							<b>Manage TwitarrTeam Members</b>: View/Manage members of TwitarrTeam.
 						</a>
-					#else:
-						<a class="list-group-item list-group-item-action" href="/admin/tho">
-							<b>Manage THO</b>: View THO members.
+						<a class="list-group-item list-group-item-action" href="/admin/mods">
+							<b>Manage Moderators</b>: View/Manage moderators.
+						</a>
+						<a class="list-group-item list-group-item-action" href="/admin/userroles">
+							<b>Manage User Roles</b>: View/Manage User Roles. Roles are specific capabilities granted to users; separate from the userLevel hierarchy.
+						</a>
+						<a class="list-group-item list-group-item-action" href="/admin/rollup">
+							<b>Show Table Counts</b>: Displays a table containing row counts for a bunch of database tables.
 						</a>
 					#endif
-					<a class="list-group-item list-group-item-action" href="/admin/twitarrteam">
-						<b>Manage TwitarrTeam Members</b>: View/Manage members of TwitarrTeam.
-					</a>
-					<a class="list-group-item list-group-item-action" href="/admin/mods">
-						<b>Manage Moderators</b>: View/Manage moderators.
-					</a>
-					<a class="list-group-item list-group-item-action" href="/admin/userroles">
-						<b>Manage User Roles</b>: View/Manage User Roles. Roles are specific capabilities granted to users; separate from the userLevel hierarchy.
-					</a>
-					<a class="list-group-item list-group-item-action" href="/admin/rollup">
-						<b>Show Table Counts</b>: Displays a table containing row counts for a bunch of database tables.
-					</a>
 				#endif
 			</ul>
 			
+			#if(trunk.userIsTwitarrTeam):
 			<ul class="list-group mt-2">
 				<li class="list-group-item active">
 					<b>Data Loading</b>
@@ -100,6 +107,7 @@
 					</a>
 				#endif
 			</ul>
+			#endif
 		</div>
     #endexport
 #endextend
