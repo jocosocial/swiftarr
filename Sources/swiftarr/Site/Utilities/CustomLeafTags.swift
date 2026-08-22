@@ -192,7 +192,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 
 		// Links in posts should be automatically clickable. Similarly, we desire to shorten Twitarr
 		// specific links. Maybe someday we could parse them and give some linktext?
-		// e.g. "http://192.168.0.19:8081/fez/ADDBA5D9-1154-4033-88AE-07B12F3AE162"
+		// e.g. "http://192.168.0.19:8081/lfg/ADDBA5D9-1154-4033-88AE-07B12F3AE162"
 		// could have linktext "[An LFG Link]" or somesuch.
 
 		// Since we have multiple potential Twitarr hostnames (twitarr.com, joco.hollandamerica.com)
@@ -250,42 +250,8 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 			{
 				(components.scheme, components.host, components.port) = (nil, nil, nil)
 				var linkText = components.string
-				if let url = URL(string: urlStr), url.pathComponents.count > 1, url.pathComponents[0] == "/" {
-					switch url.pathComponents[1] {
-					case "tweets": linkText = "[Twitarr Tweet Link]"
-					case "forums":
-						if url.pathComponents.count == 2 {
-							linkText = "[Forum Categories Link]"
-						}
-						else {
-							linkText = "[Forum Category Link]"
-						}
-					case "forum": linkText = "[Forum Link]"
-					case "seamail": linkText = "[Seamail Link]"
-					case "fez":
-						if url.pathComponents.count > 2 {
-							switch url.pathComponents[2] {
-							case "joined": linkText = "[Joined LFGs Link]"
-							case "owned": linkText = "[Your LFGs Link]"
-							case "faq": linkText = "[LFG FAQ Link]"
-							default: linkText = "[LFG Link]"
-							}
-						}
-						else {
-							linkText = "[LFGs Link]"
-						}
-					case "events": linkText = "[Events Link]"
-					case "user", "profile": linkText = "[User Link]"
-					case "boardgames":
-						if url.pathComponents.count > 2 {
-							linkText = "[Boardgame Link]"
-						}
-						else {
-							linkText = "[Boardgames Link]"
-						}
-					case "karaoke": linkText = "[Karaoke Link]"
-					default: linkText = "[Twitarr Link]"
-					}
+				if let url = URL(string: urlStr) {
+					linkText = Self.canonicalLinkText(pathComponents: url.pathComponents) ?? linkText
 				}
 				// Replace the link's text with a wiki-like linkbox describing where the link goes
 				string.replaceSubrange(
@@ -300,6 +266,47 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 					with: "<a href=\"\(components.string!)\">\(components.string!)</a>\(urlTextSuffix)"
 				)
 			}
+		}
+	}
+
+	/// Wiki-style label for a canonical Twitarr site path, or `nil` when the path shouldn't be rewritten.
+	/// Site LFG routes live under `/lfg`; `/fez` is kept so older posted URLs still get LFG labels.
+	static func canonicalLinkText(pathComponents: [String]) -> String? {
+		guard pathComponents.count > 1, pathComponents[0] == "/" else { return nil }
+		switch pathComponents[1] {
+		case "tweets": return "[Twitarr Tweet Link]"
+		case "forums":
+			if pathComponents.count == 2 {
+				return "[Forum Categories Link]"
+			}
+			else {
+				return "[Forum Category Link]"
+			}
+		case "forum": return "[Forum Link]"
+		case "seamail": return "[Seamail Link]"
+		case "fez", "lfg":
+			if pathComponents.count > 2 {
+				switch pathComponents[2] {
+				case "joined": return "[Joined LFGs Link]"
+				case "owned": return "[Your LFGs Link]"
+				case "faq": return "[LFG FAQ Link]"
+				default: return "[LFG Link]"
+				}
+			}
+			else {
+				return "[LFGs Link]"
+			}
+		case "events": return "[Events Link]"
+		case "user", "profile": return "[User Link]"
+		case "boardgames":
+			if pathComponents.count > 2 {
+				return "[Boardgame Link]"
+			}
+			else {
+				return "[Boardgames Link]"
+			}
+		case "karaoke": return "[Karaoke Link]"
+		default: return "[Twitarr Link]"
 		}
 	}
 
