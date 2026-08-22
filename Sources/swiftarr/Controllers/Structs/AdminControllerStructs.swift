@@ -473,7 +473,7 @@ extension SettingsAdminData {
 		self.maximumForumPosts = settings.maximumForumPosts
 		self.maxImageSize = settings.maxImageSize
 		self.maxForumPostImages = settings.maxForumPostImages
-		self.photostreamUploadRateLimit = Int(settings.photostreamUploadRateLimit)
+		self.photostreamUploadRateLimit = settings.photostreamUploadRateLimit
 		self.forumAutoQuarantineThreshold = settings.forumAutoQuarantineThreshold
 		self.postAutoQuarantineThreshold = settings.postAutoQuarantineThreshold
 		self.userAutoQuarantineThreshold = settings.userAutoQuarantineThreshold

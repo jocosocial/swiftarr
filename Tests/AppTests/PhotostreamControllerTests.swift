@@ -1,5 +1,6 @@
 import XCTVapor
 import XCTest
+import Redis
 
 @testable import swiftarr
 
@@ -165,6 +166,13 @@ final class PhotostreamControllerTests: XCTestCase, SwiftarrBaseTest {
 		let data = SettingsAdminData(Settings.shared)
 		XCTAssertEqual(data.photostreamUploadRateLimit, Settings.shared.photostreamUploadRateLimit)
 		XCTAssertEqual(data.photostreamUploadRateLimit, 300, "production default is 5 minutes")
+	}
+
+	func testIntSetting_ReadsLegacyTimeIntervalRedisValues() {
+		XCTAssertEqual(Settings.intSetting(fromRESP: 300.convertedToRESPValue()), 300)
+		XCTAssertEqual(Settings.intSetting(fromRESP: 300.0.convertedToRESPValue()), 300)
+		XCTAssertEqual(Settings.intSetting(fromRESP: 0.0.convertedToRESPValue()), 0)
+		XCTAssertEqual(Int(fromRESP: 0.0.convertedToRESPValue()), nil, "plain Int must not parse Double's Redis encoding")
 	}
 
 	func testSettingsUpdateDataDecodesPhotostreamRateLimit() throws {
