@@ -101,7 +101,8 @@ struct AuthController: APIRouteCollection {
 		// see `UserRecoveryData.validations()`
 		let data = try ValidatingJSONDecoder().decode(UserRecoveryData.self, fromBodyOf: req)
 		// find data.username user
-		guard let user = try await User.query(on: req.db).filter(\.$username, .custom("ilike"), data.username).first() else {
+		guard let user = try await User.query(on: req.db).filter(\.$username, .custom("ilike"), data.username).first()
+		else {
 			throw Abort(.badRequest, reason: "username \"\(data.username)\" not found")
 		}
 		// no login for punks
@@ -120,7 +121,10 @@ struct AuthController: APIRouteCollection {
 			// A 6-character alphanumeric key is a registration code, not a password or recovery key.
 			// Spent codes are stored with a '*' prefix on User.verification; do not fall through.
 			if user.verificationUsed {
-				throw Abort(.badRequest, reason: "account must be recovered using the recovery key")
+				throw Abort(
+					.badRequest,
+					reason: "account must be recovered using the recovery key or an account manager"
+				)
 			}
 			let normalizedKey = RegistrationCode.normalized(data.recoveryKey)
 			if let stored = user.unspentVerification,
