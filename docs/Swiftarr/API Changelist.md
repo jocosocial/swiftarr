@@ -231,4 +231,5 @@ associated AddedToChat field value increase.
   `PhotostreamImageData` in its successful response body.
 
 ## Aug 22, 2026
-* Added `photostreamUploadRateLimit` (seconds between photostream uploads; `0` disables the limit) to `SettingsAdminData` and `SettingsUpdateData`.
+* Added `photostreamUploadRateLimit` (seconds between photostream uploads; `0` disables the limit) to `SettingsAdminData`, `SettingsUpdateData`, and `ClientSettingsData`.
+* `GET /api/v3/client/settings` now also includes `photostreamUploadRateLimit`.
