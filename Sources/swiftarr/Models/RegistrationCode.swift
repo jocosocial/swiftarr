@@ -50,8 +50,33 @@ final class RegistrationCode: Model, @unchecked Sendable {
 	/// - Parameters:
 	///   - code: The registration code string.
 	init(code: String, isForDiscord: Bool = false) {
-		self.code = code
+		self.code = RegistrationCode.normalized(code)
 		self.isDiscordUser = isForDiscord
+	}
+
+	/// Lowercase with all whitespace removed. THO mails codes as "ABC DEF"; storage and matching use "abcdef".
+	static func normalized(_ code: String) -> String {
+		String(code.lowercased().filter { !$0.isWhitespace })
+	}
+
+	/// TRUE if `code` is a 6-character alphanumeric registration code, with optional whitespace (including non-breaking spaces).
+	static func isWellFormed(_ code: String) -> Bool {
+		let normalized = Self.normalized(code)
+		return normalized.count == 6 && normalized.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber) }
+	}
+
+	/// THO-style display form, e.g. "abcabc" → "ABC ABC". Strips a spent `*` prefix so the real code is shown.
+	static func displayString(_ code: String) -> String {
+		var normalized = Self.normalized(code)
+		if normalized.first == "*" {
+			normalized.removeFirst()
+		}
+		let display = normalized.uppercased()
+		guard display.count == 6 else {
+			return display
+		}
+		let mid = display.index(display.startIndex, offsetBy: 3)
+		return "\(display[..<mid]) \(display[mid...])"
 	}
 }
 

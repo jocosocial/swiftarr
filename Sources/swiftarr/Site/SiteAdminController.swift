@@ -967,24 +967,25 @@ struct SiteAdminController: SiteControllerUtils {
 		var regCodeSearchResults = ""
 		var searchedRegCode = ""
 		var searchResultHeaders = [UserHeader]()
-		if let regCode = req.query[String.self, at: "search"]?.removingPercentEncoding?.lowercased()
-			.filter({ $0 != " " })
+		if let rawSearch = req.query[String.self, at: "search"]?.removingPercentEncoding,
+			RegistrationCode.isWellFormed(rawSearch)
 		{
-			regCodeSearchResults = "Invalid registration code"
-			if regCode.count == 6, regCode.allSatisfy({ $0.isLetter || $0.isNumber }) {
-				searchedRegCode = regCode
-				regCodeSearchResults = ""
-				do {
-					let response = try await apiQuery(req, endpoint: "/admin/regcodes/find/\(regCode)")
-					searchResultHeaders = try response.content.decode([UserHeader].self)
-				}
-				catch let error as ErrorResponse {
-					regCodeSearchResults = "Error: \(error.reason)"
-				}
-				catch {
-					regCodeSearchResults = error.localizedDescription
-				}
+			let regCode = RegistrationCode.normalized(rawSearch)
+			searchedRegCode = regCode
+			regCodeSearchResults = ""
+			do {
+				let response = try await apiQuery(req, endpoint: "/admin/regcodes/find/\(regCode)")
+				searchResultHeaders = try response.content.decode([UserHeader].self)
 			}
+			catch let error as ErrorResponse {
+				regCodeSearchResults = "Error: \(error.reason)"
+			}
+			catch {
+				regCodeSearchResults = error.localizedDescription
+			}
+		}
+		else if req.query[String.self, at: "search"] != nil {
+			regCodeSearchResults = "Invalid registration code"
 		}
 		let response = try await apiQuery(req, endpoint: "/admin/regcodes/stats")
 		let regCodeData = try response.content.decode(RegistrationCodeStatsData.self)

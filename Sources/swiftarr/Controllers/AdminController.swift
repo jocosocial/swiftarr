@@ -375,12 +375,14 @@ struct AdminController: APIRouteCollection {
 	/// the registration code. The first item in the array will be the primary account.
 	func userForRegCodeHandler(_ req: Request) async throws -> [UserHeader] {
 		try req.auth.require(UserCacheData.self).guardCanManageAccounts()
-		guard let regCode = req.parameters.get(searchStringParam.paramString, as: String.self)?.lowercased() else {
+		guard let rawCode = req.parameters.get(searchStringParam.paramString, as: String.self) else {
 			throw Abort(.badRequest, reason: "Missing search parameter")
 		}
-		guard regCode.count == 6, regCode.allSatisfy({ $0.isLetter || $0.isNumber }) else {
+		let decoded = rawCode.removingPercentEncoding ?? rawCode
+		guard RegistrationCode.isWellFormed(decoded) else {
 			throw Abort(.badRequest, reason: "Registration code search parameter is malformed.")
 		}
+		let regCode = RegistrationCode.normalized(decoded)
 		guard let foundRecord = try await RegistrationCode.query(on: req.db).filter(\.$code == regCode).first() else {
 			throw Abort(.badRequest, reason: "\(regCode) is not found in the registration code table.")
 		}

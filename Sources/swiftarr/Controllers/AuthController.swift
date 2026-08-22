@@ -113,27 +113,23 @@ struct AuthController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "please see a Twit-arr Team member for password recovery")
 		}
 
-		// registration codes and recovery keys are normalized prior to storage
-		let normalizedKey = data.recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
-
-		// protect against ping-pong attack from compromised registration code...
-		// if the code being sent normalizes to 6 characters, it is most likely a
-		// registration code, so abort if it's already been used
-		if normalizedKey.count == 6 {
-			guard user.verification?.first != "*" else {
+		// Registration codes are normalized (lowercase, all whitespace stripped) prior to storage.
+		// Recovery keys are hashed after ASCII spaces are removed; passwords are matched as typed.
+		var foundMatch = false
+		if RegistrationCode.isWellFormed(data.recoveryKey) {
+			// A 6-character alphanumeric key is a registration code, not a password or recovery key.
+			// Spent codes are stored with a '*' prefix on User.verification; do not fall through.
+			if let verification = user.verification, verification.hasPrefix("*") {
 				throw Abort(.badRequest, reason: "account must be recovered using the recovery key")
 			}
-		}
-
-		// attempt data.recoveryKey match
-		var foundMatch = false
-		// A spent registration code is disabled by prefixing its stored `verification` with '*'.
-		// Only match an unspent verification, so the marked value ("*code") can't be replayed to
-		// reuse a spent code -- the password/recoveryKey paths below still accept any input.
-		if let verification = user.verification, !verification.hasPrefix("*"), normalizedKey == verification {
-			foundMatch = true
-			// prevent .verification from being used again
-			user.verification = "*" + verification
+			let normalizedKey = RegistrationCode.normalized(data.recoveryKey)
+			if let verification = user.verification {
+				let storedCode = RegistrationCode.normalized(verification)
+				if normalizedKey == storedCode {
+					foundMatch = true
+					user.verification = "*" + storedCode
+				}
+			}
 		}
 		else {
 			// password and recoveryKey require hash verification
@@ -142,8 +138,9 @@ struct AuthController: APIRouteCollection {
 				foundMatch = true
 			}
 			else {
-				// user.recoveryKey is normalized prior to hashing
-				if try verifier.verify(normalizedKey, created: user.recoveryKey) {
+				// user.recoveryKey is hashed from the 3-word key with ASCII spaces removed
+				let normalizedRecoveryKey = data.recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
+				if try verifier.verify(normalizedRecoveryKey, created: user.recoveryKey) {
 					foundMatch = true
 				}
 			}

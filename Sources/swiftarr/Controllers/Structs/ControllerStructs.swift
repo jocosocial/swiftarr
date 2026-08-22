@@ -2290,18 +2290,12 @@ extension UserCreateData: RCFValidatable {
 				tester.addValidationError(forKey: .username, errorString: $0)
 			}
 		// Registration code can be nil, but if it isn't, it must be a properly formed code.
-		if let normalizedCode = verification?.lowercased().replacingOccurrences(of: " ", with: ""),
-			normalizedCode.count > 0
-		{
-			if normalizedCode.rangeOfCharacter(from: CharacterSet.alphanumerics.inverted) != nil
-				|| normalizedCode.count != 6
-			{
-				tester.addValidationError(
-					forKey: .verification,
-					errorString: "Malformed registration code. Registration code "
-						+ "must be 6 alphanumeric letters; spaces optional"
-				)
-			}
+		if let verification, !verification.isEmpty, !RegistrationCode.isWellFormed(verification) {
+			tester.addValidationError(
+				forKey: .verification,
+				errorString: "Malformed registration code. Registration code "
+					+ "must be 6 alphanumeric letters; spaces optional"
+			)
 		}
 	}
 }
@@ -2710,7 +2704,7 @@ extension UserVerifyData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
 		tester.validate(
-			verification.count >= 6 && verification.count <= 7,
+			RegistrationCode.isWellFormed(verification),
 			forKey: .verification,
 			or: "verification code is 6 letters long (with an optional space in the middle)"
 		)

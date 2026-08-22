@@ -722,17 +722,12 @@ struct CountZeroTag: LeafTag {
 	}
 }
 
-/// Renders a registration code as bold monospace text, uppercased.
-/// For example, "abcabc" is displayed as "ABCABC".
-///
-/// We don't yet have one consistent place to format registration codes.
-/// I don't even know where the format definition came from (like was that THO thing
-/// or a Twitarr thing).
+/// Renders a registration code as bold monospace text in THO-style groups, e.g. "abcabc" → "ABC ABC".
 ///
 /// Usage: #regCode(String)
 struct RegCodeTag: UnsafeUnescapedLeafTag {
 	static func format(_ code: String) -> String {
-		code.filter { !$0.isWhitespace }.uppercased()
+		RegistrationCode.displayString(code)
 	}
 
 	func render(_ ctx: LeafContext) throws -> LeafData {
