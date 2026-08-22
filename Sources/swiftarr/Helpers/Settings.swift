@@ -45,10 +45,6 @@ final class Settings: Encodable, @unchecked Sendable {
 			if let value = T(fromRESP: result) {
 				self.wrappedValue = value
 			}
-			else if T.self == Int.self, let intValue = Settings.intSetting(fromRESP: result) {
-				// `photostreamUploadRateLimit` used to be a TimeInterval; Redis still has values like "300.0".
-				self.wrappedValue = intValue as! T
-			}
 		}
 
 		// Call after setting value
@@ -357,18 +353,6 @@ extension Settings {
 	/// Shutternauts are allowed up to 8 images, other users are limited by the `maxForumPostImages` setting.
 	func getMaxForumPostImages(for user: UserCacheData) -> Int {
 		return user.userRoles.contains(.shutternaut) ? 8 : maxForumPostImages
-	}
-
-	/// Decode an Int stored-setting from Redis. Accepts both `"300"` and `"300.0"` because some
-	/// settings were previously stored as `TimeInterval` and written with Double's description.
-	static func intSetting(fromRESP value: RESPValue) -> Int? {
-		if let int = Int(fromRESP: value) {
-			return int
-		}
-		guard let string = String(fromRESP: value), let double = Double(string) else {
-			return nil
-		}
-		return Int(double)
 	}
 
 }
