@@ -163,7 +163,7 @@ final class PhotostreamControllerTests: XCTestCase, SwiftarrBaseTest {
 
 	func testSettingsAdminDataExposesPhotostreamRateLimit() {
 		let data = SettingsAdminData(Settings.shared)
-		XCTAssertEqual(data.photostreamUploadRateLimit, Int(Settings.shared.photostreamUploadRateLimit))
+		XCTAssertEqual(data.photostreamUploadRateLimit, Settings.shared.photostreamUploadRateLimit)
 		XCTAssertEqual(data.photostreamUploadRateLimit, 300, "production default is 5 minutes")
 	}
 

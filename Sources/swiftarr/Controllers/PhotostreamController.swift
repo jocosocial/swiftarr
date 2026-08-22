@@ -150,8 +150,8 @@ struct PhotostreamController: APIRouteCollection {
 		try user.guardCanCreateContent(customErrorString: "user cannot post to photostream")
 		let rateLimit = Settings.shared.photostreamUploadRateLimit
 		if let userPrevPhoto = try await StreamPhoto.query(on: req.db).filter(\.$author.$id == user.userID).sort(\.$id, .descending).first(),
-				isWithinUploadRateLimit(previousCaptureTime: userPrevPhoto.captureTime, rateLimit: rateLimit) {
-			throw Abort(.tooManyRequests, reason: photostreamRateLimitErrorReason(rateLimit))
+				isWithinUploadRateLimit(previousCaptureTime: userPrevPhoto.captureTime, rateLimit: TimeInterval(rateLimit)) {
+			throw Abort(.tooManyRequests, reason: photostreamRateLimitErrorReason(TimeInterval(rateLimit)))
 		}
 		let newPostData = try ValidatingJSONDecoder().decode(PhotostreamUploadData.self, fromBodyOf: req)
 		// The only valid place names are what getPlacenames returns
@@ -180,7 +180,7 @@ struct PhotostreamController: APIRouteCollection {
 				boatLocation: boatLocation)
 		try await streamPhoto.save(on: req.db)
 		let photoData = try PhotostreamImageData(streamPhoto: streamPhoto, author: user.makeHeader())
-		return try makeUploadResponse(photo: photoData, rateLimit: Settings.shared.photostreamUploadRateLimit)
+		return try makeUploadResponse(photo: photoData, rateLimit: TimeInterval(Settings.shared.photostreamUploadRateLimit))
 	}
 
 	/// `true` when another photostream upload should be rejected. A `rateLimit` of `0` (or less) disables the limit.

@@ -2862,7 +2862,7 @@ extension ClientSettingsData {
 		self.minAccessLevel = Settings.shared.minAccessLevel.rawValue
 		self.maxForumPostImages = Settings.shared.maxForumPostImages
 		self.maxImageSize = Settings.shared.maxImageSize
-		self.photostreamUploadRateLimit = Int(Settings.shared.photostreamUploadRateLimit)
+		self.photostreamUploadRateLimit = Settings.shared.photostreamUploadRateLimit
 		self.installationID = installationID
 	}
 }

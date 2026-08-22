@@ -126,10 +126,7 @@ class ContentStructValidationTests: XCTestCase {
 		let data = try JSONEncoder().encode(settings)
 		let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
 
-		XCTAssertEqual(
-			json["photostreamUploadRateLimit"] as? Int,
-			Int(Settings.shared.photostreamUploadRateLimit)
-		)
+		XCTAssertEqual(json["photostreamUploadRateLimit"] as? Int, Settings.shared.photostreamUploadRateLimit)
 		XCTAssertEqual(json["photostreamUploadRateLimit"] as? Int, 300)
 	}
 
