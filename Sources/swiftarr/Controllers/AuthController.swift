@@ -119,16 +119,15 @@ struct AuthController: APIRouteCollection {
 		if RegistrationCode.isWellFormed(data.recoveryKey) {
 			// A 6-character alphanumeric key is a registration code, not a password or recovery key.
 			// Spent codes are stored with a '*' prefix on User.verification; do not fall through.
-			if let verification = user.verification, verification.hasPrefix("*") {
+			if user.verificationUsed {
 				throw Abort(.badRequest, reason: "account must be recovered using the recovery key")
 			}
 			let normalizedKey = RegistrationCode.normalized(data.recoveryKey)
-			if let verification = user.verification {
-				let storedCode = RegistrationCode.normalized(verification)
-				if normalizedKey == storedCode {
-					foundMatch = true
-					user.verification = "*" + storedCode
-				}
+			if let stored = user.unspentVerification,
+				RegistrationCode.normalized(stored) == normalizedKey
+			{
+				foundMatch = true
+				user.markVerificationUsed()
 			}
 		}
 		else {

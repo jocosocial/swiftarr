@@ -65,13 +65,9 @@ final class RegistrationCode: Model, @unchecked Sendable {
 		return normalized.count == 6 && normalized.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber) }
 	}
 
-	/// THO-style display form, e.g. "abcabc" → "ABC ABC". Strips a spent `*` prefix so the real code is shown.
+	/// THO-style display form, e.g. "abcabc" → "ABC ABC".
 	static func displayString(_ code: String) -> String {
-		var normalized = Self.normalized(code)
-		if normalized.first == "*" {
-			normalized.removeFirst()
-		}
-		let display = normalized.uppercased()
+		let display = Self.normalized(User.unspentVerification(code)).uppercased()
 		guard display.count == 6 else {
 			return display
 		}

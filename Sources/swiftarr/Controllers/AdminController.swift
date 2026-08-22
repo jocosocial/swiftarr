@@ -422,9 +422,7 @@ struct AdminController: APIRouteCollection {
 		let user = try await User.findFromParameter(userIDParam, on: req)
 		let allAccounts = try await user.allAccounts(on: req.db)
 		for account in allAccounts {
-			if let verification = account.verification, verification.hasPrefix("*") {
-				account.verification = String(verification.dropFirst())
-			}
+			account.unlockVerification()
 			account.recoveryAttempts = 0
 			try await account.save(on: req.db)
 		}
@@ -442,7 +440,7 @@ struct AdminController: APIRouteCollection {
 		let regCodeResult = try await RegistrationCode.query(on: req.db).filter(\.$user.$id ~~ userIDs).first()
 		let regCode = regCodeResult?.code ?? ""
 		let resultUsers = req.userCache.getHeaders(userIDs)
-		let hasUsed = allAccounts.contains { $0.verification?.hasPrefix("*") == true }
+		let hasUsed = allAccounts.contains { $0.verificationUsed }
 		return RegistrationCodeUserData(
 			users: resultUsers,
 			regCode: regCode,

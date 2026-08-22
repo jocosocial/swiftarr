@@ -614,11 +614,8 @@ struct UserSaveRestoreData: Content, Sendable {
 extension UserSaveRestoreData {
 	/// For this to work: Must use `.with(\.$roles).with(\.$favoriteEvents).with(\.$favorites).with(\.$performer).with(\.$performer.events)` in query
 	init?(user: User) {
-		guard var regCode = user.verification else {
+		guard let regCode = user.unspentVerification else {
 			return nil
-		}
-		if regCode.first == "*" {
-			regCode = String(regCode.dropFirst())
 		}
 		// Stuff that's important to get right for security reasons
 		username = user.username

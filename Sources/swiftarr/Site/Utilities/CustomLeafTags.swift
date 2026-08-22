@@ -736,6 +736,6 @@ struct RegCodeTag: UnsafeUnescapedLeafTag {
 			return LeafData.string("")
 		}
 		let display = RegCodeTag.format(string).htmlEscaped()
-		return LeafData.string("<b class=\"font-monospace\">\(display)</b>")
+		return LeafData.string("<span class=\"font-monospace\">\(display)</span>")
 	}
 }

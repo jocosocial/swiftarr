@@ -245,6 +245,37 @@ final class User: Model, @unchecked Sendable {
 	// }
 }
 
+// MARK: - Registration-code recovery
+
+extension User {
+	/// TRUE if this account already used its registration code for one-time password recovery.
+	var verificationUsed: Bool {
+		verification?.hasPrefix("*") == true
+	}
+
+	/// Registration code with a spent `*` prefix removed. Use when the value is a raw string, not a `User`.
+	static func unspentVerification(_ code: String) -> String {
+		code.hasPrefix("*") ? String(code.dropFirst()) : code
+	}
+
+	/// The registration code without a spent `*` prefix, if any.
+	var unspentVerification: String? {
+		guard let verification else { return nil }
+		return Self.unspentVerification(verification)
+	}
+
+	/// Re-enables one-time password recovery by stripping a spent `*` prefix. No-op if unused or nil.
+	func unlockVerification() {
+		verification = unspentVerification
+	}
+
+	/// Marks the stored registration code as spent. No-op if already spent or nil.
+	func markVerificationUsed() {
+		guard !verificationUsed, let verification else { return }
+		self.verification = "*" + RegistrationCode.normalized(verification)
+	}
+}
+
 /// Creates the `User` table in the database and specifies its fields.
 struct CreateUserSchema: AsyncMigration {
 	func prepare(on database: Database) async throws {
@@ -294,7 +325,7 @@ struct CreateUserSchema: AsyncMigration {
 
 // MARK: - ModelAuthenticatable Conformance
 
-extension User: ModelAuthenticatable {	
+extension User: ModelAuthenticatable {
 	/// Required username key for HTTP Basic Authorization.
 	static let usernameKey: KeyPath<User, Field<String>> = \User.$username
 	/// Required password key for HTTP Basic Authorization.
