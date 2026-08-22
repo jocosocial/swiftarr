@@ -148,9 +148,10 @@ struct PhotostreamController: APIRouteCollection {
 	func photostreamUploadHandler(_ req: Request) async throws -> Response {
 		let user = try req.auth.require(UserCacheData.self)
 		try user.guardCanCreateContent(customErrorString: "user cannot post to photostream")
+		let rateLimit = Settings.shared.photostreamUploadRateLimit
 		if let userPrevPhoto = try await StreamPhoto.query(on: req.db).filter(\.$author.$id == user.userID).sort(\.$id, .descending).first(),
-				userPrevPhoto.captureTime > Date() - Settings.shared.photostreamUploadRateLimit {
-			throw Abort(.tooManyRequests, reason: "You may only upload one Photostream photo every \(Settings.shared.photostreamUploadRateLimit / 60) minutes.")
+				isWithinUploadRateLimit(previousCaptureTime: userPrevPhoto.captureTime, rateLimit: rateLimit) {
+			throw Abort(.tooManyRequests, reason: photostreamRateLimitErrorReason(rateLimit))
 		}
 		let newPostData = try ValidatingJSONDecoder().decode(PhotostreamUploadData.self, fromBodyOf: req)
 		// The only valid place names are what getPlacenames returns
@@ -180,6 +181,19 @@ struct PhotostreamController: APIRouteCollection {
 		try await streamPhoto.save(on: req.db)
 		let photoData = try PhotostreamImageData(streamPhoto: streamPhoto, author: user.makeHeader())
 		return try makeUploadResponse(photo: photoData, rateLimit: Settings.shared.photostreamUploadRateLimit)
+	}
+
+	/// `true` when another photostream upload should be rejected. A `rateLimit` of `0` (or less) disables the limit.
+	func isWithinUploadRateLimit(previousCaptureTime: Date, now: Date = Date(), rateLimit: TimeInterval) -> Bool {
+		guard rateLimit > 0 else { return false }
+		return previousCaptureTime > now - rateLimit
+	}
+
+	func photostreamRateLimitErrorReason(_ rateLimit: TimeInterval) -> String {
+		if rateLimit < 60 {
+			return "You may only upload one Photostream photo every \(Int(rateLimit)) seconds."
+		}
+		return "You may only upload one Photostream photo every \(rateLimit / 60) minutes."
 	}
 
 	func makeUploadResponse(photo: PhotostreamImageData, rateLimit: TimeInterval) throws -> Response {

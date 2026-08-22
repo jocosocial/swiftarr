@@ -187,6 +187,9 @@ struct AdminController: APIRouteCollection {
 		if let value = data.maxForumPostImages {
 			Settings.shared.maxForumPostImages = value
 		}
+		if let value = data.photostreamUploadRateLimit, value >= 0 {
+			Settings.shared.photostreamUploadRateLimit = TimeInterval(value)
+		}
 		if let value = data.forumAutoQuarantineThreshold {
 			Settings.shared.forumAutoQuarantineThreshold = value
 		}
