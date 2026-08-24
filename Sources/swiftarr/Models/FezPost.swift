@@ -1,4 +1,5 @@
 import Fluent
+import FluentSQL
 import Vapor
 
 /// 	An individual post within a `FriendlyFez` discussion. A FezPost must contain
@@ -18,8 +19,9 @@ final class FezPost: Model, Searchable, @unchecked Sendable {
 	/// The text content of the post.
 	@Field(key: "text") var text: String
 
-	/// The filename of any image content of the post. FezPosts are limited to one image, and "closed" Fez types cannot have any.
-	@OptionalField(key: "image") var image: String?
+	/// The filenames of any image content of the post. Seamail (closed/open) posts cannot have images.
+	/// LFG posts are limited to one image. Private Event posts use the forum post image limit.
+	@OptionalField(key: "images") var images: [String]?
 
 	/// Moderators can set several statuses on fezPosts that modify editability and visibility.
 	@Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
@@ -52,12 +54,12 @@ final class FezPost: Model, Searchable, @unchecked Sendable {
 	///   - fezID: The ID of the post's FriendlyFez.
 	///   - authorID: The ID of the author of the post.
 	///   - text: The text content of the post.
-	///   - image: The filename of any image content of the post.
+	///   - images: The filenames of any image content of the post.
 	init(
 		fez: FriendlyFez,
 		authorID: UUID,
 		text: String,
-		image: String?
+		images: [String]? = nil
 	) throws {
 		self.$fez.id = try fez.requireID()
 		self.$fez.value = fez
@@ -65,7 +67,7 @@ final class FezPost: Model, Searchable, @unchecked Sendable {
 
 		// Generally I'm in favor of "validate input, sanitize output" but I hate "\r\n" with the fury of a thousand suns.
 		self.text = text.replacingOccurrences(of: "\r\n", with: "\r")
-		self.image = image
+		self.images = images
 		self.moderationStatus = .normal
 	}
 }
@@ -106,5 +108,39 @@ struct CreateFezPostSchema: AsyncMigration {
 
 	func revert(on database: Database) async throws {
 		try await database.schema("fezposts").delete()
+	}
+}
+
+/// Converts the single `image` column into an `images` string array so Private Event posts
+/// can attach more than one photo.
+struct UpdateFezPostImagesMigration: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("fezposts")
+			.field("images", .array(of: .string))
+			.update()
+		if let sql = database as? SQLDatabase {
+			_ = try await sql.raw(
+				#"UPDATE "fezposts" SET "images" = ARRAY["image"] WHERE "image" IS NOT NULL AND "image" <> ''"#
+			)
+			.all()
+		}
+		try await database.schema("fezposts")
+			.deleteField("image")
+			.update()
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema("fezposts")
+			.field("image", .string)
+			.update()
+		if let sql = database as? SQLDatabase {
+			_ = try await sql.raw(
+				#"UPDATE "fezposts" SET "image" = "images"[1] WHERE "images" IS NOT NULL AND cardinality("images") > 0"#
+			)
+			.all()
+		}
+		try await database.schema("fezposts")
+			.deleteField("images")
+			.update()
 	}
 }

@@ -461,7 +461,8 @@ struct FezController: APIRouteCollection {
 	///
 	/// Add a `FezPost` to the specified `FriendlyFez`.
 	///
-	/// Open fez types are only permitted to have 1 image per post. Private fezzes (aka Seamail) cannot have any images.
+	/// LFG posts are limited to 1 image. Private Event posts use the forum post image limit
+	/// (`maxForumPostImages`, or 8 for Shutternauts). Seamail cannot have any images.
 	///
 	/// - Parameter fezID: in URL path
 	/// - Parameter requestBody: `PostContentData`
@@ -477,12 +478,7 @@ struct FezController: APIRouteCollection {
 		guard fez.fezType != .personalEvent else {
 			throw Abort(.badRequest, reason: "Personal Events don't have posts.")
 		}
-		guard ![.closed, .open].contains(fez.fezType) || data.images.count == 0 else {
-			throw Abort(.badRequest, reason: "Private conversations can't contain photos.")
-		}
-		guard data.images.count <= 1 else {
-			throw Abort(.badRequest, reason: "posts may only have one image")
-		}
+		try guardFezPostImages(data.images, for: cacheUser, in: fez)
 		guard fez.participantArray.contains(cacheUser.userID) || cacheUser.accessLevel.hasAccess(.moderator) else {
 			throw Abort(.forbidden, reason: "user is not member of \(fez.fezType.lfgLabel); cannot post")
 		}
@@ -494,11 +490,12 @@ struct FezController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "\(fez.fezType.lfgLabel) is locked; cannot post.")
 		}
 		// process image
-		let filenames = try await processImages(data.images, usage: .fezPost, on: req)
+		let maxImages = maxImagesForFezPost(fez, user: cacheUser)
+		let filenames = try await processImages(data.images, usage: .fezPost, maxImages: maxImages, on: req)
 		// create and save the new post, update fezzes' cached post count
 		let effectiveAuthor = data.effectiveAuthor(actualAuthor: cacheUser, on: req)
-		let filename = filenames.count > 0 ? filenames[0] : nil
-		let post = try FezPost(fez: fez, authorID: effectiveAuthor.userID, text: data.text, image: filename)
+		let storedImages: [String]? = filenames.isEmpty ? nil : filenames
+		let post = try FezPost(fez: fez, authorID: effectiveAuthor.userID, text: data.text, images: storedImages)
 		fez.postCount += 1
 		try await post.save(on: req.db)
 		try await fez.save(on: req.db)
@@ -1001,6 +998,30 @@ struct FezController: APIRouteCollection {
 // MARK: - Helper Functions
 
 extension FezController {
+
+	/// Returns how many images a post in this fez may attach.
+	/// Seamail cannot have images. LFGs are limited to one. Private Events use the forum post
+	/// limit, with Shutternauts allowed up to 8.
+	func maxImagesForFezPost(_ fez: FriendlyFez, user: UserCacheData) -> Int {
+		if fez.fezType.isSeamailType {
+			return 0
+		}
+		if fez.fezType == .privateEvent {
+			return Settings.shared.getMaxForumPostImages(for: user)
+		}
+		return 1
+	}
+
+	/// Ensures the given user's images array doesn't exceed the allowed limit for this fez type.
+	func guardFezPostImages(_ images: [ImageUploadData], for user: UserCacheData, in fez: FriendlyFez) throws {
+		let maxImages = maxImagesForFezPost(fez, user: user)
+		guard images.count <= maxImages else {
+			if maxImages == 0 {
+				throw Abort(.badRequest, reason: "Private conversations can't contain photos.")
+			}
+			throw Abort(.badRequest, reason: "posts are limited to \(maxImages) image attachments")
+		}
+	}
 
 	// This is the bulk of the joinedHandler, pulled out into a separate fn. This allows us to modify the urlQuery arguments
 	// before calling.

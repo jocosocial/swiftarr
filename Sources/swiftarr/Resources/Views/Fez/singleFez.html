@@ -177,35 +177,51 @@
 										</div>
 									</div>
 									<div class="alert alert-danger mt-3 #if(post.postErrorString == ""):d-none#endif" role="alert">#(post.postErrorString)</div>				
-									<div class="row mb-2 justify-content-between gx-1">
-										<div class="col col-6 col-md-4 col-lg-3">
-											<div class="card">
-												<h5 class="card-header">Photo</h5>
-												<div class="m-1 border img-for-upload-container">
-													<div class="ratio ratio-1x1">
-														<img class="img-for-upload" alt="">
-													</div>
-												</div>
-												<p class="text-center no-image-marker"><i>no photo selected</i></p>
-												<div class="container-fluid p-1">
-													<div class="row">
-														<div class="col">
-															<label class="btn btn-primary col-12 form-label">
-																<input class="image-upload-input d-none" type="file" accept="#(post.allowedImageTypes)" name="localPhoto1">
-																Choose Photo
-															</label>
-															<input type="hidden" class="current-server-photo" value="" name="serverPhoto1">
-														</div>
-													</div>
-													<div class="row justify-content-between m-0">
-														<div class="col col-auto p-0 m-0">
-															<button type="button" class="btn btn-primary btn-sm twitarr-image-remove">Remove</button>
-														</div>
-													</div>
-												</div>
+									#if(count(post.photoFilenames) > 0):
+										<div class="row mb-2">
+											<div class="col">
+												Add up to #count(post.photoFilenames) photos
 											</div>
 										</div>
-										<div class="col col-6 text-end">
+										<div class="row mb-2 gx-1">
+											#for(fn in post.photoFilenames):
+												<div class="col col-6 col-md-4 col-lg-3 mb-2">
+													<div class="card">
+														<h5 class="card-header">Photo #(index + 1)</h5>
+														<div class="m-1 border img-for-upload-container">
+															<div class="ratio ratio-1x1">
+																<img src="data:," class="img-for-upload" alt="">
+															</div>
+														</div>
+														<p class="text-center no-image-marker"><i>no photo selected</i></p>
+														<div class="container-fluid p-1">
+															<div class="row">
+																<div class="col">
+																	<label class="btn btn-primary col-12 form-label">
+																		<input class="image-upload-input d-none" type="file" accept="#(post.allowedImageTypes)" name="localPhoto#(index + 1)">
+																		Choose Photo
+																	</label>
+																	<input type="hidden" class="current-server-photo" value="#(fn)" name="serverPhoto#(index + 1)">
+																</div>
+															</div>
+															<div class="row justify-content-between m-0">
+																#if(index > 0):
+																	<div class="col col-auto p-0 m-0">
+																		<button type="button" class="btn btn-primary btn-sm twitarr-image-swap">&lt;&lt; Swap</button>
+																	</div>
+																#endif
+																<div class="col col-auto p-0 m-0">
+																	<button type="button" class="btn btn-primary btn-sm twitarr-image-remove">Remove</button>
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+											#endfor
+										</div>
+									#endif
+									<div class="row mb-2 justify-content-end gx-1">
+										<div class="col col-auto text-end">
 											<button type="submit" class="btn btn-primary">Post<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button><br>
 											<small>Please remember to abide by the <a href="/codeOfConduct">Code of Conduct</a></small>
 										</div>

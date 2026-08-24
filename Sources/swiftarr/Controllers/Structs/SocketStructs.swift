@@ -25,8 +25,10 @@ struct SocketFezPostData: Content {
 	var text: String
 	/// When the post was made.
 	var timestamp: Date
-	/// An optional image that may be attached to the post.
+	/// The first image attached to the post. Kept for backward compatibility with older clients; prefer `images`.
 	var image: String?
+	/// All images attached to the post.
+	var images: [String]?
 	/// HTML fragment for the post, using the Swiftarr Web UI's front end. Fragment is built using the same semantic data available in the other fields in this struct.
 	/// Please don't try parsing this to gather data. This field is here so the Javascript can insert HTML that matches what the HTTP endpoints render.
 	var html: String?
@@ -39,6 +41,7 @@ extension SocketFezPostData {
 		self.text = post.text
 		self.timestamp = post.timestamp
 		self.image = post.image
+		self.images = post.images
 	}
 
 	init(post: FezPost, author: UserHeader) throws {
@@ -46,7 +49,8 @@ extension SocketFezPostData {
 		self.author = author
 		self.text = post.text
 		self.timestamp = post.createdAt ?? Date()
-		self.image = post.image
+		self.images = post.images
+		self.image = post.images?.first
 	}
 }
 

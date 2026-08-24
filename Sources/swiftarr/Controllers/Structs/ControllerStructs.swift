@@ -768,8 +768,12 @@ public struct FezPostData: Content {
 	var text: String
 	/// The time the post was submitted.
 	var timestamp: Date
-	/// The image content of the fez post.
+	/// The first image attached to the fez post. Kept for backward compatibility with older clients;
+	/// prefer `images` when present.
 	var image: String?
+	/// All images attached to the fez post. Private Event posts may include up to `Settings.shared.maxForumPostImages`
+	/// (8 for Shutternauts). LFG posts remain limited to one image. Seamail posts cannot have images.
+	var images: [String]?
 }
 
 extension FezPostData {
@@ -782,7 +786,9 @@ extension FezPostData {
 		self.text =
 			post.moderationStatus.showsContent() || overrideQuarantine ? post.text : "Post is under moderator review."
 		self.timestamp = post.createdAt ?? post.updatedAt ?? Date()
-		self.image = post.moderationStatus.showsContent() || overrideQuarantine ? post.image : nil
+		let visibleImages = post.moderationStatus.showsContent() || overrideQuarantine ? post.images : nil
+		self.images = visibleImages
+		self.image = visibleImages?.first
 	}
 }
 
@@ -1824,7 +1830,7 @@ struct PhotostreamUploadData: Content {
 public struct PostContentData: Content {
 	/// The new text of the forum post.
 	var text: String
-	/// An array of images (up to `Settings.shared.maxForumPostImages` for forum posts, 1 when used in a Fez post). Each image can specify either new image data or an existing image filename.
+	/// An array of images (up to `Settings.shared.maxForumPostImages` for forum posts and private event posts, 1 when used in an LFG post). Each image can specify either new image data or an existing image filename.
 	/// For new posts, images will generally contain all new image data. When editing existing posts, images may contain a mix of new and existing images.
 	/// Reorder ImageUploadDatas to change presentation order. Set images to [] to remove images attached to post when editing.
 	var images: [ImageUploadData]
