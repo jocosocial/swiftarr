@@ -153,7 +153,7 @@ struct CreateTestData: AsyncMigration {
 				fez: bigFez,
 				authorID: users.randomElement()!.requireID(),
 				text: "Post #\(index): \(postStr)",
-				image: nil
+				images: nil
 			)
 			try await post.save(on: database)
 		}

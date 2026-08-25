@@ -50,7 +50,7 @@ extension FezProtocol {
 		)
 
 		// Build the Post in the Fez.
-		let post = try FezPost(fez: fez, authorID: fromUserID, text: initialMessage, image: nil)
+		let post = try FezPost(fez: fez, authorID: fromUserID, text: initialMessage, images: nil)
 		try await post.save(on: req.db)
 
 		// Generate appropriate notifications.

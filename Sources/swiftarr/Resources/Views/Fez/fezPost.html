@@ -18,13 +18,15 @@
 						#formatFezText(fezPost.text)
 					</div>
 				</div>
-				#if(fezPost.image):
-					<div class="row align-items-center justify-content-start flex-nowrap gx-1">	
-						<div class="col col-auto flex-grow-0 flex-shrink-1">
-							<button type="button" class="btn p-0 border-0" data-bs-toggle="modal" data-bs-target="\#imageCarouselModal">
-								<img src="/api/v3/image/full/#(fezPost.image)" class="swiftarr-post-image" alt="Post Image">
-							</button>
-						</div>
+				#if(fezPost.images):
+					<div class="row">	
+						#for(image in fezPost.images):
+							<div class="col col-auto flex-grow-0 flex-shrink-1">
+								<button type="button" class="btn p-0 border-0" data-bs-toggle="modal" data-bs-target="\#imageCarouselModal">
+									<img src="/api/v3/image/full/#(image)" class="swiftarr-post-image" alt="Post Image">
+								</button>
+							</div>
+						#endfor
 					</div>
 				#endif
 				#if(fez.fezType != "closed"):

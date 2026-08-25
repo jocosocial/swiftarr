@@ -321,7 +321,12 @@ struct MessagePostContext: Encodable {
 			formAction = "/lfg/\(forFez.fezID)/post"
 			postSuccessURL = "/lfg/\(forFez.fezID)"
 			messageTextPlaceholder = "Send a message"
-			photoFilenames = [""]
+			if forFez.fezType == .privateEvent {
+				photoFilenames = Array(repeating: "", count: maxImages)
+			}
+			else {
+				photoFilenames = [""]
+			}
 		// For creating an announcement
 		case .announcement:
 			formAction = "/admin/announcement/create"

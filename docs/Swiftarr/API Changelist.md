@@ -229,3 +229,9 @@ associated AddedToChat field value increase.
 * `GET /api/v3/photostream` now supports a `byUser` UUID query parameter.
 * `POST /api/v3/photostream/upload` now returns the created
   `PhotostreamImageData` in its successful response body.
+
+## Aug 24, 2026
+* Private Event posts now allow multiple images, using the same `maxForumPostImages` limit as forum posts (8 for Shutternauts).
+* `FezPostData` and `SocketFezPostData` have a new `images` array. The existing `image` field remains and is the first attached image, for older clients.
+* LFG posts remain limited to one image. Seamail posts still cannot have images.
+
