@@ -190,10 +190,12 @@ struct PhotostreamController: APIRouteCollection {
 	}
 
 	func photostreamRateLimitErrorReason(_ rateLimit: TimeInterval) -> String {
-		if rateLimit < 60 {
-			return "You may only upload one Photostream photo every \(Int(rateLimit)) seconds."
+		let seconds = Int(rateLimit.rounded())
+		if seconds > 0, seconds % 60 == 0 {
+			let minutes = seconds / 60
+			return "You may only upload one Photostream photo every \(minutes) \(minutes == 1 ? "minute" : "minutes")."
 		}
-		return "You may only upload one Photostream photo every \(rateLimit / 60) minutes."
+		return "You may only upload one Photostream photo every \(seconds) \(seconds == 1 ? "second" : "seconds")."
 	}
 
 	func makeUploadResponse(photo: PhotostreamImageData, rateLimit: TimeInterval) throws -> Response {

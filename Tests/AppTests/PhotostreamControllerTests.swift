@@ -149,15 +149,23 @@ final class PhotostreamControllerTests: XCTestCase, SwiftarrBaseTest {
 		)
 	}
 
-	func testRateLimitErrorReason_UsesSecondsBelowOneMinute() {
+	func testRateLimitErrorReason_FormatsWholeMinutesAndOddSeconds() {
 		let controller = PhotostreamController()
 		XCTAssertEqual(
 			controller.photostreamRateLimitErrorReason(30),
 			"You may only upload one Photostream photo every 30 seconds."
 		)
 		XCTAssertEqual(
+			controller.photostreamRateLimitErrorReason(85),
+			"You may only upload one Photostream photo every 85 seconds."
+		)
+		XCTAssertEqual(
+			controller.photostreamRateLimitErrorReason(60),
+			"You may only upload one Photostream photo every 1 minute."
+		)
+		XCTAssertEqual(
 			controller.photostreamRateLimitErrorReason(300),
-			"You may only upload one Photostream photo every 5.0 minutes."
+			"You may only upload one Photostream photo every 5 minutes."
 		)
 	}
 
