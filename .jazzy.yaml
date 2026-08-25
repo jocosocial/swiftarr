@@ -34,6 +34,7 @@ custom_categories:
       - Special Files
       - Release Calendar
       - Preregistration
+      - Editorial
 
   - name: Operations
     children:
