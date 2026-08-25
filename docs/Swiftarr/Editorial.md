@@ -11,7 +11,8 @@ If you want to enable Markdown formatting the body must start with `<Markdown>`.
 
 You can do relative links as long as they start with a `/`. Example:
 
-```
+```markdown
+<Markdown>
 Important Reminders for Loreto [here](/forum/29EFFAB5-A865-4120-B334-AEF458DD6636?start=0).
 ```
 
