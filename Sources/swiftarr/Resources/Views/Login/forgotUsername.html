@@ -1,0 +1,71 @@
+#extend("trunk"):
+#export("body"):
+	<div class="container-fluid">
+	#if(trunk.userIsLoggedIn):
+		<div class="container-fluid mt-3">
+			<div class="row">
+				<h4>Forgot Username</h4>
+				<p>You're currently logged in as user "#(trunk.username)".</p>
+			</div>
+			<div class="row">
+				<form action="/logout" method="POST">
+					<button type="submit" class="btn btn-primary">Logout<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+				</form>
+			</div>
+		</div>
+	#else:
+		<div class="container-fluid mt-3">
+			<div class="row">
+				<div class="col">
+					<h5>Forgot Username</h5>
+					<p>If you've forgotten the username you registered with, you can look it up here.</p>
+					<p>You'll need your registration code, plus either your password or the recovery key shown when you created your account.</p>
+				</div>
+			</div>
+			<form class="ajax" action="/forgotUsername" method="POST" data-successurl="message" data-successfield="username">
+				<div class="row mb-2 mx-2">
+					<div class="col">
+						<label for="regCode" class="form-label" id="regcode-label">Registration Code</label>
+						<input type="text" class="form-control swiftarr-textfield" id="regCode" name="regCode"
+								spellcheck="false" autocapitalize="none" autocomplete="one-time-code"
+								aria-describedby="regcode-label regcode-help">
+						<div id="regcode-help" class="form-text">
+							Your Registration Code was mailed to you before the cruise.
+						</div>
+					</div>
+				</div>
+				<div class="row mb-3 mx-2">
+					<div class="col">
+						<label for="recoveryKey" class="form-label" id="recoverykey-label">Password OR Recovery Key</label>
+						<input type="text" class="form-control swiftarr-textfield" id="recoveryKey" name="recoveryKey"
+								aria-describedby="recoverykey-label recoverykey-help" autocomplete="off">
+						<div id="recoverykey-help" class="form-text">
+							Use the password you chose, or the Recovery Key shown when you created your account. A registration code will not work here.
+						</div>
+					</div>
+				</div>
+				<button type="submit" class="btn btn-primary">Look Up Username<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+				<div class="alert alert-success mt-3 d-none" role="alert">
+					<b>Success:</b> Your username is <strong data-success-value></strong>.
+				</div>
+				<div class="alert alert-danger mt-3 d-none" role="alert"></div>
+			</form>
+		</div>
+		<div class="container-fluid mt-3">
+			<div class="row nav-item">
+				<a class="nav-link" href="/createAccount">I want to create an account</a>
+			</div>
+			<div class="row nav-item">
+				<a class="nav-link" href="/login">Just let me log in</a>
+			</div>
+			<div class="row nav-item">
+				<a class="nav-link" href="/resetPassword">I forgot my password!</a>
+			</div>
+			<div class="row nav-item">
+				<a class="nav-link" href="/codeOfConduct">I want to read the Code of Conduct and Twit-arr Rules!</a>
+			</div>
+		</div>
+	#endif
+	</div>
+#endexport
+#endextend

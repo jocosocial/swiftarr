@@ -174,4 +174,263 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 			)
 		}
 	}
+
+	// MARK: - Username lookup
+
+	private func makeLookupUser(
+		_ app: Application,
+		username: String,
+		verification: String?,
+		password: String = "password1",
+		recoveryKey: String = "recoverykey",
+		parent: User? = nil
+	) async throws -> User {
+		let user = User(
+			username: username,
+			password: try Bcrypt.hash(password),
+			recoveryKey: try Bcrypt.hash(recoveryKey),
+			verification: verification,
+			parent: parent,
+			accessLevel: .verified
+		)
+		try await user.save(on: app.db)
+		return user
+	}
+
+	private func lookupBody(code: String, key: String) -> UserUsernameLookupData {
+		UserUsernameLookupData(registrationCode: code, recoveryKey: key)
+	}
+
+	func testUsernameLookup_PasswordMatch() async throws {
+		try await withApp { app in
+			let username = "lookup-pw-\(UUID().uuidString.prefix(8))"
+			let user = try await makeLookupUser(app, username: username, verification: "abc123")
+			defer { Task { try? await user.delete(on: app.db) } }
+
+			try await app.test(
+				.POST,
+				"/api/v3/auth/username",
+				beforeRequest: { req async throws in
+					try req.content.encode(lookupBody(code: "abc123", key: "password1"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok)
+					let header = try res.content.decode(UserHeader.self)
+					XCTAssertEqual(header.username, username)
+					XCTAssertEqual(header.userID, try user.requireID())
+				}
+			)
+
+			// Lookup must not spend the registration code.
+			let reloaded = try await User.find(user.requireID(), on: app.db)
+			XCTAssertEqual(reloaded?.verification, "abc123")
+		}
+	}
+
+	func testUsernameLookup_RecoveryKeyMatch() async throws {
+		try await withApp { app in
+			let username = "lookup-rk-\(UUID().uuidString.prefix(8))"
+			let user = try await makeLookupUser(app, username: username, verification: "def456")
+			defer { Task { try? await user.delete(on: app.db) } }
+
+			try await app.test(
+				.POST,
+				"/api/v3/auth/username",
+				beforeRequest: { req async throws in
+					try req.content.encode(lookupBody(code: "DEF 456", key: "recovery key"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok)
+					let header = try res.content.decode(UserHeader.self)
+					XCTAssertEqual(header.username, username)
+				}
+			)
+		}
+	}
+
+	func testUsernameLookup_SpentCodeStillWorks() async throws {
+		try await withApp { app in
+			let username = "lookup-spent-\(UUID().uuidString.prefix(8))"
+			let user = try await makeLookupUser(app, username: username, verification: "*abc123")
+			defer { Task { try? await user.delete(on: app.db) } }
+
+			try await app.test(
+				.POST,
+				"/api/v3/auth/username",
+				beforeRequest: { req async throws in
+					try req.content.encode(lookupBody(code: "abc123", key: "password1"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok, "a spent registration code must still look up the username")
+					let header = try res.content.decode(UserHeader.self)
+					XCTAssertEqual(header.username, username)
+				}
+			)
+
+			let reloaded = try await User.find(user.requireID(), on: app.db)
+			XCTAssertEqual(reloaded?.verification, "*abc123")
+		}
+	}
+
+	func testUsernameLookup_RegistrationCodeAsBothFactors_Rejected() async throws {
+		try await withApp { app in
+			let username = "lookup-both-\(UUID().uuidString.prefix(8))"
+			let user = try await makeLookupUser(app, username: username, verification: "abc123")
+			defer { Task { try? await user.delete(on: app.db) } }
+
+			try await app.test(
+				.POST,
+				"/api/v3/auth/username",
+				beforeRequest: { req async throws in
+					try req.content.encode(lookupBody(code: "abc123", key: "abc123"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .badRequest)
+					let error = try res.content.decode(ErrorResponse.self)
+					XCTAssertTrue(
+						error.reason.contains("cannot be a registration code"),
+						"reason=\(error.reason)"
+					)
+				}
+			)
+		}
+	}
+
+	func testUsernameLookup_WrongPassword_NotFound() async throws {
+		try await withApp { app in
+			let username = "lookup-wrong-\(UUID().uuidString.prefix(8))"
+			let user = try await makeLookupUser(app, username: username, verification: "abc123")
+			defer { Task { try? await user.delete(on: app.db) } }
+
+			try await app.test(
+				.POST,
+				"/api/v3/auth/username",
+				beforeRequest: { req async throws in
+					try req.content.encode(lookupBody(code: "abc123", key: "not-the-password"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .badRequest)
+					let error = try res.content.decode(ErrorResponse.self)
+					XCTAssertEqual(error.reason, "no match for supplied credentials")
+				}
+			)
+
+			let reloaded = try await User.find(user.requireID(), on: app.db)
+			XCTAssertEqual(reloaded?.recoveryAttempts, 1)
+		}
+	}
+
+	func testUsernameLookup_UnknownCode_NotFound() async throws {
+		try await withApp { app in
+			try await app.test(
+				.POST,
+				"/api/v3/auth/username",
+				beforeRequest: { req async throws in
+					try req.content.encode(lookupBody(code: "zzz999", key: "password1"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .badRequest)
+					let error = try res.content.decode(ErrorResponse.self)
+					XCTAssertEqual(error.reason, "no match for supplied credentials")
+				}
+			)
+		}
+	}
+
+	func testUsernameLookup_AltPasswordReturnsAlt() async throws {
+		try await withApp { app in
+			let suffix = UUID().uuidString.prefix(8)
+			let primary = try await makeLookupUser(
+				app,
+				username: "lookup-pri-\(suffix)",
+				verification: "abc123",
+				password: "primarypw"
+			)
+			let alt = try await makeLookupUser(
+				app,
+				username: "lookup-alt-\(suffix)",
+				verification: "abc123",
+				password: "altpasswd",
+				parent: primary
+			)
+			defer {
+				Task {
+					try? await alt.delete(on: app.db)
+					try? await primary.delete(on: app.db)
+				}
+			}
+
+			try await app.test(
+				.POST,
+				"/api/v3/auth/username",
+				beforeRequest: { req async throws in
+					try req.content.encode(lookupBody(code: "abc123", key: "altpasswd"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok)
+					let header = try res.content.decode(UserHeader.self)
+					XCTAssertEqual(header.username, alt.username)
+					XCTAssertEqual(header.userID, try alt.requireID())
+				}
+			)
+		}
+	}
+
+	func testUsernameLookup_RecoveryKeyReturnsPrimary() async throws {
+		try await withApp { app in
+			let suffix = UUID().uuidString.prefix(8)
+			let primary = try await makeLookupUser(
+				app,
+				username: "lookup-rkpri-\(suffix)",
+				verification: "abc123"
+			)
+			let alt = try await makeLookupUser(
+				app,
+				username: "lookup-rkalt-\(suffix)",
+				verification: "abc123",
+				password: "altpasswd",
+				parent: primary
+			)
+			defer {
+				Task {
+					try? await alt.delete(on: app.db)
+					try? await primary.delete(on: app.db)
+				}
+			}
+
+			try await app.test(
+				.POST,
+				"/api/v3/auth/username",
+				beforeRequest: { req async throws in
+					try req.content.encode(lookupBody(code: "abc123", key: "recovery key"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok)
+					let header = try res.content.decode(UserHeader.self)
+					XCTAssertEqual(header.username, primary.username)
+				}
+			)
+		}
+	}
+
+	func testUsernameLookup_LockoutAfterFiveFailures() async throws {
+		try await withApp { app in
+			let username = "lookup-lock-\(UUID().uuidString.prefix(8))"
+			let user = try await makeLookupUser(app, username: username, verification: "abc123")
+			user.recoveryAttempts = 5
+			try await user.save(on: app.db)
+			defer { Task { try? await user.delete(on: app.db) } }
+
+			try await app.test(
+				.POST,
+				"/api/v3/auth/username",
+				beforeRequest: { req async throws in
+					try req.content.encode(lookupBody(code: "abc123", key: "password1"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .forbidden)
+				}
+			)
+		}
+	}
 }

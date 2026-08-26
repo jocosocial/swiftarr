@@ -164,4 +164,71 @@ class UserStructValidationTests: XCTestCase {
 		let errs = try validationErrors(UserCreateData.self, json)
 		XCTAssertTrue(errs.contains(where: { $0.contains("Malformed registration code") }), "errs=\(errs)")
 	}
+
+	// MARK: - UserUsernameLookupData
+
+	private func usernameLookupJSON(registrationCode: String = "abc123", recoveryKey: String = "password1") -> String {
+		#"{"registrationCode":"\#(registrationCode)","recoveryKey":"\#(recoveryKey)"}"#
+	}
+
+	func testUsernameLookup_ValidPassword() throws {
+		XCTAssertEqual(try validationErrors(UserUsernameLookupData.self, usernameLookupJSON()), [])
+	}
+
+	func testUsernameLookup_ValidRecoveryKey() throws {
+		XCTAssertEqual(
+			try validationErrors(UserUsernameLookupData.self, usernameLookupJSON(recoveryKey: "word word word")),
+			[]
+		)
+	}
+
+	func testUsernameLookup_SpacedRegistrationCode_Accepted() throws {
+		XCTAssertEqual(
+			try validationErrors(UserUsernameLookupData.self, usernameLookupJSON(registrationCode: "abc 123")),
+			[]
+		)
+	}
+
+	func testUsernameLookup_MalformedRegistrationCode() throws {
+		let errs = try validationErrors(UserUsernameLookupData.self, usernameLookupJSON(registrationCode: "abc"))
+		XCTAssertTrue(errs.contains(where: { $0.contains("Malformed registration code") }), "errs=\(errs)")
+	}
+
+	func testUsernameLookup_RecoveryKeyTooShort() throws {
+		let errs = try validationErrors(UserUsernameLookupData.self, usernameLookupJSON(recoveryKey: "abcde"))
+		XCTAssertTrue(errs.contains("password/recovery code has a 6 character minimum"), "errs=\(errs)")
+	}
+
+	func testUsernameLookup_RegistrationCodeAsBothFactors_Rejected() throws {
+		let errs = try validationErrors(
+			UserUsernameLookupData.self,
+			usernameLookupJSON(registrationCode: "abc123", recoveryKey: "abc123")
+		)
+		XCTAssertTrue(
+			errs.contains("recovery key cannot be a registration code; provide your password or recovery key"),
+			"errs=\(errs)"
+		)
+	}
+
+	func testUsernameLookup_DifferentRegistrationCodeAsSecondFactor_Rejected() throws {
+		let errs = try validationErrors(
+			UserUsernameLookupData.self,
+			usernameLookupJSON(registrationCode: "abc123", recoveryKey: "xyz789")
+		)
+		XCTAssertTrue(
+			errs.contains("recovery key cannot be a registration code; provide your password or recovery key"),
+			"errs=\(errs)"
+		)
+	}
+
+	func testUsernameLookup_SpacedRegistrationCodeAsSecondFactor_Rejected() throws {
+		let errs = try validationErrors(
+			UserUsernameLookupData.self,
+			usernameLookupJSON(registrationCode: "abc123", recoveryKey: "ABC 123")
+		)
+		XCTAssertTrue(
+			errs.contains("recovery key cannot be a registration code; provide your password or recovery key"),
+			"errs=\(errs)"
+		)
+	}
 }

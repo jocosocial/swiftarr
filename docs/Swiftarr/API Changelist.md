@@ -236,3 +236,6 @@ associated AddedToChat field value increase.
 * New endpoint `POST /api/v3/admin/regcodes/unlock/:userID` re-enables one-time registration-code password recovery (strips the spent `*` prefix on `User.verification` and clears `recoveryAttempts`). TwitarrTeam or `accountmanager` only.
 * Added `photostreamUploadRateLimit` (seconds between photostream uploads; `0` disables the limit) to `SettingsAdminData`, `SettingsUpdateData`, and `ClientSettingsData`.
 * `GET /api/v3/client/settings` now also includes `photostreamUploadRateLimit`.
+
+## Aug 26, 2026
+* New open-access endpoint `POST /api/v3/auth/username` looks up a forgotten username. Callers must supply a registration code plus a password or recovery key (`UserUsernameLookupData`); a registration code is not accepted as the second factor. Returns the matching `UserHeader`. Does not spend the registration code and does not log the user in.
