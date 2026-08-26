@@ -263,7 +263,7 @@
 						</div>
 					</div>
 				#endif
-				#if(trunk.userIsMod || trunk.userIsTwitarrTeam && !trunk.preregistrationApplies):
+				#if(trunk.userIsMod || trunk.userCanManageAccounts && !trunk.preregistrationApplies):
 					<div class="row mt-2">
 						<div class="col">
 							<h4><b>Site Management:</b></h4>
@@ -295,7 +295,7 @@
 										#endif
 									</li>
 								#endif
-								#if(trunk.userIsTwitarrTeam):
+								#if(trunk.userCanManageAccounts):
 									<li class="list-group-item align-items-center">
 										<a class="nav-link#" href="/admin">Admin Pages</a>
 										#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0):

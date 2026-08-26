@@ -152,11 +152,10 @@ struct UserController: APIRouteCollection {
 
 		// Reg Codes may be delivered in user's emails as "ABC DEF", but the normalized form is lowercase, no spaces.
 		// Note: We don't check the reg code against the table until we're inside the transaction
-		guard let normalizedRegCode = data.verification?.lowercased().replacingOccurrences(of: " ", with: ""),
-				normalizedRegCode.rangeOfCharacter(from: CharacterSet.alphanumerics.inverted) == nil,
-				normalizedRegCode.count == 6 else {
+		guard let submittedCode = data.verification, RegistrationCode.isWellFormed(submittedCode) else {
 			throw Abort(.badRequest, reason: "Malformed verification code. Verification code must be 6 alphanumeric letters; spaces optional.")
 		}
+		let normalizedRegCode = RegistrationCode.normalized(submittedCode)
 
 		// create user
 		let recoveryKey = try UserController.generateRecoveryKey(on: req)
@@ -217,7 +216,10 @@ struct UserController: APIRouteCollection {
 	func verifyHandler(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let data = try ValidatingJSONDecoder().decode(UserVerifyData.self, fromBodyOf: req)
-		let normalizedCode = data.verification.lowercased().replacingOccurrences(of: " ", with: "")
+		guard RegistrationCode.isWellFormed(data.verification) else {
+			throw Abort(.badRequest, reason: "Malformed verification code. Verification code must be 6 alphanumeric letters; spaces optional.")
+		}
+		let normalizedCode = RegistrationCode.normalized(data.verification)
 		// update models and return 200
 		try await req.db.transaction { database in
 			let user = try await cacheUser.getUser(on: database)

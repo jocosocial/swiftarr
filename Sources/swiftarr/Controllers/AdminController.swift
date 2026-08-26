@@ -17,6 +17,13 @@ struct AdminController: APIRouteCollection {
 		// Open routes with no auth requirements
 		adminRoutes.get("timezonechanges", use: timeZoneChangeHandler).setUsedForPreregistration()
 
+		// endpoints available to TwitarrTeam and above, or users with the Account Manager role
+		let accountMgrAuthGroup = adminRoutes.tokenRoutes(minAccess: .verified)
+		accountMgrAuthGroup.get("regcodes", "stats", use: regCodeStatsHandler)
+		accountMgrAuthGroup.get("regcodes", "find", searchStringParam, use: userForRegCodeHandler)
+		accountMgrAuthGroup.get("regcodes", "findbyuser", userIDParam, use: regCodeForUserHandler)
+		accountMgrAuthGroup.post("regcodes", "unlock", userIDParam, use: unlockRegCodeHandler)
+
 		// endpoints available to TwitarrTeam and above
 		let ttAuthGroup = adminRoutes.tokenRoutes(minAccess: .twitarrteam)
 		ttAuthGroup.post("schedule", "update", use: scheduleUploadPostHandler)
@@ -26,9 +33,6 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.get("schedule", "viewlog", scheduleLogIDParam, use: scheduleGetLogEntryHandler)
 		ttAuthGroup.post("schedule", "reload", use: reloadScheduleHandler)
 
-		ttAuthGroup.get("regcodes", "stats", use: regCodeStatsHandler)
-		ttAuthGroup.get("regcodes", "find", searchStringParam, use: userForRegCodeHandler)
-		ttAuthGroup.get("regcodes", "findbyuser", userIDParam, use: regCodeForUserHandler)
 		ttAuthGroup.get("regcodes", "discord", "allocate", searchStringParam, use: assignDiscordRegCode)
 
 		ttAuthGroup.get("serversettings", use: settingsHandler)
@@ -347,6 +351,7 @@ struct AdminController: APIRouteCollection {
 	///
 	/// - Returns: `RegistrationCodeStatsData`
 	func regCodeStatsHandler(_ req: Request) async throws -> RegistrationCodeStatsData {
+		try req.auth.require(UserCacheData.self).guardCanManageAccounts()
 		let codeCount = try await RegistrationCode.query(on: req.db).filter(\.$isDiscordUser == false).count()
 		let usedCodes = try await RegistrationCode.query(on: req.db).filter(\.$isDiscordUser == false).filter(\.$user.$id != nil).count()
 		let allocatedDiscord = try await RegistrationCode.query(on: req.db).filter(\.$isDiscordUser == true).count()
@@ -372,12 +377,15 @@ struct AdminController: APIRouteCollection {
 	/// - Returns: [] if no user has created an account using this reg code yet. If they have, returns an array containing the UserHeaders of all users associated with
 	/// the registration code. The first item in the array will be the primary account.
 	func userForRegCodeHandler(_ req: Request) async throws -> [UserHeader] {
-		guard let regCode = req.parameters.get(searchStringParam.paramString, as: String.self)?.lowercased() else {
+		try req.auth.require(UserCacheData.self).guardCanManageAccounts()
+		guard let rawCode = req.parameters.get(searchStringParam.paramString, as: String.self) else {
 			throw Abort(.badRequest, reason: "Missing search parameter")
 		}
-		guard regCode.count == 6, regCode.allSatisfy({ $0.isLetter || $0.isNumber }) else {
+		let decoded = rawCode.removingPercentEncoding ?? rawCode
+		guard RegistrationCode.isWellFormed(decoded) else {
 			throw Abort(.badRequest, reason: "Registration code search parameter is malformed.")
 		}
+		let regCode = RegistrationCode.normalized(decoded)
 		guard let foundRecord = try await RegistrationCode.query(on: req.db).filter(\.$code == regCode).first() else {
 			throw Abort(.badRequest, reason: "\(regCode) is not found in the registration code table.")
 		}
@@ -398,14 +406,52 @@ struct AdminController: APIRouteCollection {
 	/// - Throws: 400 Bad Request if the userID isn't found in the db or if it's malformed.
 	/// - Returns: [] if no user has created an account using this reg code yet. If they have, returns a one-item array containing the UserHeader of that user.
 	func regCodeForUserHandler(_ req: Request) async throws -> RegistrationCodeUserData {
+		try req.auth.require(UserCacheData.self).guardCanManageAccounts()
 		let user = try await User.findFromParameter(userIDParam, on: req)
+		return try await registrationCodeUserData(for: user, on: req)
+	}
+
+	/// `POST /api/v3/admin/regcodes/unlock/:userID`
+	///
+	/// Re-enables one-time password recovery via registration code for the given user and all of their alt accounts.
+	/// Strips the '*' prefix from `User.verification` (see `AuthController.recoveryHandler`) and clears
+	/// `recoveryAttempts` so a lockout after 5 failed recoveries can be reset by staff.
+	///
+	/// - Throws: 403 if the caller is not TwitarrTeam or an Account Manager. 400 if the userID is missing or unknown.
+	/// - Returns: Updated `RegistrationCodeUserData`.
+	func unlockRegCodeHandler(_ req: Request) async throws -> RegistrationCodeUserData {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		try cacheUser.guardCanManageAccounts()
+		let user = try await User.findFromParameter(userIDParam, on: req)
+		let allAccounts = try await user.allAccounts(on: req.db)
+		for account in allAccounts {
+			account.unlockVerification()
+			account.recoveryAttempts = 0
+			try await account.save(on: req.db)
+		}
+		let targetUserID = try user.requireID()
+		req.logger.info(
+			"User \(cacheUser.username) (\(cacheUser.userID)) unlocked password recovery for \(user.username) (\(targetUserID))"
+		)
+		return try await registrationCodeUserData(for: user, on: req)
+	}
+
+	/// Builds `RegistrationCodeUserData` for a user (primary plus alts).
+	func registrationCodeUserData(for user: User, on req: Request) async throws -> RegistrationCodeUserData {
 		let allAccounts = try await user.allAccounts(on: req.db)
 		let userIDs = try allAccounts.map { try $0.requireID() }
 		let regCodeResult = try await RegistrationCode.query(on: req.db).filter(\.$user.$id ~~ userIDs).first()
 		let regCode = regCodeResult?.code ?? ""
 		let resultUsers = req.userCache.getHeaders(userIDs)
-		return RegistrationCodeUserData(users: resultUsers, regCode: regCode, isForDiscordUser: regCodeResult?.isDiscordUser ?? false,
-				discordUsername: regCodeResult?.discordUsername)
+		let hasUsed = allAccounts.contains { $0.verificationUsed }
+		return RegistrationCodeUserData(
+			users: resultUsers,
+			regCode: regCode,
+			isForDiscordUser: regCodeResult?.isDiscordUser ?? false,
+			discordUsername: regCodeResult?.discordUsername,
+			hasUsedRegCodeForPasswordRecovery: hasUsed,
+			accountCreatedAt: allAccounts.first?.createdAt
+		)
 	}
 	
 	/// `POST /api/v3/admin/regcodes/discord/allocate/:username`
@@ -431,7 +477,14 @@ struct AdminController: APIRouteCollection {
 		}
 		registrationCode.discordUsername = discordUser
 		try await registrationCode.save(on: req.db)
-		return RegistrationCodeUserData(users: [], regCode: registrationCode.code, isForDiscordUser: true, discordUsername: discordUser)
+		return RegistrationCodeUserData(
+			users: [],
+			regCode: registrationCode.code,
+			isForDiscordUser: true,
+			discordUsername: discordUser,
+			hasUsedRegCodeForPasswordRecovery: false,
+			accountCreatedAt: nil
+		)
 	}
 
 	// MARK: - Promote/Demote

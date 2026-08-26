@@ -23,6 +23,7 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "alertWordDelete":
 		case "muteWordDelete":
 		case "redirect":
+		case "showSuccess":
 			btn.addEventListener("click", spinnerButtonAction);
 			break;
 		case "delete": btn.addEventListener("click", deleteAction); break;
@@ -152,6 +153,16 @@ async function spinnerButtonAction() {
 				case "unmute": acknowledgeRemovalAction(tappedButton, "unmuted"); break;
 				case "alertWordDelete": acknowledgeRemovalAction(tappedButton, "removed"); break;
 				case "muteWordDelete": acknowledgeRemovalAction(tappedButton, "removed"); break;
+				case "showSuccess":
+					document.getElementById(tappedButton.dataset.successdiv)?.classList.remove("d-none");
+					if (tappedButton.dataset.statustarget) {
+						let statusElem = document.getElementById(tappedButton.dataset.statustarget);
+						if (statusElem) {
+							statusElem.innerText = tappedButton.dataset.statusvalue ?? "";
+						}
+					}
+					tappedButton.classList.add("d-none");
+					break;
 			}
 		}
 		else {

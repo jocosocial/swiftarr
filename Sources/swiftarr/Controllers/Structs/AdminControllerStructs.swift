@@ -329,6 +329,11 @@ public struct RegistrationCodeUserData: Content {
 	var isForDiscordUser: Bool
 	/// If this reg code has been allocated to a Discord user, the name of the user. Nil if not a Discord regcode or if not yet allocated.
 	var discordUsername: String?
+	/// TRUE if this account already used its registration code for password recovery
+	/// (stored as a '*' prefix on User.verification; see AuthController.recoveryHandler).
+	var hasUsedRegCodeForPasswordRecovery: Bool
+	/// Account creation time of the primary user. Nil if the code has not been used to create an account.
+	var accountCreatedAt: Date?
 }
 
 /// Returns general info about registration codes.
@@ -614,11 +619,8 @@ struct UserSaveRestoreData: Content, Sendable {
 extension UserSaveRestoreData {
 	/// For this to work: Must use `.with(\.$roles).with(\.$favoriteEvents).with(\.$favorites).with(\.$performer).with(\.$performer.events)` in query
 	init?(user: User) {
-		guard var regCode = user.verification else {
+		guard let regCode = user.unspentVerification else {
 			return nil
-		}
-		if regCode.first == "*" {
-			regCode = String(regCode.dropFirst())
 		}
 		// Stuff that's important to get right for security reasons
 		username = user.username
