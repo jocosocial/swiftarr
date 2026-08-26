@@ -452,6 +452,8 @@ public struct SettingsAdminData: Content {
 	var maxImageSize: Int
 	/// Maximum number of images allowed per forum post.
 	var maxForumPostImages: Int
+	/// Minimum seconds a user must wait between photostream uploads. `0` disables the limit.
+	var photostreamUploadRateLimit: Int
 	var forumAutoQuarantineThreshold: Int
 	var postAutoQuarantineThreshold: Int
 	var userAutoQuarantineThreshold: Int
@@ -476,6 +478,7 @@ extension SettingsAdminData {
 		self.maximumForumPosts = settings.maximumForumPosts
 		self.maxImageSize = settings.maxImageSize
 		self.maxForumPostImages = settings.maxForumPostImages
+		self.photostreamUploadRateLimit = settings.photostreamUploadRateLimit
 		self.forumAutoQuarantineThreshold = settings.forumAutoQuarantineThreshold
 		self.postAutoQuarantineThreshold = settings.postAutoQuarantineThreshold
 		self.userAutoQuarantineThreshold = settings.userAutoQuarantineThreshold
@@ -510,6 +513,8 @@ public struct SettingsUpdateData: Content {
 	var maximumForumPosts: Int?
 	var maxImageSize: Int?
 	var maxForumPostImages: Int?
+	/// Minimum seconds a user must wait between photostream uploads. `0` disables the limit.
+	var photostreamUploadRateLimit: Int?
 	var forumAutoQuarantineThreshold: Int?
 	var postAutoQuarantineThreshold: Int?
 	var userAutoQuarantineThreshold: Int?

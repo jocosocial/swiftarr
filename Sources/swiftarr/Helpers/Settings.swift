@@ -103,8 +103,8 @@ final class Settings: Encodable, @unchecked Sendable {
 	/// Maximum number of images allowed per forum post.
 	@StoredSettingsValue("maxForumPostImages", defaultValue: 4) var maxForumPostImages: Int
 
-	/// How long a single user must wait between photostream uploads, in seconds.
-	@StoredSettingsValue("photostreamUploadRateLimit", defaultValue: 300) var photostreamUploadRateLimit: TimeInterval
+	/// How long a single user must wait between photostream uploads, in seconds. `0` disables the limit.
+	@StoredSettingsValue("photostreamUploadRateLimit", defaultValue: 300) var photostreamUploadRateLimit: Int
 
 	// MARK: Quarantine
 	/// The number of reports to trigger forum auto-quarantine.

@@ -121,6 +121,15 @@ class ContentStructValidationTests: XCTestCase {
 		XCTAssertEqual(json["maxImageSize"] as? Int, Settings.shared.maxImageSize)
 	}
 
+	func testClientSettings_EncodesPhotostreamUploadRateLimit() throws {
+		let settings = ClientSettingsData(installationID: "test-installation")
+		let data = try JSONEncoder().encode(settings)
+		let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+		XCTAssertEqual(json["photostreamUploadRateLimit"] as? Int, Settings.shared.photostreamUploadRateLimit)
+		XCTAssertEqual(json["photostreamUploadRateLimit"] as? Int, 300)
+	}
+
 	// MARK: - ImageUploadData
 
 	func testImageUploadData_EmptyFilenameBecomesNil() {

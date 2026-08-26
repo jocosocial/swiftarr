@@ -108,4 +108,82 @@ final class PhotostreamControllerTests: XCTestCase, SwiftarrBaseTest {
 		XCTAssertEqual(content.image, "photostream-42.jpg")
 		XCTAssertEqual(content.location, PhotoStreamBoatLocation.onBoat.rawValue)
 	}
+
+	// MARK: - Upload rate limit
+
+	func testRateLimit_ZeroDisablesTheLimit() {
+		let controller = PhotostreamController()
+		let now = Date(timeIntervalSince1970: 1_725_000_000)
+		XCTAssertFalse(
+			controller.isWithinUploadRateLimit(
+				previousCaptureTime: now,
+				now: now,
+				rateLimit: 0
+			),
+			"a 0 second interval must allow back-to-back uploads for testing"
+		)
+	}
+
+	func testRateLimit_DefaultBlocksARecentUpload() {
+		let controller = PhotostreamController()
+		let now = Date(timeIntervalSince1970: 1_725_000_000)
+		XCTAssertTrue(
+			controller.isWithinUploadRateLimit(
+				previousCaptureTime: now.addingTimeInterval(-60),
+				now: now,
+				rateLimit: 300
+			),
+			"the production 5 minute default must reject an upload from 1 minute ago"
+		)
+	}
+
+	func testRateLimit_AllowsAnUploadAfterTheInterval() {
+		let controller = PhotostreamController()
+		let now = Date(timeIntervalSince1970: 1_725_000_000)
+		XCTAssertFalse(
+			controller.isWithinUploadRateLimit(
+				previousCaptureTime: now.addingTimeInterval(-301),
+				now: now,
+				rateLimit: 300
+			)
+		)
+	}
+
+	func testRateLimitErrorReason_FormatsWholeMinutesAndOddSeconds() {
+		let controller = PhotostreamController()
+		XCTAssertEqual(
+			controller.photostreamRateLimitErrorReason(30),
+			"You may only upload one Photostream photo every 30 seconds."
+		)
+		XCTAssertEqual(
+			controller.photostreamRateLimitErrorReason(85),
+			"You may only upload one Photostream photo every 85 seconds."
+		)
+		XCTAssertEqual(
+			controller.photostreamRateLimitErrorReason(60),
+			"You may only upload one Photostream photo every 1 minute."
+		)
+		XCTAssertEqual(
+			controller.photostreamRateLimitErrorReason(300),
+			"You may only upload one Photostream photo every 5 minutes."
+		)
+	}
+
+	func testSettingsAdminDataExposesPhotostreamRateLimit() {
+		let data = SettingsAdminData(Settings.shared)
+		XCTAssertEqual(data.photostreamUploadRateLimit, Settings.shared.photostreamUploadRateLimit)
+		XCTAssertEqual(data.photostreamUploadRateLimit, 300, "production default is 5 minutes")
+	}
+
+	func testSettingsUpdateDataDecodesPhotostreamRateLimit() throws {
+		let json = """
+			{
+				"enableFeatures": [],
+				"disableFeatures": [],
+				"photostreamUploadRateLimit": 0
+			}
+			""".data(using: .utf8)!
+		let data = try JSONDecoder().decode(SettingsUpdateData.self, from: json)
+		XCTAssertEqual(data.photostreamUploadRateLimit, 0)
+	}
 }
