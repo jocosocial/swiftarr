@@ -2842,6 +2842,8 @@ public struct ClientSettingsData: Content {
 	var maxForumPostImages: Int
 	/// Maximum size of a single uploaded image, in bytes.
 	var maxImageSize: Int
+	/// Minimum seconds a user must wait between photostream uploads. `0` disables the limit.
+	var photostreamUploadRateLimit: Int
 	/// Unique identifier for this Postgres database installation (from pg_control_system())
 	var installationID: String
 }
@@ -2860,6 +2862,7 @@ extension ClientSettingsData {
 		self.minAccessLevel = Settings.shared.minAccessLevel.rawValue
 		self.maxForumPostImages = Settings.shared.maxForumPostImages
 		self.maxImageSize = Settings.shared.maxImageSize
+		self.photostreamUploadRateLimit = Settings.shared.photostreamUploadRateLimit
 		self.installationID = installationID
 	}
 }

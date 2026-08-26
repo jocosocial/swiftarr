@@ -229,3 +229,7 @@ associated AddedToChat field value increase.
 * `GET /api/v3/photostream` now supports a `byUser` UUID query parameter.
 * `POST /api/v3/photostream/upload` now returns the created
   `PhotostreamImageData` in its successful response body.
+
+## Aug 22, 2026
+* Added `photostreamUploadRateLimit` (seconds between photostream uploads; `0` disables the limit) to `SettingsAdminData`, `SettingsUpdateData`, and `ClientSettingsData`.
+* `GET /api/v3/client/settings` now also includes `photostreamUploadRateLimit`.
