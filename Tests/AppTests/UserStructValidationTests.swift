@@ -91,9 +91,14 @@ class UserStructValidationTests: XCTestCase {
 		XCTAssertEqual(errs, [])
 	}
 
-	func testUserVerify_Valid7Char() throws {
-		let errs = try validationErrors(UserVerifyData.self, #"{"verification":"abc1234"}"#)
+	func testUserVerify_ValidWithSpace() throws {
+		let errs = try validationErrors(UserVerifyData.self, #"{"verification":"abc 123"}"#)
 		XCTAssertEqual(errs, [])
+	}
+
+	func testUserVerify_SevenAlphanumeric_Fails() throws {
+		let errs = try validationErrors(UserVerifyData.self, #"{"verification":"abc1234"}"#)
+		XCTAssertEqual(errs.count, 1)
 	}
 
 	func testUserVerify_TooShort_Fails() throws {

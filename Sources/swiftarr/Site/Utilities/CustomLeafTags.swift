@@ -84,7 +84,7 @@ struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 }
 
 /// Renders arbitrary Markdown text
-/// 
+///
 /// Usage: #markdownTextTag(String) -> String
 struct MarkdownTextTag: UnsafeUnescapedLeafTag {
 	func render(_ ctx: LeafContext) throws -> LeafData {
@@ -92,9 +92,9 @@ struct MarkdownTextTag: UnsafeUnescapedLeafTag {
 		guard var string = ctx.parameters[0].string else {
 			return LeafData.string("")
 		}
-		
+
 		// Sanitize any HTML entities in the source string. Although Markdown allows HTML tags to be used in a .md document,
-		// we don't want to allow that as it's a security hole. 
+		// we don't want to allow that as it's a security hole.
 		string = string.htmlEscaped()
 
 		let parser = MarkdownParser()
@@ -133,16 +133,21 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		// Which also means it came from YouKnowWhere.
 		let mentionPattern = "(?<!\\S)(@[A-Za-z0-9]+(?:[-.+_][A-Za-z0-9]+)*)"
 		let mentionRegex = try NSRegularExpression(pattern: mentionPattern, options: [])
-		let mentionMatches = mentionRegex.matches(in: string, options: [], range: NSRange(location: 0, length: string.utf16.count))
+		let mentionMatches = mentionRegex.matches(
+			in: string,
+			options: [],
+			range: NSRange(location: 0, length: string.utf16.count)
+		)
 
 		var modifiedText = string
 		for mentionMatch in mentionMatches.reversed() {
 			let range = Range(mentionMatch.range(at: 1), in: modifiedText)!
 			let mention = String(modifiedText[range])
-			let username = String(mention.dropFirst()) // Drop the initial "@"
-			let linkStyle = ["admin", "THO", "TwitarrTeam", "moderator"].contains(username) ? "link-danger" : "link-primary"
-            let link = "<a class=\"\(linkStyle)\" href=\"/username/\(username)\">\(mention)</a>"
-            modifiedText.replaceSubrange(range, with: link)
+			let username = String(mention.dropFirst())  // Drop the initial "@"
+			let linkStyle =
+				["admin", "THO", "TwitarrTeam", "moderator"].contains(username) ? "link-danger" : "link-primary"
+			let link = "<a class=\"\(linkStyle)\" href=\"/username/\(username)\">\(mention)</a>"
+			modifiedText.replaceSubrange(range, with: link)
 		}
 		string = modifiedText
 
@@ -153,14 +158,18 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		// * Contain alphanumberic characters with no separators
 		let hashtagPattern = "(?<!\\S)(#[A-Za-z0-9]+)(?!\\S)"
 		let hashtagRegex = try NSRegularExpression(pattern: hashtagPattern, options: [])
-		let hashtagMatches = hashtagRegex.matches(in: string, options: [], range: NSRange(location: 0, length: string.utf16.count))
+		let hashtagMatches = hashtagRegex.matches(
+			in: string,
+			options: [],
+			range: NSRange(location: 0, length: string.utf16.count)
+		)
 
 		for hashtagMatch in hashtagMatches.reversed() {
 			let range = Range(hashtagMatch.range(at: 1), in: modifiedText)!
 			let mention = String(modifiedText[range])
-			let hashtag = String(mention.dropFirst()) // Drop the initial "#"
-            let link = "<a class=\"link-primary\" href=\"/forumpost/search?hashtag=\(hashtag)\">\(mention)</a>"
-            modifiedText.replaceSubrange(range, with: link)
+			let hashtag = String(mention.dropFirst())  // Drop the initial "#"
+			let link = "<a class=\"link-primary\" href=\"/forumpost/search?hashtag=\(hashtag)\">\(mention)</a>"
+			modifiedText.replaceSubrange(range, with: link)
 		}
 		string = modifiedText
 
@@ -192,7 +201,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 
 		// Links in posts should be automatically clickable. Similarly, we desire to shorten Twitarr
 		// specific links. Maybe someday we could parse them and give some linktext?
-		// e.g. "http://192.168.0.19:8081/fez/ADDBA5D9-1154-4033-88AE-07B12F3AE162"
+		// e.g. "http://192.168.0.19:8081/lfg/ADDBA5D9-1154-4033-88AE-07B12F3AE162"
 		// could have linktext "[An LFG Link]" or somesuch.
 
 		// Since we have multiple potential Twitarr hostnames (twitarr.com, joco.hollandamerica.com)
@@ -250,54 +259,8 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 			{
 				(components.scheme, components.host, components.port) = (nil, nil, nil)
 				var linkText = components.string
-				if let url = URL(string: urlStr), url.pathComponents.count > 1, url.pathComponents[0] == "/" {
-					switch url.pathComponents[1] {
-					case "tweets": linkText = "[Twitarr Tweet Link]"
-					case "forums":
-						if url.pathComponents.count == 2 {
-							linkText = "[Forum Categories Link]"
-						}
-						else {
-							linkText = "[Forum Category Link]"
-						}
-					case "forum": linkText = "[Forum Link]"
-					case "seamail": linkText = "[Seamail Link]"
-					case "fez":
-						if url.pathComponents.count > 2 {
-							switch url.pathComponents[2] {
-							case "joined": linkText = "[Joined LFGs Link]"
-							case "owned": linkText = "[Your LFGs Link]"
-							case "faq": linkText = "[LFG FAQ Link]"
-							default: linkText = "[LFG Link]"
-							}
-						}
-						else {
-							linkText = "[LFGs Link]"
-						}
-					case "events": linkText = "[Events Link]"
-					case "user", "profile": linkText = "[User Link]"
-					case "boardgames":
-						if url.pathComponents.count > 2 {
-							linkText = "[Boardgame Link]"
-						}
-						else {
-							linkText = "[Boardgames Link]"
-						}
-					case "karaoke": linkText = "[Karaoke Link]"
-					case "quartermaster":
-						if url.pathComponents.count > 2 {
-							switch url.pathComponents[2] {
-							case "need": linkText = "[Quartermastarr Need Link]"
-							case "owned": linkText = "[Your Quartermastarr Items Link]"
-							case "about": linkText = "[Quartermastarr Info Link]"
-							default: linkText = "[Quartermastarr Item Link]"
-							}
-						}
-						else {
-							linkText = "[Quartermastarr Have Link]"
-						}
-					default: linkText = "[Twitarr Link]"
-					}
+				if let url = URL(string: urlStr) {
+					linkText = Self.canonicalLinkText(pathComponents: url.pathComponents) ?? linkText
 				}
 				// Replace the link's text with a wiki-like linkbox describing where the link goes
 				string.replaceSubrange(
@@ -312,6 +275,59 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 					with: "<a href=\"\(components.string!)\">\(components.string!)</a>\(urlTextSuffix)"
 				)
 			}
+		}
+	}
+
+	/// Wiki-style label for a canonical Twitarr site path, or `nil` when the path shouldn't be rewritten.
+	/// Site LFG routes live under `/lfg`; `/fez` is kept so older posted URLs still get LFG labels.
+	static func canonicalLinkText(pathComponents: [String]) -> String? {
+		guard pathComponents.count > 1, pathComponents[0] == "/" else { return nil }
+		switch pathComponents[1] {
+		case "tweets": return "[Twitarr Tweet Link]"
+		case "forums":
+			if pathComponents.count == 2 {
+				return "[Forum Categories Link]"
+			}
+			else {
+				return "[Forum Category Link]"
+			}
+		case "forum": return "[Forum Link]"
+		case "seamail": return "[Seamail Link]"
+		case "fez", "lfg":
+			if pathComponents.count > 2 {
+				switch pathComponents[2] {
+				case "joined": return "[Joined LFGs Link]"
+				case "owned": return "[Your LFGs Link]"
+				case "faq": return "[LFG FAQ Link]"
+				default: return "[LFG Link]"
+				}
+			}
+			else {
+				return "[LFGs Link]"
+			}
+		case "events": return "[Events Link]"
+		case "user", "profile": return "[User Link]"
+		case "boardgames":
+			if pathComponents.count > 2 {
+				return "[Boardgame Link]"
+			}
+			else {
+				return "[Boardgames Link]"
+			}
+		case "karaoke": return "[Karaoke Link]"
+		case "quartermaster":
+			if pathComponents.count > 2 {
+				switch pathComponents[2] {
+				case "need": return "[Quartermastarr Need Link]"
+				case "owned": return "[Your Quartermastarr Items Link]"
+				case "about": return "[Quartermastarr Info Link]"
+				default: return "[Quartermastarr Item Link]"
+				}
+			}
+			else {
+				return "[Quartermastarr Have Link]"
+			}
+		default: return "[Twitarr Link]"
 		}
 	}
 
@@ -542,7 +558,7 @@ struct CruiseDayIndexTag: LeafTag {
 	}
 }
 
-// MARK: - Tags for Styling Users 
+// MARK: - Tags for Styling Users
 
 /// Inserts an <img> tag for the given user's avatar image. Presents a default image if the user doesn't have an image.
 /// Note: If we implement identicons at the API level, users will always have images, and the 'generic user' image here is just a fallback.
@@ -599,9 +615,9 @@ struct UserBylineTag: UnsafeUnescapedLeafTag {
 			}
 			return false
 		}
-		let shortStyle = stylingSearch(style: "short", in: &styling) 
-		let nolinkStyle = stylingSearch(style: "nolink", in: &styling) 
-		let pronounStyle = stylingSearch(style: "pronoun", in: &styling) 
+		let shortStyle = stylingSearch(style: "short", in: &styling)
+		let nolinkStyle = stylingSearch(style: "nolink", in: &styling)
+		let pronounStyle = stylingSearch(style: "pronoun", in: &styling)
 		if ["admin", "THO", "TwitarrTeam", "moderator"].contains(username) {
 			styling.append(" text-danger")
 		}
@@ -639,7 +655,7 @@ struct UserBylineTag: UnsafeUnescapedLeafTag {
 
 // MARK: - Other Tags
 
-/// Gets the user-formatted label string for the given tyhpe of LFG. 
+/// Gets the user-formatted label string for the given tyhpe of LFG.
 ///
 /// Usage: #lfgLabel(String)
 struct LFGLabelTag: LeafTag {
@@ -711,35 +727,55 @@ struct URLEncodeTag: LeafTag {
 //
 // Usage: #notEmpty(value)
 struct NotEmptyTag: LeafTag {
-    func render(_ ctx: LeafContext) throws -> LeafData {
+	func render(_ ctx: LeafContext) throws -> LeafData {
 		try ctx.requireParameterCount(1)
 		guard let leafData = ctx.parameters.first else {
-            throw "Couldn't extract first parameter to NotEmpty tag"
+			throw "Couldn't extract first parameter to NotEmpty tag"
 		}
 		if leafData.isNil {
 			return .bool(false)
 		}
-    	guard let str = leafData.string else {
-            throw "unable to check for empty value unexpected data"
-        }
-        return .bool(!str.isEmpty)
-    }
+		guard let str = leafData.string else {
+			throw "unable to check for empty value unexpected data"
+		}
+		return .bool(!str.isEmpty)
+	}
 }
 
-// Have I become that guy? Is inserting obvious references to forty year old Gibson books still cool? 
+// Have I become that guy? Is inserting obvious references to forty year old Gibson books still cool?
 // Anyway, unlike Leaf's #count(), this returns 0 if the parameter isn't an array or dict. Most useful
 // when the parameter is an optional that may be nil.
 //
 // Usage: #countOrZero(value)
 struct CountZeroTag: LeafTag {
-    func render(_ ctx: LeafContext) throws -> LeafData {
-        try ctx.requireParameterCount(1)
-        if let array = ctx.parameters[0].array {
-            return LeafData.int(array.count)
-        } else if let dictionary = ctx.parameters[0].dictionary {
-            return LeafData.int(dictionary.count)
-        } else {
-            return .int(0)
-        }
-    }
+	func render(_ ctx: LeafContext) throws -> LeafData {
+		try ctx.requireParameterCount(1)
+		if let array = ctx.parameters[0].array {
+			return LeafData.int(array.count)
+		}
+		else if let dictionary = ctx.parameters[0].dictionary {
+			return LeafData.int(dictionary.count)
+		}
+		else {
+			return .int(0)
+		}
+	}
+}
+
+/// Renders a registration code as bold monospace text in THO-style groups, e.g. "abcabc" → "ABC ABC".
+///
+/// Usage: #regCode(String)
+struct RegCodeTag: UnsafeUnescapedLeafTag {
+	static func format(_ code: String) -> String {
+		RegistrationCode.displayString(code)
+	}
+
+	func render(_ ctx: LeafContext) throws -> LeafData {
+		try ctx.requireParameterCount(1)
+		guard let string = ctx.parameters[0].string, !string.isEmpty else {
+			return LeafData.string("")
+		}
+		let display = RegCodeTag.format(string).htmlEscaped()
+		return LeafData.string("<span class=\"font-monospace\">\(display)</span>")
+	}
 }

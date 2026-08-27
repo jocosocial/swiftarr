@@ -89,4 +89,89 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 			XCTAssertEqual(reloaded?.verification, "*abc123")
 		}
 	}
+
+	func testRecovery_SpacedCodeIsSpent() async throws {
+		try await withApp { app in
+			let username = "recovery-spaced-\(UUID().uuidString.prefix(8))"
+			let user = try await makeRecoveryUser(app, username: username, verification: "abcabc")
+			defer { Task { try? await user.delete(on: app.db) } }
+
+			try await app.test(
+				.POST,
+				"/api/v3/auth/recovery",
+				beforeRequest: { req async throws in
+					try req.content.encode(recoveryBody(username: username, key: "abc abc"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok, "a spaced registration code must recover the account")
+				}
+			)
+
+			let reloaded = try await User.find(user.requireID(), on: app.db)
+			XCTAssertEqual(reloaded?.verification, "*abcabc")
+		}
+	}
+
+	func testRecovery_UppercaseSpacedCodeIsSpent() async throws {
+		try await withApp { app in
+			let username = "recovery-upper-\(UUID().uuidString.prefix(8))"
+			let user = try await makeRecoveryUser(app, username: username, verification: "abcabc")
+			defer { Task { try? await user.delete(on: app.db) } }
+
+			try await app.test(
+				.POST,
+				"/api/v3/auth/recovery",
+				beforeRequest: { req async throws in
+					try req.content.encode(recoveryBody(username: username, key: "ABC ABC"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok, "an uppercase spaced registration code must recover the account")
+				}
+			)
+
+			let reloaded = try await User.find(user.requireID(), on: app.db)
+			XCTAssertEqual(reloaded?.verification, "*abcabc")
+		}
+	}
+
+	func testRecovery_NonBreakingSpaceCodeIsSpent() async throws {
+		try await withApp { app in
+			let username = "recovery-nbsp-\(UUID().uuidString.prefix(8))"
+			let user = try await makeRecoveryUser(app, username: username, verification: "abcabc")
+			defer { Task { try? await user.delete(on: app.db) } }
+
+			try await app.test(
+				.POST,
+				"/api/v3/auth/recovery",
+				beforeRequest: { req async throws in
+					try req.content.encode(recoveryBody(username: username, key: "abc\u{00A0}abc"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok, "a registration code with a non-breaking space must recover the account")
+				}
+			)
+
+			let reloaded = try await User.find(user.requireID(), on: app.db)
+			XCTAssertEqual(reloaded?.verification, "*abcabc")
+		}
+	}
+
+	func testRecovery_SpacedSpentCodeIsRejected() async throws {
+		try await withApp { app in
+			let username = "recovery-spaced-spent-\(UUID().uuidString.prefix(8))"
+			let user = try await makeRecoveryUser(app, username: username, verification: "*abcabc")
+			defer { Task { try? await user.delete(on: app.db) } }
+
+			try await app.test(
+				.POST,
+				"/api/v3/auth/recovery",
+				beforeRequest: { req async throws in
+					try req.content.encode(recoveryBody(username: username, key: "abc abc"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .badRequest, "a spent spaced registration code must not recover the account")
+				}
+			)
+		}
+	}
 }

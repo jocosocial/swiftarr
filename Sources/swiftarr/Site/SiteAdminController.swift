@@ -47,8 +47,6 @@ struct SiteAdminController: SiteControllerUtils {
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateTTRoutes = getPrivateRoutes(app, minAccess: .twitarrteam, path: "admin")
 
-		privateTTRoutes.get("", use: adminRootPageHandler)
-
 		privateTTRoutes.get("announcements", use: announcementsAdminPageHandler)
 		privateTTRoutes.get("announcement", "create", use: announcementCreatePageHandler)
 		privateTTRoutes.post("announcement", "create", use: announcementCreatePostHandler)
@@ -88,8 +86,6 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.get("bulkuser", "upload", "commit", use: bulkUserUpdateCommitHandler)
 		
 
-		privateTTRoutes.get("regcodes", use: getRegCodeHandler)
-		privateTTRoutes.get("regcodes", "showuser", userIDParam, use: getRegCodeForUserHandler)
 		privateTTRoutes.get("regcodes", "discord", "assign", use: assignRegCodeToDiscordUser)
 		privateTTRoutes.post("regcodes", "discord", "assign", use: assignRegCodeToDiscordUserResult)
 		
@@ -122,6 +118,13 @@ struct SiteAdminController: SiteControllerUtils {
 		privateAdminRoutes.post("karaoke", "reload", use: karaokePostHandler)
 		privateAdminRoutes.get("boardgames", use: boardGamesHandler)
 		privateAdminRoutes.post("boardgames", "reload", use: boardGamesPostHandler)
+
+		// TwitarrTeam and above, or users with the Account Manager role
+		let accountMgrRoutes = getPrivateRoutes(app, minAccess: .verified, path: "admin")
+		accountMgrRoutes.get("", use: adminRootPageHandler)
+		accountMgrRoutes.get("regcodes", use: getRegCodeHandler)
+		accountMgrRoutes.get("regcodes", "showuser", userIDParam, use: getRegCodeForUserHandler)
+		accountMgrRoutes.post("regcodes", "showuser", userIDParam, "unlock", use: unlockRegCodePostHandler)
 	}
 
 	// MARK: - Admin Pages
@@ -168,6 +171,7 @@ struct SiteAdminController: SiteControllerUtils {
 	// GET /admin
 	// Shows the root admin page, which just shows links to other pages.
 	func adminRootPageHandler(_ req: Request) async throws -> View {
+		try req.auth.require(UserCacheData.self).guardCanManageAccounts()
 		struct AdminRootPageContext: Encodable {
 			var trunk: TrunkContext
 
@@ -451,6 +455,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var maximumForumPosts: Int
 			var maxImageSize: Int
 			var maxForumPostImages: Int
+			var photostreamUploadRateLimit: Int
 			var forumAutoQuarantineThreshold: Int
 			var postAutoQuarantineThreshold: Int
 			var userAutoQuarantineThreshold: Int
@@ -495,6 +500,7 @@ struct SiteAdminController: SiteControllerUtils {
 			maximumForumPosts: postStruct.maximumForumPosts,
 			maxImageSize: postStruct.maxImageSize * 1_048_576,
 			maxForumPostImages: postStruct.maxForumPostImages,
+			photostreamUploadRateLimit: postStruct.photostreamUploadRateLimit,
 			forumAutoQuarantineThreshold: postStruct.forumAutoQuarantineThreshold,
 			postAutoQuarantineThreshold: postStruct.postAutoQuarantineThreshold,
 			userAutoQuarantineThreshold: postStruct.userAutoQuarantineThreshold,
@@ -961,55 +967,59 @@ struct SiteAdminController: SiteControllerUtils {
 	//
 	// Shows stats on reg code use. Lets admins search on a regcode and get the user it's associated with, if any.
 	func getRegCodeHandler(_ req: Request) async throws -> View {
+		try req.auth.require(UserCacheData.self).guardCanManageAccounts()
 		var regCodeSearchResults = ""
+		var searchedRegCode = ""
 		var searchResultHeaders = [UserHeader]()
-		if let regCode = req.query[String.self, at: "search"]?.removingPercentEncoding?.lowercased()
-			.filter({ $0 != " " })
+		if let rawSearch = req.query[String.self, at: "search"]?.removingPercentEncoding,
+			RegistrationCode.isWellFormed(rawSearch)
 		{
-			regCodeSearchResults = "Invalid registration code"
-			if regCode.count == 6, regCode.allSatisfy({ $0.isLetter || $0.isNumber }) {
-				do {
-					let response = try await apiQuery(req, endpoint: "/admin/regcodes/find/\(regCode)")
-					searchResultHeaders = try response.content.decode([UserHeader].self)
-					if searchResultHeaders.count > 0 {
-						regCodeSearchResults =
-							"User \"\(searchResultHeaders[0].username)\" is associated with registration code \"\(regCode)\""
-					}
-					else {
-						regCodeSearchResults = "\(regCode) is a valid code, not associated with a user."
-					}
-				}
-				catch let error as ErrorResponse {
-					regCodeSearchResults = "Error: \(error.reason)"
-				}
-				catch {
-					regCodeSearchResults = error.localizedDescription
-				}
+			let regCode = RegistrationCode.normalized(rawSearch)
+			searchedRegCode = regCode
+			regCodeSearchResults = ""
+			do {
+				let response = try await apiQuery(req, endpoint: "/admin/regcodes/find/\(regCode)")
+				searchResultHeaders = try response.content.decode([UserHeader].self)
 			}
+			catch let error as ErrorResponse {
+				regCodeSearchResults = "Error: \(error.reason)"
+			}
+			catch {
+				regCodeSearchResults = error.localizedDescription
+			}
+		}
+		else if req.query[String.self, at: "search"] != nil {
+			regCodeSearchResults = "Invalid registration code"
 		}
 		let response = try await apiQuery(req, endpoint: "/admin/regcodes/stats")
 		let regCodeData = try response.content.decode(RegistrationCodeStatsData.self)
 		struct RegCodeStatsContext: Encodable {
 			var trunk: TrunkContext
 			var stats: RegistrationCodeStatsData
+			var searchedRegCode: String
 			var searchResults: String
 			var searchResultUsers: [UserHeader]
+			var associatedUsername: String
 
 			init(
 				_ req: Request,
 				stats: RegistrationCodeStatsData,
+				searchedRegCode: String,
 				searchResults: String,
 				searchResultUsers: [UserHeader]
 			) throws {
 				trunk = .init(req, title: "Registration Codes", tab: .admin)
 				self.stats = stats
+				self.searchedRegCode = searchedRegCode
 				self.searchResults = searchResults
 				self.searchResultUsers = searchResultUsers
+				self.associatedUsername = searchResultUsers.first?.username ?? ""
 			}
 		}
 		let ctx = try RegCodeStatsContext(
 			req,
 			stats: regCodeData,
+			searchedRegCode: searchedRegCode,
 			searchResults: regCodeSearchResults,
 			searchResultUsers: searchResultHeaders
 		)
@@ -1020,6 +1030,7 @@ struct SiteAdminController: SiteControllerUtils {
 	//
 	// Shows stats on reg code use. Lets admins search on a regcode and get the user it's associated with, if any.
 	func getRegCodeForUserHandler(_ req: Request) async throws -> View {
+		try req.auth.require(UserCacheData.self).guardCanManageAccounts()
 		guard let targetUserID = req.parameters.get(userIDParam.paramString, as: UUID.self) else {
 			throw Abort(.badRequest, reason: "Missing user_id parameter")
 		}
@@ -1033,18 +1044,28 @@ struct SiteAdminController: SiteControllerUtils {
 			var data: RegistrationCodeUserData
 			var primaryUser: UserHeader
 			var altUsers: [UserHeader]
-			var regCode: String
 
 			init(_ req: Request, data: RegistrationCodeUserData) throws {
 				trunk = .init(req, title: "Registration Code for User", tab: .admin)
 				self.data = data
 				self.primaryUser = data.users[0]
 				self.altUsers = Array(data.users.dropFirst(1))
-				self.regCode = data.regCode.isEmpty ? "No registration code found for this user" : data.regCode
 			}
 		}
 		let ctx = try RegCodeUserContext(req, data: regCodeData)
 		return try await req.view.render("admin/regCodeForUser", ctx)
+	}
+
+	// POST /admin/regcodes/showuser/:user_id/unlock
+	//
+	// Re-enables one-time password recovery via registration code for this user.
+	func unlockRegCodePostHandler(_ req: Request) async throws -> HTTPStatus {
+		try req.auth.require(UserCacheData.self).guardCanManageAccounts()
+		guard let targetUserID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing user_id parameter")
+		}
+		let response = try await apiQuery(req, endpoint: "/admin/regcodes/unlock/\(targetUserID)", method: .POST)
+		return response.status
 	}
 	
 	// GET /admin/regcodes/discord/assign
