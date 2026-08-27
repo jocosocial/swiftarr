@@ -1,5 +1,5 @@
-#comment("Context must contain 'trunk' and 'showCategoryBadge' -- from the enclosing list page")
-#comment("Context must contain 'item' of type QuartermasterData -- usually done with #for(item in list)")
+#comment("Context must contain 'trunk', 'showCategoryBadge', and 'editReturnTo' -- from the enclosing page")
+#comment("Context must contain 'item' of type QuartermasterData -- usually done with #for(item in list), or set directly by a single-item page")
 #comment("Enclosing <li> must carry class 'has-action-bar' and data-postid=item.itemID for the collapse/delete JS")
 
 <div class="container-fluid">
@@ -9,9 +9,6 @@
 				<span class="badge #if(item.category == "have"):bg-success#else:bg-info text-dark#endif">#if(item.category == "have"):Have#else:Need#endif</span>
 			#endif
 			<b>#(item.itemName)</b>
-			#if(item.moderationStatus != "normal"):
-				<span class="badge bg-warning text-dark">#(item.moderationStatus)</span>
-			#endif
 		</div>
 		<div class="col col-auto text-muted text-end">
 			#if(item.location):#(item.location)#endif
@@ -43,17 +40,16 @@
 			</div>
 		</div>
 		<div class="row justify-content-center mt-2">
-			#if(trunk.userIsMod || item.owner):
-				<div class="col col-auto btn-group btn-group-sm">
-					#if(item.owner && item.owner.userID != trunk.userID):
-						<a class="btn btn-outline-primary" href="/seamail/create?withuser=#(item.owner.userID)&withsubject=Re%3A%20Quartermastarr%20Item%20-%20#urlEncode(item.itemName)">Send Seamail</a>
-					#endif
-					#if(trunk.userIsMod || (item.owner && item.owner.userID == trunk.userID)):
-						<a class="btn btn-outline-primary" href="/quartermaster/#(item.itemID)/edit">Edit</a>
-						<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
-					#endif
-				</div>
-			#endif
+			<div class="col col-auto btn-group btn-group-sm">
+				<button type="button" class="btn btn-outline-primary d-none" data-action="copyLink" data-copy-path="/quartermaster/#(item.itemID)">Copy Link</button>
+				#if(item.owner && item.owner.userID != trunk.userID):
+					<a class="btn btn-outline-primary" href="/seamail/create?withuser=#(item.owner.userID)&withsubject=Re%3A%20Quartermastarr%20Item%20-%20#urlEncode(item.itemName)">Send Seamail</a>
+				#endif
+				#if(trunk.userIsMod || (item.owner && item.owner.userID == trunk.userID)):
+					<a class="btn btn-outline-primary" href="/quartermaster/#(item.itemID)/edit?from=#(editReturnTo)">Edit</a>
+					<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
+				#endif
+			</div>
 			<div class="col col-auto btn-group btn-group-sm">
 				<a class="btn btn-outline-primary" href="/quartermaster/report/#(item.itemID)">Report</a>
 				#if(trunk.userIsMod):

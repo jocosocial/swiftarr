@@ -229,3 +229,7 @@ associated AddedToChat field value increase.
 * `GET /api/v3/photostream` now supports a `byUser` UUID query parameter.
 * `POST /api/v3/photostream/upload` now returns the created
   `PhotostreamImageData` in its successful response body.
+
+## Aug 26, 2026
+* New `QuartermasterController`, a "have/need" item board (see `/api/v3/quartermaster` endpoints for the full list).
+* New moderator endpoints for reviewing and setting the moderation state of Quartermaster items: `GET /api/v3/mod/quartermaster/ID`, `POST /api/v3/mod/quartermaster/ID/setstate/STRING`.

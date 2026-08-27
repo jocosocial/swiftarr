@@ -284,6 +284,18 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 							linkText = "[Boardgames Link]"
 						}
 					case "karaoke": linkText = "[Karaoke Link]"
+					case "quartermaster":
+						if url.pathComponents.count > 2 {
+							switch url.pathComponents[2] {
+							case "need": linkText = "[Quartermastarr Need Link]"
+							case "owned": linkText = "[Your Quartermastarr Items Link]"
+							case "about": linkText = "[Quartermastarr Info Link]"
+							default: linkText = "[Quartermastarr Item Link]"
+							}
+						}
+						else {
+							linkText = "[Quartermastarr Have Link]"
+						}
 					default: linkText = "[Twitarr Link]"
 					}
 				}

@@ -161,6 +161,9 @@ struct QuartermasterListPageContext: Encodable {
 	var categorySelection: String  // "all" | "have" | "need" -- Owned tab only; ignored elsewhere.
 	var addItemURL: String  // Pre-selects the Have/Need category on the create page; Owned defaults to Have.
 	var showCategoryBadge: Bool
+	// Fed into each item's Edit link as `?from=`, so editing and returning lands back on this tab.
+	// See `QuartermasterCreateUpdatePageContext.successURL(from:)`.
+	var editReturnTo: String
 	var filterAllURL: String
 	var filterHaveURL: String
 	var filterNeedURL: String
@@ -197,11 +200,13 @@ struct QuartermasterListPageContext: Encodable {
 		searchActionPath = basePath
 		categorySelection = Self.categorySelection(from: params.category)
 		switch tab {
-			case .have: addItemURL = "/quartermaster/create?category=have"
-			case .need: addItemURL = "/quartermaster/create?category=need"
-			case .owned, .about: addItemURL = "/quartermaster/create"
+			case .have: addItemURL = "/quartermaster/create?category=have&from=have"
+			case .need: addItemURL = "/quartermaster/create?category=need&from=need"
+			case .owned: addItemURL = "/quartermaster/create?from=owned"
+			case .about: addItemURL = "/quartermaster/create"
 		}
 		showCategoryBadge = tab == .owned
+		editReturnTo = tab.rawValue
 
 		let searchQueryPart = searchText.isEmpty
 			? nil : searchText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed).map { "search=\($0)" }
@@ -223,6 +228,25 @@ struct QuartermasterListPageContext: Encodable {
 			}
 			return url
 		}
+	}
+}
+
+// Leaf context used by the single-item detail page (GET /quartermaster/ID). Reuses the same
+// Quartermaster/quartermasterItem partial the list pages render each row with, so it carries the
+// same trunk/showCategoryBadge/editReturnTo shape that partial expects (see its header comment).
+struct QuartermasterItemPageContext: Encodable {
+	var trunk: TrunkContext
+	var item: QuartermasterData
+	// Always shown here, unlike the list pages, since there's no enclosing tab to imply the category.
+	var showCategoryBadge: Bool = true
+	// The item's own ID: editing from here and returning lands back on this same item page. See
+	// `QuartermasterCreateUpdatePageContext.successURL(from:)`.
+	var editReturnTo: String
+
+	init(_ req: Request, item: QuartermasterData) throws {
+		trunk = .init(req, title: "Quartermastarr: \(item.itemName)", tab: .quartermaster)
+		self.item = item
+		editReturnTo = item.itemID.uuidString
 	}
 }
 
@@ -254,6 +278,23 @@ struct QuartermasterCreateUpdatePageContext: Encodable {
 	var items: [ItemRow]
 	var isEdit: Bool
 	var maxRows: Int = QuartermasterFormContent.maxRows
+	// Where the ajax form sends the browser after a successful submit. Carries the tab the user
+	// followed the Add Item(s)/Edit link from (via `?from=`) so submitting returns them to that
+	// same tab instead of always landing on Owned.
+	var successURL: String
+
+	// Maps a `?from=` query value to where the ajax form should send the browser next. The value is
+	// either a `QuartermasterListPageContext.QMTab` raw value (edited from a list page: return to
+	// that tab) or a Quartermaster item ID (edited from that item's own detail page: return there).
+	// Falls back to Owned when the param is missing or unrecognized.
+	private static func successURL(from req: Request) -> String {
+		switch req.query[String.self, at: "from"] {
+			case "have": return "/quartermaster"
+			case "need": return "/quartermaster/need"
+			case .some(let itemID) where UUID(uuidString: itemID) != nil: return "/quartermaster/\(itemID)"
+			default: return "/quartermaster/owned"
+		}
+	}
 
 	// Create: empty header, one blank starting row, name shown by default. The category dropdown
 	// preselects to whichever of Have/Need the caller followed the "Add Item(s)" link from, via an
@@ -269,6 +310,7 @@ struct QuartermasterCreateUpdatePageContext: Encodable {
 		}
 		items = [ItemRow(itemName: "", itemDescription: "")]
 		isEdit = false
+		successURL = Self.successURL(from: req)
 	}
 
 	// Edit: prefill everything from the existing item; exactly one row, locked.
@@ -289,6 +331,7 @@ struct QuartermasterCreateUpdatePageContext: Encodable {
 			hasImage: !imageFilename.isEmpty
 		)]
 		isEdit = true
+		successURL = Self.successURL(from: req)
 	}
 }
 
@@ -305,6 +348,7 @@ struct SiteQuartermasterController: SiteControllerUtils {
 		globalRoutes.get("need", use: needListPageHandler).destination("the Quartermastarr Need list")
 		globalRoutes.get("owned", use: ownedListPageHandler).destination("your Quartermastarr items")
 		globalRoutes.get("about", use: aboutPageHandler).destination("the Quartermastarr description")
+		globalRoutes.get(quartermasterIDParam, use: itemPageHandler).destination("this Quartermastarr item")
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateRoutes = getPrivateRoutes(app).grouped("quartermaster")
@@ -374,6 +418,20 @@ struct SiteQuartermasterController: SiteControllerUtils {
 		}
 		let ctx = try QuartermasterAboutPageContext(req)
 		return try await req.view.render("Quartermaster/quartermasterAbout", ctx)
+	}
+
+	// GET /quartermaster/ID
+	// Shows a single item's detail page. Exists so a shared link to one item (e.g. via the "Send
+	// Seamail" reply, or just copying the URL) resolves to something useful, instead of only ever
+	// being reachable by scrolling through the Have/Need/Owned lists.
+	func itemPageHandler(_ req: Request) async throws -> View {
+		guard let itemID = req.parameters.get(quartermasterIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing quartermaster_id")
+		}
+		let response = try await apiQuery(req, endpoint: "/quartermaster/\(itemID)")
+		let item = try response.content.decode(QuartermasterData.self)
+		let ctx = try QuartermasterItemPageContext(req, item: item)
+		return try await req.view.render("Quartermaster/quartermasterItemPage", ctx)
 	}
 
 	// GET /quartermaster/create

@@ -45,6 +45,12 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 				btn.classList.remove("d-none");
 			}
 			break;
+		case "copyLink":
+			if (window.isSecureContext) {
+				btn.addEventListener("click", copyLinkToClipboard);
+				btn.classList.remove("d-none");
+			}
+			break;
 		case "addQuartermasterRow":
 			btn.addEventListener("click", addQuartermasterRowAction);
 			break;
@@ -301,6 +307,17 @@ function copyToClipboard() {
 	let contents = document.getElementById(event.target.dataset.copyTarget).innerText;
 	navigator.clipboard.writeText(contents);
 	event.target.innerHTML="Copied";
+}
+
+// Copies a full, shareable link built from the current origin plus a relative path
+// (data-copy-path), e.g. a permalink to a single Quartermaster item. Stops propagation so this
+// doesn't also trigger an enclosing `.has-action-bar`'s click handler, which would otherwise
+// collapse the action bar the button lives in right after the copy.
+function copyLinkToClipboard() {
+	event.stopPropagation();
+	let url = window.location.origin + event.target.dataset.copyPath;
+	navigator.clipboard.writeText(url);
+	event.target.innerHTML = "Copied";
 }
 
 // MARK: - Quartermaster Add Item(s) form

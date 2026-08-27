@@ -736,6 +736,61 @@ final class QuartermasterControllerTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
+	// MARK: - Test: mute-list filtering
+
+	func testList_MutedUserItems_HiddenFromMuter_ButMuterStillVisibleToMuted() async throws {
+		try await withApp { app in
+			let muter = try await makeUser(app, username: "qm-mut-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let muted = try await makeUser(app, username: "qm-mutd-\(UUID().uuidString.prefix(6))", accessLevel: .verified)
+			let muterToken = try await makeToken(app, for: muter)
+			let mutedToken = try await makeToken(app, for: muted)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+
+			// Post from the muted user, and from the muter, so we can check both directions.
+			var hiddenItemID: UUID?
+			let hiddenPayload = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Should be hidden from muter"}]}"#
+			try await app.test(.POST, "/api/v3/quartermaster/create",
+				headers: contentHeaders(mutedToken), body: ByteBuffer(string: hiddenPayload)) { res async throws in
+				hiddenItemID = try res.content.decode([QuartermasterData].self).first?.itemID
+			}
+			guard let hiddenItemID else { XCTFail("no item"); return }
+
+			var muterItemID: UUID?
+			let muterPayload = #"{"category":"have","location":"Deck 5","items":[{"itemName":"Should stay visible to muted user"}]}"#
+			try await app.test(.POST, "/api/v3/quartermaster/create",
+				headers: contentHeaders(muterToken), body: ByteBuffer(string: muterPayload)) { res async throws in
+				muterItemID = try res.content.decode([QuartermasterData].self).first?.itemID
+			}
+			guard let muterItemID else { XCTFail("no item"); return }
+
+			// Mute the other user (one-directional: muter mutes muted).
+			let mutedID = try muted.requireID()
+			try await app.test(.POST, "/api/v3/users/\(mutedID)/mute", headers: bearer(muterToken)) { res async throws in
+				XCTAssertTrue([.ok, .created].contains(res.status), "mute request failed: \(res.status)")
+			}
+
+			// The muter should no longer see the muted user's items.
+			try await app.test(.GET, "/api/v3/quartermaster", headers: bearer(muterToken)) { res async throws in
+				XCTAssertEqual(res.status, .ok)
+				let list = try res.content.decode(QuartermasterListData.self)
+				XCTAssertFalse(list.items.contains { $0.itemID == hiddenItemID },
+					"items from a muted user must not appear in the muter's list")
+			}
+			try await app.test(.GET, "/api/v3/quartermaster/\(hiddenItemID)", headers: bearer(muterToken)) { res async throws in
+				XCTAssertEqual(res.status, .badRequest, "fetching a muted user's item directly must also be hidden")
+			}
+
+			// Muting is one-directional: the muted user must still see the muter's items.
+			try await app.test(.GET, "/api/v3/quartermaster", headers: bearer(mutedToken)) { res async throws in
+				XCTAssertEqual(res.status, .ok)
+				let list = try res.content.decode(QuartermasterListData.self)
+				XCTAssertTrue(list.items.contains { $0.itemID == muterItemID },
+					"muting is one-directional -- the muted user must still see the muter's items")
+			}
+		}
+	}
+
 	// MARK: - Test: report
 
 	func testReport_Creates201() async throws {

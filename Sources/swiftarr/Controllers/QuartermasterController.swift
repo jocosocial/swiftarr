@@ -69,7 +69,7 @@ struct QuartermasterController: APIRouteCollection {
 	/// `GET /api/v3/quartermaster`
 	///
 	/// Returns a paginated list of Quartermaster items, sorted by most-recently-modified first.
-	/// Items owned by blocked users are excluded from results.
+	/// Items owned by blocked or muted users are excluded from results.
 	///
 	/// **Query Parameters:**
 	/// - `category=have|need` — filter to one category
@@ -86,6 +86,7 @@ struct QuartermasterController: APIRouteCollection {
 
 		let query = QuartermasterItem.query(on: req.db)
 			.filter(\.$owner.$id !~ cacheUser.getBlocks())
+			.filter(\.$owner.$id !~ cacheUser.getMutes())
 
 		if urlQuery.mine == true {
 			query.filter(\.$owner.$id == cacheUser.userID)
@@ -132,12 +133,12 @@ struct QuartermasterController: APIRouteCollection {
 	///
 	/// Returns the details for a single Quartermaster item.
 	///
-	/// - Throws: 400 if item not found or owner is blocked; 401 if unauthenticated.
+	/// - Throws: 400 if item not found or owner is blocked/muted; 401 if unauthenticated.
 	/// - Returns: `QuartermasterData`
 	func getHandler(_ req: Request) async throws -> QuartermasterData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let item = try await findItem(on: req)
-		guard !cacheUser.getBlocks().contains(item.$owner.id) else {
+		guard !cacheUser.getBlocks().contains(item.$owner.id), !cacheUser.getMutes().contains(item.$owner.id) else {
 			throw Abort(.badRequest, reason: "Item not found.")
 		}
 		let ownerHeader = try req.userCache.getHeader(item.$owner.id)

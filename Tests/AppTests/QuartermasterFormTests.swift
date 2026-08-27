@@ -228,6 +228,60 @@ class QuartermasterFormTests: XCTestCase {
 		XCTAssertNil(data.image)
 	}
 
+	// MARK: - Form -> DTO -> server validation (oversized fields must not bypass the HTML form's
+	// client-side-only `maxlength` attributes)
+
+	// `buildCreateData()`/`buildContentData()` just map form fields onto the DTOs -- they don't
+	// enforce length limits themselves. The real enforcement happens when the site controller
+	// JSON-encodes that DTO and sends it to the API, whose ValidatingJSONDecoder decodes it (see
+	// QuartermasterValidationTests in QuartermasterControllerTests.swift). This encodes the built
+	// DTO the same way and runs it back through that same decoder, to prove a name/description that
+	// only bypasses the browser's `maxlength="100"`/`maxlength="2048"` (e.g. via devtools or a raw
+	// HTTP client hitting the site route directly) still gets rejected once it reaches validation.
+	private func validationErrors<T: Decodable>(_ type: T.Type, encoding value: some Encodable) throws -> [String] {
+		let data = try JSONEncoder().encode(value)
+		let result = try ValidatingJSONDecoder().validate(type, from: data)
+		return result?.validationFailures.map { $0.errorString } ?? []
+	}
+
+	func testBuildCreateData_OversizedItemName_FailsServerValidation() throws {
+		let name = String(repeating: "a", count: 101)
+		let form = makeForm(names: [name])
+		let data = try form.buildCreateData()
+		XCTAssertThrowsError(try validationErrors(QuartermasterCreateData.self, encoding: data)) { err in
+			let abort = err as? Abort
+			XCTAssertEqual(abort?.status, .badRequest)
+			XCTAssertTrue(abort?.reason.contains("100 character limit") ?? false, "reason=\(abort?.reason ?? "")")
+		}
+	}
+
+	func testBuildCreateData_OversizedItemDescription_FailsServerValidation() throws {
+		let desc = String(repeating: "a", count: 2600)
+		let form = makeForm(names: ["Widget"], descriptions: [desc])
+		let data = try form.buildCreateData()
+		XCTAssertThrowsError(try validationErrors(QuartermasterCreateData.self, encoding: data)) { err in
+			let abort = err as? Abort
+			XCTAssertEqual(abort?.status, .badRequest)
+			XCTAssertTrue(abort?.reason.contains("2048 character limit") ?? false, "reason=\(abort?.reason ?? "")")
+		}
+	}
+
+	func testBuildContentData_OversizedItemName_FailsServerValidation() throws {
+		let name = String(repeating: "a", count: 101)
+		let form = makeForm(names: [name])
+		let data = try form.buildContentData()
+		let errs = try validationErrors(QuartermasterContentData.self, encoding: data)
+		XCTAssertTrue(errs.contains("itemName field has a 100 character limit"), "errs=\(errs)")
+	}
+
+	func testBuildContentData_OversizedItemDescription_FailsServerValidation() throws {
+		let desc = String(repeating: "a", count: 2600)
+		let form = makeForm(names: ["Widget"], descriptions: [desc])
+		let data = try form.buildContentData()
+		let errs = try validationErrors(QuartermasterContentData.self, encoding: data)
+		XCTAssertTrue(errs.first(where: { $0.contains("2048 character limit") }) != nil, "errs=\(errs)")
+	}
+
 	// MARK: - QMTab / Owned category filter parsing
 
 	func testQMTab_ParsesKnownValues() {

@@ -119,7 +119,9 @@ extension QuartermasterItem: Reportable {
 
 // MARK: - ContentFilterable
 
-/// Items participate in mute-word and alert-word processing.
+/// Not currently wired into mute-word/alert-word filtering (that's forum/Twitarr posts only) --
+/// conformance just gives Quartermaster items the same `contentTextStrings()` shape as other
+/// content types, for parity should that ever be needed here too.
 extension QuartermasterItem: ContentFilterable {
 	func contentTextStrings() -> [String] {
 		[itemName, itemDescription ?? "", location ?? ""]
