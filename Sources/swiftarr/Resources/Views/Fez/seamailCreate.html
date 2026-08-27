@@ -12,6 +12,7 @@
 						<li class="list-group-item bg-transparent mb-3">				
 							<form class="ajax" action="#(post.formAction)" enctype="multipart/form-data" method="POST" data-successurl="#(post.postSuccessURL)">
 								<input type="hidden" name="participants" id="participants_hidden" value="#(withUser.userID)">
+								#if(effectiveUser != nil):<input type="hidden" name="foruser" value="#(effectiveUser)"/>#endif
 								<div class="row mb-3">
 									<div class="input-group">
 										<span class="input-group-text" id="basic-addon1">@</span>
@@ -33,7 +34,10 @@
 								<ul class="list-group mx-0" id="named_participants">
 									<li class="list-group-item swiftarr-namecell" data-uuid="#(trunk.userID)">
 										<div class="row justify-content-between align-items-baseline">
-											<div class="col">@#(trunk.username)</div>
+											<div class="col" id="seamailCreatorName"
+													data-username-self="#(trunk.username)"
+													data-username-moderator="#(moderatorUsername)"
+													data-username-twitarrteam="#(twitarrTeamUsername)">@#(creatorUsername)</div>
 											<div class="col col-auto"><i>creator</i></div>
 										</div>
 									</li>
@@ -90,20 +94,7 @@
 										<button type="submit" class="btn btn-primary">Post<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
 									</div>
 								</div>
-								#if(trunk.userIsMod):
-									<div class="row justify-content-end mt-2">
-										#if(trunk.userIsTwitarrTeam):
-											<div class="col col-auto form-check">
-												<input class="form-check-input" type="checkbox" name="postAsTwitarrTeam" value="" id="flexCheckDefault">
-												<label class="form-check-label small" for="flexCheckDefault">Post as TwitarrTeam</label>
-											</div>
-										#endif
-										<div class="col col-auto form-check">
-											<input class="form-check-input" type="checkbox" value="" name="postAsModerator" id="flexCheckDefault">
-											<label class="form-check-label small" for="flexCheckDefault">Post as Moderator</label>
-										</div>
-									</div>
-								#endif
+								#extend("postAsRadios")
 							</form>
 						</li>
 					</ul>

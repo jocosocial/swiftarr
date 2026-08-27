@@ -13,7 +13,6 @@ struct SiteSeamailController: SiteControllerUtils {
 		var queryDescription: String
 
 		init(_ req: Request, fezList: FezListData, fezzes: [FezData]) throws {
-			effectiveUser = req.query[String.self, at: "foruser"]
 			let (title, tab) = titleAndTab(for: req)
 			trunk = .init(req, title: title, tab: tab)
 			self.fezList = fezList
@@ -21,16 +20,16 @@ struct SiteSeamailController: SiteControllerUtils {
 			let limit = fezList.paginator.limit
 			let searchQuery = try req.query.decode(SeamailQueryOptions.self)
 			query = searchQuery
+			effectiveUser = searchQuery.foruser
 			queryDescription = query.describeQuery()
 			if query.search != nil {
 				paginator = .init(fezList.paginator) { pageIndex in
-					// "/seamail/search?start=\(pageIndex * limit)&limit=\(limit)"
 					return searchQuery.buildQuery(baseURL: "/seamail/search", startOffset: pageIndex * limit) ?? "/seamail/search"
 				}
 			}
 			else {
 				paginator = .init(fezList.paginator) { pageIndex in
-					"/seamail?start=\(pageIndex * limit)&limit=\(limit)"
+					searchQuery.buildQuery(baseURL: "/seamail", startOffset: pageIndex * limit) ?? "/seamail"
 				}
 			}
 		}
@@ -41,9 +40,19 @@ struct SiteSeamailController: SiteControllerUtils {
 		var start: Int?
 		var limit: Int?
 		var onlynew: Bool?
-		
+		var foruser: String?
+
 		func describeQuery() -> String {
-			return "\(onlynew == true ? "New " : "")Seamail\(search != nil ? " containing \"\(search!)\"" : "")"
+			let mailbox: String
+			switch foruser?.lowercased() {
+			case PrivilegedUser.TwitarrTeam.queryParam:
+				mailbox = "TwitarrTeam Seamail"
+			case PrivilegedUser.moderator.queryParam:
+				mailbox = "Moderator Seamail"
+			default:
+				mailbox = "Seamail"
+			}
+			return "\(onlynew == true ? "New " : "")\(mailbox)\(search != nil ? " containing \"\(search!)\"" : "")"
 		}
 
 		// Builds a new URL given the saved query options plus the given baseURL and startOffset. Used
@@ -56,12 +65,15 @@ struct SiteSeamailController: SiteControllerUtils {
 			// get overridden elsewhere.
 			var elements = [URLQueryItem]()
 			if let search = search { elements.append(URLQueryItem(name: "search", value: search)) }
+			if let foruser = foruser { elements.append(URLQueryItem(name: "foruser", value: foruser)) }
 			let newOffset = max(startOffset ?? start ?? 0, 0)
 			if newOffset != 0 { elements.append(URLQueryItem(name: "start", value: String(newOffset))) }
 			if let limit = limit { elements.append(URLQueryItem(name: "limit", value: String(limit))) }
 			if let onlynew = onlynew { elements.append(URLQueryItem(name: "onlynew", value: String(onlynew))) }
 
-			components.queryItems = elements
+			if !elements.isEmpty {
+				components.queryItems = elements
+			}
 			return components.string
 		}
 	}
@@ -71,8 +83,16 @@ struct SiteSeamailController: SiteControllerUtils {
 		var postText: String
 		var participants: String  // Comma separated list of participant usernames
 		var openchat: String?
-		var postAsModerator: String?
-		var postAsTwitarrTeam: String?
+		var postAs: String?
+		var foruser: String?
+
+		var createdByModerator: Bool {
+			postAs?.lowercased() == PrivilegedUser.moderator.queryParam
+		}
+
+		var createdByTwitarrTeam: Bool {
+			postAs?.lowercased() == PrivilegedUser.TwitarrTeam.queryParam
+		}
 	}
 
 	func registerRoutes(_ app: Application) throws {
@@ -138,6 +158,8 @@ struct SiteSeamailController: SiteControllerUtils {
 	//
 	// Query Parameters:
 	// * `?withuser=UUID` - prefills the participant list with the given user. Currently can only be applied once.
+	// * `?foruser=NAME` - prefills "Post as Moderator" or "Post as TwitarrTeam" when creating from
+	//   those mailboxes. Also returns to `/seamail?foruser=NAME` after a successful create.
 	//
 	// Shows the Create New Seamail page. This page lets you add users to the chat, and give the chat a subject and initial message.
 	func seamailCreatePageHandler(_ req: Request) async throws -> View {
@@ -151,11 +173,32 @@ struct SiteSeamailController: SiteControllerUtils {
 			var trunk: TrunkContext
 			var post: MessagePostContext
 			var withUser: UserHeader?
+			var effectiveUser: String?
+			var creatorUsername: String
+			var moderatorUsername: String
+			var twitarrTeamUsername: String
 
 			init(_ req: Request, withUser: UserHeader?) throws {
-				trunk = .init(req, title: "New Seamail", tab: .seamail)
+				let mailbox = SeamailCreateMailbox(req)
+				let (_, tab) = titleAndTab(for: req)
+				trunk = .init(req, title: "New Seamail", tab: tab)
 				self.withUser = withUser
-				post = .init(forType: .seamail)
+				var post = MessagePostContext(forType: .seamail, foruser: mailbox.effectiveUser)
+				post.formAction = mailbox.formAction
+				post.postSuccessURL = mailbox.postSuccessURL
+				self.post = post
+				effectiveUser = mailbox.effectiveUser
+				moderatorUsername = PrivilegedUser.moderator.rawValue
+				twitarrTeamUsername = PrivilegedUser.TwitarrTeam.rawValue
+				if mailbox.postAsTwitarrTeam {
+					creatorUsername = twitarrTeamUsername
+				}
+				else if mailbox.postAsModerator {
+					creatorUsername = moderatorUsername
+				}
+				else {
+					creatorUsername = trunk.username
+				}
 			}
 		}
 		let ctx = try SeamaiCreatePageContext(req, withUser: withUser)
@@ -209,17 +252,18 @@ struct SiteSeamailController: SiteControllerUtils {
 			minCapacity: 0,
 			maxCapacity: 0,
 			initialUsers: participants,
-			createdByModerator: formContent.postAsModerator != nil,
-			createdByTwitarrTeam: formContent.postAsTwitarrTeam != nil
+			createdByModerator: formContent.createdByModerator,
+			createdByTwitarrTeam: formContent.createdByTwitarrTeam
 		)
 		let createResponse = try await apiQuery(req, endpoint: "/fez/create", method: .POST, encodeContent: fezContent)
 		let fezData = try createResponse.content.decode(FezData.self)
+		let mailbox = SeamailCreateMailbox(foruser: formContent.foruser ?? req.query[String.self, at: "foruser"])
 		do {
 			let postContentData = PostContentData(
 				text: formContent.postText,
 				images: [],
-				postAsModerator: formContent.postAsModerator != nil,
-				postAsTwitarrTeam: formContent.postAsTwitarrTeam != nil
+				postAsModerator: formContent.createdByModerator,
+				postAsTwitarrTeam: formContent.createdByTwitarrTeam
 			)
 			let response = try await apiQuery(
 				req,
@@ -227,11 +271,18 @@ struct SiteSeamailController: SiteControllerUtils {
 				method: .POST,
 				encodeContent: postContentData
 			)
-			return try await response.encodeResponse(for: req)
+			// Prefer the mailbox the user came from over any Location the API forwards.
+			let encoded = try await response.encodeResponse(for: req)
+			encoded.headers.replaceOrAdd(name: .location, value: mailbox.postSuccessURL)
+			return encoded
 		}
 		catch {
 			// If we successfully create the chat but can't add the initial message to it, redirect to the new chat.
-			let headers = HTTPHeaders(dictionaryLiteral: ("Location", "/seamail/\(fezData.fezID)"))
+			var threadURL = "/seamail/\(fezData.fezID)"
+			if let foruser = mailbox.effectiveUser {
+				threadURL.append("?foruser=\(foruser)")
+			}
+			let headers = HTTPHeaders(dictionaryLiteral: ("Location", threadURL))
 			let response = Response(status: .badRequest, headers: headers)
 			return response
 		}
@@ -272,7 +323,7 @@ struct SiteSeamailController: SiteControllerUtils {
 				oldPosts = []
 				newPosts = []
 				showDivider = false
-				post = .init(forType: .seamailPost(fez))
+				post = .init(forType: .seamailPost(fez), foruser: req.query[String.self, at: "foruser"])
 				
 				// Determine if user can edit title
 				let isOwner = fez.owner.userID == trunk.userID
@@ -472,6 +523,43 @@ struct SiteSeamailController: SiteControllerUtils {
 		
 		try await apiQuery(req, endpoint: "/fez/\(fezID)/update", method: .POST, encodeContent: fezContent)
 		return .created
+	}
+}
+
+// Maps `foruser` onto the Post-as radios and, for seamail create, the form's success URL.
+// Unrecognized or absent values leave both radios on "self" and return to the personal inbox.
+struct SeamailCreateMailbox {
+	var postAsModerator: Bool
+	var postAsTwitarrTeam: Bool
+	var effectiveUser: String?
+	var formAction: String
+	var postSuccessURL: String
+
+	init(_ req: Request) {
+		self.init(foruser: req.query[String.self, at: "foruser"])
+	}
+
+	init(foruser: String?) {
+		let param = foruser?.lowercased()
+		postAsModerator = param == PrivilegedUser.moderator.queryParam
+		postAsTwitarrTeam = param == PrivilegedUser.TwitarrTeam.queryParam
+		if postAsTwitarrTeam {
+			effectiveUser = PrivilegedUser.TwitarrTeam.queryParam
+		}
+		else if postAsModerator {
+			effectiveUser = PrivilegedUser.moderator.queryParam
+		}
+		else {
+			effectiveUser = nil
+		}
+		if let effectiveUser {
+			formAction = "/seamail/create?foruser=\(effectiveUser)"
+			postSuccessURL = "/seamail?foruser=\(effectiveUser)"
+		}
+		else {
+			formAction = "/seamail/create"
+			postSuccessURL = "/seamail"
+		}
 	}
 }
 

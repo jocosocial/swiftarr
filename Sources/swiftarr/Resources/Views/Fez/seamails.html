@@ -14,7 +14,7 @@
 			    		Filter: New Msgs
 					</a>
 					#endif
-			    	<a class="btn btn-primary btn-sm" role="button" href="/seamail/create">New Seamail</a>
+			    	<a class="btn btn-primary btn-sm" role="button" href="/seamail/create#if(effectiveUser != nil):?foruser=#(effectiveUser)#endif">New Seamail</a>
 				</div>
 			</div>
 			#extend("paginator")
@@ -24,6 +24,8 @@
 						<div class="col">
 							#if(query.search):
 								<li class="list-group-item">No search results found. Try another search, or start a new Seamail by tapping "New Seamail".</li>
+							#elseif(effectiveUser != nil):
+								<li class="list-group-item">No Seamails to @#(effectiveUser) yet.</li>
 							#else:
 								<li class="list-group-item">You haven't received any Seamail messages yet, but you can create one by tapping "New Seamail"</li>
 							#endif

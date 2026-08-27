@@ -636,6 +636,11 @@ extension FezContentData: RCFValidatable {
 				throw Abort(.badRequest, reason: "endTime can be no more than 24 hours after startTime")
 			}
 		}
+		tester.validate(
+			!(createdByModerator == true && createdByTwitarrTeam == true),
+			forKey: .createdByModerator,
+			or: "cannot create as both @moderator and @TwitarrTeam"
+		)
 	}
 }
 
@@ -1861,6 +1866,11 @@ extension PostContentData: RCFValidatable {
 		tester.validate(images.count <= 8, forKey: .images, or: "posts are limited to 8 image attachments")
 		let lines = text.replacingOccurrences(of: "\r\n", with: "\r").components(separatedBy: .newlines).count
 		tester.validate(lines <= 25, forKey: .text, or: "posts are limited to 25 lines of text")
+		tester.validate(
+			!(postAsModerator && postAsTwitarrTeam),
+			forKey: .postAsModerator,
+			or: "cannot post as both @moderator and @TwitarrTeam"
+		)
 	}
 }
 

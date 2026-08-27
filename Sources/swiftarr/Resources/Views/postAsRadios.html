@@ -1,0 +1,18 @@
+#if(trunk.userIsMod && !post.isEdit):
+	<div class="row justify-content-end mt-2">
+		<div class="col col-auto form-check">
+			<input class="form-check-input" type="radio" name="postAs" value="self" id="postAsSelfRadio"#if(!post.postAsModerator && !post.postAsTwitarrTeam): checked#endif>
+			<label class="form-check-label small" for="postAsSelfRadio">Post as @#(trunk.username)</label>
+		</div>
+		#if(trunk.userIsTwitarrTeam):
+			<div class="col col-auto form-check">
+				<input class="form-check-input" type="radio" name="postAs" value="twitarrteam" id="postAsTwitarrTeamRadio"#if(post.postAsTwitarrTeam): checked#endif>
+				<label class="form-check-label small" for="postAsTwitarrTeamRadio">Post as @TwitarrTeam</label>
+			</div>
+		#endif
+		<div class="col col-auto form-check">
+			<input class="form-check-input" type="radio" name="postAs" value="moderator" id="postAsModeratorRadio"#if(post.postAsModerator): checked#endif>
+			<label class="form-check-label small" for="postAsModeratorRadio">Post as @moderator</label>
+		</div>
+	</div>
+#endif

@@ -496,7 +496,10 @@ async function submitAJAXForm(formElement, event) {
 		}
 		let response = await fetch(formElement.action, { method: 'POST', body: uploadBody });
 		if (response.status < 300) {
-			let successURL = formElement.dataset.successurl;
+			let locationHeader = response.headers.get('Location');
+			let successURL = (locationHeader && locationHeader.startsWith('/seamail'))
+				? locationHeader
+				: formElement.dataset.successurl;
 			if (!successURL) {
 				location.reload();
 				return;
@@ -805,6 +808,25 @@ function updateParticipantFormElement(participantsDiv) {
 	}
 	let hiddenFormElem = document.getElementById('participants_hidden');
 	hiddenFormElem.value = names;
+}
+
+function syncSeamailCreatorName() {
+	let creatorName = document.getElementById('seamailCreatorName');
+	if (!creatorName) {
+		return;
+	}
+	let selected = document.querySelector('input[name="postAs"]:checked')?.value;
+	let name = creatorName.dataset.usernameSelf;
+	if (selected === 'moderator') {
+		name = creatorName.dataset.usernameModerator;
+	}
+	else if (selected === 'twitarrteam') {
+		name = creatorName.dataset.usernameTwitarrteam;
+	}
+	creatorName.textContent = '@' + name;
+}
+for (let radio of document.querySelectorAll('input[name="postAs"]')) {
+	radio.addEventListener('change', syncSeamailCreatorName);
 }
 
 // MARK: - User Profile Handlers
