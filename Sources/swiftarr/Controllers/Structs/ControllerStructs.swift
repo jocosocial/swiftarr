@@ -2629,6 +2629,13 @@ public struct UserNotificationData: Content {
 	/// If a chat the user was added to (but hasn't yet viewed) gets new messages, that chat is counted in this total and not in `newPrivateEventMessageCount`.
 	var addedToPrivateEventCount: Int
 
+	/// The IDs of the Seamail chats counted by `addedToSeamailCount`. Empty if not logged in. Order is not significant.
+	var addedToSeamailIDs: [UUID]
+	/// The IDs of the LFGs counted by `addedToLFGCount`. Empty if not logged in. Order is not significant.
+	var addedToLFGIDs: [UUID]
+	/// The IDs of the Private Events counted by `addedToPrivateEventCount`. Empty if not logged in. Order is not significant.
+	var addedToPrivateEventIDs: [UUID]
+
 	/// Count of # of Seamail threads with new messages. NOT total # of new messages-a single seamail thread with 10 new messages counts as 1. 0 if not logged in.
 	var newSeamailMessageCount: Int
 	/// Count of # of LFGs with new messages. 0 if not logged in.
@@ -2684,9 +2691,9 @@ public struct UserNotificationData: Content {
 
 extension UserNotificationData {
 	init(
-		seamailCounts: (Int, Int), 
-		lfgCounts: (Int, Int), 
-		privateEventCounts: (Int, Int),
+		seamailState: ChatUnreadState,
+		lfgState: ChatUnreadState,
+		privateEventState: ChatUnreadState,
 		activeAnnouncementIDs: [Int],
 		newAnnouncementCount: Int,
 		nextEventTime: Date?,
@@ -2707,12 +2714,15 @@ extension UserNotificationData {
 		self.newTwarrtMentionCount = 0
 		self.forumMentionCount = 0
 		self.newForumMentionCount = 0
-		self.addedToSeamailCount = seamailCounts.0
-		self.addedToLFGCount = lfgCounts.0
-		self.addedToPrivateEventCount = privateEventCounts.0
-		self.newSeamailMessageCount = seamailCounts.1
-		self.newFezMessageCount = lfgCounts.1
-		self.newPrivateEventMessageCount = privateEventCounts.1
+		self.addedToSeamailCount = seamailState.addedToChatCount
+		self.addedToLFGCount = lfgState.addedToChatCount
+		self.addedToPrivateEventCount = privateEventState.addedToChatCount
+		self.addedToSeamailIDs = seamailState.addedToChatIDs
+		self.addedToLFGIDs = lfgState.addedToChatIDs
+		self.addedToPrivateEventIDs = privateEventState.addedToChatIDs
+		self.newSeamailMessageCount = seamailState.unreadChatCount
+		self.newFezMessageCount = lfgState.unreadChatCount
+		self.newPrivateEventMessageCount = privateEventState.unreadChatCount
 		self.nextFollowedEventTime = nextEventTime
 		self.nextFollowedEventID = nextEvent
 		self.microKaraokeFinishedSongCount = microKaraokeFinishedSongCount
@@ -2737,6 +2747,9 @@ extension UserNotificationData {
 		self.addedToSeamailCount = 0
 		self.addedToLFGCount = 0
 		self.addedToPrivateEventCount = 0
+		self.addedToSeamailIDs = []
+		self.addedToLFGIDs = []
+		self.addedToPrivateEventIDs = []
 		self.newForumMentionCount = 0
 		self.newSeamailMessageCount = 0
 		self.newFezMessageCount = 0
