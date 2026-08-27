@@ -31,7 +31,6 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 		try await withApp { app in
 			let username = "recovery-marked-\(UUID().uuidString.prefix(8))"
 			let user = try await makeRecoveryUser(app, username: username, verification: "*abc123")
-			defer { Task { try? await user.delete(on: app.db) } }
 
 			try await app.test(
 				.POST,
@@ -43,6 +42,7 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 					XCTAssertEqual(res.status, .badRequest, "a spent registration code must not recover the account")
 				}
 			)
+			try await user.delete(on: app.db)
 		}
 	}
 
@@ -51,7 +51,6 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 		try await withApp { app in
 			let username = "recovery-bare-\(UUID().uuidString.prefix(8))"
 			let user = try await makeRecoveryUser(app, username: username, verification: "*abc123")
-			defer { Task { try? await user.delete(on: app.db) } }
 
 			try await app.test(
 				.POST,
@@ -63,6 +62,7 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 					XCTAssertEqual(res.status, .badRequest, "a spent registration code must not recover the account")
 				}
 			)
+			try await user.delete(on: app.db)
 		}
 	}
 
@@ -71,7 +71,6 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 		try await withApp { app in
 			let username = "recovery-unspent-\(UUID().uuidString.prefix(8))"
 			let user = try await makeRecoveryUser(app, username: username, verification: "abc123")
-			defer { Task { try? await user.delete(on: app.db) } }
 
 			try await app.test(
 				.POST,
@@ -87,6 +86,7 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 			// The code is spent by that recovery, so it is marked and cannot be replayed.
 			let reloaded = try await User.find(user.requireID(), on: app.db)
 			XCTAssertEqual(reloaded?.verification, "*abc123")
+			try await user.delete(on: app.db)
 		}
 	}
 
@@ -94,7 +94,6 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 		try await withApp { app in
 			let username = "recovery-spaced-\(UUID().uuidString.prefix(8))"
 			let user = try await makeRecoveryUser(app, username: username, verification: "abcabc")
-			defer { Task { try? await user.delete(on: app.db) } }
 
 			try await app.test(
 				.POST,
@@ -109,6 +108,7 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 
 			let reloaded = try await User.find(user.requireID(), on: app.db)
 			XCTAssertEqual(reloaded?.verification, "*abcabc")
+			try await user.delete(on: app.db)
 		}
 	}
 
@@ -116,7 +116,6 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 		try await withApp { app in
 			let username = "recovery-upper-\(UUID().uuidString.prefix(8))"
 			let user = try await makeRecoveryUser(app, username: username, verification: "abcabc")
-			defer { Task { try? await user.delete(on: app.db) } }
 
 			try await app.test(
 				.POST,
@@ -131,6 +130,7 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 
 			let reloaded = try await User.find(user.requireID(), on: app.db)
 			XCTAssertEqual(reloaded?.verification, "*abcabc")
+			try await user.delete(on: app.db)
 		}
 	}
 
@@ -138,7 +138,6 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 		try await withApp { app in
 			let username = "recovery-nbsp-\(UUID().uuidString.prefix(8))"
 			let user = try await makeRecoveryUser(app, username: username, verification: "abcabc")
-			defer { Task { try? await user.delete(on: app.db) } }
 
 			try await app.test(
 				.POST,
@@ -153,6 +152,7 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 
 			let reloaded = try await User.find(user.requireID(), on: app.db)
 			XCTAssertEqual(reloaded?.verification, "*abcabc")
+			try await user.delete(on: app.db)
 		}
 	}
 
@@ -160,7 +160,6 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 		try await withApp { app in
 			let username = "recovery-spaced-spent-\(UUID().uuidString.prefix(8))"
 			let user = try await makeRecoveryUser(app, username: username, verification: "*abcabc")
-			defer { Task { try? await user.delete(on: app.db) } }
 
 			try await app.test(
 				.POST,
@@ -172,6 +171,7 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 					XCTAssertEqual(res.status, .badRequest, "a spent spaced registration code must not recover the account")
 				}
 			)
+			try await user.delete(on: app.db)
 		}
 	}
 
