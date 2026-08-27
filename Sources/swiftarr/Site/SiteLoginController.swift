@@ -10,8 +10,8 @@ struct SiteLoginController: SiteControllerUtils {
 		openRoutes.get("login", use: loginPageViewHandler)
 		openRoutes.post("login", use: loginPagePostHandler)
 		openRoutes.post("recoverPassword", use: recoverPasswordPostHandler)  // Change pw while not logged in
-		openRoutes.get("forgotUsername", use: forgotUsernameViewHandler).setUsedForPreregistration()
-		openRoutes.post("forgotUsername", use: forgotUsernamePostHandler).setUsedForPreregistration()
+		openRoutes.get("forgotUsername", use: forgotUsernameViewHandler)
+		openRoutes.post("forgotUsername", use: forgotUsernamePostHandler)
 		openRoutes.get("codeOfConduct", use: codeOfConductViewHandler)
 		openRoutes.get("conductAgree", use: codeOfConductViewHandler)
 

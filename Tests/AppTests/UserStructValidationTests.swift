@@ -231,4 +231,11 @@ class UserStructValidationTests: XCTestCase {
 			"errs=\(errs)"
 		)
 	}
+
+	// MARK: - User.storedVerificationValues
+
+	func testStoredVerificationValues_IncludesSpentAndUnspentForms() {
+		XCTAssertEqual(User.storedVerificationValues(for: "AbC 123"), ["abc123", "*abc123"])
+		XCTAssertEqual(User.storedVerificationValues(for: "*abc123"), ["abc123", "*abc123"])
+	}
 }

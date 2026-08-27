@@ -55,7 +55,7 @@ struct AuthController: APIRouteCollection {
 
 		// open access endpoints
 		authRoutes.post("recovery", use: recoveryHandler)
-		authRoutes.post("username", use: usernameHandler).setUsedForPreregistration()
+		authRoutes.post("username", use: usernameHandler)
 
 		// endpoints available only when not logged in
 		let basicAuthGroup = authRoutes.addBasicAuthRequirement()
@@ -203,14 +203,9 @@ struct AuthController: APIRouteCollection {
 	func usernameHandler(_ req: Request) async throws -> UserHeader {
 		// see `UserUsernameLookupData.validations()`
 		let data = try ValidatingJSONDecoder().decode(UserUsernameLookupData.self, fromBodyOf: req)
-		let normalizedCode = RegistrationCode.normalized(data.registrationCode)
+		let storedCodes = User.storedVerificationValues(for: data.registrationCode)
 
-		let users = try await User.query(on: req.db)
-			.group(.or) { group in
-				group.filter(\.$verification == normalizedCode)
-				group.filter(\.$verification == "*" + normalizedCode)
-			}
-			.all()
+		let users = try await User.query(on: req.db).filter(\.$verification ~~ storedCodes).all()
 
 		// Same generic failure for unknown codes and bad second factors so a valid
 		// registration code is not distinguishable from a made-up one.
@@ -252,11 +247,6 @@ struct AuthController: APIRouteCollection {
 				try await user.save(on: req.db)
 			}
 			throw noMatch
-		}
-
-		for user in users where user.recoveryAttempts != 0 {
-			user.recoveryAttempts = 0
-			try await user.save(on: req.db)
 		}
 
 		return try UserHeader(user: matched)

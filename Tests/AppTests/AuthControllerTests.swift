@@ -419,6 +419,31 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
+	func testUsernameLookup_SuccessfulLookupDoesNotResetAttempts() async throws {
+		try await withApp { app in
+			let username = "lookup-keep-\(UUID().uuidString.prefix(8))"
+			let code = uniqueRegCode()
+			let user = try await makeLookupUser(app, username: username, verification: code)
+			user.recoveryAttempts = 2
+			try await user.save(on: app.db)
+
+			try await app.test(
+				.POST,
+				"/api/v3/auth/username",
+				beforeRequest: { req async throws in
+					try req.content.encode(lookupBody(code: code, key: "password1"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok)
+				}
+			)
+
+			let reloaded = try await User.find(user.requireID(), on: app.db)
+			XCTAssertEqual(reloaded?.recoveryAttempts, 2)
+			try await user.delete(on: app.db)
+		}
+	}
+
 	func testUsernameLookup_LockoutAfterFiveFailures() async throws {
 		try await withApp { app in
 			let username = "lookup-lock-\(UUID().uuidString.prefix(8))"
