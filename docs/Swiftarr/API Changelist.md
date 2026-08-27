@@ -240,3 +240,10 @@ associated AddedToChat field value increase.
 ## Aug 26, 2026
 * New `QuartermasterController`, a "have/need" item board (see `/api/v3/quartermaster` endpoints for the full list).
 * New moderator endpoints for reviewing and setting the moderation state of Quartermaster items: `GET /api/v3/mod/quartermaster/ID`, `POST /api/v3/mod/quartermaster/ID/setstate/STRING`.
+
+## Aug 27, 2026
+* `UserNotificationData` has new `addedToSeamailIDs`, `addedToLFGIDs`, and `addedToPrivateEventIDs` fields. Each is an
+array of the chat IDs counted by the corresponding `addedTo<Seamail, LFG, PrivateEvent>Count` field, letting clients
+show *which* chats the user was added to rather than just how many. The arrays are empty when not logged in. Purely
+additive; the existing count fields are unchanged and are now derived from these arrays, so counts and IDs always agree.
+

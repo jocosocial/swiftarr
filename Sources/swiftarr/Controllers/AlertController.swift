@@ -87,9 +87,9 @@ struct AlertController: APIRouteCollection {
 		}
 		// Get the number of fezzes with unread messages
 		async let userHash = try req.redis.getUserHash(userID: user.userID)
-		async let seamailCounts = try req.redis.getChatUnreadCounts(userID: user.userID, inbox: .seamail)
-		async let lfgCounts = try req.redis.getChatUnreadCounts(userID: user.userID, inbox: .lfgMessages)
-		async let privateEventCounts = try req.redis.getChatUnreadCounts(userID: user.userID, inbox: .privateEvent)
+		async let seamailState = try req.redis.getChatUnreadState(userID: user.userID, inbox: .seamail)
+		async let lfgState = try req.redis.getChatUnreadState(userID: user.userID, inbox: .lfgMessages)
+		async let privateEventState = try req.redis.getChatUnreadState(userID: user.userID, inbox: .privateEvent)
 		async let actives = try getActiveAnnouncementIDs(on: req)
 		async let modData = try getModeratorNotifications(for: user, on: req)
 		let finishedSongCount = try await max(0, req.redis.getIntFromUserHash(userHash, field: .microKaraokeSongReady(0)) -
@@ -111,9 +111,9 @@ struct AlertController: APIRouteCollection {
 			nextLFG = try await storeNextJoinedAppointment(userID: user.userID, on: req)
 		}
 		var result = try await UserNotificationData(
-			seamailCounts: seamailCounts,
-			lfgCounts: lfgCounts,
-			privateEventCounts: privateEventCounts,
+			seamailState: seamailState,
+			lfgState: lfgState,
+			privateEventState: privateEventState,
 			activeAnnouncementIDs: actives,
 			newAnnouncementCount: newAnnouncements,
 			nextEventTime: nextEvent?.0,
