@@ -238,4 +238,4 @@ associated AddedToChat field value increase.
 * `GET /api/v3/client/settings` now also includes `photostreamUploadRateLimit`.
 
 ## Aug 26, 2026
-* New open-access endpoint `POST /api/v3/auth/username` looks up a forgotten username. Callers must supply a registration code plus a password or recovery key (`UserUsernameLookupData`); a registration code is not accepted as the second factor. Returns the matching `UserHeader`. Does not spend the registration code and does not log the user in.
+* New endpoint `POST /api/v3/auth/username` returns a `UserHeader` given a registration code plus password or recovery key (`UserUsernameLookupData`).

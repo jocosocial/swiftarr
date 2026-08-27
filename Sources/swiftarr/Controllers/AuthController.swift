@@ -229,10 +229,12 @@ struct AuthController: APIRouteCollection {
 		var passwordMatch: User?
 		var recoveryKeyMatch: User?
 		for user in orderedUsers {
+			// password is matched as typed
 			if try verifier.verify(data.recoveryKey, created: user.password) {
 				passwordMatch = user
 				break
 			}
+			// recoveryKey is hashed from the 3-word key with ASCII spaces removed
 			if recoveryKeyMatch == nil {
 				let normalizedRecoveryKey = data.recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
 				if try verifier.verify(normalizedRecoveryKey, created: user.recoveryKey) {
@@ -241,7 +243,9 @@ struct AuthController: APIRouteCollection {
 			}
 		}
 
+		// abort if no match
 		guard let matched = passwordMatch ?? recoveryKeyMatch else {
+			// track the attempt count on every account sharing this registration code
 			for user in users {
 				user.recoveryAttempts += 1
 				try await user.save(on: req.db)
