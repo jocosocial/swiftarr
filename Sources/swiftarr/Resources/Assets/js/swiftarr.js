@@ -46,6 +46,15 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 				btn.classList.remove("d-none");
 			}
 			break;
+		case "copyLink":
+			if (window.isSecureContext) {
+				btn.addEventListener("click", copyLinkToClipboard);
+				btn.classList.remove("d-none");
+			}
+			break;
+		case "addQuartermasterRow":
+			btn.addEventListener("click", addQuartermasterRowAction);
+			break;
 	}
 }
 
@@ -310,6 +319,106 @@ function copyToClipboard() {
 	navigator.clipboard.writeText(contents);
 	event.target.innerHTML="Copied";
 }
+
+// Copies a full, shareable link built from the current origin plus a relative path
+// (data-copy-path), e.g. a permalink to a single Quartermaster item. Stops propagation so this
+// doesn't also trigger an enclosing `.has-action-bar`'s click handler, which would otherwise
+// collapse the action bar the button lives in right after the copy.
+function copyLinkToClipboard() {
+	event.stopPropagation();
+	let url = window.location.origin + event.target.dataset.copyPath;
+	navigator.clipboard.writeText(url);
+	event.target.innerHTML = "Copied";
+}
+
+// MARK: - Quartermaster Add Item(s) form
+
+// Each row's three fields need names unique to their position (itemName0/itemDescription0/itemImage0,
+// itemName1/..., ...) -- Vapor's multipart decoder can't collect repeated same-named parts into an
+// array the way a plain form-urlencoded body can, and mixing an array field into the same keyed
+// container as several sibling Optional fields corrupts decoding of the array field too (see
+// QuartermasterFormContent's doc comment), so the server expects discrete per-slot fields for all
+// three instead. Rows can be added/removed after page load, so this renumbers every row's fields by
+// current DOM position whenever the row list changes, keeping names contiguous.
+function renumberQmRowInputs() {
+	document.querySelectorAll("#itemRows .qm-item-row").forEach(function (row, index) {
+		let nameInput = row.querySelector(".qm-item-name");
+		let descInput = row.querySelector(".qm-item-description");
+		let fileInput = row.querySelector(".qm-item-image");
+		if (nameInput) { nameInput.name = "itemName" + index; }
+		if (descInput) { descInput.name = "itemDescription" + index; }
+		if (fileInput) { fileInput.name = "itemImage" + index; }
+	});
+}
+renumberQmRowInputs();
+
+// Clones the row <template> into the rows container, up to data-max rows. Button lookups happen by
+// ID (data-container, data-template) so this works regardless of how many rows already exist.
+function addQuartermasterRowAction() {
+	let btn = event.currentTarget;
+	let container = document.getElementById(btn.dataset.container);
+	let template = document.getElementById(btn.dataset.template);
+	let max = parseInt(btn.dataset.max || "10", 10);
+	if (!container || !template) { return; }
+	if (container.children.length >= max) { return; }
+	container.appendChild(template.content.cloneNode(true));
+	renumberQmRowInputs();
+	if (container.children.length >= max) {
+		btn.disabled = true;
+	}
+}
+
+// Delegated listener for the per-row Remove buttons, since rows can be added after page load.
+// Keeps at least one row -- there's always something to submit.
+document.addEventListener("click", function (event) {
+	let removeBtn = event.target.closest(".qm-remove-row");
+	if (!removeBtn) { return; }
+	let row = removeBtn.closest(".qm-item-row");
+	let container = row?.parentElement;
+	if (!row || !container || container.children.length <= 1) { return; }
+	row.remove();
+	renumberQmRowInputs();
+	document.getElementById("qmAddRowBtn")?.removeAttribute("disabled");
+});
+
+// Shows/hides a Quartermaster item row's photo preview based on its current state: a newly-chosen
+// file wins, then the existing server-side image (unless "Remove photo" is checked), then nothing.
+function updateQmImagePreview(row) {
+	let fileInput = row?.querySelector(".qm-item-image");
+	let img = row?.querySelector(".qm-item-image-preview");
+	if (!fileInput || !img) { return; }
+	let removeCheckbox = row.querySelector(".qm-remove-item-image");
+	let currentImageInput = row.querySelector(".qm-current-item-image");
+	if (fileInput.files.length > 0) {
+		img.src = window.URL.createObjectURL(fileInput.files[0]);
+		img.classList.remove("d-none");
+		if (removeCheckbox) { removeCheckbox.checked = false; }
+	}
+	else if (currentImageInput?.value && !removeCheckbox?.checked) {
+		img.src = "/api/v3/image/thumb/" + currentImageInput.value;
+		img.classList.remove("d-none");
+	}
+	else {
+		img.src = "";
+		img.classList.add("d-none");
+	}
+}
+
+// Delegated listeners for per-row image controls -- rows can be added after page load, and both
+// `change` events bubble, so delegation covers rows added later without extra rebinding.
+document.addEventListener("change", function (event) {
+	if (event.target.matches(".qm-item-image") || event.target.matches(".qm-remove-item-image")) {
+		updateQmImagePreview(event.target.closest(".qm-item-row"));
+	}
+});
+document.addEventListener("click", function (event) {
+	let clearBtn = event.target.closest(".qm-item-image-clear");
+	if (!clearBtn) { return; }
+	let row = clearBtn.closest(".qm-item-row");
+	let fileInput = row?.querySelector(".qm-item-image");
+	if (fileInput) { fileInput.value = null; }
+	updateQmImagePreview(row);
+});
 
 // MARK: - messagePostForm Handlers
 
@@ -756,6 +865,7 @@ userSearch?.addEventListener('input', function (event) {
 				for (user of userHeaders) {
 					let listItem = document.getElementById('potentialMemberTemplate').content.firstElementChild.cloneNode(true);
 					listItem.dataset.userid = user.userID;
+					listItem.dataset.username = user.username;
 					listItem.querySelector('.username-here').innerHTML = ["@", user.username, " <b>", user.displayName, "</b>"].join('');
 					suggestionDiv.append(listItem);
 					let checkbox = listItem.querySelector('.btn-check');

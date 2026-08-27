@@ -394,3 +394,68 @@ extension UserModerationData {
 		self.reports = reports
 	}
 }
+
+/// Used to return `QuartermasterItemEdit` data for moderators. The only primary data an edit stores is the item
+/// name, description, and location text fields, plus whether the owner's name was hidden at the time of the edit.
+///
+///	Included in:
+///	* `QuartermasterModerationData`
+///
+/// Returned by:
+/// * `GET /api/v3/mod/quartermaster/ID`
+public struct QuartermasterEditLogData: Content {
+	/// The ID of the item.
+	var itemID: UUID
+	/// The ID of the edit.
+	var editID: UUID
+	/// The timestamp of the edit.
+	var createdAt: Date
+	/// Who initiated the edit. Usually the item's owner, but could be a moderator. Note that the saved edit shows
+	/// the state BEFORE the edit, therefore the 'author' here changed the contents to those of the NEXT edit
+	/// (or to the current state).
+	var author: UserHeader
+	/// The item name just before `author` edited it.
+	var itemName: String
+	/// The item description just before `author` edited it. Empty string if there was none.
+	var itemDescription: String
+	/// The location just before `author` edited it. Empty string if there was none.
+	var location: String
+	/// The image filename just before `author` edited it. Empty string if there was none.
+	var image: String
+	/// Whether the owner's name was hidden from other users just before `author` edited it.
+	var hideOwnerName: Bool
+}
+
+extension QuartermasterEditLogData {
+	init(_ edit: QuartermasterItemEdit, on req: Request) throws {
+		itemID = edit.$item.id
+		editID = try edit.requireID()
+		createdAt = edit.createdAt ?? Date()
+		author = try req.userCache.getHeader(edit.$editor.id)
+		itemName = edit.itemName
+		itemDescription = edit.itemDescription
+		location = edit.location
+		image = edit.image
+		hideOwnerName = edit.hideOwnerName
+	}
+}
+
+/// Used to return data a moderator needs to moderate a Quartermaster item.
+///
+/// Returned by:
+/// * `GET /api/v3/mod/quartermaster/id`
+///
+/// See `ModerationController.quartermasterModerationHandler(_:)`
+public struct QuartermasterModerationData: Content {
+	/// The item in question, with quarantine masking overridden so moderators see the real text.
+	var item: QuartermasterData
+	/// TRUE if the item has been soft-deleted (A soft-deleted item appears deleted, doesn't appear in the list or
+	/// searches, but can still be viewed by moderators when accessed via a report or a moderationAction).
+	var isDeleted: Bool
+	/// The moderation status of this item. Whether it has been locked or quarantined.
+	var moderationStatus: ContentModerationStatus
+	/// Previous edits to the item.
+	var edits: [QuartermasterEditLogData]
+	/// User reports against this item.
+	var reports: [ReportModerationData]
+}

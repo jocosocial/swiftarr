@@ -236,3 +236,7 @@ associated AddedToChat field value increase.
 * New endpoint `POST /api/v3/admin/regcodes/unlock/:userID` re-enables one-time registration-code password recovery (strips the spent `*` prefix on `User.verification` and clears `recoveryAttempts`). TwitarrTeam or `accountmanager` only.
 * Added `photostreamUploadRateLimit` (seconds between photostream uploads; `0` disables the limit) to `SettingsAdminData`, `SettingsUpdateData`, and `ClientSettingsData`.
 * `GET /api/v3/client/settings` now also includes `photostreamUploadRateLimit`.
+
+## Aug 26, 2026
+* New `QuartermasterController`, a "have/need" item board (see `/api/v3/quartermaster` endpoints for the full list).
+* New moderator endpoints for reviewing and setting the moderation state of Quartermaster items: `GET /api/v3/mod/quartermaster/ID`, `POST /api/v3/mod/quartermaster/ID/setstate/STRING`.
