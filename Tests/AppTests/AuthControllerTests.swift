@@ -177,22 +177,28 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 
 	// MARK: - Username lookup
 
+	private func uniqueRegCode() -> String {
+		String(UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(6)).lowercased()
+	}
+
 	private func makeLookupUser(
 		_ app: Application,
 		username: String,
 		verification: String?,
 		password: String = "password1",
 		recoveryKey: String = "recoverykey",
-		parent: User? = nil
+		parentID: UUID? = nil
 	) async throws -> User {
 		let user = User(
 			username: username,
 			password: try Bcrypt.hash(password),
 			recoveryKey: try Bcrypt.hash(recoveryKey),
 			verification: verification,
-			parent: parent,
 			accessLevel: .verified
 		)
+		if let parentID {
+			user.$parent.id = parentID
+		}
 		try await user.save(on: app.db)
 		return user
 	}
@@ -204,14 +210,14 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 	func testUsernameLookup_PasswordMatch() async throws {
 		try await withApp { app in
 			let username = "lookup-pw-\(UUID().uuidString.prefix(8))"
-			let user = try await makeLookupUser(app, username: username, verification: "abc123")
-			defer { Task { try? await user.delete(on: app.db) } }
+			let code = uniqueRegCode()
+			let user = try await makeLookupUser(app, username: username, verification: code)
 
 			try await app.test(
 				.POST,
 				"/api/v3/auth/username",
 				beforeRequest: { req async throws in
-					try req.content.encode(lookupBody(code: "abc123", key: "password1"))
+					try req.content.encode(lookupBody(code: code, key: "password1"))
 				},
 				afterResponse: { res async throws in
 					XCTAssertEqual(res.status, .ok)
@@ -223,21 +229,23 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 
 			// Lookup must not spend the registration code.
 			let reloaded = try await User.find(user.requireID(), on: app.db)
-			XCTAssertEqual(reloaded?.verification, "abc123")
+			XCTAssertEqual(reloaded?.verification, code)
+			try await user.delete(on: app.db)
 		}
 	}
 
 	func testUsernameLookup_RecoveryKeyMatch() async throws {
 		try await withApp { app in
 			let username = "lookup-rk-\(UUID().uuidString.prefix(8))"
-			let user = try await makeLookupUser(app, username: username, verification: "def456")
-			defer { Task { try? await user.delete(on: app.db) } }
+			let code = uniqueRegCode()
+			let user = try await makeLookupUser(app, username: username, verification: code)
+			let spaced = "\(code.prefix(3)) \(code.suffix(3))".uppercased()
 
 			try await app.test(
 				.POST,
 				"/api/v3/auth/username",
 				beforeRequest: { req async throws in
-					try req.content.encode(lookupBody(code: "DEF 456", key: "recovery key"))
+					try req.content.encode(lookupBody(code: spaced, key: "recovery key"))
 				},
 				afterResponse: { res async throws in
 					XCTAssertEqual(res.status, .ok)
@@ -245,20 +253,21 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 					XCTAssertEqual(header.username, username)
 				}
 			)
+			try await user.delete(on: app.db)
 		}
 	}
 
 	func testUsernameLookup_SpentCodeStillWorks() async throws {
 		try await withApp { app in
 			let username = "lookup-spent-\(UUID().uuidString.prefix(8))"
-			let user = try await makeLookupUser(app, username: username, verification: "*abc123")
-			defer { Task { try? await user.delete(on: app.db) } }
+			let code = uniqueRegCode()
+			let user = try await makeLookupUser(app, username: username, verification: "*" + code)
 
 			try await app.test(
 				.POST,
 				"/api/v3/auth/username",
 				beforeRequest: { req async throws in
-					try req.content.encode(lookupBody(code: "abc123", key: "password1"))
+					try req.content.encode(lookupBody(code: code, key: "password1"))
 				},
 				afterResponse: { res async throws in
 					XCTAssertEqual(res.status, .ok, "a spent registration code must still look up the username")
@@ -268,21 +277,22 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 			)
 
 			let reloaded = try await User.find(user.requireID(), on: app.db)
-			XCTAssertEqual(reloaded?.verification, "*abc123")
+			XCTAssertEqual(reloaded?.verification, "*" + code)
+			try await user.delete(on: app.db)
 		}
 	}
 
 	func testUsernameLookup_RegistrationCodeAsBothFactors_Rejected() async throws {
 		try await withApp { app in
 			let username = "lookup-both-\(UUID().uuidString.prefix(8))"
-			let user = try await makeLookupUser(app, username: username, verification: "abc123")
-			defer { Task { try? await user.delete(on: app.db) } }
+			let code = uniqueRegCode()
+			let user = try await makeLookupUser(app, username: username, verification: code)
 
 			try await app.test(
 				.POST,
 				"/api/v3/auth/username",
 				beforeRequest: { req async throws in
-					try req.content.encode(lookupBody(code: "abc123", key: "abc123"))
+					try req.content.encode(lookupBody(code: code, key: code))
 				},
 				afterResponse: { res async throws in
 					XCTAssertEqual(res.status, .badRequest)
@@ -293,20 +303,21 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 					)
 				}
 			)
+			try await user.delete(on: app.db)
 		}
 	}
 
 	func testUsernameLookup_WrongPassword_NotFound() async throws {
 		try await withApp { app in
 			let username = "lookup-wrong-\(UUID().uuidString.prefix(8))"
-			let user = try await makeLookupUser(app, username: username, verification: "abc123")
-			defer { Task { try? await user.delete(on: app.db) } }
+			let code = uniqueRegCode()
+			let user = try await makeLookupUser(app, username: username, verification: code)
 
 			try await app.test(
 				.POST,
 				"/api/v3/auth/username",
 				beforeRequest: { req async throws in
-					try req.content.encode(lookupBody(code: "abc123", key: "not-the-password"))
+					try req.content.encode(lookupBody(code: code, key: "not-the-password"))
 				},
 				afterResponse: { res async throws in
 					XCTAssertEqual(res.status, .badRequest)
@@ -317,6 +328,7 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 
 			let reloaded = try await User.find(user.requireID(), on: app.db)
 			XCTAssertEqual(reloaded?.recoveryAttempts, 1)
+			try await user.delete(on: app.db)
 		}
 	}
 
@@ -326,7 +338,7 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 				.POST,
 				"/api/v3/auth/username",
 				beforeRequest: { req async throws in
-					try req.content.encode(lookupBody(code: "zzz999", key: "password1"))
+					try req.content.encode(lookupBody(code: uniqueRegCode(), key: "password1"))
 				},
 				afterResponse: { res async throws in
 					XCTAssertEqual(res.status, .badRequest)
@@ -340,31 +352,26 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 	func testUsernameLookup_AltPasswordReturnsAlt() async throws {
 		try await withApp { app in
 			let suffix = UUID().uuidString.prefix(8)
+			let code = uniqueRegCode()
 			let primary = try await makeLookupUser(
 				app,
 				username: "lookup-pri-\(suffix)",
-				verification: "abc123",
+				verification: code,
 				password: "primarypw"
 			)
 			let alt = try await makeLookupUser(
 				app,
 				username: "lookup-alt-\(suffix)",
-				verification: "abc123",
+				verification: code,
 				password: "altpasswd",
-				parent: primary
+				parentID: try primary.requireID()
 			)
-			defer {
-				Task {
-					try? await alt.delete(on: app.db)
-					try? await primary.delete(on: app.db)
-				}
-			}
 
 			try await app.test(
 				.POST,
 				"/api/v3/auth/username",
 				beforeRequest: { req async throws in
-					try req.content.encode(lookupBody(code: "abc123", key: "altpasswd"))
+					try req.content.encode(lookupBody(code: code, key: "altpasswd"))
 				},
 				afterResponse: { res async throws in
 					XCTAssertEqual(res.status, .ok)
@@ -373,36 +380,33 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 					XCTAssertEqual(header.userID, try alt.requireID())
 				}
 			)
+			try await alt.delete(on: app.db)
+			try await primary.delete(on: app.db)
 		}
 	}
 
 	func testUsernameLookup_RecoveryKeyReturnsPrimary() async throws {
 		try await withApp { app in
 			let suffix = UUID().uuidString.prefix(8)
+			let code = uniqueRegCode()
 			let primary = try await makeLookupUser(
 				app,
 				username: "lookup-rkpri-\(suffix)",
-				verification: "abc123"
+				verification: code
 			)
 			let alt = try await makeLookupUser(
 				app,
 				username: "lookup-rkalt-\(suffix)",
-				verification: "abc123",
+				verification: code,
 				password: "altpasswd",
-				parent: primary
+				parentID: try primary.requireID()
 			)
-			defer {
-				Task {
-					try? await alt.delete(on: app.db)
-					try? await primary.delete(on: app.db)
-				}
-			}
 
 			try await app.test(
 				.POST,
 				"/api/v3/auth/username",
 				beforeRequest: { req async throws in
-					try req.content.encode(lookupBody(code: "abc123", key: "recovery key"))
+					try req.content.encode(lookupBody(code: code, key: "recovery key"))
 				},
 				afterResponse: { res async throws in
 					XCTAssertEqual(res.status, .ok)
@@ -410,27 +414,30 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 					XCTAssertEqual(header.username, primary.username)
 				}
 			)
+			try await alt.delete(on: app.db)
+			try await primary.delete(on: app.db)
 		}
 	}
 
 	func testUsernameLookup_LockoutAfterFiveFailures() async throws {
 		try await withApp { app in
 			let username = "lookup-lock-\(UUID().uuidString.prefix(8))"
-			let user = try await makeLookupUser(app, username: username, verification: "abc123")
+			let code = uniqueRegCode()
+			let user = try await makeLookupUser(app, username: username, verification: code)
 			user.recoveryAttempts = 5
 			try await user.save(on: app.db)
-			defer { Task { try? await user.delete(on: app.db) } }
 
 			try await app.test(
 				.POST,
 				"/api/v3/auth/username",
 				beforeRequest: { req async throws in
-					try req.content.encode(lookupBody(code: "abc123", key: "password1"))
+					try req.content.encode(lookupBody(code: code, key: "password1"))
 				},
 				afterResponse: { res async throws in
 					XCTAssertEqual(res.status, .forbidden)
 				}
 			)
+			try await user.delete(on: app.db)
 		}
 	}
 }
