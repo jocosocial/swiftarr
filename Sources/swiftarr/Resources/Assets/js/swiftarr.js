@@ -603,11 +603,26 @@ async function submitAJAXForm(formElement, event) {
 			// to avoid MultipartKit parsing issues with simple text/checkbox forms.
 			uploadBody = new URLSearchParams(uploadBody);
 		}
+		formElement.querySelector('.alert-danger')?.classList.add("d-none");
+		formElement.querySelector('.alert-success')?.classList.add("d-none");
 		let response = await fetch(formElement.action, { method: 'POST', body: uploadBody });
 		if (response.status < 300) {
 			let successURL = formElement.dataset.successurl;
 			if (!successURL) {
 				location.reload();
+				return;
+			}
+			if (successURL == "message") {
+				let data = await response.json();
+				let successAlert = formElement.querySelector('.alert-success');
+				let field = formElement.dataset.successfield;
+				let valueElem = successAlert?.querySelector("[data-success-value]");
+				if (successAlert && valueElem && field && data[field] != null) {
+					valueElem.textContent = data[field];
+					successAlert.classList.remove("d-none");
+				}
+				formElement.reset();
+				spinnerElem?.classList.add("d-none");
 				return;
 			}
 			formElement.reset();

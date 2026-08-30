@@ -2521,8 +2521,10 @@ extension UserCreateData: RCFValidatable {
 /// Returned by:
 /// * `GET /api/v3/users/ID/header`
 /// * `GET /api/v3/client/user/headers/since/DATE`
+/// * `POST /api/v3/auth/username`
 ///
-/// See `UsersController.headerHandler(_:)`, `ClientController.userHeadersHandler(_:)`.
+/// See `UsersController.headerHandler(_:)`, `ClientController.userHeadersHandler(_:)`,
+/// `AuthController.usernameHandler(_:)`.
 public struct UserHeader: Content, Sendable {
 	/// The user's ID.
 	var userID: UUID
@@ -2882,6 +2884,41 @@ extension UserRecoveryData: RCFValidatable {
 			}
 		tester.validate(newPassword.count >= 6, forKey: .newPassword, or: "password has a 6 character minimum length")
 		tester.validate(newPassword.count <= 50, forKey: .newPassword, or: "password has a 50 character limit")
+	}
+}
+
+/// Used to look up a forgotten username from a registration code plus a second factor.
+///
+/// Required by: `POST /api/v3/auth/username`
+///
+/// See `AuthController.usernameHandler(_:)`.
+public struct UserUsernameLookupData: Content {
+	/// The registration code associated with the account.
+	var registrationCode: String
+	/// The user's password or recovery key. Must not be a registration code.
+	var recoveryKey: String
+}
+
+extension UserUsernameLookupData: RCFValidatable {
+	func runValidations(using decoder: ValidatingDecoder) throws {
+		let tester = try decoder.validator(keyedBy: CodingKeys.self)
+		tester.validate(
+			RegistrationCode.isWellFormed(registrationCode),
+			forKey: .registrationCode,
+			or: "Malformed registration code. Registration code must be 6 alphanumeric letters; spaces optional"
+		)
+		tester.validate(
+			recoveryKey.count >= 6,
+			forKey: .recoveryKey,
+			or: "password/recovery code has a 6 character minimum"
+		)
+		// A 6-character alphanumeric value is a registration code. The second factor must be
+		// the account password or recovery key, never the registration code (even a different one).
+		tester.validate(
+			!RegistrationCode.isWellFormed(recoveryKey),
+			forKey: .recoveryKey,
+			or: "recovery key cannot be a registration code; provide your password or recovery key"
+		)
 	}
 }
 

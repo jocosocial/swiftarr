@@ -247,3 +247,5 @@ array of the chat IDs counted by the corresponding `addedTo<Seamail, LFG, Privat
 show *which* chats the user was added to rather than just how many. The arrays are empty when not logged in. Purely
 additive; the existing count fields are unchanged and are now derived from these arrays, so counts and IDs always agree.
 
+## Aug 30, 2026
+* New endpoint `POST /api/v3/auth/username` returns a `UserHeader` given a registration code plus password or recovery key (`UserUsernameLookupData`).
