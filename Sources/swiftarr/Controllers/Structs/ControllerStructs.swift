@@ -404,7 +404,10 @@ extension EventData {
 /// Returned inside `Paginated<ShutternautScheduleReportData>` by:
 /// * `GET /api/v3/events/photographerreport`
 ///
-/// See `EventController.photographerReportHandler(_:)`.
+/// Also the input to `ShutternautScheduleReportCSV.build(from:)`, used by:
+/// * `GET /api/v3/events/photographerreport/download`
+///
+/// See `EventController.photographerReportHandler(_:)` and `EventController.photographerReportDownloadHandler(_:)`.
 public struct ShutternautScheduleReportData: Content {
 	/// The event's Swiftarr database ID.
 	var eventID: UUID

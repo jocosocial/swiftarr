@@ -25,9 +25,10 @@ struct EventController: APIRouteCollection {
 		tokenAuthGroup.post(eventIDParam, "favorite", "remove", use: favoriteRemoveHandler).setUsedForPreregistration()
 		tokenAuthGroup.delete(eventIDParam, "favorite", use: favoriteRemoveHandler).setUsedForPreregistration()
 		tokenAuthGroup.get("favorites", use: favoritesHandler).setUsedForPreregistration()
-		tokenAuthGroup.get("photographerreport", use: photographerReportHandler).setUsedForPreregistration()
 
 		// Shutternaut event scheduling--for 'nauts to schedule which events they'll be photographing'
+		tokenAuthGroup.get("photographerreport", use: photographerReportHandler).setUsedForPreregistration()
+		tokenAuthGroup.get("photographerreport", "download", use: photographerReportDownloadHandler).setUsedForPreregistration()
 		tokenAuthGroup.post(eventIDParam, "needsphotographer", use: needsPhotographerHandler).setUsedForPreregistration()
 		tokenAuthGroup.post(eventIDParam, "needsphotographer", "remove", use: needsPhotographerHandler).setUsedForPreregistration()
 		tokenAuthGroup.delete(eventIDParam, "needsphotographer", use: needsPhotographerHandler).setUsedForPreregistration()
@@ -347,10 +348,7 @@ struct EventController: APIRouteCollection {
 	/// - Throws: 403 if the caller is not a Shutternaut Manager and is below TwitarrTeam access.
 	/// - Returns: `Paginated<ShutternautScheduleReportData>`
 	func photographerReportHandler(_ req: Request) async throws -> Paginated<ShutternautScheduleReportData> {
-		let user = try req.auth.require(UserCacheData.self)
-		guard user.userRoles.contains(.shutternautmanager) || user.accessLevel >= .twitarrteam else {
-			throw Abort(.forbidden, reason: "Only Shutternaut Managers may view the photographer schedule report")
-		}
+		try requirePhotographerReportAccess(req)
 
 		struct QueryOptions: Content {
 			var cruiseday: Int?
@@ -364,48 +362,40 @@ struct EventController: APIRouteCollection {
 			maxPageSize: Settings.shared.maximumTwarrts
 		)
 
-		let photographedIDs = Array(
-			Set(
-				try await EventFavorite.query(on: req.db)
-					.filter(\.$photographer == true)
-					.all()
-					.map { $0.$event.id }
-			)
-		)
-
-		let query = Event.query(on: req.db)
-		query.group(.or) { or in
-			or.filter(\.$needsPhotographer == true)
-			if !photographedIDs.isEmpty {
-				or.filter(\.$id ~~ photographedIDs)
-			}
-		}
-
-		if let cruiseday = options.cruiseday {
-			let portCalendar = Settings.shared.getPortCalendar()
-			let cruiseStartDate = Settings.shared.cruiseStartDate()
-			let addDayPlusThreeHours = DateComponents(day: 1, hour: 3)
-			if let searchStartTime = portCalendar.date(byAdding: .day, value: cruiseday - 1, to: cruiseStartDate),
-				let searchEndTime = portCalendar.date(byAdding: addDayPlusThreeHours, to: searchStartTime)
-			{
-				query.filter(\.$startTime >= searchStartTime).filter(\.$startTime < searchEndTime)
-			}
-		}
-
-		query.sort(\.$startTime, .ascending)
+		let query = try await photographerReportEventQuery(on: req, cruiseday: options.cruiseday)
 		let total = try await query.copy().count()
 		let events = try await query.range(pagination.range).all()
-		let photographedEvents = try await getShutternautsForEvents(in: req, from: events)
-		let items = try events.map { event in
-			try ShutternautScheduleReportData(
-				event,
-				photographers: photographedEvents[event.requireID()] ?? []
-			)
-		}
+		let items = try await photographerReportRows(from: events, in: req)
 		return Paginated(
 			items: items,
 			paginator: Paginator(total: total, start: pagination.start, limit: pagination.limit)
 		)
+	}
+
+	/// `GET /api/v3/events/photographerreport/download`
+	///
+	/// Returns a CSV of all photography-coverage rows matching the optional `cruiseday` filter
+	/// (not paginated). Same access as the JSON report.
+	///
+	/// **URL Query Parameters:**
+	/// - `cruiseday=INT` — Optional. Embarkation day is day 1 (Event indexing, not Fez/LFG indexing).
+	///
+	/// - Throws: 403 if the caller is not a Shutternaut Manager and is below TwitarrTeam access.
+	/// - Returns: `text/csv` attachment `shutternaut_schedule_report.csv`
+	func photographerReportDownloadHandler(_ req: Request) async throws -> Response {
+		try requirePhotographerReportAccess(req)
+
+		struct QueryOptions: Content {
+			var cruiseday: Int?
+		}
+		let options = try req.query.decode(QueryOptions.self)
+		let events = try await photographerReportEventQuery(on: req, cruiseday: options.cruiseday).all()
+		let rows = try await photographerReportRows(from: events, in: req)
+		let csvData = ShutternautScheduleReportCSV.build(from: rows)
+		var headers: HTTPHeaders = [:]
+		headers.contentType = HTTPMediaType(type: "text", subType: "csv", parameters: ["charset": "UTF-8"])
+		headers.contentDisposition = .init(.attachment, filename: "shutternaut_schedule_report.csv")
+		return Response(status: .ok, headers: headers, body: Response.Body(data: csvData))
 	}
 
 	/// `POST /api/v3/events/:event_ID/needsphotographer`
@@ -527,5 +517,55 @@ struct EventController: APIRouteCollection {
 			result[favorite.$event.id, default: []].append(try req.userCache.getHeader(favorite.$user.id))
 		}
 		return result
+	}
+
+	func requirePhotographerReportAccess(_ req: Request) throws {
+		let user = try req.auth.require(UserCacheData.self)
+		guard user.userRoles.contains(.shutternautmanager) || user.accessLevel >= .twitarrteam else {
+			throw Abort(.forbidden, reason: "Only Shutternaut Managers may view the photographer schedule report")
+		}
+	}
+
+	func photographerReportEventQuery(on req: Request, cruiseday: Int?) async throws -> QueryBuilder<Event> {
+		let photographedIDs = Array(
+			Set(
+				try await EventFavorite.query(on: req.db)
+					.filter(\.$photographer == true)
+					.all()
+					.map { $0.$event.id }
+			)
+		)
+
+		let query = Event.query(on: req.db)
+		query.group(.or) { or in
+			or.filter(\.$needsPhotographer == true)
+			if !photographedIDs.isEmpty {
+				or.filter(\.$id ~~ photographedIDs)
+			}
+		}
+
+		if let cruiseday {
+			let portCalendar = Settings.shared.getPortCalendar()
+			let cruiseStartDate = Settings.shared.cruiseStartDate()
+			let addDayPlusThreeHours = DateComponents(day: 1, hour: 3)
+			if let searchStartTime = portCalendar.date(byAdding: .day, value: cruiseday - 1, to: cruiseStartDate),
+				let searchEndTime = portCalendar.date(byAdding: addDayPlusThreeHours, to: searchStartTime)
+			{
+				query.filter(\.$startTime >= searchStartTime).filter(\.$startTime < searchEndTime)
+			}
+		}
+
+		query.sort(\.$startTime, .ascending)
+		return query
+	}
+
+	func photographerReportRows(from events: [Event], in req: Request) async throws -> [ShutternautScheduleReportData] {
+		let photographedEvents = try await getShutternautsForEvents(in: req, from: events)
+		return try events.map { event in
+			try ShutternautScheduleReportData(
+				event,
+				photographers: photographedEvents[event.requireID()] ?? []
+			)
+		}
 	}
 }

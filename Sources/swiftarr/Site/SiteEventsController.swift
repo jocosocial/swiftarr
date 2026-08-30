@@ -383,48 +383,25 @@ struct SiteEventsController: SiteControllerUtils {
 	/// `GET /events/photographerreport/download`
 	///
 	/// Downloads a CSV of all photography-coverage rows matching the current cruise-day filter
-	/// (not just the current HTML page). Caller must be a Shutternaut Manager or TwitarrTeam and above.
+	/// (not just the current HTML page). Proxies `GET /api/v3/events/photographerreport/download`.
 	func photographerReportDownloadHandler(_ req: Request) async throws -> Response {
 		try requirePhotographerReportAccess(req)
 		let queryStruct = try req.query.decode(PhotographerReportQueryStruct.self)
-		let events = try await fetchAllPhotographerReportRows(req, query: queryStruct)
-
-		func buildCSVRecord(fields: String...) -> String {
-			return fields.map { "\"\($0.replacingOccurrences(of: "\"", with: "\"\""))\"" }.joined(separator: ",").appending("\n")
+		var queryItems: [URLQueryItem]?
+		if let cruiseday = queryStruct.cruiseday {
+			queryItems = [URLQueryItem(name: "cruiseday", value: String(cruiseday))]
 		}
-		let dateFormatter = DateFormatter()
-		dateFormatter.dateFormat = "MMM d, h:mm a"
-		let csvHeaderLine = "\u{FEFF}" + buildCSVRecord(
-			fields: "Start Time",
-			"End Time",
-			"Time Zone",
-			"Title",
-			"Location",
-			"Photographers",
-			"Needs Photographed"
+		let response = try await apiQuery(
+			req,
+			endpoint: "/events/photographerreport/download",
+			query: queryItems,
+			passThroughQuery: false
 		)
-		let csvString = events.reduce(into: csvHeaderLine) { str, event in
-			dateFormatter.timeZone = Settings.shared.timeZoneChanges.tzAtTime(event.startTime)
-			str.append(
-				buildCSVRecord(
-					fields: dateFormatter.string(from: event.startTime),
-					dateFormatter.string(from: event.endTime),
-					event.timeZone,
-					event.title,
-					event.location,
-					event.photographers.map { photographerCSVName($0) }.joined(separator: "; "),
-					event.needsPhotographer ? "true" : "false"
-				)
-			)
+		var body = Response.Body.empty
+		if let apiResponseBody = response.body {
+			body = Response.Body(buffer: apiResponseBody)
 		}
-		guard let csvData = csvString.data(using: .utf8) else {
-			throw Abort(.internalServerError, reason: "Could not convert CSV String into Data.")
-		}
-		var headers: HTTPHeaders = [:]
-		headers.contentType = HTTPMediaType(type: "text", subType: "csv", parameters: ["charset": "UTF-8"])
-		headers.contentDisposition = .init(.attachment, filename: "shutternaut_schedule_report.csv")
-		let body = Response.Body(data: csvData)
-		return Response(status: .ok, headers: headers, body: body)
+		return Response(status: response.status, headers: response.headers, body: body)
 	}
 
 	private func requirePhotographerReportAccess(_ req: Request) throws {
@@ -432,13 +409,6 @@ struct SiteEventsController: SiteControllerUtils {
 		guard cacheUser.userRoles.contains(.shutternautmanager) || cacheUser.accessLevel >= .twitarrteam else {
 			throw Abort(.forbidden, reason: "Only Shutternaut Managers may view the photographer schedule report")
 		}
-	}
-
-	private func photographerCSVName(_ header: UserHeader) -> String {
-		if let displayName = header.displayName, !displayName.isEmpty {
-			return displayName
-		}
-		return header.username
 	}
 
 	private func photographerReportQueryItems(_ query: PhotographerReportQueryStruct, start: Int?, limit: Int?) -> [URLQueryItem] {
@@ -469,24 +439,6 @@ struct SiteEventsController: SiteControllerUtils {
 			passThroughQuery: false
 		)
 		return try response.content.decode(Paginated<ShutternautScheduleReportData>.self)
-	}
-
-	private func fetchAllPhotographerReportRows(
-		_ req: Request,
-		query: PhotographerReportQueryStruct
-	) async throws -> [ShutternautScheduleReportData] {
-		var start = 0
-		let limit = Settings.shared.maximumTwarrts
-		var all = [ShutternautScheduleReportData]()
-		while true {
-			let page = try await fetchPhotographerReportPage(req, query: query, start: start, limit: limit)
-			all.append(contentsOf: page.items)
-			start += limit
-			if start >= page.paginator.total || page.items.isEmpty {
-				break
-			}
-		}
-		return all
 	}
 }
 

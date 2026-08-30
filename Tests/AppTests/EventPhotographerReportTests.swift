@@ -356,4 +356,86 @@ class EventPhotographerReportTests: XCTestCase, SwiftarrBaseTest {
 			)
 		}
 	}
+
+	func testCSVHelperUsesUsernameAndEscapesFields() throws {
+		let photographer = UserHeader(
+			userID: UUID(),
+			username: "camera-bob",
+			displayName: "Bob \"The Lens\"",
+			userImage: nil,
+			preferredPronoun: nil
+		)
+		let event = ShutternautScheduleReportData(
+			eventID: UUID(),
+			title: "Show, featuring \"quotes\"",
+			startTime: Date(timeIntervalSince1970: 0),
+			endTime: Date(timeIntervalSince1970: 3600),
+			timeZone: "EST",
+			location: "Deck 5",
+			needsPhotographer: true,
+			photographers: [photographer]
+		)
+		let csv = String(data: ShutternautScheduleReportCSV.build(from: [event]), encoding: .utf8) ?? ""
+		XCTAssertTrue(csv.hasPrefix("\u{FEFF}"))
+		XCTAssertTrue(csv.contains("camera-bob"))
+		XCTAssertFalse(csv.contains("The Lens"))
+		XCTAssertTrue(csv.contains("\"Show, featuring \"\"quotes\"\"\""))
+		XCTAssertTrue(csv.contains("true"))
+		XCTAssertTrue(csv.contains("Start Time"))
+	}
+
+	func testManagerCanDownloadCSVUsesUsername() async throws {
+		try await withApp { app in
+			let suffix = UUID().uuidString.prefix(8).lowercased()
+			let manager = try await makeUser(app, username: "snmgr-\(suffix)", accessLevel: .verified)
+			try await UserRole(user: manager.requireID(), role: .shutternautmanager).create(on: app.db)
+			let photographer = try await makeUser(app, username: "sn-\(suffix)", accessLevel: .verified)
+			try await UserRole(user: photographer.requireID(), role: .shutternaut).create(on: app.db)
+			photographer.displayName = "Camera \(suffix)"
+			try await photographer.save(on: app.db)
+			let event = try await makeEvent(
+				app,
+				title: "CSV Coverage \(suffix)",
+				startTime: hourOnCruiseDay(0),
+				needsPhotographer: true,
+				uid: "report-csv-\(suffix)"
+			)
+			try await assignPhotographer(app, user: photographer, event: event)
+			let token = try await makeToken(app, for: manager)
+			try await bootCache(app)
+
+			try await app.test(
+				.GET,
+				"/api/v3/events/photographerreport/download",
+				headers: bearer(token),
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok)
+					XCTAssertEqual(res.headers.contentType?.subType, "csv")
+					let csv = String(buffer: res.body)
+					XCTAssertTrue(csv.contains("CSV Coverage \(suffix)"))
+					XCTAssertTrue(csv.contains("sn-\(suffix)"))
+					XCTAssertFalse(csv.contains("Camera \(suffix)"))
+					XCTAssertTrue(csv.contains("true"))
+				}
+			)
+		}
+	}
+
+	func testVerifiedUserForbiddenOnCSVDownload() async throws {
+		try await withApp { app in
+			let suffix = UUID().uuidString.prefix(8).lowercased()
+			let verified = try await makeUser(app, username: "verified-\(suffix)", accessLevel: .verified)
+			let token = try await makeToken(app, for: verified)
+			try await bootCache(app)
+
+			try await app.test(
+				.GET,
+				"/api/v3/events/photographerreport/download",
+				headers: bearer(token),
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .forbidden)
+				}
+			)
+		}
+	}
 }
