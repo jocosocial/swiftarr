@@ -404,6 +404,7 @@ struct SiteEventsController: SiteControllerUtils {
 			"Needs Photographed"
 		)
 		let csvString = events.reduce(into: csvHeaderLine) { str, event in
+			dateFormatter.timeZone = Settings.shared.timeZoneChanges.tzAtTime(event.startTime)
 			str.append(
 				buildCSVRecord(
 					fields: dateFormatter.string(from: event.startTime),
