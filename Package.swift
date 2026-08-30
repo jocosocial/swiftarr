@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
 	name: "swiftarr",
 	platforms: [
-		.macOS(.v13)
+		.macOS(.v15)
 	],
 	dependencies: [
 		// Vapor is the server package underlying Twitarr
@@ -32,6 +32,8 @@ let package = Package(
 		.package(url: "https://github.com/ApolloZhu/swift_qrcodejs.git", from: "2.2.2"),
 		// FileType is a Swift port of file-type, used to detect image formats from magic bytes.
 		.package(url: "https://github.com/velocityzen/FileType", from: "2.2.1"),
+		// vCard (RFC 6350) encoder for contact export
+		.package(url: "https://github.com/thoven87/icalendar-kit.git", from: "2.1.1"),
 	],
 	targets: [
 		.systemLibrary(name: "Cvips", pkgConfig: "vips", providers: [.apt(["libvips-dev"]), .brew(["vips"]), .yum(["vips-devel"])]),
@@ -53,6 +55,7 @@ let package = Package(
 				"ZIPFoundation",
 				.product(name: "QRCodeSwift", package: "swift_qrcodejs"),
 				.product(name: "FileType", package: "FileType"),
+				.product(name: "VCard", package: "icalendar-kit"),
 			],
 			resources: [
 				.copy("Resources"),
