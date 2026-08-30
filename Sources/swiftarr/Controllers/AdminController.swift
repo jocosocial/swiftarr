@@ -325,6 +325,10 @@ struct AdminController: APIRouteCollection {
 					// Moderation
 					.report: Report.query(on: req.db).count(),
 					.moderationAction: ModeratorAction.query(on: req.db).count(),
+
+					// Quartermaster
+					.quartermasterItem: QuartermasterItem.query(on: req.db).count(),
+					.quartermasterItemEdit: QuartermasterItemEdit.query(on: req.db).count(),
 			]
 			
 			for (key, task) in tasks {

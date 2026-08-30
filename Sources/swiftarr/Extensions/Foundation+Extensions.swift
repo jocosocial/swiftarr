@@ -66,6 +66,15 @@ extension String {
 	var iso8601ms: Date? {
 		return dateFromISO8601(self)
 	}
+
+	/// Escapes Postgres LIKE/ILIKE wildcard characters ("_" and "%") so they're matched as literals
+	/// instead of being interpreted as wildcards, then trims leading/trailing whitespace.
+	/// Use this on any user-supplied string before passing it to `ILIKE`, `~~`, or `fullTextFilter`.
+	func escapedForSQLWildcards() -> String {
+		return self.replacingOccurrences(of: "_", with: "\\_")
+			.replacingOccurrences(of: "%", with: "\\%")
+			.trimmingCharacters(in: .whitespacesAndNewlines)
+	}
 }
 
 @available(OSX 10.13, *)

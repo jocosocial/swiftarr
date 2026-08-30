@@ -108,6 +108,7 @@ extension APIRouteCollection {
 	var puzzleIDParam: PathComponent { PathComponent(":puzzle_id") }
 	var eventUIDParam: PathComponent { PathComponent(":event_uid") }
 	var feedbackIDParam: PathComponent { PathComponent(":feedback_id") }
+	var quartermasterIDParam: PathComponent { PathComponent(":quartermaster_id") }
 
 	/// Transforms a string that might represent a date (either a `Double` or an ISO 8601
 	/// representation) into a `Date`, if possible.

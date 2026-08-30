@@ -67,6 +67,8 @@ struct SiteModController: SiteControllerUtils {
 			.destination("the moderation page for the photostream")
 		modRoutes.get("moderate", "personalevent", personalEventIDParam, use: moderatePersonalEventPageHandler)
 			.destination("the moderation page for this personalevent")
+		modRoutes.get("moderate", "quartermaster", quartermasterIDParam, use: moderateQuartermasterContentPageHandler)
+			.destination("the moderation page for this quartermaster item")
 
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let modPrivateRoutes = getPrivateRoutes(app).grouped(SiteRequireModeratorMiddleware())
@@ -95,6 +97,13 @@ struct SiteModController: SiteControllerUtils {
 			use: setFezPostModerationStatePostHandler
 		)
 		modPrivateRoutes.post("lfg", fezIDParam, "setstate", modStateParam, use: setFezModerationStatePostHandler)
+		modPrivateRoutes.post(
+			"quartermaster",
+			quartermasterIDParam,
+			"setstate",
+			modStateParam,
+			use: setQuartermasterModerationStatePostHandler
+		)
 		modPrivateRoutes.post(
 			"userprofile",
 			userIDParam,
@@ -926,6 +935,68 @@ struct SiteModController: SiteControllerUtils {
 		return response.status
 	}
 
+	// MARK: Quartermaster Moderation
+
+	/// `GET /moderate/quartermaster/:quartermaster_id`
+	///
+	/// This shows a view that focuses on the *content* that was reported, showing:
+	/// * The Quartermaster item that was reported
+	/// * All reports made against this content
+	/// * All previous versions of this content
+	/// * (hopefully) Mod actions taken against this content already
+	func moderateQuartermasterContentPageHandler(_ req: Request) async throws -> View {
+		guard let itemID = req.parameters.get(quartermasterIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		let response = try await apiQuery(req, endpoint: "/mod/quartermaster/\(itemID)")
+		let modData = try response.content.decode(QuartermasterModerationData.self)
+		struct ReportContext: Encodable {
+			var trunk: TrunkContext
+			var modData: QuartermasterModerationData
+			var firstReport: ReportModerationData?
+			var finalEditAuthor: UserHeader?
+
+			init(_ req: Request, modData: QuartermasterModerationData) throws {
+				trunk = .init(req, title: "Quartermastarr Item Moderation", tab: .moderator)
+				self.modData = modData
+				firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
+				finalEditAuthor = modData.edits.last?.author
+				// Saved edits show the state BEFORE the edit, so shift authors forward one slot and
+				// relabel them; matches the same shuffle done for twarrts/forum posts/LFGs/profiles.
+				if self.modData.edits.count > 1 {
+					for index in (0...self.modData.edits.count - 2).reversed() {
+						self.modData.edits[index + 1].author = self.modData.edits[index].author
+						self.modData.edits[index + 1].author.username =
+							"\(self.modData.edits[index + 1].author.username) edited to:"
+					}
+				}
+				if self.modData.edits.count > 0, let owner = modData.item.owner {
+					// `owner` is always non-nil here: the moderation endpoint always reveals the real
+					// owner to moderators, regardless of the item's hideOwnerName setting.
+					self.modData.edits[0].author = owner
+					self.modData.edits[0].author.username = "\(self.modData.edits[0].author.username) initially wrote:"
+				}
+			}
+		}
+		let ctx = try ReportContext(req, modData: modData)
+		return try await req.view.render("moderation/quartermasterView", ctx)
+	}
+
+	///	`POST /quartermaster/:quartermaster_id/setstate/STRING`
+	///
+	/// Sets the moderation state of the given Quartermaster item. Moderation states include "locked" and
+	/// "quarantined", as well as a few others.
+	func setQuartermasterModerationStatePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let itemID = req.parameters.get(quartermasterIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		guard let modState = req.parameters.get(modStateParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing search parameter.")
+		}
+		let response = try await apiQuery(req, endpoint: "/mod/quartermaster/\(itemID)/setstate/\(modState)", method: .POST)
+		return response.status
+	}
+
 }
 
 // MARK: - Utilities
@@ -963,6 +1034,7 @@ func generateContentGroups(from reports: [ReportModerationData]) -> [ReportConte
 		case .mkSongSnippet: contentURL = "/moderate/microkaraoke/song/\(report.reportedID)"  // Individual snippets aren't actually reportable yet.
 		case .streamPhoto: contentURL = "/moderate/photostream/\(report.reportedID)"
 		case .personalEvent: contentURL = "/moderate/personalevent/\(report.reportedID)"
+		case .quartermasterItem: contentURL = "/moderate/quartermaster/\(report.reportedID)"
 		}
 		var newGroup = ReportContentGroup(
 			reportType: report.type,

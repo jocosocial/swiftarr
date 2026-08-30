@@ -15,6 +15,8 @@ enum ImageUsage: String {
 	case dailyTheme
 	/// The image is for a `StreamPhoto`.
 	case photostream
+	/// The image is for a `QuartermasterItem`.
+	case quartermasterItem
 }
 
 /// Internally, the Image Handler stores images at multiple sizes upon image upload. The exact sizes stored for each sizeGroup
@@ -138,10 +140,13 @@ extension APIRouteCollection {
 		}
 		var savedImageNames = [String?]()
 		for image in images {
-			if let imageData = image.image {
+			// An empty value on either half means the slot holds nothing, not that it holds something
+			// empty. A zero-byte image especially must not count as present, or it shadows the filename
+			// beside it and the caller loses a photo the content already had.
+			if let imageData = image.image, !imageData.isEmpty {
 				savedImageNames.append( try await processImage(data: imageData, usage: usage, on: req))
 			}
-			else if let filename = image.filename {
+			else if let filename = image.filename, !filename.isEmpty {
 				savedImageNames.append(filename)
 			}
 		}

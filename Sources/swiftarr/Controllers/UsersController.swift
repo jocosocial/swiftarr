@@ -179,11 +179,8 @@ struct UsersController: APIRouteCollection {
 		guard var search = req.parameters.get(searchStringParam.paramString) else {
 			throw Abort(.badRequest, reason: "No user search string in request.")
 		}
-		// postgres "_" and "%" are wildcards, so escape for literals
-		search = search.replacingOccurrences(of: "_", with: "\\_")
-		search = search.replacingOccurrences(of: "%", with: "\\%")
-		// trim and disallow "@" harvesting
-		search = search.trimmingCharacters(in: .whitespacesAndNewlines)
+		// disallow "@" harvesting
+		search = search.escapedForSQLWildcards()
 		guard search != "@", search != "(@" else {
 			throw Abort(.forbidden, reason: "'\(search)' is not a permitted search string")
 		}

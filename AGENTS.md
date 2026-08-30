@@ -16,6 +16,14 @@ Notes for AI coding agents (Claude Code, Codex, etc.) working on swiftarr contri
 - **Don't include agent-tooling files in PRs.** `.claude/`, agent plan/spec documents,
   and similar working files should stay out of commits (use `.git/info/exclude`).
 
+## API changes
+
+- **Update the changelog.** When a PR adds a new controller or changes an existing
+  API/moderator endpoint's behavior, add a brief entry to
+  `docs/Swiftarr/API Changelist.md` under today's date. No need to enumerate every
+  new endpoint one-by-one — a short summary of the new controller/feature and any
+  moderator-facing change is enough.
+
 ## Setup & docs
 
 For build, test, and environment setup, see [docs/Swiftarr/](docs/Swiftarr/) — notably

@@ -90,19 +90,14 @@ struct EventController: APIRouteCollection {
 			query.with(\.$performers)
 		}
 		if var search = options.search {
-			// postgres "_" and "%" are wildcards, so escape for literals
-			search = search.replacingOccurrences(of: "_", with: "\\_")
-			search = search.replacingOccurrences(of: "%", with: "\\%")
-			search = search.trimmingCharacters(in: .whitespacesAndNewlines)
+			search = search.escapedForSQLWildcards()
 			query.group(.or) { (or) in
 				or.fullTextFilter(\.$title, search)
 				or.fullTextFilter(\.$info, search)
 			}
 		}
 		if var location = options.location {
-			// postgres "_" and "%" are wildcards, so escape for literals
-			location = location.replacingOccurrences(of: "_", with: "\\_").replacingOccurrences(of: "%", with: "\\%")
-					.trimmingCharacters(in: .whitespacesAndNewlines)
+			location = location.escapedForSQLWildcards()
 			query.filter(\.$location ~~ location)
 		}
 		if let eventType = options.type {
