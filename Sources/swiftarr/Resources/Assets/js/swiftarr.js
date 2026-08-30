@@ -36,6 +36,10 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 			dropdownButtonSetup(btn);
 			btn.addEventListener("click", fezFilterDropdownTappedAction);
 			break;
+		case "filterPhotographerReportDay":
+			dropdownButtonSetup(btn);
+			btn.addEventListener("click", photographerReportDayFilterTappedAction);
+			break;
 		case "sortForumDirection":
 			dropdownButtonSetup(btn);
 			btn.addEventListener("click", forumSortDirectionDropdownTappedAction);
@@ -838,6 +842,24 @@ function applyFezSearchFilters() {
 		}
 	}
 	window.location.href = window.location.href.split("?")[0] + queryString;
+}
+
+function photographerReportDayFilterTappedAction(event) {
+	updateDropdownButton(event.target);
+	applyPhotographerReportDayFilter();
+}
+
+function applyPhotographerReportDayFilter() {
+	let url = new URL(window.location.href);
+	url.searchParams.delete("start");
+	url.searchParams.delete("limit");
+	let daySelection = document.getElementById("photographerReportDayFilterMenu").dataset.selected;
+	if (daySelection == "all") {
+		url.searchParams.delete("cruiseday");
+	} else {
+		url.searchParams.set("cruiseday", daySelection);
+	}
+	window.location.href = url.toString();
 }
 
 // MARK: - Forum Handlers

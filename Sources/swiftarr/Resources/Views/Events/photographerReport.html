@@ -1,0 +1,85 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+			<div class="row align-items-center mb-2">
+				<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb mb-1">
+							<li class="breadcrumb-item"><a href="/">Home</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Photography Schedule Report</li>
+						</ol>
+					</nav>
+					<h5 class="mb-0">Photography Schedule Report</h5>
+				</div>
+				<div class="col col-auto">
+					<a class="btn btn-primary btn-sm" href="#(downloadURL)">Download CSV</a>
+				</div>
+			</div>
+			<div class="row mb-2">
+				<div class="col">
+					<p class="text-secondary mb-0">Events flagged as needing a photographer, or that a Shutternaut signed up to photograph. Flagged events with no photographer are highlighted.</p>
+				</div>
+			</div>
+			<div class="row align-items-center justify-content-end mb-2 gx-1">
+				<div class="col col-auto">
+					Filter:
+				</div>
+				<div class="col col-auto">
+					<div class="dropdown">
+						<button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="photographerReportDayFilterMenu" data-bs-toggle="dropdown" data-selected="all" aria-expanded="false">
+							All Days
+						</button>
+						<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="photographerReportDayFilterMenu">
+							<li><button class="dropdown-item #if(!daySelection):active#endif" type="button" data-action="filterPhotographerReportDay" data-selection="all">All Days</button></li>
+							<li><hr class="dropdown-divider"></li>
+							<li><h6 class="dropdown-header">Only show:</h6></li>
+							#for(day in dayList):
+								<li><button class="dropdown-item #if(daySelection == day.index):active#endif" type="button" data-action="filterPhotographerReportDay" data-selection="#(day.index)">#(day.name)</button></li>
+							#endfor
+						</ul>
+					</div>
+				</div>
+			</div>
+			#extend("paginator")
+			#if(count(events) == 0):
+				<div class="alert alert-secondary">No photography-relevant events match the current filters.</div>
+			#else:
+				<div class="table-responsive">
+					<table class="table table-sm table-hover align-middle">
+						<thead>
+							<tr>
+								<th scope="col">Time</th>
+								<th scope="col">Title</th>
+								<th scope="col">Photographers</th>
+								<th scope="col">Needs Photographed</th>
+							</tr>
+						</thead>
+						<tbody>
+							#for(event in events):
+								<tr #if(event.needsPhotographer && countOrZero(event.photographers) == 0):class="table-warning"#endif>
+									<td><span class="text-secondary"><i>#eventTime(event.startTime, event.endTime)</i></span></td>
+									<td><a href="/events/#(event.eventID)">#(event.title)</a></td>
+									<td>
+										#if(countOrZero(event.photographers) == 0):
+											—
+										#else:
+											#for(photographer in event.photographers):
+												<div>#userByline(photographer)</div>
+											#endfor
+										#endif
+									</td>
+									<td>
+										#if(event.needsPhotographer):
+											Yes
+										#endif
+									</td>
+								</tr>
+							#endfor
+						</tbody>
+					</table>
+				</div>
+			#endif
+			#extend("paginator")
+		</div>
+    #endexport
+#endextend

@@ -249,3 +249,4 @@ additive; the existing count fields are unchanged and are now derived from these
 
 ## Aug 30, 2026
 * New endpoint `POST /api/v3/auth/username` returns a `UserHeader` given a registration code plus password or recovery key (`UserUsernameLookupData`).
+* New endpoint `GET /api/v3/events/photographerreport` returns a paginated photography-coverage report (`Paginated<ShutternautScheduleReportData>`) of events flagged as needing a photographer and/or assigned a Shutternaut. Optional `cruiseday` uses Event indexing (embarkation day is 1). Shutternaut Manager, TwitarrTeam, and above.

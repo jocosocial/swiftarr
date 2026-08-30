@@ -25,8 +25,9 @@ struct EventController: APIRouteCollection {
 		tokenAuthGroup.post(eventIDParam, "favorite", "remove", use: favoriteRemoveHandler).setUsedForPreregistration()
 		tokenAuthGroup.delete(eventIDParam, "favorite", use: favoriteRemoveHandler).setUsedForPreregistration()
 		tokenAuthGroup.get("favorites", use: favoritesHandler).setUsedForPreregistration()
-		
-		// Shutternaut event scheduling--for 'nauts to schedule which events they'll be photographing
+		tokenAuthGroup.get("photographerreport", use: photographerReportHandler).setUsedForPreregistration()
+
+		// Shutternaut event scheduling--for 'nauts to schedule which events they'll be photographing'
 		tokenAuthGroup.post(eventIDParam, "needsphotographer", use: needsPhotographerHandler).setUsedForPreregistration()
 		tokenAuthGroup.post(eventIDParam, "needsphotographer", "remove", use: needsPhotographerHandler).setUsedForPreregistration()
 		tokenAuthGroup.delete(eventIDParam, "needsphotographer", use: needsPhotographerHandler).setUsedForPreregistration()
@@ -332,7 +333,81 @@ struct EventController: APIRouteCollection {
 			return resultEvent
 		}
 	}
-		
+
+	/// `GET /api/v3/events/photographerreport`
+	///
+	/// Returns a paginated photography-coverage report for Shutternaut Managers (and TwitarrTeam and above).
+	/// Each row is an event that was flagged as needing a photographer, that has at least one Shutternaut assigned
+	/// to photograph it, or both. Unmarked events are omitted. Sorted by start time, ascending.
+	///
+	/// **URL Query Parameters:**
+	/// - `cruiseday=INT` — Optional. Embarkation day is day 1 (Event indexing, not Fez/LFG indexing).
+	/// - `start=INT` / `limit=INT` — Pagination. Default 50; max is `Settings.shared.maximumTwarrts`.
+	///
+	/// - Throws: 403 if the caller is not a Shutternaut Manager and is below TwitarrTeam access.
+	/// - Returns: `Paginated<ShutternautScheduleReportData>`
+	func photographerReportHandler(_ req: Request) async throws -> Paginated<ShutternautScheduleReportData> {
+		let user = try req.auth.require(UserCacheData.self)
+		guard user.userRoles.contains(.shutternautmanager) || user.accessLevel >= .twitarrteam else {
+			throw Abort(.forbidden, reason: "Only Shutternaut Managers may view the photographer schedule report")
+		}
+
+		struct QueryOptions: Content {
+			var cruiseday: Int?
+			var start: Int?
+			var limit: Int?
+		}
+		let options = try req.query.decode(QueryOptions.self)
+		let pagination = Pagination(
+			start: options.start,
+			limit: options.limit,
+			maxPageSize: Settings.shared.maximumTwarrts
+		)
+
+		let photographedIDs = Array(
+			Set(
+				try await EventFavorite.query(on: req.db)
+					.filter(\.$photographer == true)
+					.all()
+					.map { $0.$event.id }
+			)
+		)
+
+		let query = Event.query(on: req.db)
+		query.group(.or) { or in
+			or.filter(\.$needsPhotographer == true)
+			if !photographedIDs.isEmpty {
+				or.filter(\.$id ~~ photographedIDs)
+			}
+		}
+
+		if let cruiseday = options.cruiseday {
+			let portCalendar = Settings.shared.getPortCalendar()
+			let cruiseStartDate = Settings.shared.cruiseStartDate()
+			let addDayPlusThreeHours = DateComponents(day: 1, hour: 3)
+			if let searchStartTime = portCalendar.date(byAdding: .day, value: cruiseday - 1, to: cruiseStartDate),
+				let searchEndTime = portCalendar.date(byAdding: addDayPlusThreeHours, to: searchStartTime)
+			{
+				query.filter(\.$startTime >= searchStartTime).filter(\.$startTime < searchEndTime)
+			}
+		}
+
+		query.sort(\.$startTime, .ascending)
+		let total = try await query.copy().count()
+		let events = try await query.range(pagination.range).all()
+		let photographedEvents = try await getShutternautsForEvents(in: req, from: events)
+		let items = try events.map { event in
+			try ShutternautScheduleReportData(
+				event,
+				photographers: photographedEvents[event.requireID()] ?? []
+			)
+		}
+		return Paginated(
+			items: items,
+			paginator: Paginator(total: total, start: pagination.start, limit: pagination.limit)
+		)
+	}
+
 	/// `POST /api/v3/events/:event_ID/needsphotographer`
 	/// `POST /api/v3/events/:event_ID/needsphotographer/remove`
 	/// `DELETE /api/v3/events/:event_ID/needsphotographer`

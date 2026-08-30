@@ -261,6 +261,9 @@
 								#if(contains(trunk.userRoles, "shutternautmanager")):
 									<li class="list-group-item"><a href="/userrole/shutternaut/manage">Manage Shutternauts</a></li>
 								#endif
+								#if(contains(trunk.userRoles, "shutternautmanager") || trunk.userIsTwitarrTeam):
+									<li class="list-group-item"><a href="/events/photographerreport">Photography Schedule Report</a></li>
+								#endif
 								<li class="list-group-item"><a href="/dayplanner/shutternauts">Shutternaut Shared Calendar</a></li>
 							</ul>
 						</div>
