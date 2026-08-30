@@ -249,3 +249,4 @@ additive; the existing count fields are unchanged and are now derived from these
 
 ## Aug 30, 2026
 * New endpoint `POST /api/v3/auth/username` returns a `UserHeader` given a registration code plus password or recovery key (`UserUsernameLookupData`).
+* `GET /api/v3/users/match/allnames/:search_string` now accepts `?sort=favorites`, which sorts users the requester has favorited first.
