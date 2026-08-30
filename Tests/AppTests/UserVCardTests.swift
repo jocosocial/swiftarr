@@ -38,7 +38,7 @@ final class VCardHelperTests: XCTestCase {
 		XCTAssertTrue(vcf.contains("Boston"))
 		XCTAssertTrue(vcf.contains("Pronouns: she/her"))
 		XCTAssertTrue(vcf.contains("Likes turtles"))
-		XCTAssertTrue(vcf.contains("discord:jane1234"))
+		XCTAssertTrue(vcf.contains("Discord:jane1234"))
 		XCTAssertTrue(vcf.contains("UID:urn:uuid:AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE"))
 		XCTAssertTrue(vcf.contains("-//Twitarr//EN"))
 		XCTAssertTrue(vcf.contains("N:Doe;Jane;;;") || vcf.contains("N:Doe;Jane"))
