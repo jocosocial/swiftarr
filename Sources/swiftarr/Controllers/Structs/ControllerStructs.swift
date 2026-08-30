@@ -399,6 +399,48 @@ extension EventData {
 	}
 }
 
+/// One row of the Shutternaut Manager photography-coverage report.
+///
+/// Returned inside `Paginated<ShutternautScheduleReportData>` by:
+/// * `GET /api/v3/events/photographerreport`
+///
+/// Also the input to `ShutternautScheduleReport.buildCSV(from:)`, used by:
+/// * `GET /api/v3/events/photographerreport/download`
+///
+/// See `EventController.photographerReportHandler(_:)` and `EventController.photographerReportDownloadHandler(_:)`.
+public struct ShutternautScheduleReportData: Content {
+	/// The event's Swiftarr database ID.
+	var eventID: UUID
+	/// The event's title.
+	var title: String
+	/// Starting time of the event, converted to display time.
+	var startTime: Date
+	/// Ending time of the event, converted to display time.
+	var endTime: Date
+	/// Timezone abbreviation at the event start, e.g. "EST".
+	var timeZone: String
+	/// The location of the event.
+	var location: String
+	/// TRUE if a Shutternaut Manager flagged this event as needing a photographer.
+	var needsPhotographer: Bool
+	/// Shutternauts who have signed up to photograph this event. Empty if the event was flagged but never assigned.
+	var photographers: [UserHeader]
+}
+
+extension ShutternautScheduleReportData {
+	init(_ event: Event, photographers: [UserHeader]) throws {
+		let timeZoneChanges = Settings.shared.timeZoneChanges
+		eventID = try event.requireID()
+		title = event.title
+		startTime = timeZoneChanges.portTimeToDisplayTime(event.startTime)
+		endTime = timeZoneChanges.portTimeToDisplayTime(event.endTime)
+		timeZone = timeZoneChanges.abbrevAtTime(startTime)
+		location = event.location
+		needsPhotographer = event.needsPhotographer
+		self.photographers = photographers
+	}
+}
+
 /// Delivered to POST `/api/v3/feedback` 
 /// 
 /// Contains the information from a Event Feedback Reporting form.

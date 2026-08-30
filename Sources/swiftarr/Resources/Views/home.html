@@ -258,10 +258,13 @@
 					<div class="row mb-2">
 						<div class="col">
 							<ul class="list-group">
+								<li class="list-group-item"><a href="/dayplanner/shutternauts">Shutternaut Shared Calendar</a></li>
 								#if(contains(trunk.userRoles, "shutternautmanager")):
 									<li class="list-group-item"><a href="/userrole/shutternaut/manage">Manage Shutternauts</a></li>
 								#endif
-								<li class="list-group-item"><a href="/dayplanner/shutternauts">Shutternaut Shared Calendar</a></li>
+								#if(contains(trunk.userRoles, "shutternautmanager") || trunk.userIsTwitarrTeam):
+									<li class="list-group-item"><a href="/events/photographerreport">Photographer Schedule Report</a></li>
+								#endif
 							</ul>
 						</div>
 					</div>
