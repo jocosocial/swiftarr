@@ -107,7 +107,6 @@ struct SiteEventsController: SiteControllerUtils {
 		privateRoutes.post("events", eventIDParam, "needsphotographer", use: eventsAddRemoveNeedsPhotographerHandler).setUsedForPreregistration()
 		privateRoutes.delete("events", eventIDParam, "needsphotographer", use: eventsAddRemoveNeedsPhotographerHandler).setUsedForPreregistration()
 		privateRoutes.get("events", "photographerreport", use: photographerReportPageHandler)
-			.destination("the Shutternaut photography schedule report")
 			.setUsedForPreregistration()
 		privateRoutes.get("events", "photographerreport", "download", use: photographerReportDownloadHandler)
 			.setUsedForPreregistration()
@@ -340,7 +339,7 @@ struct SiteEventsController: SiteControllerUtils {
 			var downloadURL: String
 
 			init(_ req: Request, report: Paginated<ShutternautScheduleReportData>, query: PhotographerReportQueryStruct) {
-				trunk = .init(req, title: "Photography Schedule Report", tab: .events)
+				trunk = .init(req, title: "Photographer Schedule Report", tab: .events)
 				events = report.items
 				daySelection = query.cruiseday
 				let limit = report.paginator.limit
