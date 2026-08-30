@@ -249,3 +249,4 @@ additive; the existing count fields are unchanged and are now derived from these
 
 ## Aug 30, 2026
 * New endpoint `POST /api/v3/auth/username` returns a `UserHeader` given a registration code plus password or recovery key (`UserUsernameLookupData`).
+* New endpoint `GET /api/v3/users/:user_id/vcard` returns a downloadable vCard (`.vcf`) of a user's land-based contact fields. The HTML profile page has a Save vCard button.

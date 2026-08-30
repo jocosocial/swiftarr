@@ -1,5 +1,5 @@
 {
-  "originHash" : "2a1acb8a02fa0ae4e5ebeae0d89849f4c293f58ff807d4f1cab502458d8f02dc",
+  "originHash" : "8c75424b66fb951ea5b750f7f0f49d8d0b8606500a88118ad69806abca733be2",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -71,6 +71,15 @@
       "state" : {
         "revision" : "fd57101e426d3edf66a32ba63a7d0b8ced4d7499",
         "version" : "2.10.0"
+      }
+    },
+    {
+      "identity" : "icalendar-kit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/thoven87/icalendar-kit.git",
+      "state" : {
+        "revision" : "ea91167c69dc88ef7fe4eb60896646e014d9056f",
+        "version" : "2.1.3"
       }
     },
     {

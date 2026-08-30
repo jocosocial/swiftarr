@@ -20,6 +20,7 @@ struct UsersController: APIRouteCollection {
 		tokenAuthGroup.get("match", "allnames", searchStringParam, use: matchAllNamesHandler)
 		tokenAuthGroup.get("match", "username", searchStringParam, use: matchUsernameHandler)
 		tokenAuthGroup.get(userIDParam, "profile", use: profileHandler)
+		tokenAuthGroup.get(userIDParam, "vcard", use: vcardHandler)
 		tokenAuthGroup.post(userIDParam, "report", use: reportHandler)
 
 		// Endpoints available only when logged in, and also can be disabled by server admin
@@ -148,6 +149,58 @@ struct UsersController: APIRouteCollection {
 			publicProfile.note = note.note
 		}
 		return publicProfile
+	}
+
+	/// `GET /api/v3/users/:user_id/vcard`
+	///
+	/// Returns a vCard (`.vcf`) of the specified user's land-based contact fields, suitable
+	/// for importing into a contacts app. Cruise-specific fields (cabin number, dinner team)
+	/// are omitted. The requester's private note about the user is never included.
+	///
+	/// - Parameter userID: in URL path. The userID to search for.
+	/// - Throws: 404 error if the profile is not available.
+	/// - Returns: A `text/vcard` attachment named `<username>.vcf`.
+	func vcardHandler(_ req: Request) async throws -> Response {
+		let requester = try req.auth.require(UserCacheData.self)
+		let profiledUser = try await User.findFromParameter(userIDParam, on: req)
+		if requester.getBlocks().contains(try profiledUser.requireID()) {
+			throw Abort(.notFound, reason: "profile is not available")
+		}
+		if profiledUser.accessLevel == .banned && !requester.accessLevel.hasAccess(.moderator) {
+			throw Abort(.notFound, reason: "profile is not available")
+		}
+
+		let includeDetails =
+			(profiledUser.moderationStatus.showsContent() || requester.accessLevel.hasAccess(.moderator))
+			&& requester.accessLevel != .banned
+
+		var photoData: Data?
+		var photoExt: String?
+		if includeDetails, let imageName = profiledUser.userImage, !imageName.isEmpty {
+			do {
+				let fileURL = try getImagePath(for: imageName, usage: .userProfile, size: .thumbnail, on: req)
+				if FileManager.default.fileExists(atPath: fileURL.path) {
+					photoData = try Data(contentsOf: fileURL)
+					photoExt = fileURL.pathExtension
+				}
+			}
+			catch {
+				// Omit PHOTO rather than failing the download.
+			}
+		}
+
+		let vcfString = try VCardHelper.buildVCard(
+			from: profiledUser,
+			includeDetails: includeDetails,
+			photoData: photoData,
+			photoFileExtension: photoExt
+		)
+		let filename = profiledUser.username.replacingOccurrences(of: "\"", with: "")
+		let headers = HTTPHeaders([
+			("Content-Type", "text/vcard; charset=utf-8"),
+			("Content-Disposition", "attachment; filename=\"\(filename).vcf\""),
+		])
+		return try await vcfString.encodeResponse(status: .ok, headers: headers, for: req)
 	}
 
 	/// `GET /api/v3/users/match/allnames/STRING`
