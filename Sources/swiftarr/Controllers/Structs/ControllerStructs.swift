@@ -404,7 +404,7 @@ extension EventData {
 /// Returned inside `Paginated<ShutternautScheduleReportData>` by:
 /// * `GET /api/v3/events/photographerreport`
 ///
-/// Also the input to `ShutternautScheduleReportCSV.build(from:)`, used by:
+/// Also the input to `ShutternautScheduleReport.buildCSV(from:)`, used by:
 /// * `GET /api/v3/events/photographerreport/download`
 ///
 /// See `EventController.photographerReportHandler(_:)` and `EventController.photographerReportDownloadHandler(_:)`.

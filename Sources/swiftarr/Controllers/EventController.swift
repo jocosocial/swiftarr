@@ -391,7 +391,7 @@ struct EventController: APIRouteCollection {
 		let options = try req.query.decode(QueryOptions.self)
 		let events = try await photographerReportEventQuery(on: req, cruiseday: options.cruiseday).all()
 		let rows = try await photographerReportRows(from: events, in: req)
-		let csvData = ShutternautScheduleReportCSV.build(from: rows)
+		let csvData = ShutternautScheduleReport.buildCSV(from: rows)
 		var headers: HTTPHeaders = [:]
 		headers.contentType = HTTPMediaType(type: "text", subType: "csv", parameters: ["charset": "UTF-8"])
 		headers.contentDisposition = .init(.attachment, filename: "shutternaut_schedule_report.csv")
