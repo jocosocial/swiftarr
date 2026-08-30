@@ -375,8 +375,9 @@ class EventPhotographerReportTests: XCTestCase, SwiftarrBaseTest {
 			needsPhotographer: true,
 			photographers: [photographer]
 		)
-		let csv = String(data: ShutternautScheduleReportCSV.build(from: [event]), encoding: .utf8) ?? ""
-		XCTAssertTrue(csv.hasPrefix("\u{FEFF}"))
+		let csvData = ShutternautScheduleReportCSV.build(from: [event])
+		XCTAssertEqual(Array(csvData.prefix(3)), [0xEF, 0xBB, 0xBF])
+		let csv = String(data: csvData.dropFirst(3), encoding: .utf8) ?? ""
 		XCTAssertTrue(csv.contains("camera-bob"))
 		XCTAssertFalse(csv.contains("The Lens"))
 		XCTAssertTrue(csv.contains("\"Show, featuring \"\"quotes\"\"\""))
