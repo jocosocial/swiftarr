@@ -49,6 +49,11 @@ struct UsersController: APIRouteCollection {
 		blockableAuthGroup.post("userrole", userRoleParam, "removerole", userIDParam, use: removeRoleForUser)
 	}
 
+	/// Sort order for `GET /api/v3/users/match/allnames/:search_string`.
+	enum UserMatchSort: String, Content {
+		case favorites
+	}
+
 	// MARK: - Finding Other Users
 	/// `GET /api/v3/users/find/:username`
 	///
@@ -170,9 +175,13 @@ struct UsersController: APIRouteCollection {
 	///
 	/// **URL Query Parameters:**
 	/// - ?favorers=BOOLEAN Show only resulting users that have favorited the requesting user.
+	/// - ?sort=STRING Sort order for results. Currently `favorites` is supported, which lists
+	///   users the requester has favorited first, then remaining matches. Both groups stay
+	///   alphabetical by username. Applied before the 10-result cap. May be combined with
+	///   `favorers` (mutual favorites first among people who favorited the requester).
 	///
 	/// - Parameter STRING: in URL path. The search string to use. Must be at least 2 characters long.
-	/// - Throws: 403 error if the search term is not permitted.
+	/// - Throws: 403 error if the search term is not permitted. 400 error if `sort` is unrecognized.
 	/// - Returns: An array of `UserHeader` values of all matching users.
 	func matchAllNamesHandler(_ req: Request) async throws -> [UserHeader] {
 		let requester = try req.auth.require(UserCacheData.self)
@@ -191,32 +200,17 @@ struct UsersController: APIRouteCollection {
 		// Process query params
 		struct QueryOptions: Content {
 			var favorers: Bool?
+			var sort: UserMatchSort?
 		}
 		let options: QueryOptions = try req.query.decode(QueryOptions.self)
-
-		// Return matches based on the query mode.
-		// Remove any blocks from the results.
-		var matchingUsers: [User] = []
-		if options.favorers ?? false {
-			let favoritingUsers = try await UserFavorite.query(on: req.db)
-				.join(User.self, on: \UserFavorite.$user.$id == \User.$id, method: .left)
-				.filter(\.$user.$id !~ requester.getBlocks())
-				.filter(\.$favorite.$id == requester.userID)
-				.filter(User.self, \.$userSearch, .custom("ILIKE"), "%\(search)%")
-				.sort(User.self, \.$username, .ascending)
-				.range(0..<10)
-				.with(\.$user)
-				.all()
-			matchingUsers = favoritingUsers.map { $0.user }
-		}
-		else {
-			matchingUsers = try await User.query(on: req.db)
-				.filter(\.$userSearch, .custom("ILIKE"), "%\(search)%")
-				.filter(\.$id !~ requester.getBlocks())
-				.sort(\.$username, .ascending)
-				.range(0..<10)
-				.all()
-		}
+		let matchingUsers = try await buildUserMatchQuery(
+			on: req,
+			requester: requester,
+			search: search,
+			favorersOnly: options.favorers ?? false,
+			sort: options.sort,
+			limit: 10
+		)
 		return try matchingUsers.map { try UserHeader(user: $0) }
 	}
 
@@ -247,6 +241,49 @@ struct UsersController: APIRouteCollection {
 			.filter(\.$id !~ requester.getBlocks()).sort(\.$username, .ascending).all()
 		// return @username only
 		return users.map { "@\($0.username)" }
+	}
+
+	/// Builds the user-name match query: search substring + block exclusion, optional
+	/// `?favorers=true` filter, and optional `?sort=` (currently `favorites`: favorites first, then username).
+	///
+	/// When `sort` is `.favorites`, this can't be a single ORM query: there's no ORM-level way to sort
+	/// by "is this user one of the requester's favorites" without a raw-SQL sort expression. Instead, this
+	/// runs the favorited and non-favorited matches as two ordinary, separately-sorted-and-capped queries and
+	/// concatenates them, which reproduces "favorites first, then everyone else, alphabetical within each
+	/// group" without needing a custom SQL fragment.
+	private func buildUserMatchQuery(
+		on req: Request,
+		requester: UserCacheData,
+		search: String,
+		favorersOnly: Bool,
+		sort: UserMatchSort?,
+		limit: Int
+	) async throws -> [User] {
+		func baseQuery() -> QueryBuilder<User> {
+			let query = User.query(on: req.db)
+				.filter(\.$userSearch, .custom("ILIKE"), "%\(search)%")
+				.filter(\.$id !~ requester.getBlocks())
+			if favorersOnly {
+				query.join(UserFavorite.self, on: \User.$id == \UserFavorite.$user.$id)
+					.filter(UserFavorite.self, \.$favorite.$id == requester.userID)
+			}
+			return query.sort(\.$username, .ascending)
+		}
+		switch sort {
+		case .favorites:
+			let favoriteIDs = try await UserFavorite.query(on: req.db)
+				.filter(\.$user.$id == requester.userID)
+				.all(\.$favorite.$id)
+			let favorited = try await baseQuery().filter(\.$id ~~ favoriteIDs).range(0..<limit).all()
+			guard favorited.count < limit else {
+				return favorited
+			}
+			let others = try await baseQuery().filter(\.$id !~ favoriteIDs)
+				.range(0..<(limit - favorited.count)).all()
+			return favorited + others
+		case nil:
+			return try await baseQuery().range(0..<limit).all()
+		}
 	}
 
 	// MARK: - Actions Taken on Other Users
