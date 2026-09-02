@@ -755,6 +755,220 @@ extension FezData {
 	}
 }
 
+// MARK: - Quartermaster
+
+/// A single item in a batch-create request. Provides the name and optional description for one
+/// `QuartermasterItem`; category, location, and contact user are shared across the whole batch
+/// and specified in the enclosing `QuartermasterCreateData`.
+public struct QuartermasterItemEntry: Content {
+	/// A short name or title for the item. Required; 2–100 characters.
+	var itemName: String
+	/// An optional longer description of the item. ≤2048 characters when present.
+	var itemDescription: String?
+	/// An optional photo of the item. At most one image per item.
+	var image: ImageUploadData?
+}
+
+/// Used to batch-create one or more `QuartermasterItem`s.
+///
+/// Required by: `POST /api/v3/quartermaster/create`
+///
+/// See: `QuartermasterController.createHandler(_:)`
+public struct QuartermasterCreateData: Content {
+	/// Whether the items are on offer (`have`) or wanted (`need`). Applies to all items in the batch.
+	var category: QuartermasterCategory
+	/// Optional free-text location where items can be picked up / exchanged. 3–100 characters when present.
+	/// Required when `hideOwnerName` is `true`.
+	var location: String?
+	/// When `true`, the owner's identity is hidden from other users on the created items. Requires `location`.
+	var hideOwnerName: Bool = false
+	/// One or more items to create. 1–10 items per call. Each item has its own name, optional
+	/// description, and optional photo.
+	var items: [QuartermasterItemEntry]
+}
+
+extension QuartermasterCreateData: RCFValidatable {
+	func runValidations(using decoder: ValidatingDecoder) throws {
+		let tester = try decoder.validator(keyedBy: CodingKeys.self)
+		tester.validate(!items.isEmpty, forKey: .items, or: "must include at least one item")
+		tester.validate(items.count <= 10, forKey: .items, or: "cannot create more than 10 items at once")
+		quartermasterLocationValidations(location: location)
+			.forEach {
+				tester.addValidationError(forKey: .location, errorString: $0)
+			}
+		try validateQuartermasterLocationRequiredIfHidden(location: location, hideOwnerName: hideOwnerName)
+		for (index, entry) in items.enumerated() {
+			guard entry.itemName.count >= 2 else {
+				throw Abort(.badRequest, reason: "Item \(index + 1): itemName has a 2 character minimum")
+			}
+			guard entry.itemName.count <= 100 else {
+				throw Abort(.badRequest, reason: "Item \(index + 1): itemName has a 100 character limit")
+			}
+			if let desc = entry.itemDescription {
+				guard desc.count <= 2048 else {
+					throw Abort(.badRequest, reason: "Item \(index + 1): itemDescription is over the 2048 character limit")
+				}
+			}
+		}
+	}
+}
+
+extension QuartermasterCreateData {
+	/// Decodes a create request. `hideOwnerName` may be omitted from the JSON, in which case it decodes as FALSE.
+	public init(from decoder: Decoder) throws {
+		let container = try decoder.container(keyedBy: CodingKeys.self)
+		category = try container.decode(QuartermasterCategory.self, forKey: .category)
+		location = try container.decodeIfPresent(String.self, forKey: .location)
+		hideOwnerName = try container.decodeIfPresent(Bool.self, forKey: .hideOwnerName) ?? false
+		items = try container.decode([QuartermasterItemEntry].self, forKey: .items)
+	}
+}
+
+/// Used to update a single `QuartermasterItem`.
+///
+/// Required by: `POST /api/v3/quartermaster/ID/update`
+///
+/// See: `QuartermasterController.updateHandler(_:)`
+public struct QuartermasterContentData: Content {
+	/// The updated category.
+	var category: QuartermasterCategory
+	/// The updated item name. 2–100 characters.
+	var itemName: String
+	/// The updated description. ≤2048 characters when present.
+	var itemDescription: String?
+	/// The updated location. 3–100 characters when present. Required when `hideOwnerName` is `true`.
+	var location: String?
+	/// When `true`, the owner's identity is hidden from other users on this item. Requires `location`.
+	var hideOwnerName: Bool = false
+	/// The item's photo, always fully replacing whatever image (if any) the item currently has --
+	/// there's no "leave unchanged" state distinct from "keep this same filename". `nil` (or an
+	/// `ImageUploadData` with both `filename` and `image` nil) clears the item's photo. To keep an
+	/// existing photo across an otherwise-unrelated edit, echo its filename back as `.filename`.
+	var image: ImageUploadData?
+}
+
+extension QuartermasterContentData: RCFValidatable {
+	func runValidations(using decoder: ValidatingDecoder) throws {
+		let tester = try decoder.validator(keyedBy: CodingKeys.self)
+		tester.validate(itemName.count >= 2, forKey: .itemName, or: "itemName field has a 2 character minimum")
+		tester.validate(itemName.count <= 100, forKey: .itemName, or: "itemName field has a 100 character limit")
+		if let desc = itemDescription {
+			tester.validate(
+				desc.count <= 2048,
+				forKey: .itemDescription,
+				or: "itemDescription length of \(desc.count) is over the 2048 character limit"
+			)
+		}
+		quartermasterLocationValidations(location: location)
+			.forEach {
+				tester.addValidationError(forKey: .location, errorString: $0)
+			}
+		try validateQuartermasterLocationRequiredIfHidden(location: location, hideOwnerName: hideOwnerName)
+	}
+}
+
+extension QuartermasterContentData {
+	/// Decodes an update request. `hideOwnerName` may be omitted from the JSON, in which case it decodes as FALSE.
+	public init(from decoder: Decoder) throws {
+		let container = try decoder.container(keyedBy: CodingKeys.self)
+		category = try container.decode(QuartermasterCategory.self, forKey: .category)
+		itemName = try container.decode(String.self, forKey: .itemName)
+		itemDescription = try container.decodeIfPresent(String.self, forKey: .itemDescription)
+		location = try container.decodeIfPresent(String.self, forKey: .location)
+		hideOwnerName = try container.decodeIfPresent(Bool.self, forKey: .hideOwnerName) ?? false
+		image = try container.decodeIfPresent(ImageUploadData.self, forKey: .image)
+	}
+}
+
+// MARK: - Quartermaster Validation
+
+/// `QuartermasterCreateData` and `QuartermasterContentData` both carry an optional `location` field with the same
+/// bounds; this fn exists to ensure they validate it the same way. Returns a list of validation failure
+/// strings--if it returns an empty array the location is valid (or absent, which is allowed).
+private func quartermasterLocationValidations(location: String?) -> [String] {
+	guard let loc = location else { return [] }
+	var errorStrings: [String] = []
+	if loc.count < 3 { errorStrings.append("location field has a 3 character minimum") }
+	if loc.count > 100 { errorStrings.append("location field has a 100 character limit") }
+	return errorStrings
+}
+
+/// `QuartermasterCreateData` and `QuartermasterContentData` both require `location` to be present when
+/// `hideOwnerName` is `true`, since it becomes the only way for other users to identify the item; this fn
+/// exists to ensure they enforce that the same way.
+private func validateQuartermasterLocationRequiredIfHidden(location: String?, hideOwnerName: Bool) throws {
+	let noLocation = location == nil || location?.isEmpty == true
+	if hideOwnerName && noLocation {
+		throw Abort(.badRequest, reason: "A location is required when hiding your name.")
+	}
+}
+
+/// Used to return a `QuartermasterItem`'s data.
+///
+/// Returned by:
+/// * `GET /api/v3/quartermaster`
+/// * `GET /api/v3/quartermaster/ID`
+/// * `POST /api/v3/quartermaster/create`
+/// * `POST /api/v3/quartermaster/ID/update`
+///
+/// See: `QuartermasterController`
+public struct QuartermasterData: Content, ResponseEncodable {
+	/// The item's ID.
+	var itemID: UUID
+	/// Whether the owner has or needs the item.
+	var category: QuartermasterCategory
+	/// A short name/title for the item. Masked to a review notice when the item is quarantined.
+	var itemName: String
+	/// An optional longer description. Masked when quarantined.
+	var itemDescription: String?
+	/// An optional free-text pickup/exchange location. Masked when quarantined.
+	var location: String?
+	/// An optional filename for the item's photo. `nil` when there's no photo, or when quarantined.
+	var image: String?
+	/// The item's creator. `nil` when `hideOwnerName` is `true` and the viewer is neither the owner
+	/// nor a moderator.
+	var owner: UserHeader?
+	/// Whether the owner has chosen to hide their identity from other users.
+	var hideOwnerName: Bool
+	/// The item's current moderation status.
+	var moderationStatus: ContentModerationStatus
+	/// The time of the item's most recent modification.
+	var lastModificationTime: Date
+}
+
+extension QuartermasterData {
+	/// - Parameters:
+	///   - showOwner: Whether to reveal the real owner in this response. Should be `true` when the
+	///     viewer is the item's owner, a moderator, or `hideOwnerName` is `false`; `false` otherwise.
+	init(item: QuartermasterItem, owner: UserHeader, showOwner: Bool, overrideQuarantine: Bool = false) throws {
+		self.itemID = try item.requireID()
+		self.category = item.category
+		let showContent = overrideQuarantine || item.moderationStatus.showsContent()
+		self.itemName = showContent ? item.itemName : "Item name is under moderator review"
+		self.itemDescription = showContent ? item.itemDescription : "Item description is under moderator review"
+		self.location = showContent ? item.location : "Item location is under moderator review"
+		self.image = showContent ? item.image : nil
+		self.owner = showOwner ? owner : nil
+		self.hideOwnerName = item.hideOwnerName
+		self.moderationStatus = item.moderationStatus
+		self.lastModificationTime = item.updatedAt ?? Date()
+	}
+}
+
+/// Used to return a paginated list of `QuartermasterItem`s.
+///
+/// Returned by: `GET /api/v3/quartermaster`
+///
+/// See: `QuartermasterController.listHandler(_:)`
+public struct QuartermasterListData: Content {
+	/// Pagination into the result set.
+	var paginator: Paginator
+	/// The items in the result set.
+	var items: [QuartermasterData]
+}
+
+// MARK: -
+
 /// Used to return a `FezPost`'s data.
 ///
 /// Returned by:
@@ -1147,10 +1361,12 @@ struct ImageUploadData: Content, Sendable {
 
 extension ImageUploadData {
 	init(_ filename: String? = nil, _ image: Data? = nil) {
-		// An empty filename comes from unused photo-form slots; treat it as "no image" so it
-		// doesn't get stored as a bogus empty filename on the post.
+		// Both halves can arrive empty rather than absent: an unused photo-form slot submits an
+		// empty filename, and a file input the user never touched is still submitted, decoding to
+		// zero bytes rather than to nil. Both mean "no image here", and keeping either one costs a
+		// real photo, since processImages only consults filename when image is nil.
 		self.filename = filename?.isEmpty == true ? nil : filename
-		self.image = image
+		self.image = image?.isEmpty == true ? nil : image
 	}
 }
 
@@ -2315,8 +2531,10 @@ extension UserCreateData: RCFValidatable {
 /// Returned by:
 /// * `GET /api/v3/users/ID/header`
 /// * `GET /api/v3/client/user/headers/since/DATE`
+/// * `POST /api/v3/auth/username`
 ///
-/// See `UsersController.headerHandler(_:)`, `ClientController.userHeadersHandler(_:)`.
+/// See `UsersController.headerHandler(_:)`, `ClientController.userHeadersHandler(_:)`,
+/// `AuthController.usernameHandler(_:)`.
 public struct UserHeader: Content, Sendable {
 	/// The user's ID.
 	var userID: UUID
@@ -2425,6 +2643,13 @@ public struct UserNotificationData: Content {
 	/// If a chat the user was added to (but hasn't yet viewed) gets new messages, that chat is counted in this total and not in `newPrivateEventMessageCount`.
 	var addedToPrivateEventCount: Int
 
+	/// The IDs of the Seamail chats counted by `addedToSeamailCount`. Empty if not logged in. Order is not significant.
+	var addedToSeamailIDs: [UUID]
+	/// The IDs of the LFGs counted by `addedToLFGCount`. Empty if not logged in. Order is not significant.
+	var addedToLFGIDs: [UUID]
+	/// The IDs of the Private Events counted by `addedToPrivateEventCount`. Empty if not logged in. Order is not significant.
+	var addedToPrivateEventIDs: [UUID]
+
 	/// Count of # of Seamail threads with new messages. NOT total # of new messages-a single seamail thread with 10 new messages counts as 1. 0 if not logged in.
 	var newSeamailMessageCount: Int
 	/// Count of # of LFGs with new messages. 0 if not logged in.
@@ -2480,9 +2705,9 @@ public struct UserNotificationData: Content {
 
 extension UserNotificationData {
 	init(
-		seamailCounts: (Int, Int), 
-		lfgCounts: (Int, Int), 
-		privateEventCounts: (Int, Int),
+		seamailState: ChatUnreadState,
+		lfgState: ChatUnreadState,
+		privateEventState: ChatUnreadState,
 		activeAnnouncementIDs: [Int],
 		newAnnouncementCount: Int,
 		nextEventTime: Date?,
@@ -2503,12 +2728,15 @@ extension UserNotificationData {
 		self.newTwarrtMentionCount = 0
 		self.forumMentionCount = 0
 		self.newForumMentionCount = 0
-		self.addedToSeamailCount = seamailCounts.0
-		self.addedToLFGCount = lfgCounts.0
-		self.addedToPrivateEventCount = privateEventCounts.0
-		self.newSeamailMessageCount = seamailCounts.1
-		self.newFezMessageCount = lfgCounts.1
-		self.newPrivateEventMessageCount = privateEventCounts.1
+		self.addedToSeamailCount = seamailState.addedToChatCount
+		self.addedToLFGCount = lfgState.addedToChatCount
+		self.addedToPrivateEventCount = privateEventState.addedToChatCount
+		self.addedToSeamailIDs = seamailState.addedToChatIDs
+		self.addedToLFGIDs = lfgState.addedToChatIDs
+		self.addedToPrivateEventIDs = privateEventState.addedToChatIDs
+		self.newSeamailMessageCount = seamailState.unreadChatCount
+		self.newFezMessageCount = lfgState.unreadChatCount
+		self.newPrivateEventMessageCount = privateEventState.unreadChatCount
 		self.nextFollowedEventTime = nextEventTime
 		self.nextFollowedEventID = nextEvent
 		self.microKaraokeFinishedSongCount = microKaraokeFinishedSongCount
@@ -2533,6 +2761,9 @@ extension UserNotificationData {
 		self.addedToSeamailCount = 0
 		self.addedToLFGCount = 0
 		self.addedToPrivateEventCount = 0
+		self.addedToSeamailIDs = []
+		self.addedToLFGIDs = []
+		self.addedToPrivateEventIDs = []
 		self.newForumMentionCount = 0
 		self.newSeamailMessageCount = 0
 		self.newFezMessageCount = 0
@@ -2663,6 +2894,41 @@ extension UserRecoveryData: RCFValidatable {
 			}
 		tester.validate(newPassword.count >= 6, forKey: .newPassword, or: "password has a 6 character minimum length")
 		tester.validate(newPassword.count <= 50, forKey: .newPassword, or: "password has a 50 character limit")
+	}
+}
+
+/// Used to look up a forgotten username from a registration code plus a second factor.
+///
+/// Required by: `POST /api/v3/auth/username`
+///
+/// See `AuthController.usernameHandler(_:)`.
+public struct UserUsernameLookupData: Content {
+	/// The registration code associated with the account.
+	var registrationCode: String
+	/// The user's password or recovery key. Must not be a registration code.
+	var recoveryKey: String
+}
+
+extension UserUsernameLookupData: RCFValidatable {
+	func runValidations(using decoder: ValidatingDecoder) throws {
+		let tester = try decoder.validator(keyedBy: CodingKeys.self)
+		tester.validate(
+			RegistrationCode.isWellFormed(registrationCode),
+			forKey: .registrationCode,
+			or: "Malformed registration code. Registration code must be 6 alphanumeric letters; spaces optional"
+		)
+		tester.validate(
+			recoveryKey.count >= 6,
+			forKey: .recoveryKey,
+			or: "password/recovery code has a 6 character minimum"
+		)
+		// A 6-character alphanumeric value is a registration code. The second factor must be
+		// the account password or recovery key, never the registration code (even a different one).
+		tester.validate(
+			!RegistrationCode.isWellFormed(recoveryKey),
+			forKey: .recoveryKey,
+			or: "recovery key cannot be a registration code; provide your password or recovery key"
+		)
 	}
 }
 

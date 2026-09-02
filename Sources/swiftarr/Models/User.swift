@@ -274,6 +274,12 @@ extension User {
 		guard !verificationUsed, let verification else { return }
 		self.verification = "*" + RegistrationCode.normalized(verification)
 	}
+
+	/// Both stored forms of a registration code (`code` and `*code`) for database lookup.
+	static func storedVerificationValues(for code: String) -> [String] {
+		let normalized = RegistrationCode.normalized(unspentVerification(code))
+		return [normalized, "*" + normalized]
+	}
 }
 
 /// Creates the `User` table in the database and specifies its fields.

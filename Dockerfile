@@ -1,7 +1,7 @@
 # Builder image
 # 
 # This sets up the environment used to build swiftarr.
-FROM docker.io/library/swift:6.2-noble AS builder
+FROM docker.io/library/swift:6.3-noble AS builder
 
 ARG env
 

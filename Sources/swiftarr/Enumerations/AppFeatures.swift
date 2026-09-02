@@ -52,6 +52,7 @@ public enum SwiftarrFeature: String, Content, CaseIterable, Sendable {
 	case registration // User account creation. This is independent of .users above.
 	case hunts  // Puzzle hunts, quizzes, etc.
 	case eventFeedback  	// Form for Shadow Event hosts to give feedback on how their event went
+	case quartermaster  // Searchable "have / need" item board
 
 	case all
 

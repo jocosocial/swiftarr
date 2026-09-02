@@ -10,6 +10,8 @@ struct SiteLoginController: SiteControllerUtils {
 		openRoutes.get("login", use: loginPageViewHandler)
 		openRoutes.post("login", use: loginPagePostHandler)
 		openRoutes.post("recoverPassword", use: recoverPasswordPostHandler)  // Change pw while not logged in
+		openRoutes.get("forgotUsername", use: forgotUsernameViewHandler)
+		openRoutes.post("forgotUsername", use: forgotUsernamePostHandler)
 		openRoutes.get("codeOfConduct", use: codeOfConductViewHandler)
 		openRoutes.get("conductAgree", use: codeOfConductViewHandler)
 
@@ -375,6 +377,37 @@ struct SiteLoginController: SiteControllerUtils {
 			}
 			return try await req.view.render("Login/resetPassword", ctx)
 		}
+	}
+
+	/// `GET /forgotUsername`
+	///
+	/// Shows the Forgot Username page. Logged-in users already know their username, so this
+	/// shows the same login-status message as other Login pages.
+	func forgotUsernameViewHandler(_ req: Request) async throws -> View {
+		return try await req.view.render("Login/forgotUsername", LoginPageContext(req, title: "Forgot Username"))
+	}
+
+	/// `POST /forgotUsername`
+	///
+	/// Looks up a username from a registration code plus password or recovery key. Returns JSON
+	/// `UserHeader` so the form can AJAX the result onto the page.
+	func forgotUsernamePostHandler(_ req: Request) async throws -> UserHeader {
+		struct PostStruct: Codable {
+			var regCode: String
+			var recoveryKey: String
+		}
+		let postStruct = try req.content.decode(PostStruct.self)
+		let lookupData = UserUsernameLookupData(
+			registrationCode: postStruct.regCode,
+			recoveryKey: postStruct.recoveryKey
+		)
+		let apiResponse = try await apiQuery(
+			req,
+			endpoint: "/auth/username",
+			method: .POST,
+			encodeContent: lookupData
+		)
+		return try apiResponse.content.decode(UserHeader.self)
 	}
 
 	/// `GET /codeOfConduct`

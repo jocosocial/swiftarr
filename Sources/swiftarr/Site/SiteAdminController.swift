@@ -32,6 +32,8 @@ extension ServerRollupData.CountType {
 			case .karaokeFavorite: return "Karaoke Song Favorites"
 			case .report: return "Moderation Reports"
 			case .moderationAction: return "Moderation Actions"
+			case .quartermasterItem: return "Quartermastarr Items"
+			case .quartermasterItemEdit: return "Quartermastarr Item Edits"
 		}
 	}
 }

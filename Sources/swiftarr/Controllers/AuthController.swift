@@ -55,6 +55,7 @@ struct AuthController: APIRouteCollection {
 
 		// open access endpoints
 		authRoutes.post("recovery", use: recoveryHandler)
+		authRoutes.post("username", use: usernameHandler)
 
 		// endpoints available only when not logged in
 		let basicAuthGroup = authRoutes.addBasicAuthRequirement()
@@ -173,6 +174,86 @@ struct AuthController: APIRouteCollection {
 			try await req.userCache.updateUser(user.requireID())
 			return try TokenStringData(user: user, token: token)
 		}
+	}
+
+	/// `POST /api/v3/auth/username`
+	///
+	/// Looks up a forgotten username from a registration code plus a second factor. The second
+	/// factor must be the account password or the recovery key generated at account creation.
+	/// A registration code is not accepted as the second factor — even the same code, and even
+	/// a different well-formed 6-character code.
+	///
+	/// The use case is a forgotten username during preregistration or later. The caller already
+	/// has a registration code (mailed before the cruise) and either the password they chose
+	/// or the recovery key shown when the account was created.
+	///
+	/// If the password matches a sub-account, that sub-account's `UserHeader` is returned. The
+	/// recovery key is shared across a primary account and its alts, so a recovery-key match
+	/// returns the primary account.
+	///
+	/// Username lookup does not spend the registration code and does not log the user in.
+	///
+	/// - Note: To prevent brute-force malicious attempts, there is a limit on successive
+	///   failed attempts, currently hard-coded to 5, shared with password recovery.
+	///
+	/// - Parameter requestBody: `UserUsernameLookupData`
+	/// - Throws: 400 error if the lookup fails or the second factor is a registration code.
+	///   403 error if the maximum number of successive failed recovery attempts has been reached.
+	/// - Returns: `UserHeader` for the matching account.
+	func usernameHandler(_ req: Request) async throws -> UserHeader {
+		// see `UserUsernameLookupData.validations()`
+		let data = try ValidatingJSONDecoder().decode(UserUsernameLookupData.self, fromBodyOf: req)
+		let storedCodes = User.storedVerificationValues(for: data.registrationCode)
+
+		let users = try await User.query(on: req.db).filter(\.$verification ~~ storedCodes).all()
+
+		// Same generic failure for unknown codes and bad second factors so a valid
+		// registration code is not distinguishable from a made-up one.
+		let noMatch = Abort(.badRequest, reason: "no match for supplied credentials")
+		guard !users.isEmpty else {
+			throw noMatch
+		}
+
+		// abort if account is seeing potential brute-force attack
+		guard users.allSatisfy({ $0.recoveryAttempts < 5 }) else {
+			throw Abort(.forbidden, reason: "please see a Twit-arr Team member for account recovery")
+		}
+
+		// Prefer a password match (identifies a specific primary or alt) over a recovery-key
+		// match (shared across the family). Walk primaries first so a recovery-key-only hit
+		// returns the account the registration code was originally assigned to.
+		let orderedUsers = users.sorted { lhs, rhs in
+			lhs.$parent.id == nil && rhs.$parent.id != nil
+		}
+		let verifier = BCryptDigest()
+		var passwordMatch: User?
+		var recoveryKeyMatch: User?
+		for user in orderedUsers {
+			// password is matched as typed
+			if try verifier.verify(data.recoveryKey, created: user.password) {
+				passwordMatch = user
+				break
+			}
+			// recoveryKey is hashed from the 3-word key with ASCII spaces removed
+			if recoveryKeyMatch == nil {
+				let normalizedRecoveryKey = data.recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
+				if try verifier.verify(normalizedRecoveryKey, created: user.recoveryKey) {
+					recoveryKeyMatch = user
+				}
+			}
+		}
+
+		// abort if no match
+		guard let matched = passwordMatch ?? recoveryKeyMatch else {
+			// track the attempt count on every account sharing this registration code
+			for user in users {
+				user.recoveryAttempts += 1
+				try await user.save(on: req.db)
+			}
+			throw noMatch
+		}
+
+		return try UserHeader(user: matched)
 	}
 
 	// MARK: - basicAuthGroup Handlers (not logged in)

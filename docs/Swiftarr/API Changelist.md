@@ -236,3 +236,17 @@ associated AddedToChat field value increase.
 * New endpoint `POST /api/v3/admin/regcodes/unlock/:userID` re-enables one-time registration-code password recovery (strips the spent `*` prefix on `User.verification` and clears `recoveryAttempts`). TwitarrTeam or `accountmanager` only.
 * Added `photostreamUploadRateLimit` (seconds between photostream uploads; `0` disables the limit) to `SettingsAdminData`, `SettingsUpdateData`, and `ClientSettingsData`.
 * `GET /api/v3/client/settings` now also includes `photostreamUploadRateLimit`.
+
+## Aug 26, 2026
+* New `QuartermasterController`, a "have/need" item board (see `/api/v3/quartermaster` endpoints for the full list).
+* New moderator endpoints for reviewing and setting the moderation state of Quartermaster items: `GET /api/v3/mod/quartermaster/ID`, `POST /api/v3/mod/quartermaster/ID/setstate/STRING`.
+
+## Aug 27, 2026
+* `UserNotificationData` has new `addedToSeamailIDs`, `addedToLFGIDs`, and `addedToPrivateEventIDs` fields. Each is an
+array of the chat IDs counted by the corresponding `addedTo<Seamail, LFG, PrivateEvent>Count` field, letting clients
+show *which* chats the user was added to rather than just how many. The arrays are empty when not logged in. Purely
+additive; the existing count fields are unchanged and are now derived from these arrays, so counts and IDs always agree.
+
+## Aug 30, 2026
+* New endpoint `POST /api/v3/auth/username` returns a `UserHeader` given a registration code plus password or recovery key (`UserUsernameLookupData`).
+* `GET /api/v3/users/match/allnames/:search_string` now accepts `?sort=favorites`, which sorts users the requester has favorited first.

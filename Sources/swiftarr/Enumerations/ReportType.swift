@@ -23,6 +23,8 @@ enum ReportType: String, Codable {
 	case streamPhoto
 	/// a `PersonalEvent`
 	case personalEvent
+	/// a `QuartermasterItem`
+	case quartermasterItem
 }
 
 /// Moderation status of a piece of reportable content.

@@ -8,7 +8,7 @@ on:
 jobs:
   Build:
     runs-on: ubuntu-24.04
-    container: docker.io/library/swift:6.2-noble
+    container: docker.io/library/swift:6.3-noble
     steps:
       - name: Install system dependencies
         run: |

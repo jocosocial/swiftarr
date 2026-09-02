@@ -52,7 +52,7 @@ import Vapor
 /// Usage: #addJocomoji(String) -> String
 struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 	static let jocomoji = [
-		"back-deck-juice", "buffet", "die-ship", "die", "hottub", "joco", "pirate", "ship-front",
+		"arr", "back-deck-juice", "buffet", "die-ship", "die", "hottub", "joco", "pirate", "ship-front",
 		"ship", "tropical-drink", "wangwang", "zombie",
 	]
 
@@ -315,6 +315,18 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 				return "[Boardgames Link]"
 			}
 		case "karaoke": return "[Karaoke Link]"
+		case "quartermaster":
+			if pathComponents.count > 2 {
+				switch pathComponents[2] {
+				case "need": return "[Quartermastarr Need Link]"
+				case "owned": return "[Your Quartermastarr Items Link]"
+				case "about": return "[Quartermastarr Info Link]"
+				default: return "[Quartermastarr Item Link]"
+				}
+			}
+			else {
+				return "[Quartermastarr Have Link]"
+			}
 		default: return "[Twitarr Link]"
 		}
 	}
@@ -684,6 +696,27 @@ struct DinnerTeamTag: LeafTag {
 			return ""
 		}
 		return LeafData.string(dinnerTeam.label)
+	}
+}
+
+// Percent-encodes a string for safe use as a single value in a URL query string -- e.g. a piece of
+// user-generated text being spliced into an href. Escapes "&", "=", and "+" in addition to the usual
+// urlQueryAllowed set, since those are still meaningful as query-string structure even though they're
+// technically legal characters within one.
+//
+// Usage: #urlEncode(string)
+struct URLEncodeTag: LeafTag {
+	static let queryValueAllowed: CharacterSet = {
+		var allowed = CharacterSet.urlQueryAllowed
+		allowed.remove(charactersIn: "&=+")
+		return allowed
+	}()
+
+	func render(_ ctx: LeafContext) throws -> LeafData {
+		guard ctx.parameters.count == 1, let value = ctx.parameters[0].string else {
+			throw "Leaf: urlEncode tag unable to get string value."
+		}
+		return LeafData.string(value.addingPercentEncoding(withAllowedCharacters: Self.queryValueAllowed) ?? value)
 	}
 }
 

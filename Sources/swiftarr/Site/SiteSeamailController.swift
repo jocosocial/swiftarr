@@ -160,6 +160,7 @@ struct SiteSeamailController: SiteControllerUtils {
 	// * `?withuser=UUID` - prefills the participant list with the given user. Currently can only be applied once.
 	// * `?foruser=NAME` - prefills "Post as Moderator" or "Post as TwitarrTeam" when creating from
 	//   those mailboxes. Also returns to `/seamail?foruser=NAME` after a successful create.
+	// * `?withsubject=STRING` - prefills the subject line.
 	//
 	// Shows the Create New Seamail page. This page lets you add users to the chat, and give the chat a subject and initial message.
 	func seamailCreatePageHandler(_ req: Request) async throws -> View {
@@ -177,6 +178,7 @@ struct SiteSeamailController: SiteControllerUtils {
 			var creatorUsername: String
 			var moderatorUsername: String
 			var twitarrTeamUsername: String
+			var withSubject: String
 
 			init(_ req: Request, withUser: UserHeader?) throws {
 				let mailbox = SeamailCreateMailbox(req)
@@ -199,6 +201,8 @@ struct SiteSeamailController: SiteControllerUtils {
 				else {
 					creatorUsername = trunk.username
 				}
+				withSubject = req.query[String.self, at: "withsubject"] ?? ""
+				post = .init(forType: .seamail)
 			}
 		}
 		let ctx = try SeamaiCreatePageContext(req, withUser: withUser)
@@ -212,7 +216,11 @@ struct SiteSeamailController: SiteControllerUtils {
 		guard let searchString = req.parameters.get("searchString")?.percentEncodeFilePathEntry() else {
 			throw "Missing search string"
 		}
-		let response = try await apiQuery(req, endpoint: "/users/match/allnames/\(searchString)")
+		let response = try await apiQuery(
+			req,
+			endpoint: "/users/match/allnames/\(searchString)",
+			query: [URLQueryItem(name: "sort", value: "favorites")]
+		)
 		return try await response.encodeResponse(for: req)
 	}
 

@@ -62,6 +62,15 @@ struct ModerationController: APIRouteCollection {
 			use: fezPostSetModerationStateHandler
 		)
 
+		moderatorAuthGroup.get("quartermaster", quartermasterIDParam, use: quartermasterModerationHandler)
+		moderatorAuthGroup.post(
+			"quartermaster",
+			quartermasterIDParam,
+			"setstate",
+			modStateParam,
+			use: quartermasterSetModerationStateHandler
+		)
+
 		moderatorAuthGroup.get("profile", userIDParam, use: profileModerationHandler)
 		moderatorAuthGroup.post(
 			"profile",
@@ -554,6 +563,71 @@ struct ModerationController: APIRouteCollection {
 			on: req
 		)
 		try await lfgPost.save(on: req.db)
+		return .ok
+	}
+
+	/// `GET /api/v3/mod/quartermaster/ID`
+	///
+	/// Moderator only. Returns info admins and moderators need to review a Quartermaster item. Works if the item has been
+	/// deleted. Shows the item's quarantine and reviewed states.
+	///
+	/// The `QuartermasterModerationData` contains:
+	/// * The current item contents, even if deleted or quarantined (never masked, unlike the public API)
+	/// * Previous edits of the item
+	/// * Reports against the item
+	/// * The item's current deletion and moderation status.
+	///
+	/// - Parameter quartermasterID: in URL path.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `QuartermasterModerationData` containing a bunch of data pertinient to moderating the item.
+	func quartermasterModerationHandler(_ req: Request) async throws -> QuartermasterModerationData {
+		guard let itemIDString = req.parameters.get(quartermasterIDParam.paramString), let itemID = UUID(itemIDString) else {
+			throw Abort(.badRequest, reason: "Request parameter \(quartermasterIDParam.paramString) is missing.")
+		}
+		guard let item = try await QuartermasterItem.query(on: req.db).filter(\.$id == itemID).withDeleted().first() else {
+			throw Abort(.notFound, reason: "no value found for identifier '\(itemID)'")
+		}
+		let reports = try await Report.query(on: req.db)
+			.filter(\.$reportType == .quartermasterItem)
+			.filter(\.$reportedID == itemIDString)
+			.sort(\.$createdAt, .descending).all()
+		let edits = try await item.$edits.query(on: req.db).sort(\.$createdAt, .ascending).all()
+		let editData: [QuartermasterEditLogData] = try edits.map { try QuartermasterEditLogData($0, on: req) }
+		let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
+		let ownerHeader = try req.userCache.getHeader(item.$owner.id)
+		let itemData = try QuartermasterData(item: item, owner: ownerHeader, showOwner: true, overrideQuarantine: true)
+		let modData = QuartermasterModerationData(
+			item: itemData,
+			isDeleted: item.deletedAt != nil,
+			moderationStatus: item.moderationStatus,
+			edits: editData,
+			reports: reportData
+		)
+		return modData
+	}
+
+	/// `POST /api/v3/mod/quartermaster/ID/setstate/STRING`
+	///
+	/// Moderator only. Sets the moderation state enum on the Quartermaster item identified by ID to the `ContentModerationStatus`
+	/// in STRING. Logs the action to the moderator log unless the user owns the item.
+	///
+	/// - Parameter quartermasterID: in URL path.
+	/// - Parameter moderationState: in URL path. Value must match a `ContentModerationStatus` rawValue.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `HTTPStatus` .ok if the requested moderation status was set.
+	func quartermasterSetModerationStateHandler(_ req: Request) async throws -> HTTPStatus {
+		let user = try req.auth.require(UserCacheData.self)
+		guard let modState = req.parameters.get(modStateParam.paramString) else {
+			throw Abort(.badRequest, reason: "Request parameter `Moderation_State` is missing.")
+		}
+		let item = try await QuartermasterItem.findFromParameter(quartermasterIDParam, on: req)
+		try item.moderationStatus.setFromParameterString(modState)
+		await item.logIfModeratorAction(
+			ModeratorActionType.setFromModerationStatus(item.moderationStatus),
+			user: user,
+			on: req
+		)
+		try await item.save(on: req.db)
 		return .ok
 	}
 

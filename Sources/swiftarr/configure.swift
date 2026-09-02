@@ -521,6 +521,7 @@ struct SwiftarrConfigurator {
 		app.leaf.tags["dinnerTeamTag"] = DinnerTeamTag()
 		app.leaf.tags["lfgLabel"] = LFGLabelTag()
 		app.leaf.tags["notEmpty"] = NotEmptyTag()
+		app.leaf.tags["urlEncode"] = URLEncodeTag()
 		app.leaf.tags["countOrZero"] = CountZeroTag()
 		app.leaf.tags["regCode"] = RegCodeTag()
 	}
@@ -606,6 +607,8 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateFezParticipantSchema(), to: .psql)
 		app.migrations.add(CreateFezPostSchema(), to: .psql)
 		app.migrations.add(CreateFriendlyFezEditSchema(), to: .psql)
+		app.migrations.add(CreateQuartermasterItemSchema(), to: .psql)
+		app.migrations.add(CreateQuartermasterItemEditSchema(), to: .psql)
 		app.migrations.add(CreateDailyThemeSchema(), to: .psql)
 		app.migrations.add(CreateBoardgameSchema(), to: .psql)
 		app.migrations.add(CreateBoardgameFavoriteSchema(), to: .psql)
@@ -679,7 +682,8 @@ struct SwiftarrConfigurator {
 		app.migrations.add(AddFoodDrinkCategory(), to: .psql)
 		app.migrations.add(CreateMicroKaraokeUser(), to: .psql)
 		app.migrations.add(RemoveCovidCategory(), to: .psql)
-		
+		app.migrations.add(CreateQuartermasterSearchIndexes(), to: .psql)
+
 		// DON'T add schema-modification migrations down here. Appending migrations that modify a table's schema at the end will
 		// break migrations that use Fluent to populate that table with data, as Fluent only models the current db schema.
 		// When resetting the db (or a new install), all the migrations run in the listed order, and the schema needs to match Fluent before
