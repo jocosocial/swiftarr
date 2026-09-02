@@ -366,7 +366,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				oldPosts = []
 				newPosts = []
 				showDivider = false
-				post = .init(forType: .fezPost(fez))
+				post = .init(forType: .fezPost(fez), foruser: req.query[String.self, at: "foruser"])
 				paginator = PaginatorContext(
 					start: 0,
 					total: 40,

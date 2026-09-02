@@ -35,10 +35,10 @@ struct TweetPageContext: Encodable {
 				filterDesc = "In reply to this post:"
 			}
 			isReplyGroup = true
-			post = .init(forType: .tweetReply(rg))
+			post = .init(forType: .tweetReply(rg), foruser: req.query[String.self, at: "foruser"])
 		}
 		else {
-			post = .init(forType: .tweet)
+			post = .init(forType: .tweet, foruser: req.query[String.self, at: "foruser"])
 			filterDesc = "Twarrts"
 			filterType =
 				queryStruct.hideReplies ?? (req.session.data["hideTwarrtReplies"] == "true") ? .hideReplies : .all
@@ -172,7 +172,10 @@ struct TweetEditPageContext: Encodable {
 	init(_ req: Request, replyToTweet: TwarrtDetailData) {
 		trunk = .init(req, title: "Reply to Twarrt", tab: .twarrts)
 		self.replyToTweet = replyToTweet
-		post = .init(forType: .tweetReply(replyToTweet.replyGroupID ?? replyToTweet.postID))
+		post = .init(
+			forType: .tweetReply(replyToTweet.replyGroupID ?? replyToTweet.postID),
+			foruser: req.query[String.self, at: "foruser"]
+		)
 	}
 }
 
@@ -330,18 +333,7 @@ struct SiteTwitarrController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
 		}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
-		let images: [ImageUploadData] = [
-			ImageUploadData(postStruct.serverPhoto1, postStruct.localPhoto1),
-			ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
-			ImageUploadData(postStruct.serverPhoto3, postStruct.localPhoto3),
-			ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4),
-		]
-		.compactMap { $0 }
-		let postContent = PostContentData(
-			text: postStruct.postText ?? "",
-			images: images,
-			postAsModerator: postStruct.postAsModerator != nil
-		)
+		let postContent = postStruct.buildPostContentData()
 		try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)/reply", method: .POST, encodeContent: postContent)
 		return .created
 	}
@@ -375,18 +367,7 @@ struct SiteTwitarrController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Missing twarrt_id parameter.")
 		}
 		let postStruct = try req.content.decode(MessagePostFormContent.self)
-		let images: [ImageUploadData] = [
-			ImageUploadData(postStruct.serverPhoto1, postStruct.localPhoto1),
-			ImageUploadData(postStruct.serverPhoto2, postStruct.localPhoto2),
-			ImageUploadData(postStruct.serverPhoto3, postStruct.localPhoto3),
-			ImageUploadData(postStruct.serverPhoto4, postStruct.localPhoto4),
-		]
-		.compactMap { $0 }
-		let postContent = PostContentData(
-			text: postStruct.postText ?? "",
-			images: images,
-			postAsModerator: postStruct.postAsModerator != nil
-		)
+		let postContent = postStruct.buildPostContentData()
 		try await apiQuery(req, endpoint: "/twitarr/\(twarrtID)/update", method: .POST, encodeContent: postContent)
 		return .created
 	}

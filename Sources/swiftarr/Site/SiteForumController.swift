@@ -37,7 +37,11 @@ struct ForumPageContext: Encodable {
 		trunk = .init(req, title: "\(forum.title) | Forum Thread", tab: .forums)
 		self.forum = forum
 		let userRoles = req.auth.get(UserCacheData.self)?.userRoles
-		self.post = .init(forType: .forumPost(forum.forumID.uuidString), userRoles: userRoles)
+		self.post = .init(
+			forType: .forumPost(forum.forumID.uuidString),
+			userRoles: userRoles,
+			foruser: req.query[String.self, at: "foruser"]
+		)
 		if cat.count > 0 {
 			category = cat[0]
 		}
@@ -429,7 +433,11 @@ struct SiteForumController: SiteControllerUtils {
 				trunk = .init(req, title: "Create New Forum", tab: .forums)
 				self.categoryID = catID
 				let userRoles = req.auth.get(UserCacheData.self)?.userRoles
-				self.post = .init(forType: .forum(catID), userRoles: userRoles)
+				self.post = .init(
+					forType: .forum(catID),
+					userRoles: userRoles,
+					foruser: req.query[String.self, at: "foruser"]
+				)
 				if cat.count > 0 {
 					category = cat[0]
 				}

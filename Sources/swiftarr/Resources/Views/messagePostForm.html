@@ -89,20 +89,7 @@
 						<button type="submit" class="btn btn-primary">Post<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
 					</div>
 				</div>
-				#if(trunk.userIsMod && !post.isEdit):
-					<div class="row justify-content-end mt-2">
-						#if(trunk.userIsTwitarrTeam && !post.isEdit):
-							<div class="col col-auto form-check">
-								<input class="form-check-input" type="checkbox" name="postAsTwitarrTeam" value="" id="postAsTwitarrTeamCheckbox">
-								<label class="form-check-label small" for="postAsTwitarrTeamCheckbox">Post as TwitarrTeam</label>
-							</div>
-						#endif
-						<div class="col col-auto form-check gx-0">
-							<input class="form-check-input" type="checkbox" value="" name="postAsModerator" id="postAsModeratorCheckbox">
-							<label class="form-check-label small" for="postAsModeratorCheckbox">Post as Moderator</label>
-						</div>
-					</div>
-				#endif
+				#extend("postAsRadios")
 			</div>
 		</form>
 	</li>

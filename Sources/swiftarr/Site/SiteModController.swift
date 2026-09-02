@@ -257,43 +257,11 @@ struct SiteModController: SiteControllerUtils {
 	}
 
 	// `GET /moderator/seamail`
-	func moderatorSeamailPageHandler(_ req: Request) async throws -> View {
-		var urlQueryAdditions: [URLQueryItem] = []
-		if req.query["foruser"] != "moderator" {
-			urlQueryAdditions.append(.init(name: "foruser", value: "moderator"))
-		}
-		let response = try await apiQuery(req, endpoint: "/fez/joined", query: urlQueryAdditions)
-		let fezList = try response.content.decode(FezListData.self)
-		// Re-sort fezzes so ones with new msgs are first. Keep most-recent-change sort within each group.
-		var newMsgFezzes: [FezData] = []
-		var noNewMsgFezzes: [FezData] = []
-		fezList.fezzes.forEach {
-			if let members = $0.members, members.postCount > members.readCount {
-				newMsgFezzes.append($0)
-			}
-			else {
-				noNewMsgFezzes.append($0)
-			}
-		}
-		let allFezzes = newMsgFezzes + noNewMsgFezzes
-		struct SeamailRootPageContext: Encodable {
-			var trunk: TrunkContext
-			var fezList: FezListData
-			var fezzes: [FezData]
-			var paginator: PaginatorContext
-
-			init(_ req: Request, fezList: FezListData, fezzes: [FezData]) throws {
-				trunk = .init(req, title: "Seamail", tab: .moderator)
-				self.fezList = fezList
-				self.fezzes = fezzes
-				let limit = fezList.paginator.limit
-				paginator = .init(fezList.paginator) { pageIndex in
-					"/seamail?start=\(pageIndex * limit)&limit=\(limit)"
-				}
-			}
-		}
-		let ctx = try SeamailRootPageContext(req, fezList: fezList, fezzes: allFezzes)
-		return try await req.view.render("moderation/moderatorSeamail", ctx)
+	//
+	// Kept so bookmarks and old links still work. The shared list at
+	// `/seamail?foruser=moderator` is the mailbox UI.
+	func moderatorSeamailPageHandler(_ req: Request) throws -> Response {
+		req.redirect(to: "/seamail?foruser=\(PrivilegedUser.moderator.queryParam)")
 	}
 
 	/// `GET /moderator/guide`
