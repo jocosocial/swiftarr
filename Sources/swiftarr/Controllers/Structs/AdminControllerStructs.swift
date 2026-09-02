@@ -9,6 +9,10 @@ public struct AnnouncementCreateData: Content {
 	/// How long to display the announcement to users. User-level API route methods will only return this Announcement until this time. The given Date is interpreted
 	/// as a floating time in the ship's Port timezone.
 	var displayUntil: Date
+	/// Author the announcement as this privileged account: "TwitarrTeam", "THO", or "admin".
+	/// nil, "", "self", or the caller's own username means the caller. Checked server-side
+	/// against the caller's access level.
+	var postAsUser: String? = nil
 }
 
 extension AnnouncementCreateData: RCFValidatable {
@@ -21,6 +25,38 @@ extension AnnouncementCreateData: RCFValidatable {
 			forKey: .displayUntil,
 			or: "Announcement DisplayUntil date must be in the future."
 		)
+	}
+}
+
+extension AnnouncementCreateData {
+	/// Resolves the author for this request, enforcing who may post as whom.
+	func effectiveAuthor(for caller: UserCacheData, on req: Request) throws -> UserCacheData {
+		guard let raw = postAsUser?.trimmingCharacters(in: .whitespaces), !raw.isEmpty,
+			raw.caseInsensitiveCompare("self") != .orderedSame,
+			raw.caseInsensitiveCompare(caller.username) != .orderedSame
+		else { return caller }
+		let allowed: Bool
+		let target: PrivilegedUser
+		switch raw.lowercased() {
+		case PrivilegedUser.TwitarrTeam.queryParam:
+			target = .TwitarrTeam
+			allowed = caller.accessLevel == .twitarrteam || caller.accessLevel == .admin
+		case PrivilegedUser.THO.queryParam:
+			target = .THO
+			allowed = caller.accessLevel == .tho || caller.accessLevel == .admin
+		case PrivilegedUser.admin.queryParam:
+			target = .admin
+			allowed = caller.accessLevel.hasAccess(.twitarrteam)
+		default:
+			throw Abort(.forbidden, reason: "Cannot post announcements as '\(raw)'.")
+		}
+		guard allowed else {
+			throw Abort(.forbidden, reason: "Your account cannot post announcements as @\(target.rawValue).")
+		}
+		guard let user = req.userCache.getUser(username: target.rawValue) else {
+			throw Abort(.internalServerError, reason: "Privileged account @\(target.rawValue) is missing.")
+		}
+		return user
 	}
 }
 

@@ -227,7 +227,11 @@ struct SiteAdminController: SiteControllerUtils {
 		guard let displayUntilDate = dateFromW3DatetimeString(displayUntil) else {
 			throw Abort(.badRequest, reason: "Display Until date is misformatted.")
 		}
-		let postContent = AnnouncementCreateData(text: text, displayUntil: displayUntilDate)
+		let postContent = AnnouncementCreateData(
+			text: text,
+			displayUntil: displayUntilDate,
+			postAsUser: postStruct.postAsUser
+		)
 		try await apiQuery(
 			req,
 			endpoint: "/notification/announcement/create",
@@ -272,7 +276,11 @@ struct SiteAdminController: SiteControllerUtils {
 		guard let displayUntilDate = dateFromW3DatetimeString(displayUntil) else {
 			throw Abort(.badRequest, reason: "Display Until date is misformatted.")
 		}
-		let postContent = AnnouncementCreateData(text: text, displayUntil: displayUntilDate)
+		let postContent = AnnouncementCreateData(
+			text: text,
+			displayUntil: displayUntilDate,
+			postAsUser: postStruct.postAsUser
+		)
 		try await apiQuery(
 			req,
 			endpoint: "/notification/announcement/\(announcementID)/edit",
