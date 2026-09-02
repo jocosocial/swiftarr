@@ -35,6 +35,7 @@ struct TrunkContext: Encodable {
 	var userIsMod: Bool
 	var userIsTwitarrTeam: Bool
 	var userIsTHO: Bool
+	var userIsAdmin: Bool
 	var userCanManageAccounts: Bool
 	var userRoles: [String]  // Use "contains(trunk.userRoles, "shutternautmanager")" or similar to check
 	var minAccessLevel: String?  // Minimum access required to view Twitarr pages; Value from Settings.
@@ -62,6 +63,7 @@ struct TrunkContext: Encodable {
 			userIsMod = userAccessLevel.hasAccess(.moderator)
 			userIsTwitarrTeam = userAccessLevel.hasAccess(.twitarrteam)
 			userIsTHO = userAccessLevel.hasAccess(.tho)
+			userIsAdmin = userAccessLevel.hasAccess(.admin)
 			userCanManageAccounts = user.canManageAccounts
 			username = user.username
 			userID = user.userID
@@ -72,6 +74,7 @@ struct TrunkContext: Encodable {
 			userIsMod = false
 			userIsTwitarrTeam = false
 			userIsTHO = false
+			userIsAdmin = false
 			userCanManageAccounts = false
 			username = ""
 			userID = UUID()
@@ -394,6 +397,7 @@ struct MessagePostFormContent: Codable {
 	let cruiseDay: Int32?  // Used for Daily Themes
 	let postAsTwitarrTeam: String?
 	let postAsModerator: String?
+	let postAsUser: String?
 }
 
 extension MessagePostFormContent {
