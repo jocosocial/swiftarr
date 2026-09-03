@@ -131,4 +131,25 @@ class MessagePostFormTests: XCTestCase {
 			"self"
 		)
 	}
+
+	func testShowsPostAsRadiosOmitsWhenViewerCannotSeeCurrentAuthor() {
+		let ttEdit = MessagePostContext(
+			forType: .announcementEdit(announcement(authorUsername: PrivilegedUser.TwitarrTeam.rawValue))
+		)
+		XCTAssertFalse(ttEdit.showsPostAsRadios(userIsTHO: true, userIsAdmin: false))
+		XCTAssertTrue(ttEdit.showsPostAsRadios(userIsTHO: true, userIsAdmin: true))
+		XCTAssertTrue(ttEdit.showsPostAsRadios(userIsTHO: false, userIsAdmin: false))
+
+		let thoEdit = MessagePostContext(
+			forType: .announcementEdit(announcement(authorUsername: PrivilegedUser.THO.rawValue))
+		)
+		XCTAssertFalse(thoEdit.showsPostAsRadios(userIsTHO: false, userIsAdmin: false))
+		XCTAssertTrue(thoEdit.showsPostAsRadios(userIsTHO: true, userIsAdmin: false))
+	}
+
+	func testShowsPostAsRadiosOnCreate() {
+		XCTAssertTrue(
+			MessagePostContext(forType: .announcement).showsPostAsRadios(userIsTHO: true, userIsAdmin: false)
+		)
+	}
 }

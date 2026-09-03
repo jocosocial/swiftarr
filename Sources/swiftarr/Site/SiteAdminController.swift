@@ -208,10 +208,15 @@ struct SiteAdminController: SiteControllerUtils {
 		struct AnnouncementEditContext: Encodable {
 			var trunk: TrunkContext
 			var post: MessagePostContext
+			var showPostAsRadios: Bool
 
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "Create Announcement", tab: .admin)
 				self.post = .init(forType: .announcement)
+				showPostAsRadios = post.showsPostAsRadios(
+					userIsTHO: trunk.userIsTHO,
+					userIsAdmin: trunk.userIsAdmin
+				)
 			}
 		}
 		let ctx = try AnnouncementEditContext(req)
@@ -253,10 +258,15 @@ struct SiteAdminController: SiteControllerUtils {
 		struct AnnouncementEditContext: Encodable {
 			var trunk: TrunkContext
 			var post: MessagePostContext
+			var showPostAsRadios: Bool
 
 			init(_ req: Request, data: AnnouncementData) throws {
 				trunk = .init(req, title: "Edit Announcement", tab: .admin)
 				self.post = .init(forType: .announcementEdit(data))
+				showPostAsRadios = post.showsPostAsRadios(
+					userIsTHO: trunk.userIsTHO,
+					userIsAdmin: trunk.userIsAdmin
+				)
 			}
 		}
 		let ctx = try AnnouncementEditContext(req, data: announcementData)

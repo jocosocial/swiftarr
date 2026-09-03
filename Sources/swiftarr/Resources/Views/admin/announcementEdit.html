@@ -39,6 +39,7 @@
 									Display Until: <input type="datetime-local" name="displayUntil" #if(post.displayUntil != ""):value="#localTime(post.displayUntil)"#endif>
 								</div>
 							</div>
+							#if(showPostAsRadios):
 							<div class="row justify-content-end mt-2">
 								<div class="col col-auto form-check">
 									<input class="form-check-input" type="radio" name="postAsUser" value="self" id="postAsSelfRadio"#if(post.postAsUser == "self"): checked#endif>
@@ -61,6 +62,7 @@
 									<label class="form-check-label small" for="postAsAdminRadio">Post as @admin</label>
 								</div>
 							</div>
+							#endif
 							<div class="alert alert-danger mt-3 d-none" role="alert">
 							</div>		
 							<div class="row mb-2">
