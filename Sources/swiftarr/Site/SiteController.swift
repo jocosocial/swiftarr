@@ -356,7 +356,7 @@ struct MessagePostContext: Encodable {
 				postAsUser = privileged.rawValue
 			}
 			else {
-				postAsUser = "self"
+				postAsUser = ""
 			}
 		// For creating a daily theme
 		case .theme:
