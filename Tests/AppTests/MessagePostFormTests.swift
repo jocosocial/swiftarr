@@ -125,10 +125,10 @@ class MessagePostFormTests: XCTestCase {
 		)
 	}
 
-	func testEditAnnouncementPostAsUserIsSelfForNormalAuthor() {
+	func testEditAnnouncementPostAsUserIsUnselectedForNormalAuthor() {
 		XCTAssertEqual(
 			MessagePostContext(forType: .announcementEdit(announcement(authorUsername: "someuser"))).postAsUser,
-			"self"
+			""
 		)
 	}
 
