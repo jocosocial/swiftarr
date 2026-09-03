@@ -3,7 +3,7 @@ import Vapor
 /// structs in this file should only be used by Admin APIs, that is: API calls that require administrator access.
 
 /// For admins to create and edit Annoucements.
-public struct AnnouncementCreateData: Content {
+public struct AnnouncementCreateData: Content, Authorable {
 	/// The text of the announcement
 	var text: String
 	/// How long to display the announcement to users. User-level API route methods will only return this Announcement until this time. The given Date is interpreted
@@ -25,38 +25,6 @@ extension AnnouncementCreateData: RCFValidatable {
 			forKey: .displayUntil,
 			or: "Announcement DisplayUntil date must be in the future."
 		)
-	}
-}
-
-extension AnnouncementCreateData {
-	/// Resolves the author for this request, enforcing who may post as whom.
-	func effectiveAuthor(for caller: UserCacheData, on req: Request) throws -> UserCacheData {
-		guard let raw = postAsUser?.trimmingCharacters(in: .whitespaces), !raw.isEmpty,
-			raw.caseInsensitiveCompare("self") != .orderedSame,
-			raw.caseInsensitiveCompare(caller.username) != .orderedSame
-		else { return caller }
-		let allowed: Bool
-		let target: PrivilegedUser
-		switch raw.lowercased() {
-		case PrivilegedUser.TwitarrTeam.queryParam:
-			target = .TwitarrTeam
-			allowed = caller.accessLevel == .twitarrteam || caller.accessLevel == .admin
-		case PrivilegedUser.THO.queryParam:
-			target = .THO
-			allowed = caller.accessLevel == .tho || caller.accessLevel == .admin
-		case PrivilegedUser.admin.queryParam:
-			target = .admin
-			allowed = caller.accessLevel.hasAccess(.twitarrteam)
-		default:
-			throw Abort(.forbidden, reason: "Cannot post announcements as '\(raw)'.")
-		}
-		guard allowed else {
-			throw Abort(.forbidden, reason: "Your account cannot post announcements as @\(target.rawValue).")
-		}
-		guard let user = req.userCache.getUser(username: target.rawValue) else {
-			throw Abort(.internalServerError, reason: "Privileged account @\(target.rawValue) is missing.")
-		}
-		return user
 	}
 }
 

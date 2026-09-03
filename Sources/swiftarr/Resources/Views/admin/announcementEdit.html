@@ -39,19 +39,26 @@
 									Display Until: <input type="datetime-local" name="displayUntil" #if(post.displayUntil != ""):value="#localTime(post.displayUntil)"#endif>
 								</div>
 							</div>
-							<div class="row mb-2">
-								<div class="col col-auto">
-									<label for="postAsUser" class="form-label">Post as</label>
-									<select class="form-select" name="postAsUser" id="postAsUser">
-										<option value="self" selected>Self</option>
-										#if(!trunk.userIsTHO || trunk.userIsAdmin):
-											<option value="TwitarrTeam">@TwitarrTeam</option>
-										#endif
-										#if(trunk.userIsTHO):
-											<option value="THO">@THO</option>
-										#endif
-										<option value="admin">@admin</option>
-									</select>
+							<div class="row justify-content-end mt-2">
+								<div class="col col-auto form-check">
+									<input class="form-check-input" type="radio" name="postAsUser" value="self" id="postAsSelfRadio" checked>
+									<label class="form-check-label small" for="postAsSelfRadio">Post as @#(trunk.username)</label>
+								</div>
+								#if(!trunk.userIsTHO || trunk.userIsAdmin):
+								<div class="col col-auto form-check">
+									<input class="form-check-input" type="radio" name="postAsUser" value="TwitarrTeam" id="postAsTwitarrTeamRadio">
+									<label class="form-check-label small" for="postAsTwitarrTeamRadio">Post as @TwitarrTeam</label>
+								</div>
+								#endif
+								#if(trunk.userIsTHO):
+								<div class="col col-auto form-check">
+									<input class="form-check-input" type="radio" name="postAsUser" value="THO" id="postAsTHORadio">
+									<label class="form-check-label small" for="postAsTHORadio">Post as @THO</label>
+								</div>
+								#endif
+								<div class="col col-auto form-check">
+									<input class="form-check-input" type="radio" name="postAsUser" value="admin" id="postAsAdminRadio">
+									<label class="form-check-label small" for="postAsAdminRadio">Post as @admin</label>
 								</div>
 							</div>
 							<div class="alert alert-danger mt-3 d-none" role="alert">

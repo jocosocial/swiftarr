@@ -28,4 +28,29 @@ extension PrivilegedUser {
 	/// Note: moderator and TwitarrTeam cannot authenticate as their passwords are randomly generated and discarded.
 	/// Stored as lowercase for case-insensitive matching.
 	static let serviceAccountsWithPasswords: Set<String> = ["admin", "prometheus", "tho"]
+
+	/// Case-insensitive match against `queryParam` (lowercased `rawValue`).
+	init?(fromQueryParam raw: String) {
+		let needle = raw.lowercased()
+		guard let match = PrivilegedUser.allCases.first(where: { $0.queryParam == needle }) else {
+			return nil
+		}
+		self = match
+	}
+
+	/// Whether `callerAccessLevel` may author announcements as this privileged account.
+	/// TwitarrTeam: self/TwitarrTeam/admin. THO: self/THO/admin. Admin: all three.
+	/// Unknown values including moderator are not allowed.
+	func canPostAs(from callerAccessLevel: UserAccessLevel) -> Bool {
+		switch self {
+		case .TwitarrTeam:
+			return callerAccessLevel == .twitarrteam || callerAccessLevel == .admin
+		case .THO:
+			return callerAccessLevel == .tho || callerAccessLevel == .admin
+		case .admin:
+			return callerAccessLevel.hasAccess(.twitarrteam)
+		case .moderator:
+			return false
+		}
+	}
 }
