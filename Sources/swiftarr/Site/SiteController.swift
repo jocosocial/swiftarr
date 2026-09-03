@@ -201,6 +201,8 @@ struct MessagePostContext: Encodable {
 	var showModPostOptions: Bool = false
 	var showCruiseDaySelector: Bool = false
 	var isEdit: Bool = false
+	var postAsUser: String = "self"
+
 
 	// Used as an parameter to the initializer
 	enum InitType {
@@ -337,6 +339,7 @@ struct MessagePostContext: Encodable {
 		case .announcement:
 			formAction = "/admin/announcement/create"
 			postSuccessURL = "/admin/announcements"
+			postAsUser = "self"
 		// For editing an announcement
 		case .announcementEdit(let announcementData):
 			messageText = announcementData.text
@@ -347,6 +350,14 @@ struct MessagePostContext: Encodable {
 			formAction = "/admin/announcement/\(announcementData.id)/edit"
 			postSuccessURL = "/admin/announcements"
 			isEdit = true
+			if let privileged = PrivilegedUser(fromQueryParam: announcementData.author.username),
+				privileged != .moderator
+			{
+				postAsUser = privileged.rawValue
+			}
+			else {
+				postAsUser = "self"
+			}
 		// For creating a daily theme
 		case .theme:
 			formAction = "/admin/dailytheme/create"
