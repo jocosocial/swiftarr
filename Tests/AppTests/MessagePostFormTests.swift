@@ -81,4 +81,54 @@ class MessagePostFormTests: XCTestCase {
 		]).buildPostContentData()
 		XCTAssertTrue(content.images.isEmpty, "got \(content.images)")
 	}
+
+	private func header(username: String) -> UserHeader {
+		UserHeader(
+			userID: UUID(),
+			username: username,
+			displayName: nil,
+			userImage: nil,
+			preferredPronoun: nil
+		)
+	}
+
+	private func announcement(authorUsername: String) -> AnnouncementData {
+		AnnouncementData(
+			id: 1,
+			author: header(username: authorUsername),
+			text: "body",
+			updatedAt: Date(),
+			displayUntil: Date().addingTimeInterval(86_400),
+			isDeleted: false
+		)
+	}
+
+	func testCreateAnnouncementPostAsUserIsSelf() {
+		XCTAssertEqual(MessagePostContext(forType: .announcement).postAsUser, "self")
+	}
+
+	func testEditAnnouncementPostAsUserMatchesPrivilegedAuthor() {
+		XCTAssertEqual(
+			MessagePostContext(forType: .announcementEdit(announcement(authorUsername: PrivilegedUser.TwitarrTeam.rawValue)))
+				.postAsUser,
+			PrivilegedUser.TwitarrTeam.rawValue
+		)
+		XCTAssertEqual(
+			MessagePostContext(forType: .announcementEdit(announcement(authorUsername: PrivilegedUser.THO.rawValue)))
+				.postAsUser,
+			PrivilegedUser.THO.rawValue
+		)
+		XCTAssertEqual(
+			MessagePostContext(forType: .announcementEdit(announcement(authorUsername: PrivilegedUser.admin.rawValue)))
+				.postAsUser,
+			PrivilegedUser.admin.rawValue
+		)
+	}
+
+	func testEditAnnouncementPostAsUserIsSelfForNormalAuthor() {
+		XCTAssertEqual(
+			MessagePostContext(forType: .announcementEdit(announcement(authorUsername: "someuser"))).postAsUser,
+			"self"
+		)
+	}
 }

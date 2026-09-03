@@ -41,23 +41,23 @@
 							</div>
 							<div class="row justify-content-end mt-2">
 								<div class="col col-auto form-check">
-									<input class="form-check-input" type="radio" name="postAsUser" value="self" id="postAsSelfRadio" checked>
+									<input class="form-check-input" type="radio" name="postAsUser" value="self" id="postAsSelfRadio"#if(post.postAsUser == "self"): checked#endif>
 									<label class="form-check-label small" for="postAsSelfRadio">Post as @#(trunk.username)</label>
 								</div>
 								#if(!trunk.userIsTHO || trunk.userIsAdmin):
 								<div class="col col-auto form-check">
-									<input class="form-check-input" type="radio" name="postAsUser" value="TwitarrTeam" id="postAsTwitarrTeamRadio">
+									<input class="form-check-input" type="radio" name="postAsUser" value="TwitarrTeam" id="postAsTwitarrTeamRadio"#if(post.postAsUser == "TwitarrTeam"): checked#endif>
 									<label class="form-check-label small" for="postAsTwitarrTeamRadio">Post as @TwitarrTeam</label>
 								</div>
 								#endif
 								#if(trunk.userIsTHO):
 								<div class="col col-auto form-check">
-									<input class="form-check-input" type="radio" name="postAsUser" value="THO" id="postAsTHORadio">
+									<input class="form-check-input" type="radio" name="postAsUser" value="THO" id="postAsTHORadio"#if(post.postAsUser == "THO"): checked#endif>
 									<label class="form-check-label small" for="postAsTHORadio">Post as @THO</label>
 								</div>
 								#endif
 								<div class="col col-auto form-check">
-									<input class="form-check-input" type="radio" name="postAsUser" value="admin" id="postAsAdminRadio">
+									<input class="form-check-input" type="radio" name="postAsUser" value="admin" id="postAsAdminRadio"#if(post.postAsUser == "admin"): checked#endif>
 									<label class="form-check-label small" for="postAsAdminRadio">Post as @admin</label>
 								</div>
 							</div>
