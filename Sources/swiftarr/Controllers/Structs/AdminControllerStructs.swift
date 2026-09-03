@@ -3,12 +3,16 @@ import Vapor
 /// structs in this file should only be used by Admin APIs, that is: API calls that require administrator access.
 
 /// For admins to create and edit Annoucements.
-public struct AnnouncementCreateData: Content {
+public struct AnnouncementCreateData: Content, Authorable {
 	/// The text of the announcement
 	var text: String
 	/// How long to display the announcement to users. User-level API route methods will only return this Announcement until this time. The given Date is interpreted
 	/// as a floating time in the ship's Port timezone.
 	var displayUntil: Date
+	/// Author the announcement as this privileged account: "TwitarrTeam", "THO", or "admin".
+	/// nil, "", "self", or the caller's own username means the caller. Checked server-side
+	/// against the caller's access level.
+	var postAsUser: String? = nil
 }
 
 extension AnnouncementCreateData: RCFValidatable {

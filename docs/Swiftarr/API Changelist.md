@@ -250,3 +250,6 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Aug 30, 2026
 * New endpoint `POST /api/v3/auth/username` returns a `UserHeader` given a registration code plus password or recovery key (`UserUsernameLookupData`).
 * `GET /api/v3/users/match/allnames/:search_string` now accepts `?sort=favorites`, which sorts users the requester has favorited first.
+
+## Sep 02, 2026
+* `AnnouncementCreateData` gains optional `postAsUser`. TwitarrTeam callers may author as self, TwitarrTeam, or admin; THO as self, THO, or admin; admin as any of those. Unknown values (including `moderator`) return 403. Checked server-side on create and edit.

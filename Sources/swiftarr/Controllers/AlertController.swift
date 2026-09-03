@@ -255,8 +255,9 @@ struct AlertController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "TwitarrTeam and THO only")
 		}
 		let announcementData = try ValidatingJSONDecoder().decode(AnnouncementCreateData.self, fromBodyOf: req)
+		let author = try announcementData.effectiveAuthor(on: req)
 		let announcement = Announcement(
-			authorID: user.userID,
+			authorID: author.userID,
 			text: announcementData.text,
 			displayUntil: announcementData.displayUntil
 		)
@@ -370,6 +371,10 @@ struct AlertController: APIRouteCollection {
 		}
 		announcement.text = announcementData.text
 		announcement.displayUntil = announcementData.displayUntil
+		if announcementData.postAsUser != nil {
+			let author = try announcementData.effectiveAuthor(on: req)
+			announcement.$author.id = author.userID
+		}
 		try await announcement.save(on: req.db)
 		let authorHeader = try req.userCache.getHeader(announcement.$author.id)
 		return try AnnouncementData(from: announcement, authorHeader: authorHeader)
