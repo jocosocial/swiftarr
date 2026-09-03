@@ -381,6 +381,19 @@ struct MessagePostContext: Encodable {
 			messageTextPlaceholder = "Info about Daily Theme"
 		}
 	}
+
+	/// False when the current privileged author has no visible radio for this viewer,
+	/// so the form omits `postAsUser` and the API keeps the existing author.
+	func showsPostAsRadios(userIsTHO: Bool, userIsAdmin: Bool) -> Bool {
+		if !isEdit { return true }
+		if postAsUser == PrivilegedUser.TwitarrTeam.rawValue {
+			return !userIsTHO || userIsAdmin
+		}
+		if postAsUser == PrivilegedUser.THO.rawValue {
+			return userIsTHO
+		}
+		return true
+	}
 }
 
 // POST data structure returned by the form in messagePostForm.leaf
