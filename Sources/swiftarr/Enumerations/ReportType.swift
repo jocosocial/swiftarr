@@ -25,6 +25,25 @@ enum ReportType: String, Codable {
 	case personalEvent
 	/// a `QuartermasterItem`
 	case quartermasterItem
+
+	/// A consumer-friendly label for this report type, for use in UI contexts (e.g. the moderator reports page).
+	/// `.fez` and `.fezPost` cover LFGs, Seamails, and Private Events (they're all backed by `FriendlyFez`), so
+	/// the label can't be more specific without also knowing the underlying `FezType`.
+	var label: String {
+		switch self {
+		case .forum: return "Forum"
+		case .forumPost: return "Forum Post"
+		case .twarrt: return "Twarrt"
+		case .userProfile: return "User Profile"
+		case .fez: return "LFG/Private Event"
+		case .fezPost: return "LFG/Seamail/Private Event Post"
+		case .mkSong: return "Microkaraoke Song"
+		case .mkSongSnippet: return "Microkaraoke Snippet"
+		case .streamPhoto: return "Photostream Photo"
+		case .personalEvent: return "Personal Event"
+		case .quartermasterItem: return "Quartermaster Item"
+		}
+	}
 }
 
 /// Moderation status of a piece of reportable content.

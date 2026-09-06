@@ -4,6 +4,7 @@ import Vapor
 // A set of reports that are all reporting on the same piece of content
 struct ReportContentGroup: Codable {
 	var reportType: ReportType
+	var reportTypeLabel: String
 	var reportedID: String
 	var reportedUser: UserHeader
 	var firstReport: ReportModerationData
@@ -536,10 +537,12 @@ struct SiteModController: SiteControllerUtils {
 			var modData: FezModerationData
 			var firstReport: ReportModerationData?
 			var finalEditAuthor: UserHeader?
+			var typeLabel: String
 
 			init(_ req: Request, modData: FezModerationData) throws {
 				trunk = .init(req, title: "LFG Moderation", tab: .moderator)
 				self.modData = modData
+				typeLabel = modData.fez.fezType.lfgLabel
 				firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
 				finalEditAuthor = modData.edits.last?.author
 				if self.modData.edits.count > 1 {
@@ -1038,6 +1041,7 @@ func generateContentGroups(from reports: [ReportModerationData]) -> [ReportConte
 		}
 		var newGroup = ReportContentGroup(
 			reportType: report.type,
+			reportTypeLabel: report.type.label,
 			reportedID: report.reportedID,
 			reportedUser: report.reportedUser,
 			firstReport: report,

@@ -46,6 +46,7 @@ extension FezEditLogData {
 ///
 /// See `ModerationController.fezModerationHandler(_:)`
 public struct FezModerationData: Content {
+	/// The fez in question, with quarantine masking overridden so moderators see the real text.
 	var fez: FezData
 	var isDeleted: Bool
 	var moderationStatus: ContentModerationStatus

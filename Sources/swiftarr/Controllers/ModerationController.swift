@@ -461,7 +461,7 @@ struct ModerationController: APIRouteCollection {
 			.sort(\.$createdAt, .descending).all()
 		let edits = try await lfg.$edits.query(on: req.db).sort(\.$createdAt, .ascending).all()
 		let ownerHeader = try req.userCache.getHeader(lfg.$owner.id)
-		let fezData = try FezData(fez: lfg, owner: ownerHeader)
+		let fezData = try FezData(fez: lfg, owner: ownerHeader, overrideQuarantine: true)
 		let editData: [FezEditLogData] = try edits.map {
 			return try FezEditLogData($0, on: req)
 		}
