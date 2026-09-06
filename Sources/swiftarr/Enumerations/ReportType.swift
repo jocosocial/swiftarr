@@ -11,9 +11,11 @@ enum ReportType: String, Codable {
 	case twarrt
 	/// A `User`, although it specifically refers to the user's profile fields.
 	case userProfile
-	/// a `FriendlyFez`
+	/// a `FriendlyFez` that's an LFG. Seamails aren't reportable as a whole fez (only their posts are, via `.fezPost`),
+	/// and Private Events use `.privateEvent` instead.
 	case fez
-	/// a `FezPost`
+	/// a `FezPost`. Applies to posts in any `FriendlyFez`--LFGs, Seamails, and Private Events all use this, since a
+	/// single bad message can appear in any of them. Posts in `.closed` Seamails are not reportable.
 	case fezPost
 	/// an `MKSong`
 	case mkSong
@@ -21,13 +23,13 @@ enum ReportType: String, Codable {
 	case mkSongSnippet
 	/// a `StreamPhoto`
 	case streamPhoto
-	/// a `PersonalEvent`
-	case personalEvent
+	/// a `FriendlyFez` that's a Private Event.
+	case privateEvent
 	/// a `QuartermasterItem`
 	case quartermasterItem
 
 	/// A consumer-friendly label for this report type, for use in UI contexts (e.g. the moderator reports page).
-	/// `.fez` and `.fezPost` cover LFGs, Seamails, and Private Events (they're all backed by `FriendlyFez`), so
+	/// `.fezPost` covers LFGs, Seamails, and Private Events (they're all backed by `FriendlyFez`), so
 	/// the label can't be more specific without also knowing the underlying `FezType`.
 	var label: String {
 		switch self {
@@ -35,12 +37,12 @@ enum ReportType: String, Codable {
 		case .forumPost: return "Forum Post"
 		case .twarrt: return "Twarrt"
 		case .userProfile: return "User Profile"
-		case .fez: return "LFG/Private Event"
-		case .fezPost: return "LFG/Seamail/Private Event Post"
+		case .fez: return "LFG"
+		case .fezPost: return "Chat Post"
 		case .mkSong: return "Microkaraoke Song"
 		case .mkSongSnippet: return "Microkaraoke Snippet"
 		case .streamPhoto: return "Photostream Photo"
-		case .personalEvent: return "Personal Event"
+		case .privateEvent: return "Private Event"
 		case .quartermasterItem: return "Quartermaster Item"
 		}
 	}

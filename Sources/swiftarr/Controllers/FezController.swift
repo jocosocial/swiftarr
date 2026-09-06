@@ -820,19 +820,25 @@ struct FezController: APIRouteCollection {
 	/// Creates a `Report` regarding the specified `Fez`. This reports on the Fez itself, not any of its posts in particular. This could mean a
 	/// Fez with reportable content in its Title, Info, or Location fields, or a bunch of reportable posts in the fez.
 	///
+	/// Only LFGs and Private Events can be reported at the container level this way; the resulting report's type
+	/// will be `.fez` for an LFG or `.privateEvent` for a Private Event. Seamail chats (open or closed) can't be
+	/// reported as a whole--report individual messages instead. Personal Events can't be reported at all, since
+	/// they're visible only to their owner.
+	///
 	/// - Note: The accompanying report message is optional on the part of the submitting user,
 	///   but the `ReportData` is mandatory in order to allow one. If there is no message,
 	///   send an empty string in the `.message` field.
 	///
 	/// - Parameter fezID: in URL path, the Fez ID to report.
 	/// - Parameter requestBody: `ReportData`
+	/// - Throws: 403 error if the Fez is a Seamail chat or a Personal Event.
 	/// - Returns: 201 Created on success.
 	func reportFezHandler(_ req: Request) async throws -> HTTPStatus {
 		let submitter = try req.auth.require(UserCacheData.self)
 		let data = try req.content.decode(ReportData.self)
 		let reportedFez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
-		guard reportedFez.fezType != .closed else {
-			throw Abort(.forbidden, reason: "Cannot file reports on closed chats")
+		guard !reportedFez.fezType.isSeamailType else {
+			throw Abort(.forbidden, reason: "Cannot file reports on Seamail chats. Report individual messages instead.")
 		}
 		guard reportedFez.fezType != .personalEvent else {
 			throw Abort(.forbidden, reason: "Cannot file reports on your own personal event")
