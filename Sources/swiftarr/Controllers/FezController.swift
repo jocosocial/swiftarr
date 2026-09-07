@@ -775,11 +775,13 @@ struct FezController: APIRouteCollection {
 	/// `POST /api/v3/fez/:fezID/user/:userID/remove`
 	///
 	/// Remove the specified `User` from the specified FriendlyFez. This lets a fez owner remove others.
+	/// Moderators may also remove users from a fez they don't own; this is logged in the moderator action log.
 	///
 	/// - Parameter fezID: in URL path.
 	/// - Parameter userID: in URL path.
 	/// - Throws: 400 error if user is not in the barrel. 403 error if requester is not fez
-	///   owner. A 5xx response should be reported as a likely bug, please and thank you.
+	///   owner or a moderator, or if the target user is the fez's owner. A 5xx response should
+	///   be reported as a likely bug, please and thank you.
 	/// - Returns: `FezData` containing the updated fez info.
 	func userRemoveHandler(_ req: Request) async throws -> FezData {
 		let requester = try req.auth.require(UserCacheData.self)
@@ -790,15 +792,14 @@ struct FezController: APIRouteCollection {
 		guard fez.fezType != .closed else {
 			throw Abort(.forbidden, reason: "Cannot remove users from closed chat")
 		}
-		guard fez.$owner.id == requester.userID else {
-			throw Abort(.forbidden, reason: "requester does not own \(fez.fezType.lfgLabel)")
-		}
-		guard removeUserID != requester.userID else {
-			throw Abort(.forbidden, reason: "Owner cannot remove themselves from \(fez.fezType.lfgLabel)")
+		try requester.guardCanModifyContent(fez, customErrorString: "requester does not own \(fez.fezType.lfgLabel)")
+		guard removeUserID != fez.$owner.id else {
+			throw Abort(.forbidden, reason: "Cannot remove the owner from \(fez.fezType.lfgLabel)")
 		}
 		// Save a FezEditRecord containing the participant list before removal
 		let fezEdit = try FriendlyFezEdit(fez: fez, editorID: requester.userID)
 		try await fezEdit.save(on: req.db)
+		try await fez.logIfModeratorAction(.edit, moderatorID: requester.userID, on: req)
 		// remove user
 		guard let index = fez.participantArray.firstIndex(of: removeUserID) else {
 			throw Abort(.badRequest, reason: "user is not a member of this \(fez.fezType.lfgLabel)")
@@ -820,19 +821,25 @@ struct FezController: APIRouteCollection {
 	/// Creates a `Report` regarding the specified `Fez`. This reports on the Fez itself, not any of its posts in particular. This could mean a
 	/// Fez with reportable content in its Title, Info, or Location fields, or a bunch of reportable posts in the fez.
 	///
+	/// Only LFGs and Private Events can be reported at the container level this way; the resulting report's type
+	/// will be `.fez` for an LFG or `.privateEvent` for a Private Event. Seamail chats (open or closed) can't be
+	/// reported as a whole--report individual messages instead. Personal Events can't be reported at all, since
+	/// they're visible only to their owner.
+	///
 	/// - Note: The accompanying report message is optional on the part of the submitting user,
 	///   but the `ReportData` is mandatory in order to allow one. If there is no message,
 	///   send an empty string in the `.message` field.
 	///
 	/// - Parameter fezID: in URL path, the Fez ID to report.
 	/// - Parameter requestBody: `ReportData`
+	/// - Throws: 403 error if the Fez is a Seamail chat or a Personal Event.
 	/// - Returns: 201 Created on success.
 	func reportFezHandler(_ req: Request) async throws -> HTTPStatus {
 		let submitter = try req.auth.require(UserCacheData.self)
 		let data = try req.content.decode(ReportData.self)
 		let reportedFez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
-		guard reportedFez.fezType != .closed else {
-			throw Abort(.forbidden, reason: "Cannot file reports on closed chats")
+		guard !reportedFez.fezType.isSeamailType else {
+			throw Abort(.forbidden, reason: "Cannot file reports on Seamail chats. Report individual messages instead.")
 		}
 		guard reportedFez.fezType != .personalEvent else {
 			throw Abort(.forbidden, reason: "Cannot file reports on your own personal event")

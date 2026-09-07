@@ -97,7 +97,8 @@ struct ModerationController: APIRouteCollection {
 		moderatorAuthGroup.delete("microkaraoke", "snippet", mkSnippetIDParam, use: deleteSnippet)
 		moderatorAuthGroup.post("microkaraoke", "approve", mkSongIDParam, use: approveSong)
 
-		moderatorAuthGroup.get("personalevent", personalEventIDParam, use: personalEventModerationHandler)
+		moderatorAuthGroup.get("personalevent", personalEventIDParam, use: privateEventModerationHandler)
+		moderatorAuthGroup.get("privateevent", personalEventIDParam, use: privateEventModerationHandler)
 	}
 
 	// MARK: - tokenAuthGroup Handlers (logged in)
@@ -437,7 +438,8 @@ struct ModerationController: APIRouteCollection {
 	/// `GET /api/v3/mod/fez/ID`
 	///
 	/// Moderator only. Returns info admins and moderators need to review a Fez. Works if fez has been deleted. Shows
-	/// fez's quarantine and reviewed states.
+	/// fez's quarantine and reviewed states. Covers LFGs specifically--Private Event reports surface via
+	/// `privateEventModerationHandler` instead, and Seamail chats aren't reportable at the container level at all.
 	///
 	/// The `FezModerationData` contains:
 	/// * The current fez contents, even if its deleted
@@ -984,9 +986,13 @@ struct ModerationController: APIRouteCollection {
 	// MARK: PersonalEvent
 
 	/// `GET /api/v3/mod/personalevent/:eventID`
+	/// `GET /api/v3/mod/privateevent/:eventID`
 	///
-	/// Return moderation data for a PersonalEvent.
-	func personalEventModerationHandler(_ req: Request) async throws -> PersonalEventModerationData {
+	/// Return moderation data for a Private Event or Personal Event. Only Private Events (events with other
+	/// participants) can actually be reported--see `FezController.reportFezHandler`--so a genuine solo Personal
+	/// Event will always show an empty `reports` array here. Both routes call this same handler; `personalevent`
+	/// is kept for compatibility, `privateevent` is the more accurate name going forward.
+	func privateEventModerationHandler(_ req: Request) async throws -> PersonalEventModerationData {
 		guard let eventID = req.parameters.get(personalEventIDParam.paramString, as: UUID.self) else {
 			throw Abort(.badRequest, reason: "Request parameter \(personalEventIDParam.paramString) is missing.")
 		}
@@ -994,7 +1000,7 @@ struct ModerationController: APIRouteCollection {
 			throw Abort(.notFound, reason: "no value found for identifier '\(eventID.uuidString)'")
 		}
 		let reports = try await Report.query(on: req.db)
-			.filter(\.$reportType == .personalEvent)
+			.filter(\.$reportType == .privateEvent)
 			.filter(\.$reportedID == eventID.uuidString)
 			.sort(\.$createdAt, .descending).all()
 
