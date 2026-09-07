@@ -35,6 +35,7 @@ struct TrunkContext: Encodable {
 	var userIsMod: Bool
 	var userIsTwitarrTeam: Bool
 	var userIsTHO: Bool
+	var userIsAdmin: Bool
 	var userCanManageAccounts: Bool
 	var userRoles: [String]  // Use "contains(trunk.userRoles, "shutternautmanager")" or similar to check
 	var minAccessLevel: String?  // Minimum access required to view Twitarr pages; Value from Settings.
@@ -62,6 +63,7 @@ struct TrunkContext: Encodable {
 			userIsMod = userAccessLevel.hasAccess(.moderator)
 			userIsTwitarrTeam = userAccessLevel.hasAccess(.twitarrteam)
 			userIsTHO = userAccessLevel.hasAccess(.tho)
+			userIsAdmin = userAccessLevel.hasAccess(.admin)
 			userCanManageAccounts = user.canManageAccounts
 			username = user.username
 			userID = user.userID
@@ -72,6 +74,7 @@ struct TrunkContext: Encodable {
 			userIsMod = false
 			userIsTwitarrTeam = false
 			userIsTHO = false
+			userIsAdmin = false
 			userCanManageAccounts = false
 			username = ""
 			userID = UUID()
@@ -198,6 +201,8 @@ struct MessagePostContext: Encodable {
 	var showModPostOptions: Bool = false
 	var showCruiseDaySelector: Bool = false
 	var isEdit: Bool = false
+	var postAsUser: String = "self"
+
 
 	// Used as an parameter to the initializer
 	enum InitType {
@@ -334,6 +339,7 @@ struct MessagePostContext: Encodable {
 		case .announcement:
 			formAction = "/admin/announcement/create"
 			postSuccessURL = "/admin/announcements"
+			postAsUser = "self"
 		// For editing an announcement
 		case .announcementEdit(let announcementData):
 			messageText = announcementData.text
@@ -344,6 +350,7 @@ struct MessagePostContext: Encodable {
 			formAction = "/admin/announcement/\(announcementData.id)/edit"
 			postSuccessURL = "/admin/announcements"
 			isEdit = true
+			postAsUser = ""
 		// For creating a daily theme
 		case .theme:
 			formAction = "/admin/dailytheme/create"
@@ -366,6 +373,16 @@ struct MessagePostContext: Encodable {
 			forumTitlePlaceholder = "Daily Theme Title"
 			messageTextPlaceholder = "Info about Daily Theme"
 		}
+	}
+
+	/// Post-as controls are only available when creating an announcement; edits keep the existing author.
+	func showsPostAsRadios(userIsTHO: Bool, userIsAdmin: Bool) -> Bool {
+		!isEdit
+	}
+
+	/// The admin account is already the real caller, so showing this option would duplicate the self radio.
+	static func showsAdminPostAsRadio(userIsAdmin: Bool) -> Bool {
+		!userIsAdmin
 	}
 }
 
@@ -394,6 +411,7 @@ struct MessagePostFormContent: Codable {
 	let cruiseDay: Int32?  // Used for Daily Themes
 	let postAsTwitarrTeam: String?
 	let postAsModerator: String?
+	let postAsUser: String?
 }
 
 extension MessagePostFormContent {
