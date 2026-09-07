@@ -172,7 +172,11 @@ struct SiteSeamailController: SiteControllerUtils {
 		guard let searchString = req.parameters.get("searchString")?.percentEncodeFilePathEntry() else {
 			throw "Missing search string"
 		}
-		let response = try await apiQuery(req, endpoint: "/users/match/allnames/\(searchString)")
+		let response = try await apiQuery(
+			req,
+			endpoint: "/users/match/allnames/\(searchString)",
+			query: [URLQueryItem(name: "sort", value: "favorites")]
+		)
 		return try await response.encodeResponse(for: req)
 	}
 

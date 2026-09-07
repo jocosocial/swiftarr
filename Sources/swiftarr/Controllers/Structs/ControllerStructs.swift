@@ -730,17 +730,19 @@ public struct FezData: Content, ResponseEncodable {
 }
 
 extension FezData {
-	init(fez: FriendlyFez, owner: UserHeader) throws {
+	init(fez: FriendlyFez, owner: UserHeader, overrideQuarantine: Bool = false) throws {
 		self.fezID = try fez.requireID()
 		self.owner = owner
 		self.fezType = fez.fezType
-		self.title = fez.moderationStatus.showsContent() ? fez.title : "Fez Title is under moderator review"
-		self.info = fez.moderationStatus.showsContent() ? fez.info : "Fez Information field is under moderator review"
+		let showContent = fez.moderationStatus.showsContent() || overrideQuarantine
+		let underReviewText = "\(fez.fezType.lfgLabel) is under moderator review"
+		self.title = showContent ? fez.title : underReviewText
+		self.info = showContent ? fez.info : underReviewText
 		self.startTime = fez.startTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.startTime)
 		self.endTime = fez.endTime == nil ? nil : Settings.shared.timeZoneChanges.portTimeToDisplayTime(fez.endTime)
 		self.timeZone = self.startTime == nil ? nil : Settings.shared.timeZoneChanges.abbrevAtTime(self.startTime)
 		self.timeZoneID = self.startTime == nil ? nil : Settings.shared.timeZoneChanges.tzAtTime(self.startTime).identifier
-		self.location = fez.moderationStatus.showsContent() ? fez.location : "Fez Location field is under moderator review"
+		self.location = showContent ? fez.location : underReviewText
 		self.lastModificationTime = fez.updatedAt ?? Date()
 		self.participantCount = fez.participantArray.count
 		self.minParticipants = fez.minCapacity
@@ -3162,7 +3164,7 @@ extension PersonalEventData {
 		let timeZoneChanges = Settings.shared.timeZoneChanges
 		self.personalEventID = try personalEvent.requireID()
 		self.title = personalEvent.title
-		self.description = personalEvent.description
+		self.description = personalEvent.info
 		self.startTime = timeZoneChanges.portTimeToDisplayTime(personalEvent.startTime)
 		self.endTime = timeZoneChanges.portTimeToDisplayTime(personalEvent.endTime)
 		self.timeZone = timeZoneChanges.abbrevAtTime(self.startTime)

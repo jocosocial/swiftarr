@@ -1,45 +1,45 @@
 services:
   postgres:
-    image: docker.io/bitnami/postgresql:latest
+    image: docker.io/library/postgres:15
+    user: postgres
     environment:
-      POSTGRESQL_DATABASE: swiftarr
-      POSTGRESQL_USERNAME: swiftarr
-      POSTGRESQL_PASSWORD: password
-      # Log postgres queries
-      POSTGRESQL_PGAUDIT_LOG: ALL
+      POSTGRES_DB: swiftarr
+      POSTGRES_USER: swiftarr
+      POSTGRES_PASSWORD: password
+    command: postgres -c log_statement=all
     ports:
       - 5432:5432
     volumes:
-      - postgres_data:/bitnami/postgresql
+      - postgres_data:/var/lib/postgresql/data
 
   redis:
-    image: docker.io/bitnami/redis:latest
+    image: docker.io/library/redis:7
+    user: redis
     ports:
       - 6379:6379
-    environment:
-      ALLOW_EMPTY_PASSWORD: yes
     volumes:
-      - redis_data:/bitnami/redis/data
+      - redis_data:/data
 
   postgres-test:
-    image: docker.io/bitnami/postgresql:latest
+    image: docker.io/library/postgres:15
+    user: postgres
     environment:
-      POSTGRESQL_DATABASE: swiftarr-test
-      POSTGRESQL_USERNAME: swiftarr
-      POSTGRESQL_PASSWORD: password
+      POSTGRES_DB: swiftarr-test
+      POSTGRES_USER: swiftarr
+      POSTGRES_PASSWORD: password
     ports:
       - 5433:5432
     volumes:
-      - postgres_test_data:/bitnami/postgresql
+      - postgres_test_data:/var/lib/postgresql/data
 
   redis-test:
-    image: docker.io/bitnami/redis:latest
+    image: docker.io/library/redis:7
+    user: redis
+    command: redis-server --requirepass password
     ports:
       - 6380:6379
-    environment:
-      REDIS_PASSWORD: password
     volumes:
-      - redis_test_data:/bitnami/redis/data
+      - redis_test_data:/data
 
   prometheus:
     image: quay.io/prometheus/prometheus:latest

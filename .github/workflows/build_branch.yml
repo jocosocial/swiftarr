@@ -30,7 +30,7 @@ jobs:
   Test:
     runs-on: ubuntu-24.04
     container:
-      image: swift:6.2-noble
+      image: swift:6.3-noble
     services:
       postgres:
         image: postgres:15

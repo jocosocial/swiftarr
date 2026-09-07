@@ -1,19 +1,22 @@
 services:
   postgres:
-    image: docker.io/bitnami/postgresql:latest
+    image: docker.io/library/postgres:15
+    user: postgres
     env_file:
       - "../Sources/swiftarr/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
     volumes:
-      - pgdata:/bitnami/postgresql
+      - pgdata:/var/lib/postgresql/data
     ports:
       - ${DATABASE_PORT}:5432
 
   redis:
-    image: docker.io/bitnami/redis:latest
+    image: docker.io/library/redis:7
+    user: redis
     env_file:
       - "../Sources/swiftarr/seeds/Private Swiftarr Config/${ENVIRONMENT}.env"
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     volumes:
-      - redisdata:/bitnami/redis/data
+      - redisdata:/data
     ports:
       - ${REDIS_PORT}:6379
 
