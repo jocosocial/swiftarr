@@ -3164,7 +3164,7 @@ extension PersonalEventData {
 		let timeZoneChanges = Settings.shared.timeZoneChanges
 		self.personalEventID = try personalEvent.requireID()
 		self.title = personalEvent.title
-		self.description = personalEvent.description
+		self.description = personalEvent.info
 		self.startTime = timeZoneChanges.portTimeToDisplayTime(personalEvent.startTime)
 		self.endTime = timeZoneChanges.portTimeToDisplayTime(personalEvent.endTime)
 		self.timeZone = timeZoneChanges.abbrevAtTime(self.startTime)
