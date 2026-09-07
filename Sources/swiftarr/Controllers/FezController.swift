@@ -775,11 +775,13 @@ struct FezController: APIRouteCollection {
 	/// `POST /api/v3/fez/:fezID/user/:userID/remove`
 	///
 	/// Remove the specified `User` from the specified FriendlyFez. This lets a fez owner remove others.
+	/// Moderators may also remove users from a fez they don't own; this is logged in the moderator action log.
 	///
 	/// - Parameter fezID: in URL path.
 	/// - Parameter userID: in URL path.
 	/// - Throws: 400 error if user is not in the barrel. 403 error if requester is not fez
-	///   owner. A 5xx response should be reported as a likely bug, please and thank you.
+	///   owner or a moderator, or if the target user is the fez's owner. A 5xx response should
+	///   be reported as a likely bug, please and thank you.
 	/// - Returns: `FezData` containing the updated fez info.
 	func userRemoveHandler(_ req: Request) async throws -> FezData {
 		let requester = try req.auth.require(UserCacheData.self)
@@ -790,15 +792,14 @@ struct FezController: APIRouteCollection {
 		guard fez.fezType != .closed else {
 			throw Abort(.forbidden, reason: "Cannot remove users from closed chat")
 		}
-		guard fez.$owner.id == requester.userID else {
-			throw Abort(.forbidden, reason: "requester does not own \(fez.fezType.lfgLabel)")
-		}
-		guard removeUserID != requester.userID else {
-			throw Abort(.forbidden, reason: "Owner cannot remove themselves from \(fez.fezType.lfgLabel)")
+		try requester.guardCanModifyContent(fez, customErrorString: "requester does not own \(fez.fezType.lfgLabel)")
+		guard removeUserID != fez.$owner.id else {
+			throw Abort(.forbidden, reason: "Cannot remove the owner from \(fez.fezType.lfgLabel)")
 		}
 		// Save a FezEditRecord containing the participant list before removal
 		let fezEdit = try FriendlyFezEdit(fez: fez, editorID: requester.userID)
 		try await fezEdit.save(on: req.db)
+		try await fez.logIfModeratorAction(.edit, moderatorID: requester.userID, on: req)
 		// remove user
 		guard let index = fez.participantArray.firstIndex(of: removeUserID) else {
 			throw Abort(.badRequest, reason: "user is not a member of this \(fez.fezType.lfgLabel)")
