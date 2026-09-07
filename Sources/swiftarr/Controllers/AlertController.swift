@@ -255,7 +255,7 @@ struct AlertController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "TwitarrTeam and THO only")
 		}
 		let announcementData = try ValidatingJSONDecoder().decode(AnnouncementCreateData.self, fromBodyOf: req)
-		let author = try announcementData.effectiveAuthor(on: req)
+		let author = try announcementData.effectiveAuthor(on: req, for: .announcement)
 		let announcement = Announcement(
 			authorID: author.userID,
 			text: announcementData.text,
@@ -371,9 +371,9 @@ struct AlertController: APIRouteCollection {
 		}
 		announcement.text = announcementData.text
 		announcement.displayUntil = announcementData.displayUntil
+		// Validate a decoded postAsUser value, but never change an announcement's author on edit.
 		if announcementData.postAsUser != nil {
-			let author = try announcementData.effectiveAuthor(on: req)
-			announcement.$author.id = author.userID
+			_ = try announcementData.effectiveAuthor(on: req, for: .announcement)
 		}
 		try await announcement.save(on: req.db)
 		let authorHeader = try req.userCache.getHeader(announcement.$author.id)

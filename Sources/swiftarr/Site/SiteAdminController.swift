@@ -209,6 +209,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var trunk: TrunkContext
 			var post: MessagePostContext
 			var showPostAsRadios: Bool
+			var showAdminPostAsRadio: Bool
 
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "Create Announcement", tab: .admin)
@@ -217,6 +218,7 @@ struct SiteAdminController: SiteControllerUtils {
 					userIsTHO: trunk.userIsTHO,
 					userIsAdmin: trunk.userIsAdmin
 				)
+				showAdminPostAsRadio = MessagePostContext.showsAdminPostAsRadio(userIsAdmin: trunk.userIsAdmin)
 			}
 		}
 		let ctx = try AnnouncementEditContext(req)
@@ -259,6 +261,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var trunk: TrunkContext
 			var post: MessagePostContext
 			var showPostAsRadios: Bool
+			var showAdminPostAsRadio: Bool
 
 			init(_ req: Request, data: AnnouncementData) throws {
 				trunk = .init(req, title: "Edit Announcement", tab: .admin)
@@ -267,6 +270,7 @@ struct SiteAdminController: SiteControllerUtils {
 					userIsTHO: trunk.userIsTHO,
 					userIsAdmin: trunk.userIsAdmin
 				)
+				showAdminPostAsRadio = MessagePostContext.showsAdminPostAsRadio(userIsAdmin: trunk.userIsAdmin)
 			}
 		}
 		let ctx = try AnnouncementEditContext(req, data: announcementData)

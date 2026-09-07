@@ -38,19 +38,20 @@ extension PrivilegedUser {
 		self = match
 	}
 
-	/// Whether `callerAccessLevel` may author announcements as this privileged account.
-	/// TwitarrTeam: self/TwitarrTeam/admin. THO: self/THO/admin. Admin: all three.
-	/// Unknown values including moderator are not allowed.
-	func canPostAs(from callerAccessLevel: UserAccessLevel) -> Bool {
-		switch self {
-		case .TwitarrTeam:
-			return callerAccessLevel == .twitarrteam || callerAccessLevel == .admin
-		case .THO:
-			return callerAccessLevel == .tho || callerAccessLevel == .admin
-		case .admin:
-			return callerAccessLevel.hasAccess(.twitarrteam)
-		case .moderator:
-			return false
+	/// Whether callerAccessLevel may author this privileged account for the content type.
+	func canPostAs(from callerAccessLevel: UserAccessLevel, for content: AuthorableContentType) -> Bool {
+		switch content {
+		case .announcement:
+			switch self {
+			case .TwitarrTeam:
+				return callerAccessLevel == .twitarrteam || callerAccessLevel == .admin
+			case .THO:
+				return callerAccessLevel == .tho || callerAccessLevel == .admin
+			case .admin:
+				return callerAccessLevel.hasAccess(.twitarrteam)
+			case .moderator:
+				return false
+			}
 		}
 	}
 }

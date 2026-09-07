@@ -10,8 +10,8 @@ import XCTVapor
 // THO             | yes  | no          | yes | yes
 // admin           | yes  | yes         | yes | yes
 //
-// Unknown values (including "moderator") are forbidden. Edit keeps the author when
-// postAsUser is omitted and changes it when postAsUser is given.
+// Unknown values (including "moderator") are forbidden. Editing never changes the
+// existing author, even when a decoded postAsUser value is supplied.
 class AnnouncementPostAsTests: XCTestCase, SwiftarrBaseTest {
 
 	private struct Accounts {
@@ -295,6 +295,28 @@ class AnnouncementPostAsTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
+	func testAnnouncementPostAsAuthorizationMatrix() {
+		let expected: [(UserAccessLevel, PrivilegedUser, Bool)] = [
+			(.twitarrteam, .TwitarrTeam, true),
+			(.twitarrteam, .THO, false),
+			(.twitarrteam, .admin, true),
+			(.tho, .TwitarrTeam, false),
+			(.tho, .THO, true),
+			(.tho, .admin, true),
+			(.admin, .TwitarrTeam, true),
+			(.admin, .THO, true),
+			(.admin, .admin, true),
+		]
+		for (caller, target, allowed) in expected {
+			XCTAssertEqual(
+				target.canPostAs(from: caller, for: .announcement),
+				allowed,
+				"Unexpected announcement authorization for caller \(caller) as \(target)"
+			)
+		}
+		XCTAssertFalse(PrivilegedUser.moderator.canPostAs(from: .admin, for: .announcement))
+	}
+
 	func testEditKeepsAuthorWhenPostAsAbsent() async throws {
 		try await withApp { app in
 			let accounts = try await makeAccounts(app)
@@ -320,7 +342,7 @@ class AnnouncementPostAsTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
-	func testEditChangesAuthorWhenPostAsGiven() async throws {
+	func testEditKeepsAuthorWhenAuthorizedPostAsIsGiven() async throws {
 		try await withApp { app in
 			let accounts = try await makeAccounts(app)
 			let text = uniqueText("edit-change")
@@ -337,7 +359,26 @@ class AnnouncementPostAsTests: XCTestCase, SwiftarrBaseTest {
 				postAsUser: PrivilegedUser.admin.rawValue
 			)
 			XCTAssertEqual(status, .ok)
-			XCTAssertEqual(try XCTUnwrap(edited).author.username, PrivilegedUser.admin.rawValue)
+			XCTAssertEqual(try XCTUnwrap(edited).author.username, accounts.ttUsername)
+		}
+	}
+
+	func testEditRejectsUnauthorizedDecodedPostAs() async throws {
+		try await withApp { app in
+			let accounts = try await makeAccounts(app)
+			let text = uniqueText("edit-unauthorized")
+			let createStatus = try await postCreate(app, token: accounts.ttToken, text: text)
+			XCTAssertEqual(createStatus, .created)
+			let created = try await fetchByText(app, token: accounts.ttToken, text: text)
+			let (status, edited) = try await postEdit(
+				app,
+				token: accounts.ttToken,
+				id: created.id,
+				text: text + "-edited",
+				postAsUser: PrivilegedUser.THO.rawValue
+			)
+			XCTAssertEqual(status, .forbidden)
+			XCTAssertNil(edited)
 		}
 	}
 }

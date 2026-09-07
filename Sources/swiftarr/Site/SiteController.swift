@@ -350,14 +350,7 @@ struct MessagePostContext: Encodable {
 			formAction = "/admin/announcement/\(announcementData.id)/edit"
 			postSuccessURL = "/admin/announcements"
 			isEdit = true
-			if let privileged = PrivilegedUser(fromQueryParam: announcementData.author.username),
-				privileged != .moderator
-			{
-				postAsUser = privileged.rawValue
-			}
-			else {
-				postAsUser = ""
-			}
+			postAsUser = ""
 		// For creating a daily theme
 		case .theme:
 			formAction = "/admin/dailytheme/create"
@@ -382,17 +375,14 @@ struct MessagePostContext: Encodable {
 		}
 	}
 
-	/// False when the current privileged author has no visible radio for this viewer,
-	/// so the form omits `postAsUser` and the API keeps the existing author.
+	/// Post-as controls are only available when creating an announcement; edits keep the existing author.
 	func showsPostAsRadios(userIsTHO: Bool, userIsAdmin: Bool) -> Bool {
-		if !isEdit { return true }
-		if postAsUser == PrivilegedUser.TwitarrTeam.rawValue {
-			return !userIsTHO || userIsAdmin
-		}
-		if postAsUser == PrivilegedUser.THO.rawValue {
-			return userIsTHO
-		}
-		return true
+		!isEdit
+	}
+
+	/// The admin account is already the real caller, so showing this option would duplicate the self radio.
+	static func showsAdminPostAsRadio(userIsAdmin: Bool) -> Bool {
+		!userIsAdmin
 	}
 }
 
