@@ -381,4 +381,46 @@ class AnnouncementPostAsTests: XCTestCase, SwiftarrBaseTest {
 			XCTAssertNil(edited)
 		}
 	}
+
+	func testRejectedEditDoesNotRestoreDeletedAnnouncement() async throws {
+		try await withApp { app in
+			let accounts = try await makeAccounts(app)
+			let text = uniqueText("edit-deleted")
+			let createStatus = try await postCreate(app, token: accounts.ttToken, text: text)
+			XCTAssertEqual(createStatus, .created)
+			let created = try await fetchByText(app, token: accounts.ttToken, text: text)
+
+			var deleteStatus: HTTPStatus?
+			try await app.test(
+				.DELETE,
+				"/api/v3/notification/announcement/\(created.id)",
+				headers: bearer(accounts.ttToken),
+				afterResponse: { res async throws in deleteStatus = res.status }
+			)
+			XCTAssertEqual(deleteStatus, .noContent)
+
+			let (status, edited) = try await postEdit(
+				app,
+				token: accounts.ttToken,
+				id: created.id,
+				text: text + "-edited",
+				postAsUser: PrivilegedUser.THO.rawValue
+			)
+			XCTAssertEqual(status, .forbidden)
+			XCTAssertNil(edited)
+
+			var afterRejectedEdit: AnnouncementData?
+			try await app.test(
+				.GET,
+				"/api/v3/notification/announcement/\(created.id)",
+				headers: bearer(accounts.ttToken),
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok)
+					afterRejectedEdit = try res.content.decode(AnnouncementData.self)
+				}
+			)
+			XCTAssertTrue(try XCTUnwrap(afterRejectedEdit).isDeleted)
+		}
+	}
+
 }
