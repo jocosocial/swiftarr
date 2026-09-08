@@ -1,0 +1,32 @@
+#comment("Authorable postAs radios: self plus whichever privileged accounts the caller's access level permits, submitted as a single 'postAsUser' field.")
+#comment("Used by Announcements today -- anywhere the Authorable protocol's effectiveAuthor(on:for:)/PrivilegedUser.canPostAs(from:for:) is the authorization mechanism, rather than the classic postAsModerator/postAsTwitarrTeam booleans in postAsRadios.html.")
+#comment("Intended to grow to cover other content types (Forum, Fez) as they migrate onto Authorable.")
+#comment("Context 'post' of type MessagePostContext -- reads post.postAsUser.")
+#comment("Context 'trunk' -- reads trunk.username, trunk.userIsTHO, trunk.userIsAdmin.")
+#comment("Context 'showPostAsRadios' (Bool) and 'showAdminPostAsRadio' (Bool) -- computed by the calling page's handler (see SiteAdminController's announcement handlers) since they depend on isEdit/role logic specific to the content type.")
+#if(showPostAsRadios):
+	<div class="row justify-content-end mt-2">
+		<div class="col col-auto form-check">
+			<input class="form-check-input" type="radio" name="postAsUser" value="self" id="postAsSelfRadio"#if(post.postAsUser == "self"): checked#endif>
+			<label class="form-check-label small" for="postAsSelfRadio">Post as @#(trunk.username)</label>
+		</div>
+		#if(!trunk.userIsTHO || trunk.userIsAdmin):
+		<div class="col col-auto form-check">
+			<input class="form-check-input" type="radio" name="postAsUser" value="TwitarrTeam" id="postAsTwitarrTeamRadio"#if(post.postAsUser == "TwitarrTeam"): checked#endif>
+			<label class="form-check-label small" for="postAsTwitarrTeamRadio">Post as @TwitarrTeam</label>
+		</div>
+		#endif
+		#if(trunk.userIsTHO || trunk.userIsAdmin):
+		<div class="col col-auto form-check">
+			<input class="form-check-input" type="radio" name="postAsUser" value="THO" id="postAsTHORadio"#if(post.postAsUser == "THO"): checked#endif>
+			<label class="form-check-label small" for="postAsTHORadio">Post as @THO</label>
+		</div>
+		#endif
+		#if(showAdminPostAsRadio):
+		<div class="col col-auto form-check">
+			<input class="form-check-input" type="radio" name="postAsUser" value="admin" id="postAsAdminRadio"#if(post.postAsUser == "admin"): checked#endif>
+			<label class="form-check-label small" for="postAsAdminRadio">Post as @admin</label>
+		</div>
+		#endif
+	</div>
+#endif

@@ -1,3 +1,7 @@
+#comment("Classic postAs radios: self / moderator / TwitarrTeam, submitted as a single 'postAs' field.")
+#comment("Used by forum posts, fez/LFG posts, and seamail -- anywhere PostContentData's postAsModerator/postAsTwitarrTeam booleans are the authorization mechanism.")
+#comment("Context 'post' of type MessagePostContext -- reads post.isEdit, post.postAsModerator, post.postAsTwitarrTeam.")
+#comment("Context 'trunk' -- reads trunk.userIsMod, trunk.userIsTwitarrTeam, trunk.username.")
 #if(trunk.userIsMod && !post.isEdit):
 	<div class="row justify-content-end mt-2">
 		<div class="col col-auto form-check">
