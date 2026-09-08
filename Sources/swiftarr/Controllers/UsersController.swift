@@ -20,6 +20,7 @@ struct UsersController: APIRouteCollection {
 		tokenAuthGroup.get("match", "allnames", searchStringParam, use: matchAllNamesHandler)
 		tokenAuthGroup.get("match", "username", searchStringParam, use: matchUsernameHandler)
 		tokenAuthGroup.get(userIDParam, "profile", use: profileHandler)
+		tokenAuthGroup.get(userIDParam, "vcard", use: vcardHandler)
 		tokenAuthGroup.post(userIDParam, "report", use: reportHandler)
 
 		// Endpoints available only when logged in, and also can be disabled by server admin
@@ -47,6 +48,11 @@ struct UsersController: APIRouteCollection {
 		blockableAuthGroup.get("userrole", userRoleParam, use: getUsersWithRole)
 		blockableAuthGroup.post("userrole", userRoleParam, "addrole", userIDParam, use: addRoleForUser)
 		blockableAuthGroup.post("userrole", userRoleParam, "removerole", userIDParam, use: removeRoleForUser)
+	}
+
+	/// Sort order for `GET /api/v3/users/match/allnames/:search_string`.
+	enum UserMatchSort: String, Content {
+		case favorites
 	}
 
 	// MARK: - Finding Other Users
@@ -150,6 +156,58 @@ struct UsersController: APIRouteCollection {
 		return publicProfile
 	}
 
+	/// `GET /api/v3/users/:user_id/vcard`
+	///
+	/// Returns a vCard (`.vcf`) of the specified user's land-based contact fields, suitable
+	/// for importing into a contacts app. Cruise-specific fields (cabin number, dinner team)
+	/// are omitted. The requester's private note about the user is never included.
+	///
+	/// - Parameter userID: in URL path. The userID to search for.
+	/// - Throws: 404 error if the profile is not available.
+	/// - Returns: A `text/vcard` attachment named `<username>.vcf`.
+	func vcardHandler(_ req: Request) async throws -> Response {
+		let requester = try req.auth.require(UserCacheData.self)
+		let profiledUser = try await User.findFromParameter(userIDParam, on: req)
+		if requester.getBlocks().contains(try profiledUser.requireID()) {
+			throw Abort(.notFound, reason: "profile is not available")
+		}
+		if profiledUser.accessLevel == .banned && !requester.accessLevel.hasAccess(.moderator) {
+			throw Abort(.notFound, reason: "profile is not available")
+		}
+
+		let includeDetails =
+			(profiledUser.moderationStatus.showsContent() || requester.accessLevel.hasAccess(.moderator))
+			&& requester.accessLevel != .banned
+
+		var photoData: Data?
+		var photoExt: String?
+		if includeDetails, let imageName = profiledUser.userImage, !imageName.isEmpty {
+			do {
+				let fileURL = try getImagePath(for: imageName, usage: .userProfile, size: .thumbnail, on: req)
+				if FileManager.default.fileExists(atPath: fileURL.path) {
+					photoData = try Data(contentsOf: fileURL)
+					photoExt = fileURL.pathExtension
+				}
+			}
+			catch {
+				// Omit PHOTO rather than failing the download.
+			}
+		}
+
+		let vcfString = try VCardHelper.buildVCard(
+			from: profiledUser,
+			includeDetails: includeDetails,
+			photoData: photoData,
+			photoFileExtension: photoExt
+		)
+		let filename = profiledUser.username.replacingOccurrences(of: "\"", with: "")
+		let headers = HTTPHeaders([
+			("Content-Type", "text/vcard; charset=utf-8"),
+			("Content-Disposition", "attachment; filename=\"\(filename).vcf\""),
+		])
+		return try await vcfString.encodeResponse(status: .ok, headers: headers, for: req)
+	}
+
 	/// `GET /api/v3/users/match/allnames/STRING`
 	///
 	/// Retrieves the first 10 `User.userSearch` values containing the specified substring,
@@ -170,9 +228,13 @@ struct UsersController: APIRouteCollection {
 	///
 	/// **URL Query Parameters:**
 	/// - ?favorers=BOOLEAN Show only resulting users that have favorited the requesting user.
+	/// - ?sort=STRING Sort order for results. Currently `favorites` is supported, which lists
+	///   users the requester has favorited first, then remaining matches. Both groups stay
+	///   alphabetical by username. Applied before the 10-result cap. May be combined with
+	///   `favorers` (mutual favorites first among people who favorited the requester).
 	///
 	/// - Parameter STRING: in URL path. The search string to use. Must be at least 2 characters long.
-	/// - Throws: 403 error if the search term is not permitted.
+	/// - Throws: 403 error if the search term is not permitted. 400 error if `sort` is unrecognized.
 	/// - Returns: An array of `UserHeader` values of all matching users.
 	func matchAllNamesHandler(_ req: Request) async throws -> [UserHeader] {
 		let requester = try req.auth.require(UserCacheData.self)
@@ -191,32 +253,17 @@ struct UsersController: APIRouteCollection {
 		// Process query params
 		struct QueryOptions: Content {
 			var favorers: Bool?
+			var sort: UserMatchSort?
 		}
 		let options: QueryOptions = try req.query.decode(QueryOptions.self)
-
-		// Return matches based on the query mode.
-		// Remove any blocks from the results.
-		var matchingUsers: [User] = []
-		if options.favorers ?? false {
-			let favoritingUsers = try await UserFavorite.query(on: req.db)
-				.join(User.self, on: \UserFavorite.$user.$id == \User.$id, method: .left)
-				.filter(\.$user.$id !~ requester.getBlocks())
-				.filter(\.$favorite.$id == requester.userID)
-				.filter(User.self, \.$userSearch, .custom("ILIKE"), "%\(search)%")
-				.sort(User.self, \.$username, .ascending)
-				.range(0..<10)
-				.with(\.$user)
-				.all()
-			matchingUsers = favoritingUsers.map { $0.user }
-		}
-		else {
-			matchingUsers = try await User.query(on: req.db)
-				.filter(\.$userSearch, .custom("ILIKE"), "%\(search)%")
-				.filter(\.$id !~ requester.getBlocks())
-				.sort(\.$username, .ascending)
-				.range(0..<10)
-				.all()
-		}
+		let matchingUsers = try await buildUserMatchQuery(
+			on: req,
+			requester: requester,
+			search: search,
+			favorersOnly: options.favorers ?? false,
+			sort: options.sort,
+			limit: 10
+		)
 		return try matchingUsers.map { try UserHeader(user: $0) }
 	}
 
@@ -247,6 +294,49 @@ struct UsersController: APIRouteCollection {
 			.filter(\.$id !~ requester.getBlocks()).sort(\.$username, .ascending).all()
 		// return @username only
 		return users.map { "@\($0.username)" }
+	}
+
+	/// Builds the user-name match query: search substring + block exclusion, optional
+	/// `?favorers=true` filter, and optional `?sort=` (currently `favorites`: favorites first, then username).
+	///
+	/// When `sort` is `.favorites`, this can't be a single ORM query: there's no ORM-level way to sort
+	/// by "is this user one of the requester's favorites" without a raw-SQL sort expression. Instead, this
+	/// runs the favorited and non-favorited matches as two ordinary, separately-sorted-and-capped queries and
+	/// concatenates them, which reproduces "favorites first, then everyone else, alphabetical within each
+	/// group" without needing a custom SQL fragment.
+	private func buildUserMatchQuery(
+		on req: Request,
+		requester: UserCacheData,
+		search: String,
+		favorersOnly: Bool,
+		sort: UserMatchSort?,
+		limit: Int
+	) async throws -> [User] {
+		func baseQuery() -> QueryBuilder<User> {
+			let query = User.query(on: req.db)
+				.filter(\.$userSearch, .custom("ILIKE"), "%\(search)%")
+				.filter(\.$id !~ requester.getBlocks())
+			if favorersOnly {
+				query.join(UserFavorite.self, on: \User.$id == \UserFavorite.$user.$id)
+					.filter(UserFavorite.self, \.$favorite.$id == requester.userID)
+			}
+			return query.sort(\.$username, .ascending)
+		}
+		switch sort {
+		case .favorites:
+			let favoriteIDs = try await UserFavorite.query(on: req.db)
+				.filter(\.$user.$id == requester.userID)
+				.all(\.$favorite.$id)
+			let favorited = try await baseQuery().filter(\.$id ~~ favoriteIDs).range(0..<limit).all()
+			guard favorited.count < limit else {
+				return favorited
+			}
+			let others = try await baseQuery().filter(\.$id !~ favoriteIDs)
+				.range(0..<(limit - favorited.count)).all()
+			return favorited + others
+		case nil:
+			return try await baseQuery().range(0..<limit).all()
+		}
 	}
 
 	// MARK: - Actions Taken on Other Users

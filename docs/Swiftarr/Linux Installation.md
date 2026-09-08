@@ -28,7 +28,7 @@ The first time you run `swiftly` it will set itself up and insert itself into yo
 ```
 Installed release toolchains
 ----------------------------
-Swift 6.2.0 (in use) (default)
+Swift 6.3.3 (in use) (default)
 
 Installed snapshot toolchains
 ----------------------------
@@ -37,7 +37,7 @@ Installed snapshot toolchains
 At the root of this repository run `swiftly install`. This will read the `.swift-version` file then install/activate the correct toolchain version. This will automatically activate when you're working in that directory. You can confirm by running `swift --version`:
 
 ```
-Swift version 6.2 (swift-6.2-RELEASE)
+Swift version 6.3.3 (swift-6.3.3-RELEASE)
 Target: x86_64-unknown-linux-gnu
 ```
 

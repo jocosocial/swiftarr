@@ -46,6 +46,7 @@ extension FezEditLogData {
 ///
 /// See `ModerationController.fezModerationHandler(_:)`
 public struct FezModerationData: Content {
+	/// The fez in question, with quarantine masking overridden so moderators see the real text.
 	var fez: FezData
 	var isDeleted: Bool
 	var moderationStatus: ContentModerationStatus
@@ -364,12 +365,13 @@ public struct UserModerationData: Content {
 	var reports: [ReportModerationData]
 }
 
-/// Used to return data a moderator needs to moderate a PersonalEvent.
+/// Used to return data a moderator needs to moderate a Private Event or Personal Event.
 ///
 /// Returned by:
 /// * `GET /api/v3/mod/personalevent/id`
+/// * `GET /api/v3/mod/privateevent/id`
 ///
-/// See `ModerationController.personalEventModerationHandler(_:)`
+/// See `ModerationController.privateEventModerationHandler(_:)`
 public struct PersonalEventModerationData: Content {
 	/// The event in question
 	var personalEvent: PersonalEventData

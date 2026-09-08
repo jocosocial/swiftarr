@@ -146,8 +146,10 @@ final class FriendlyFez: Model, Searchable, @unchecked Sendable {
 
 // Fezzes can be reported
 extension FriendlyFez: Reportable {
-	/// The report type for `FriendlyFez` reports.
-	var reportType: ReportType { .fez }
+	/// The report type for `FriendlyFez` reports. Private Events get their own report type; everything else
+	/// reportable at the container level is an LFG (Seamails and Personal Events are blocked from container-level
+	/// reports entirely--see `FezController.reportFezHandler`).
+	var reportType: ReportType { fezType == .privateEvent ? .privateEvent : .fez }
 	/// Standardizes how to get the author ID of a Reportable object.
 	var authorUUID: UUID { $owner.id }
 
