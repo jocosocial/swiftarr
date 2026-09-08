@@ -284,7 +284,8 @@ additive; the existing count fields are unchanged and are now derived from these
 - `GET /api/v3/users/match/allnames/:search_string` now accepts `?sort=favorites`, which sorts users the requester has favorited first.
 
 ## Sep 02, 2026
-* `AnnouncementCreateData` gains optional `postAsUser`. TwitarrTeam callers may author as self, TwitarrTeam, or admin; THO as self, THO, or admin; admin as any of those. Unknown values (including `moderator`) return 403. Create applies the selected author; edit validates decoded values but preserves the existing author.
+
+- `AnnouncementCreateData` gains optional `postAsUser`. TwitarrTeam callers may author as self, TwitarrTeam, or admin; THO as self, THO, or admin; admin as any of those. Unknown values (including `moderator`) return 403. Create applies the selected author; edit validates decoded values but preserves the existing author.
 
 ## Sep 06, 2026
 
@@ -292,4 +293,6 @@ additive; the existing count fields are unchanged and are now derived from these
 
 ## Sep 07, 2026
 
-- * New endpoint `GET /api/v3/users/:user_id/vcard` returns a downloadable vCard (`.vcf`) of a user's land-based contact fields. The HTML profile page has a Save vCard button.
+- New endpoint `GET /api/v3/users/:user_id/vcard` returns a downloadable vCard (`.vcf`) of a user's land-based contact fields. The HTML profile page has a Save vCard button.
+- New endpoint `GET /api/v3/events/photographerreport` returns a paginated photography-coverage report (`Paginated<ShutternautScheduleReportData>`) of events flagged as needing a photographer and/or assigned a Shutternaut.
+- New endpoint `GET /api/v3/events/photographerreport/download` returns the same report as a CSV of all matching rows.
