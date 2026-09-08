@@ -106,6 +106,10 @@ struct SiteEventsController: SiteControllerUtils {
 		privateRoutes.delete("events", eventIDParam, "photographer", use: eventsAddRemovePhotographerHandler).setUsedForPreregistration()
 		privateRoutes.post("events", eventIDParam, "needsphotographer", use: eventsAddRemoveNeedsPhotographerHandler).setUsedForPreregistration()
 		privateRoutes.delete("events", eventIDParam, "needsphotographer", use: eventsAddRemoveNeedsPhotographerHandler).setUsedForPreregistration()
+		privateRoutes.get("events", "photographerreport", use: photographerReportPageHandler)
+			.setUsedForPreregistration()
+		privateRoutes.get("events", "photographerreport", "download", use: photographerReportDownloadHandler)
+			.setUsedForPreregistration()
 	}
 
 	/// `GET /events`
@@ -311,6 +315,136 @@ struct SiteEventsController: SiteControllerUtils {
 		let response = try await apiQuery(req, endpoint: "/events/\(eventID)/needsphotographer", method: req.method)
 		return response.status
 	}
+
+	/// `GET /events/photographerreport`
+	///
+	/// Paginated table of photography coverage: event time, title, assigned photographers, and whether
+	/// the event was flagged as needing a photographer. Optional `cruiseday` uses Event indexing
+	/// (embarkation day is 1). Caller must be a Shutternaut Manager or TwitarrTeam and above.
+	func photographerReportPageHandler(_ req: Request) async throws -> View {
+		try requirePhotographerReportAccess(req)
+		let queryStruct = try req.query.decode(PhotographerReportQueryStruct.self)
+		let report = try await fetchPhotographerReportPage(req, query: queryStruct, start: queryStruct.start, limit: queryStruct.limit)
+
+		struct PhotographerReportPageContext: Encodable {
+			struct CruiseDay: Encodable {
+				var name: String
+				var index: Int
+			}
+			var trunk: TrunkContext
+			var events: [ShutternautScheduleReportData]
+			var paginator: PaginatorContext
+			var dayList: [CruiseDay]
+			var daySelection: Int?
+			var downloadURL: String
+
+			init(_ req: Request, report: Paginated<ShutternautScheduleReportData>, query: PhotographerReportQueryStruct) {
+				trunk = .init(req, title: "Photographer Schedule Report", tab: .events)
+				events = report.items
+				daySelection = query.cruiseday
+				let limit = report.paginator.limit
+				paginator = .init(report.paginator) { pageIndex in
+					var components = URLComponents()
+					components.path = "/events/photographerreport"
+					var queryItems = [
+						URLQueryItem(name: "start", value: String(pageIndex * limit)),
+						URLQueryItem(name: "limit", value: String(limit)),
+					]
+					if let cruiseday = query.cruiseday {
+						queryItems.append(URLQueryItem(name: "cruiseday", value: String(cruiseday)))
+					}
+					components.queryItems = queryItems
+					return components.string ?? "/events/photographerreport"
+				}
+
+				var cruiseDate = Calendar.current.date(from: Settings.shared.cruiseStartDateComponents) ?? Settings.shared.cruiseStartDate()
+				let dayFormatter = DateFormatter()
+				dayFormatter.setLocalizedDateFormatFromTemplate("E, MMM d")
+				dayList = []
+				for dayIndex in 1...Settings.shared.cruiseLengthInDays {
+					dayList.append(CruiseDay(name: dayFormatter.string(from: cruiseDate), index: dayIndex))
+					cruiseDate = Calendar.current.date(byAdding: DateComponents(day: 1), to: cruiseDate) ?? cruiseDate
+				}
+
+				var downloadComponents = URLComponents()
+				downloadComponents.path = "/events/photographerreport/download"
+				if let cruiseday = query.cruiseday {
+					downloadComponents.queryItems = [URLQueryItem(name: "cruiseday", value: String(cruiseday))]
+				}
+				downloadURL = downloadComponents.string ?? "/events/photographerreport/download"
+			}
+		}
+
+		let ctx = PhotographerReportPageContext(req, report: report, query: queryStruct)
+		return try await req.view.render("Events/photographerReport", ctx)
+	}
+
+	/// `GET /events/photographerreport/download`
+	///
+	/// Downloads a CSV of all photography-coverage rows matching the current cruise-day filter
+	/// (not just the current HTML page). Proxies `GET /api/v3/events/photographerreport/download`.
+	func photographerReportDownloadHandler(_ req: Request) async throws -> Response {
+		try requirePhotographerReportAccess(req)
+		let queryStruct = try req.query.decode(PhotographerReportQueryStruct.self)
+		var queryItems: [URLQueryItem]?
+		if let cruiseday = queryStruct.cruiseday {
+			queryItems = [URLQueryItem(name: "cruiseday", value: String(cruiseday))]
+		}
+		let response = try await apiQuery(
+			req,
+			endpoint: "/events/photographerreport/download",
+			query: queryItems,
+			passThroughQuery: false
+		)
+		var body = Response.Body.empty
+		if let apiResponseBody = response.body {
+			body = Response.Body(buffer: apiResponseBody)
+		}
+		return Response(status: response.status, headers: response.headers, body: body)
+	}
+
+	private func requirePhotographerReportAccess(_ req: Request) throws {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		guard cacheUser.userRoles.contains(.shutternautmanager) || cacheUser.accessLevel >= .twitarrteam else {
+			throw Abort(.forbidden, reason: "Only Shutternaut Managers may view the photographer schedule report")
+		}
+	}
+
+	private func photographerReportQueryItems(_ query: PhotographerReportQueryStruct, start: Int?, limit: Int?) -> [URLQueryItem] {
+		var items: [URLQueryItem] = []
+		if let start {
+			items.append(URLQueryItem(name: "start", value: String(start)))
+		}
+		if let limit {
+			items.append(URLQueryItem(name: "limit", value: String(limit)))
+		}
+		if let cruiseday = query.cruiseday {
+			items.append(URLQueryItem(name: "cruiseday", value: String(cruiseday)))
+		}
+		return items
+	}
+
+	private func fetchPhotographerReportPage(
+		_ req: Request,
+		query: PhotographerReportQueryStruct,
+		start: Int?,
+		limit: Int?
+	) async throws -> Paginated<ShutternautScheduleReportData> {
+		let queryItems = photographerReportQueryItems(query, start: start, limit: limit)
+		let response = try await apiQuery(
+			req,
+			endpoint: "/events/photographerreport",
+			query: queryItems.isEmpty ? nil : queryItems,
+			passThroughQuery: false
+		)
+		return try response.content.decode(Paginated<ShutternautScheduleReportData>.self)
+	}
+}
+
+fileprivate struct PhotographerReportQueryStruct: Content {
+	var cruiseday: Int?
+	var start: Int?
+	var limit: Int?
 }
 
 // A specialized middleware just for the ics route that Calendaring apps use. This middleware is inserted before the
