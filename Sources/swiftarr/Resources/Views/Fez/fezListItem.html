@@ -7,7 +7,7 @@
 	<a href="/seamail/#(fez.fezID)#if(effectiveUser != nil):?foruser=#(effectiveUser)#endif" class="list-group-item list-group-item-action">		
 		<div class="row">
 			<div class="col #if(fez.members && fez.members.isMuted):text-muted#endif">
-				#if(fez.members && fez.members.isMuted):🔇#endif <b>#(fez.title)</b>
+				#if(fez.members && fez.members.isMuted):🔇#elseif(fez.members && fez.members.isFavorite):⭐#endif <b>#(fez.title)</b>
 			</div>
 			<div class="col col-auto">
 				<span title="#localTime(fez.lastModificationTime)" class="text-muted">#relativeTime(fez.lastModificationTime)</span>
@@ -47,7 +47,7 @@
 	<a class="list-group-item list-group-item-action" href="/privateevent/#(fez.fezID)">		
 		<div class="row">
 			<div class="col">
-				#if(fez.cancelled):<span class="text-danger"><b>Cancelled</b></span>#endif <b>#(fez.title)</b>
+				#if(fez.cancelled):<span class="text-danger"><b>Cancelled</b></span>#endif #if(fez.members && fez.members.isFavorite):⭐#endif <b>#(fez.title)</b>
 			</div>
 			<div class="col col-auto">
 				#if(fez.startTime != nil && fez.endTime != nil):
@@ -108,7 +108,7 @@
 	<a class="list-group-item list-group-item-action" href="/lfg/#(fez.fezID)">		
 		<div class="row">
 			<div class="col">
-				#if(fez.cancelled):<span class="text-danger"><b>Cancelled</b></span>#endif <b>#(fez.title)</b>
+				#if(fez.cancelled):<span class="text-danger"><b>Cancelled</b></span>#endif #if(fez.members && fez.members.isFavorite):⭐#endif <b>#(fez.title)</b>
 			</div>
 			<div class="col col-auto">
 				#if(fez.startTime != nil && fez.endTime != nil):

@@ -62,6 +62,17 @@
 						#if(trunk.userIsMod):
 							<a class="btn btn-outline-primary" href="/moderate/lfg/#(fez.fezID)">Mod</a>
 						#endif
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="favorite"
+									data-actionpath="/lfg/#(fez.fezID)/favorite"
+									data-istoggle="true"
+									data-errordiv="favorite_errorDisplay"
+									id="#(fez.fezID)_favorite"
+								#if(fez.members.isFavorite):checked#endif>
+						<label class="btn btn-outline-primary" for="#(fez.fezID)_favorite">
+							Favorite<span class="laughtext"></span>
+							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+							<span class="visually-hidden">Loading...</span>
+						</label>
 						#if(fez.owner.userID == trunk.userID):
 							#if(fez.fezType != "personalEvent"):
 								<a class="btn btn-outline-primary" href="/lfg/#(fez.fezID)/members">Manage Members</a>
@@ -98,7 +109,10 @@
 				<div class="col text-end text-danger d-none" id="fezActions_errorDisplay">
 					Could not join #(typeName): <span class="errortext"></span>
 				</div>
-			</div>	
+				<div class="col text-end text-danger d-none" id="favorite_errorDisplay">
+					Could not add/remove favorite: <span class="errortext"></span>
+				</div>
+			</div>
 			
 			#if(fez.members):
 				#if(fez.fezType != "personalEvent"):

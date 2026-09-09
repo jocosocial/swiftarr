@@ -299,4 +299,9 @@ additive; the existing count fields are unchanged and are now derived from these
 
 ## Sep 08, 2026
 
+- Fezzes (LFG, Seamail, Private Event) can be favorited by members.
+  - New endpoints `POST/DELETE /api/v3/fez/:fez_ID/favorite` and `POST /api/v3/fez/:fez_ID/favorite/remove`.
+  - `FezData.MembersOnlyData` has a new `isFavorite` field. 
+  - `GET /api/v3/fez/joined` and `GET /api/v3/fez/owner` now support a `?favorite=true` filter.
+- `POST/DELETE /api/v3/fez/:fez_ID/mute` is no longer rejected for privileged mailboxes (`@moderator`/`@TwitarrTeam`).
 - `FezContentData` gains an optional `firstPost` (`PostContentData`), letting `POST /api/v3/fez/create` create the intial post in the same call.
