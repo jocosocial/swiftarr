@@ -197,6 +197,8 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 
 		privateRoutes.post(fezIDParam, "join", use: fezJoinPostHandler)
 		privateRoutes.post(fezIDParam, "leave", use: fezLeavePostHandler)
+		privateRoutes.post(fezIDParam, "favorite", use: fezAddFavoritePostHandler)
+		privateRoutes.delete(fezIDParam, "favorite", use: fezRemoveFavoritePostHandler)
 		privateRoutes.post(fezIDParam, "post", use: fezThreadPostHandler)
 		privateRoutes.post("post", postIDParam, "delete", use: fezPostDeleteHandler)
 		privateRoutes.delete("post", postIDParam, use: fezPostDeleteHandler)
@@ -485,6 +487,28 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		}
 		try await apiQuery(req, endpoint: "/fez/\(fezID)/unjoin", method: .POST)
 		return .created
+	}
+
+	// POST /lfg/ID/favorite
+	//
+	// Favorites a fez.
+	func fezAddFavoritePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id")
+		}
+		try await apiQuery(req, endpoint: "/fez/\(fezID)/favorite", method: .POST)
+		return .created
+	}
+
+	// DELETE /lfg/ID/favorite
+	//
+	// Unfavorites a fez.
+	func fezRemoveFavoritePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id")
+		}
+		try await apiQuery(req, endpoint: "/fez/\(fezID)/favorite/remove", method: .POST)
+		return .noContent
 	}
 
 	// POST /lfg/ID/cancel

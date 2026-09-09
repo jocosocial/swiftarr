@@ -16,6 +16,7 @@ struct FezController: APIRouteCollection {
 		var excludetype: [String] = []
 		var lfgtypes: Bool?
 		var onlynew: Bool?
+		var favorite: Bool?
 		var start: Int?
 		var limit: Int?
 		var cruiseday: Int?
@@ -81,6 +82,9 @@ struct FezController: APIRouteCollection {
 		tokenAuthGroup.post(fezIDParam, "mute", use: muteAddHandler)
 		tokenAuthGroup.delete(fezIDParam, "mute", use: muteRemoveHandler)
 		tokenAuthGroup.post(fezIDParam, "mute", "remove", use: muteRemoveHandler)
+		tokenAuthGroup.post(fezIDParam, "favorite", use: favoriteAddHandler)
+		tokenAuthGroup.delete(fezIDParam, "favorite", use: favoriteRemoveHandler)
+		tokenAuthGroup.post(fezIDParam, "favorite", "remove", use: favoriteRemoveHandler)
 	}
 
 	// MARK: - tokenAuthGroup Handlers (logged in)
@@ -174,6 +178,7 @@ struct FezController: APIRouteCollection {
 	/// - `?type=STRING` - Only return fezzes of the given fezType. See `FezType` for a list.
 	/// - `?excludetype=STRING` - Don't return fezzes of the given type. See `FezType` for a list.
 	/// - `?onlynew=TRUE` - Only return fezzes with unread messages.
+	/// - `?favorite=TRUE` - Only return fezzes the user has favorited.
 	/// - `?start=INT` - The offset to the first result to return in the filtered + sorted array of results.
 	/// - `?limit=INT` - The maximum number of fezzes to return; defaults to 50.
 	/// - `?search=STRING` - Only show fezzes whose title, info, or any post contains the given string.
@@ -211,6 +216,7 @@ struct FezController: APIRouteCollection {
 	/// * `?limit=INT` - The maximum number of fezzes to return; defaults to 50.
 	/// - `?hidepast=BOOLEAN` - Hide fezzes that started more than one hour in the past. For this endpoint, this defaults to FALSE.
 	/// - `?lfgtypes=BOOLEAN` - Shorthand to include/exliude all the LFG types (Activity, Gaming, Dining, etc.) Acts the same as using multiple `type=` or `exludetype=` params.
+	/// - `?favorite=TRUE` - Only return fezzes the user has favorited.
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: An array of `FezData` containing all the fezzes created by the user.
@@ -226,6 +232,9 @@ struct FezController: APIRouteCollection {
 		}
 		else if let excludeTypes = try urlQuery.getExcludeTypes() {
 			query.filter(\.$fezType !~ excludeTypes)
+		}
+		if urlQuery.favorite == true {
+			query.filter(FezParticipant.self, \.$isFavorite == true)
 		}
 
 		if let dayFilter = req.query[Int.self, at: "cruiseday"] {
@@ -947,20 +956,10 @@ struct FezController: APIRouteCollection {
 	func muteAddHandler(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
-		let effectiveUser = getEffectiveUser(user: cacheUser, req: req, fez: fez)
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
 			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
 		}
-		// Without this check Moderator A could mute a chat for all Moderators which
-		// doesn't feel super good. It's also a confusing UX and would require Help
-		// signage to work around. So we're just going to the option to do that.
-		guard effectiveUser.userID == cacheUser.userID else {
-			throw Abort(.badRequest, reason: "Privileged mailbox chats cannot be muted")
-		}
-		guard let fezParticipant = try await fez.$participants.$pivots.query(on: req.db)
-				.filter(\.$user.$id == effectiveUser.userID).first() else {
-			throw Abort(.forbidden, reason: "user is not a member of this fez")
-		}
+		let fezParticipant = try await getOwnFezParticipant(fez: fez, cacheUser: cacheUser, req: req)
 
 		if fezParticipant.isMuted == true {
 			return .ok
@@ -982,14 +981,10 @@ struct FezController: APIRouteCollection {
 	func muteRemoveHandler(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
-		let effectiveUser = getEffectiveUser(user: cacheUser, req: req, fez: fez)
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
 			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
 		}
-		guard let fezParticipant = try await fez.$participants.$pivots.query(on: req.db)
-				.filter(\.$user.$id == effectiveUser.userID).first() else {
-			throw Abort(.forbidden, reason: "user is not a member of this fez")
-		}
+		let fezParticipant = try await getOwnFezParticipant(fez: fez, cacheUser: cacheUser, req: req)
 
 		if fezParticipant.isMuted != true {
 			return .ok
@@ -997,6 +992,58 @@ struct FezController: APIRouteCollection {
 		fezParticipant.isMuted = nil
 		try await fezParticipant.save(on: req.db)
 		_ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
+		return .noContent
+	}
+
+	/// `POST /api/v3/fez/:fez_ID/favorite`
+	///
+	/// Favorite the specified `Fez` for the current user. Lets the user flag a chat (Seamail, LFG, or
+	/// Private Event) they intend to come back to later; offers a filter criteria similar to `onlynew`.
+	/// Only members of the fez may favorite it. Unjoining a fez implies unfavoriting it, as the favorite
+	/// flag is stored on the per-user membership pivot, which is deleted on unjoin.
+	///
+	/// For privileged mailboxes (the shared `@moderator`/`@TwitarrTeam` seamail), favoriting uses the
+	/// requesting user's own `FezParticipant` pivot, not a pivot shared by the whole team, so favoriting
+	/// a privileged-mailbox chat only affects the user who favorited it.
+	///
+	/// - Parameter fez_ID: In the URL path.
+	/// - Returns: 201 Created on success; 200 OK if already favorited.
+	func favoriteAddHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
+			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
+		}
+		let fezParticipant = try await getOwnFezParticipant(fez: fez, cacheUser: cacheUser, req: req)
+
+		if fezParticipant.isFavorite {
+			return .ok
+		}
+		fezParticipant.isFavorite = true
+		try await fezParticipant.save(on: req.db)
+		return .created
+	}
+
+	/// `POST /api/v3/fez/:fez_ID/favorite/remove`
+	/// `DELETE /api/v3/fez/:fez_ID/favorite`
+	///
+	/// Unfavorite the specified `Fez` for the current user.
+	///
+	/// - Parameter fez_ID: In the URL path.
+	/// - Returns: 204 No Content on success; 200 OK if already not favorited.
+	func favoriteRemoveHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
+			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
+		}
+		let fezParticipant = try await getOwnFezParticipant(fez: fez, cacheUser: cacheUser, req: req)
+
+		if !fezParticipant.isFavorite {
+			return .ok
+		}
+		fezParticipant.isFavorite = false
+		try await fezParticipant.save(on: req.db)
 		return .noContent
 	}
 }
@@ -1088,6 +1135,9 @@ extension FezController {
 				)
 				query.filter(FezParticipant.self, \.$addedTo == false)
 			}
+		}
+		if urlQuery.favorite == true {
+			query.filter(FezParticipant.self, \.$isFavorite == true)
 		}
 		if var searchStr = urlQuery.search {
 			searchStr = searchStr.escapedForSQLWildcards()
@@ -1259,7 +1309,8 @@ extension FezController {
 			// appears with unread messages that cannot be cleared.
 			let postCount = fez.postCount - (pivot?.hiddenCount ?? 0)
 			fezData.members = FezData.MembersOnlyData(participants: participants, waitingList: waitingList, postCount: postCount,
-					readCount: pivot?.readCount ?? postCount, posts: posts, isMuted: pivot?.isMuted ?? false)
+					readCount: pivot?.readCount ?? postCount, posts: posts, isMuted: pivot?.isMuted ?? false,
+					isFavorite: pivot?.isFavorite ?? false)
 		} else if fez.fezType.isPrivateEventType {
 			// We need to let non-members see private events they're not currently a member of (so they can report them), but
 			// they should only see a minimum amount of info on the event they're not in.
@@ -1332,6 +1383,32 @@ extension FezController {
 			return result
 		}
 		return try FezParticipant(userID, lfg)
+	}
+
+	/// Resolves the `FezParticipant` pivot to use for per-user chat settings (mute, favorite) actions.
+	/// These settings are always tracked per actual user, even when the fez is a privileged mailbox chat
+	/// (`@moderator`/`@TwitarrTeam` seamail) that multiple real users share access to--each real user gets
+	/// their own pivot for it (see `ensureFezParticipantForUser`), so muting/favoriting a privileged-mailbox
+	/// chat only affects the user who did it. We don't want `getEffectiveUser(user:req:fez:)`'s persona
+	/// substitution here, only its "is this a privileged mailbox chat" signal, to decide whether to
+	/// auto-create the calling user's own pivot if they haven't got one yet.
+	///
+	/// - Parameters:
+	///   - fez: The FriendlyFez being muted/favorited.
+	///   - cacheUser: The actual requesting user (never a moderator/TwitarrTeam persona).
+	///   - req: The Request for database access.
+	/// - Throws: 403 error if the fez isn't a privileged mailbox chat and the user has no existing pivot (isn't a member).
+	/// - Returns: The requesting user's own `FezParticipant` pivot for this fez.
+	func getOwnFezParticipant(fez: FriendlyFez, cacheUser: UserCacheData, req: Request) async throws -> FezParticipant {
+		let effectiveUser = getEffectiveUser(user: cacheUser, req: req, fez: fez)
+		if effectiveUser.userID != cacheUser.userID {
+			return try await ensureFezParticipantForUser(fez: fez, user: cacheUser, on: req, isPrivilegedMailbox: true)
+		}
+		guard let pivot = try await fez.$participants.$pivots.query(on: req.db)
+				.filter(\.$user.$id == cacheUser.userID).first() else {
+			throw Abort(.forbidden, reason: "user is not a member of this fez")
+		}
+		return pivot
 	}
 
 	/// Ensures a FezParticipant exists for the given user and fez, creating and initializing it if needed.
