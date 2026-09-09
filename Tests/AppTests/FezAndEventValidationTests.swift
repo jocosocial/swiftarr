@@ -101,6 +101,35 @@ class FezAndEventValidationTests: XCTestCase {
 		XCTAssertEqual(try validationErrors(FezContentData.self, json), [])
 	}
 
+	// MARK: - FezContentData — optional firstPost (nested PostContentData validation)
+
+	private func fezJSONWithFirstPost(firstPostText: String, images: String = "[]") -> String {
+		let base = fezJSON()
+		// Splice a "firstPost" field into the base fixture's object.
+		let firstPostJSON = #""firstPost":{"text":"\#(firstPostText)","images":\#(images)}"#
+		return String(base.dropLast()) + "," + firstPostJSON + "}"
+	}
+
+	func testFez_NoFirstPost_HappyPath() throws {
+		// Regression check: omitting firstPost entirely still validates cleanly.
+		XCTAssertEqual(try validationErrors(FezContentData.self, fezJSON()), [])
+	}
+
+	func testFez_FirstPost_HappyPath() throws {
+		XCTAssertEqual(try validationErrors(FezContentData.self, fezJSONWithFirstPost(firstPostText: "Hello there!")), [])
+	}
+
+	func testFez_FirstPost_EmptyText_PropagatesPostContentDataValidation() throws {
+		let errs = try validationErrors(FezContentData.self, fezJSONWithFirstPost(firstPostText: ""))
+		XCTAssertTrue(errs.contains("post text cannot be empty."), "errs=\(errs)")
+	}
+
+	func testFez_FirstPost_TextTooLong_PropagatesPostContentDataValidation() throws {
+		let text = String(repeating: "a", count: 2048)
+		let errs = try validationErrors(FezContentData.self, fezJSONWithFirstPost(firstPostText: text))
+		XCTAssertTrue(errs.contains("post length of \(text.count) is over the 2048 character limit"), "errs=\(errs)")
+	}
+
 	// MARK: - PersonalEventContentData
 
 	private func eventJSON(
