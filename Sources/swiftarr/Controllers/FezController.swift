@@ -63,7 +63,7 @@ struct FezController: APIRouteCollection {
 		tokenAuthGroup.get("joined", use: joinedHandler)
 		tokenAuthGroup.get("owner", use: ownerHandler)
 		tokenAuthGroup.get(fezIDParam, use: fezHandler)
-		tokenAuthGroup.post("create", use: createHandler)
+		tokenAuthGroup.on(.POST, "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: createHandler)
 		tokenAuthGroup.on(.POST, fezIDParam, "post", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: postAddHandler)
 		tokenAuthGroup.webSocket(fezIDParam, "socket", onUpgrade: createFezSocket)
 		tokenAuthGroup.post(fezIDParam, "cancel", use: cancelHandler)
@@ -482,12 +482,6 @@ struct FezController: APIRouteCollection {
 		guard fez.fezType != .personalEvent else {
 			throw Abort(.badRequest, reason: "Personal Events don't have posts.")
 		}
-		guard ![.closed, .open].contains(fez.fezType) || data.images.count == 0 else {
-			throw Abort(.badRequest, reason: "Private conversations can't contain photos.")
-		}
-		guard data.images.count <= 1 else {
-			throw Abort(.badRequest, reason: "posts may only have one image")
-		}
 		guard fez.participantArray.contains(cacheUser.userID) || cacheUser.accessLevel.hasAccess(.moderator) else {
 			throw Abort(.forbidden, reason: "user is not member of \(fez.fezType.lfgLabel); cannot post")
 		}
@@ -497,6 +491,19 @@ struct FezController: APIRouteCollection {
 		guard fez.moderationStatus != .locked else {
 			// Note: Users should still be able to post in a quarantined LFG so they can figure out what (else) to do.
 			throw Abort(.badRequest, reason: "\(fez.fezType.lfgLabel) is locked; cannot post.")
+		}
+		return try await addFezPost(to: fez, data: data, cacheUser: cacheUser, on: req)
+	}
+
+	// This is the bulk of postAddHandler, pulled out into a separate fn so createChat can use it to create
+	// a Fez's optional initial post using the same rules (image limits, notifications, hidden-post bookkeeping)
+	// as posting to an existing Fez. Callers are responsible for any membership/lock/personalEvent guards.
+	func addFezPost(to fez: FriendlyFez, data: PostContentData, cacheUser: UserCacheData, on req: Request) async throws -> FezPostData {
+		guard ![.closed, .open].contains(fez.fezType) || data.images.count == 0 else {
+			throw Abort(.badRequest, reason: "Private conversations can't contain photos.")
+		}
+		guard data.images.count <= 1 else {
+			throw Abort(.badRequest, reason: "posts may only have one image")
 		}
 		// process image
 		let filenames = try await processImages(data.images, usage: .fezPost, on: req)
@@ -641,6 +648,14 @@ struct FezController: APIRouteCollection {
 	///
 	/// A value of 0 in either the `.minCapacity` or `.maxCapacity` fields indicates an undefined
 	/// limit: "there is no minimum", "there is no maximum".
+	///
+	/// `FezContentData` may optionally include a `firstPost`, which creates the fez's opening post
+	/// in the same call--similar to how `POST /api/v3/forum/categories/ID/create` takes a `firstPost`.
+	/// This is ignored for `.personalEvent` fez types, which don't support posts. The same image-count
+	/// rules that apply to `POST /api/v3/fez/ID/post` apply here (0 images for Seamail types, 1 image
+	/// otherwise). `firstPost`'s own `postAsModerator`/`postAsTwitarrTeam` flags govern the post's
+	/// author independently of this call's `createdByModerator`/`createdByTwitarrTeam` flags; set both
+	/// if the fez owner and post author should match.
 	///
 	/// - Parameter requestBody: `FezContentData` payload in the HTTP body.
 	/// - Throws: 400 error if the supplied data does not validate.
@@ -1217,8 +1232,15 @@ extension FezController {
 		let addedInitialUsers = Set(initialUsers).subtracting([user.userID, creator.userID])
 		// Notify users who were added (does not include the creator)
 		try await notifyAddedToFez(fez, for: Array(addedInitialUsers), by: creator, on: req)
+		var posts: [FezPostData] = []
+		if let firstPost = data.firstPost {
+			guard fez.fezType != .personalEvent else {
+				throw Abort(.badRequest, reason: "Personal Events don't have posts.")
+			}
+			posts = [try await addFezPost(to: fez, data: firstPost, cacheUser: user, on: req)]
+		}
 		let creatorPivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == creator.userID).first()
-		let fezData = try buildFezData(from: fez, with: creatorPivot, posts: [], for: user, on: req)
+		let fezData = try buildFezData(from: fez, with: creatorPivot, posts: posts, for: user, on: req)
 		return fezData
 	}
 	
