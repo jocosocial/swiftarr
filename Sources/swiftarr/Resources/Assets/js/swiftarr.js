@@ -617,6 +617,16 @@ async function submitAJAXForm(formElement, event) {
 				location.reload();
 				return;
 			}
+			if (successURL == "createdFez") {
+				let data = await response.json();
+				location.assign("/lfg/" + data.fezID);
+				return;
+			}
+			if (successURL == "createdPrivateEvent") {
+				let data = await response.json();
+				location.assign("/privateevent/" + data.fezID);
+				return;
+			}
 			if (successURL == "message") {
 				let data = await response.json();
 				let successAlert = formElement.querySelector('.alert-success');

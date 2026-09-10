@@ -298,7 +298,10 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	// POST /lfg/create
 	// POST /lfg/ID/update
 	// Handles the POST from either the Create Or Update Fez page
-	func fezCreateOrUpdatePostHandler(_ req: Request) async throws -> HTTPStatus {
+	func fezCreateOrUpdatePostHandler(_ req: Request) async throws -> Response {
+		struct NewFezResponse: Content {
+			var fezID: UUID
+		}
 		let postStruct = try req.content.decode(CreateFezPostFormContent.self)
 		var fezType: FezType
 		switch postStruct.eventtype {
@@ -325,12 +328,18 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			maxCapacity: postStruct.maximum,
 			initialUsers: []
 		)
+		let isCreating = req.parameters.get(fezIDParam.paramString) == nil
 		var path = "/fez/create"
 		if let updatingFezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() {
 			path = "/fez/\(updatingFezID)/update"
 		}
-		try await apiQuery(req, endpoint: path, method: .POST, encodeContent: fezContentData)
-		return .created
+		let apiResponse = try await apiQuery(req, endpoint: path, method: .POST, encodeContent: fezContentData)
+		let response = Response(status: .created)
+		if isCreating {
+			let newFez = try apiResponse.content.decode(FezData.self)
+			try response.content.encode(NewFezResponse(fezID: newFez.fezID))
+		}
+		return response
 	}
 
 	// GET /lfg/ID

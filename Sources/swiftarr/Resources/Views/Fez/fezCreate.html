@@ -20,7 +20,8 @@
     			<div class="col">
 					<ul class="container-md mx-0 px-0 list-group">
 						<li class="list-group-item bg-transparent mb-3">				
-							<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST" data-successurl="/lfg">
+							<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST"
+									data-successurl="#if(fez):/lfg/#(fez.fezID)#else:createdFez#endif">
 								<div class="row mb-3">
 									<div class="input-group">
 										<input type="text" class="form-control" placeholder="Title" name="subject" aria-label="Title" value="#(fezTitle)">
