@@ -199,6 +199,8 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		privateRoutes.post(fezIDParam, "leave", use: fezLeavePostHandler)
 		privateRoutes.post(fezIDParam, "favorite", use: fezAddFavoritePostHandler)
 		privateRoutes.delete(fezIDParam, "favorite", use: fezRemoveFavoritePostHandler)
+		privateRoutes.post(fezIDParam, "mute", use: fezAddMutePostHandler)
+		privateRoutes.delete(fezIDParam, "mute", use: fezRemoveMutePostHandler)
 		privateRoutes.post(fezIDParam, "post", use: fezThreadPostHandler)
 		privateRoutes.post("post", postIDParam, "delete", use: fezPostDeleteHandler)
 		privateRoutes.delete("post", postIDParam, use: fezPostDeleteHandler)
@@ -508,6 +510,28 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Missing fez_id")
 		}
 		try await apiQuery(req, endpoint: "/fez/\(fezID)/favorite/remove", method: .POST)
+		return .noContent
+	}
+
+	// POST /lfg/ID/mute
+	//
+	// Mutes a fez.
+	func fezAddMutePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id")
+		}
+		try await apiQuery(req, endpoint: "/fez/\(fezID)/mute", method: .POST)
+		return .created
+	}
+
+	// DELETE /lfg/ID/mute
+	//
+	// Unmutes a fez.
+	func fezRemoveMutePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id")
+		}
+		try await apiQuery(req, endpoint: "/fez/\(fezID)/mute/remove", method: .POST)
 		return .noContent
 	}
 

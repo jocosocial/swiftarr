@@ -73,6 +73,17 @@
 							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 							<span class="visually-hidden">Loading...</span>
 						</label>
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="mute"
+									data-actionpath="/lfg/#(fez.fezID)/mute"
+									data-istoggle="true"
+									data-errordiv="mute_errorDisplay"
+									id="#(fez.fezID)_mute"
+								#if(fez.members.isMuted):checked#endif>
+						<label class="btn btn-outline-primary" for="#(fez.fezID)_mute">
+							Mute<span class="laughtext"></span>
+							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+							<span class="visually-hidden">Loading...</span>
+						</label>
 						#if(fez.owner.userID == trunk.userID):
 							#if(fez.fezType != "personalEvent"):
 								<a class="btn btn-outline-primary" href="/lfg/#(fez.fezID)/members">Manage Members</a>
@@ -111,6 +122,9 @@
 				</div>
 				<div class="col text-end text-danger d-none" id="favorite_errorDisplay">
 					Could not add/remove favorite: <span class="errortext"></span>
+				</div>
+				<div class="col text-end text-danger d-none" id="mute_errorDisplay">
+					Could not add/remove mute: <span class="errortext"></span>
 				</div>
 			</div>
 			
