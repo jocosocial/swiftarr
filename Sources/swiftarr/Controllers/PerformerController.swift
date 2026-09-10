@@ -53,11 +53,13 @@ struct PerformerController: APIRouteCollection {
 	///  before the schedule.
 	///
 	/// **URL Query Parameters:**
+	/// * `?search=STRING` - Full-text search across name, organization, title, and bio.
 	///	* `?start=INT` - Offset from start of results set
 	/// * `?limit=INT` - the maximum number of games to retrieve: 1-200, default is 50.
 	func getOfficialPerformers(_ req: Request) async throws -> PerformerResponseData {
 		let pagination = Pagination(on: req, maxPageSize: Settings.shared.maximumTwarrts)
 		let query = Performer.query(on: req.db).filter(\.$officialPerformer == true).sort(\.$sortOrder)
+		try applyPerformerSearchFilter(from: req, to: query)
 		let performerCount = try await query.count()
 		let performers = try await query.copy().range(pagination.range).all()
 		let performerDataArray = try performers.map { try PerformerHeaderData($0) }
@@ -76,6 +78,7 @@ struct PerformerController: APIRouteCollection {
 	/// The form doesn't include years attended or social media links; those fields will be empty.
 	///
 	/// **URL Query Parameters:**
+	/// * `?search=STRING` - Full-text search across name, organization, title, and bio.
 	///	* `?start=INT` - Offset from start of results set
 	/// * `?limit=INT` - the maximum number of games to retrieve: 1-200, default is 50.
 	func getShadowPerformers(_ req: Request) async throws -> PerformerResponseData {
@@ -87,6 +90,7 @@ struct PerformerController: APIRouteCollection {
 		let query = Performer.query(on: req.db).filter(\.$officialPerformer == false).sort(\.$sortOrder)
 				.join(User.self, on: \Performer.$user.$id == \User.$id)
 				.filter(User.self, \.$accessLevel != .banned)
+		try applyPerformerSearchFilter(from: req, to: query)
 		let performerCount = try await query.count()
 		let performers = try await query.copy().range(pagination.range).with(\.$events).all()
 		let performerDataArray = try performers.map { try PerformerHeaderData($0) }
@@ -612,7 +616,25 @@ struct PerformerController: APIRouteCollection {
 	}
 	
 	// MARK: Utilities
-	
+
+	// Applies the `?search=` query param (if present and non-empty after sanitization) to a Performer query,
+	// matching against name, organization, title, and bio via full-text search.
+	func applyPerformerSearchFilter(from req: Request, to query: QueryBuilder<Performer>) throws {
+		guard var search = req.query[String.self, at: "search"] else {
+			return
+		}
+		search = search.escapedForSQLWildcards()
+		guard !search.isEmpty else {
+			return
+		}
+		query.group(.or) { or in
+			or.fullTextFilter(\.$name, search)
+			or.fullTextFilter(\.$organization, search)
+			or.fullTextFilter(\.$title, search)
+			or.fullTextFilter(\.$bio, search)
+		}
+	}
+
 	// Gets the path where the uploaded performer links file is kept. Only one file can be in the hopper at a time.
 	func uploadedPerformerLinksPath() throws -> URL {
 		let filePath = Settings.shared.adminDirectoryPath.appendingPathComponent("uploadperformerlinks.ics")
