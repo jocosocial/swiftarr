@@ -360,9 +360,14 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 
 			init(_ req: Request, fez: FezData) throws {
 				let cacheUser = try req.auth.require(UserCacheData.self)
-				trunk = .init(req, title: "\(fez.title) | LFG", tab: .lfg)
-				self.fez = fez
 				self.typeName = fez.fezType.lfgLabel
+				if fez.fezType.isPrivateEventType {
+					trunk = .init(req, title: "\(fez.title) | \(self.typeName)", tab: .home)
+				}
+				else {
+					trunk = .init(req, title: "\(fez.title) | LFG", tab: .lfg)
+				}
+				self.fez = fez
 				self.breadcrumbLink = fez.fezType.isPrivateEventType ? "/dayplanner" : "/lfg"
 				self.userID = cacheUser.userID
 				userIsMember = false

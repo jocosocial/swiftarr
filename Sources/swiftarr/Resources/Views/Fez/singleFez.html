@@ -57,11 +57,8 @@
 			#endif
 			
 			#if(userIsMember):
-				<div class="row mt-1 justify-content-end row-cols-auto ">
-					<div class="col btn-group btn-group-sm" role="group" aria-label="member actions">
-						#if(trunk.userIsMod):
-							<a class="btn btn-outline-primary" href="/moderate/lfg/#(fez.fezID)">Mod</a>
-						#endif
+				<div class="row mt-1 justify-content-end row-cols-auto g-2">
+					<div class="col btn-group btn-group-sm" role="group" aria-label="favorite and mute actions">
 						<input type="checkbox" class="btn-check" autocomplete="off" data-action="favorite"
 									data-actionpath="/lfg/#(fez.fezID)/favorite"
 									data-istoggle="true"
@@ -73,7 +70,7 @@
 							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 							<span class="visually-hidden">Loading...</span>
 						</label>
-						<input type="checkbox" class="btn-check" autocomplete="off" data-action="mute"
+						<input type="checkbox" class="btn-check" autocomplete="off" data-action="muteFez"
 									data-actionpath="/lfg/#(fez.fezID)/mute"
 									data-istoggle="true"
 									data-errordiv="mute_errorDisplay"
@@ -84,6 +81,11 @@
 							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 							<span class="visually-hidden">Loading...</span>
 						</label>
+					</div>
+					<div class="col btn-group btn-group-sm" role="group" aria-label="member actions">
+						#if(trunk.userIsMod):
+							<a class="btn btn-outline-primary" href="/moderate/lfg/#(fez.fezID)">Mod</a>
+						#endif
 						#if(fez.owner.userID == trunk.userID):
 							#if(fez.fezType != "personalEvent"):
 								<a class="btn btn-outline-primary" href="/lfg/#(fez.fezID)/members">Manage Members</a>
@@ -94,7 +96,7 @@
 							<a class="btn btn-outline-primary px-3" href="/lfg/report/#(fez.fezID)">Report</a>
 							<button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="\#leaveFezModal">Leave</button>
 						#endif
-					</div>								
+					</div>
 				</div>
 			#else:
 				<div class="row mt-1 justify-content-end row-cols-auto ">
@@ -269,11 +271,21 @@
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 					</div>
 					<div class="modal-body">
-						Are you sure you want to leave the #(typeName)? You'll be giving up your spot--LFGs with limited space are first-come, first-served.
+						#if(typeName == "Private Event"):
+							Are you sure you want to leave the #(typeName)?
+						#else:
+							Are you sure you want to leave the #(typeName)? You'll be giving up your spot--#(typeName)s with limited space are first-come, first-served.
+						#endif
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-						<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
+						<input type="checkbox" class="btn-check" autocomplete="off"
+								#if(typeName == "Private Event"):
+									data-action="redirect"
+									data-successpath="#(breadcrumbLink)"
+								#else:
+									data-action="reload"
+								#endif
 								data-actionpath="/lfg/#(fez.fezID)/leave"
 								data-errordiv="fezDialog_errorDisplay"
 								id="#(fez.fezID)_leave">
