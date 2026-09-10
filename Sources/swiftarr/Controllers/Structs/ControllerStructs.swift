@@ -614,6 +614,11 @@ public struct EventFeedbackStats: Content, Sendable {
 public struct FezContentData: Content {
 	/// The `FezType` .label of the fez.
 	var fezType: FezType
+	/// Who besides the fez's members can view (and, for `.privateEvent`, join) the fez. Only settable for
+	/// `.privateEvent` fezzes (may be `.private` or `.unlisted`); every other fez type has a fixed visibility
+	/// and setting this to anything but that fixed value is a 400. Omit to leave visibility unchanged on update,
+	/// or to use the type's default on create.
+	var visibility: FezVisibility?
 	/// The title for the FriendlyFez.
 	var title: String
 	/// A description of the fez.
@@ -646,6 +651,7 @@ extension FezContentData {
 		self.startTime = privateEvent.startTime
 		self.endTime = privateEvent.endTime
 		self.fezType = .privateEvent
+		self.visibility = privateEvent.visibility
 		self.initialUsers = privateEvent.participants
 		self.minCapacity = 0
 		self.maxCapacity = 0
@@ -724,6 +730,9 @@ public struct FezData: Content, ResponseEncodable {
 	var owner: UserHeader
 	/// The `FezType` .label of the fez.
 	var fezType: FezType
+	/// Who besides the fez's members can view (and, for `.privateEvent`, join) the fez. Only meaningful for
+	/// `.privateEvent` fezzes; other fez types have a fixed value clients shouldn't surface in most UIs.
+	var visibility: FezVisibility
 	/// The title of the fez.
 	var title: String
 	/// A description of the fez.
@@ -781,6 +790,7 @@ extension FezData {
 		self.fezID = try fez.requireID()
 		self.owner = owner
 		self.fezType = fez.fezType
+		self.visibility = fez.visibility
 		let showContent = fez.moderationStatus.showsContent() || overrideQuarantine
 		let underReviewText = "\(fez.fezType.lfgLabel) is under moderator review"
 		self.title = showContent ? fez.title : underReviewText
@@ -3182,6 +3192,8 @@ extension ClientSettingsData {
 public struct PersonalEventData: Content {
 	/// The PersonalEvent's ID. This is the Swiftarr database record for this event.
 	var personalEventID: UUID
+	/// Who besides invited participants can view and join this event. See `PersonalEventContentData.visibility`.
+	var visibility: FezVisibility
 	/// The personal event's title.
 	var title: String
 	/// A description of the personal event.
@@ -3210,6 +3222,7 @@ extension PersonalEventData {
 	init(_ personalEvent: FriendlyFez, ownerHeader: UserHeader, participantHeaders: [UserHeader]) throws {
 		let timeZoneChanges = Settings.shared.timeZoneChanges
 		self.personalEventID = try personalEvent.requireID()
+		self.visibility = personalEvent.visibility
 		self.title = personalEvent.title
 		self.description = personalEvent.info
 		self.startTime = timeZoneChanges.portTimeToDisplayTime(personalEvent.startTime)
@@ -3228,6 +3241,7 @@ extension PersonalEventData {
 		}
 		let timeZoneChanges = Settings.shared.timeZoneChanges
 		self.personalEventID = lfg.fezID
+		self.visibility = lfg.visibility
 		self.title = lfg.title
 		self.description = lfg.info
 		self.startTime = startTime
@@ -3248,6 +3262,10 @@ extension PersonalEventData {
 public struct PersonalEventContentData: Content {
 	/// The title for the PersonalEvent.
 	var title: String
+	/// Who besides invited participants can view and join this event. May be `.private` (default; invite-only)
+	/// or `.unlisted` (viewable and self-joinable via direct link, but never listed/searchable). Omit to leave
+	/// unchanged on update, or to default to `.private` on create.
+	var visibility: FezVisibility?
 	/// A description of the PersonalEvent.
 	var description: String?
 	/// The starting time for the PersonalEvent.

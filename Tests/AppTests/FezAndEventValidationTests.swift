@@ -163,6 +163,45 @@ class FezAndEventValidationTests: XCTestCase {
 		XCTAssertThrowsError(try validationErrors(PersonalEventContentData.self, json))
 	}
 
+	// MARK: - FezController.resolveVisibilityForCreate (issue #470 "unlisted" Private Events)
+
+	func testResolveVisibilityForCreate_LFG_DefaultsToPublic() throws {
+		let visibility = try FezController().resolveVisibilityForCreate(fezType: .activity, requested: nil)
+		XCTAssertEqual(visibility, .public)
+	}
+
+	func testResolveVisibilityForCreate_Seamail_DefaultsToPrivate() throws {
+		let visibility = try FezController().resolveVisibilityForCreate(fezType: .closed, requested: nil)
+		XCTAssertEqual(visibility, .private)
+	}
+
+	func testResolveVisibilityForCreate_PersonalEvent_DefaultsToPrivate() throws {
+		let visibility = try FezController().resolveVisibilityForCreate(fezType: .personalEvent, requested: nil)
+		XCTAssertEqual(visibility, .private)
+	}
+
+	func testResolveVisibilityForCreate_PrivateEvent_DefaultsToPrivate() throws {
+		let visibility = try FezController().resolveVisibilityForCreate(fezType: .privateEvent, requested: nil)
+		XCTAssertEqual(visibility, .private)
+	}
+
+	func testResolveVisibilityForCreate_PrivateEvent_CanRequestUnlisted() throws {
+		let visibility = try FezController().resolveVisibilityForCreate(fezType: .privateEvent, requested: .unlisted)
+		XCTAssertEqual(visibility, .unlisted)
+	}
+
+	func testResolveVisibilityForCreate_PrivateEvent_RejectsPublic() {
+		XCTAssertThrowsError(try FezController().resolveVisibilityForCreate(fezType: .privateEvent, requested: .public))
+	}
+
+	func testResolveVisibilityForCreate_LFG_RejectsNonDefault() {
+		XCTAssertThrowsError(try FezController().resolveVisibilityForCreate(fezType: .activity, requested: .private))
+	}
+
+	func testResolveVisibilityForCreate_Seamail_RejectsNonDefault() {
+		XCTAssertThrowsError(try FezController().resolveVisibilityForCreate(fezType: .closed, requested: .unlisted))
+	}
+
 	// MARK: - UserRecoveryData
 
 	private func recoveryJSON(username: String = "skyler", recoveryKey: String = "abc123", newPassword: String = "newpass1") -> String {

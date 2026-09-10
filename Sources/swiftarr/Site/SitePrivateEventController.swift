@@ -11,6 +11,11 @@ struct CreatePrivateEventPostFormContent: Codable {
 	var postText: String
 	var inviteOthers: String?
 	var participants: String  // Comma separated list of participant usernames
+	var unlisted: String?
+	// Hidden marker, present iff the visibility toggle was actually rendered on the page (only true for
+	// Private Events--not Personal Events--on both create and update). Distinguishes "toggle shown but left
+	// unchecked" (which must send .private) from "toggle not shown at all" (which must leave visibility untouched).
+	var showVisibilityOption: String?
 }
 
 struct PrivateEventListPageContext: Encodable {
@@ -429,6 +434,7 @@ struct SitePrivateEventController: SiteControllerUtils {
 		participants = Array(Set(participants))
 		var fezContentData = FezContentData(
 			fezType: fezType,
+			visibility: postStruct.showVisibilityOption != nil ? (postStruct.unlisted == "on" ? .unlisted : .private) : nil,
 			title: postStruct.subject,
 			info: postStruct.postText,
 			startTime: startTime,
