@@ -1,5 +1,4 @@
 import Fluent
-import PostgresNIO
 import Vapor
 
 /// Methods for accessing the list of boardgames available in the onboard Games Library.
@@ -122,11 +121,11 @@ struct BoardgameController: APIRouteCollection {
 			try await fav.save(on: req.db)
 			return .created
 		}
-		catch let sqlError as PostgresError {
-			if sqlError.code == .uniqueViolation {
+		catch let error {
+			if let sqlError = error as? DatabaseError, sqlError.isConstraintFailure {
 				return .ok
 			}
-			throw sqlError
+			throw error
 		}
 	}
 
