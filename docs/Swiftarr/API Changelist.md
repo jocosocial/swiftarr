@@ -296,3 +296,12 @@ additive; the existing count fields are unchanged and are now derived from these
 - New endpoint `GET /api/v3/users/:user_id/vcard` returns a downloadable vCard (`.vcf`) of a user's land-based contact fields. The HTML profile page has a Save vCard button.
 - New endpoint `GET /api/v3/events/photographerreport` returns a paginated photography-coverage report (`Paginated<ShutternautScheduleReportData>`) of events flagged as needing a photographer and/or assigned a Shutternaut.
 - New endpoint `GET /api/v3/events/photographerreport/download` returns the same report as a CSV of all matching rows.
+
+## Sep 08, 2026
+
+- Fezzes (LFG, Seamail, Private Event) can be favorited by members.
+  - New endpoints `POST/DELETE /api/v3/fez/:fez_ID/favorite` and `POST /api/v3/fez/:fez_ID/favorite/remove`.
+  - `FezData.MembersOnlyData` has a new `isFavorite` field. 
+  - `GET /api/v3/fez/joined` and `GET /api/v3/fez/owner` now support a `?favorite=true` filter.
+- `POST/DELETE /api/v3/fez/:fez_ID/mute` is no longer rejected for privileged mailboxes (`@moderator`/`@TwitarrTeam`).
+- `FezContentData` gains an optional `firstPost` (`PostContentData`), letting `POST /api/v3/fez/create` create the intial post in the same call.

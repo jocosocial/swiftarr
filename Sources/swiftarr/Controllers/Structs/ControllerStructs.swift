@@ -634,6 +634,8 @@ public struct FezContentData: Content {
 	var createdByModerator: Bool?
 	/// If TRUE, the Fez will be created by user @TwitarrTeam instead of the current user. Current user must be a TT member.
 	var createdByTwitarrTeam: Bool?
+	/// If set, creates the fez's opening post at creation time instead of requiring a separate call.
+	var firstPost: PostContentData?
 }
 
 extension FezContentData {
@@ -649,6 +651,7 @@ extension FezContentData {
 		self.maxCapacity = 0
 		self.createdByModerator = false
 		self.createdByTwitarrTeam = false
+		self.firstPost = nil
 	}
 }
 
@@ -770,6 +773,8 @@ public struct FezData: Content, ResponseEncodable {
 		var posts: [FezPostData]?
 		/// Whether user has muted the fez.
 		var isMuted: Bool
+		/// Whether user has favorited the fez.
+		var isFavorite: Bool
 	}
 
 	/// Will be nil if user is not a member of the fez (in the participant or waiting lists).
