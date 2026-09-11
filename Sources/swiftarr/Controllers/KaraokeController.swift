@@ -1,5 +1,4 @@
 import Fluent
-import PostgresNIO
 import Vapor
 
 /// Methods for accessing the list of boardgames available in the onboard Games Library.
@@ -206,7 +205,7 @@ struct KaraokeController: APIRouteCollection {
 			try await KaraokeFavorite(user.userID, song).create(on: req.db)
 		}
 		catch let error {
-			if let sqlError = error as? PostgresError, sqlError.code == .uniqueViolation {
+			if let sqlError = error as? DatabaseError, sqlError.isConstraintFailure {
 				return .ok
 			}
 			throw error

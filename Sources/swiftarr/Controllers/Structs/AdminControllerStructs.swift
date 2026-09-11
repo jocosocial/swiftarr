@@ -57,6 +57,10 @@ public struct BulkUserUpdateVerificationData: Content {
 	var performerCounts: BulkUserUpdateCounts
 	/// Counts for Events that were marked as needing photographers by the Shutternaut Manager.
 	var needsPhotographerCounts: BulkUserUpdateCounts
+	/// Counts for Daily Theme import.
+	var dailyThemeCounts: BulkUserUpdateCounts
+	/// Counts for Hunt import. Includes Hunts and their child Puzzles as a single unit.
+	var huntCounts: BulkUserUpdateCounts
 
 	/// Cases where the server has a registered user with the same regcode as the update file, but the usernames differ.
 	/// This may mean the user preregistered and then (somehow) registered on-boat with a different username before the bulk import happened.
@@ -77,6 +81,8 @@ extension BulkUserUpdateVerificationData {
 		userCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
 		performerCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
 		needsPhotographerCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
+		dailyThemeCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
+		huntCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
 		regCodeConflicts = []
 		usernameConflicts = []
 		errorNotImported = []
@@ -365,12 +371,69 @@ public struct RegistrationCodeStatsData: Content {
 
 /// The Bulk User Download file is a serialization of this object, plus a bunch of image files, all zipped up.
 public struct SaveRestoreData: Content {
-	/// Array of users to save and restore. 
+	/// Array of users to save and restore.
 	var users: [UserSaveRestoreData]
 	/// Array of official performers to save and restore.
 	var performers: [PerformerUploadData]
 	/// Array of event UIDs that need photographers.
 	var needsPhotographer: [String]
+	/// Array of Daily Themes to save and restore.
+	var dailyThemes: [DailyThemeSaveRestoreData]
+	/// Array of Hunts (with their Puzzles) to save and restore.
+	var hunts: [HuntSaveRestoreData]
+}
+
+/// Used during bulk export/import to save and restore `DailyTheme` records. Unlike `DailyThemeData` (the API-facing DTO),
+/// this is only ever used for Admin-to-Admin server transfer, so it carries the raw image filename rather than an upload/URL.
+struct DailyThemeSaveRestoreData: Content, Sendable {
+	let title: String
+	let info: String
+	let image: String?
+	let cruiseDay: Int32
+}
+
+extension DailyThemeSaveRestoreData {
+	init(_ theme: DailyTheme) {
+		title = theme.title
+		info = theme.info
+		image = theme.image
+		cruiseDay = theme.cruiseDay
+	}
+}
+
+/// Used during bulk export/import to save and restore a `Hunt` and its child `Puzzle`s as a single unit.
+struct HuntSaveRestoreData: Content, Sendable {
+	let title: String
+	let description: String
+	let puzzles: [HuntPuzzleSaveRestoreData]
+}
+
+extension HuntSaveRestoreData {
+	init(_ hunt: Hunt, _ puzzles: [Puzzle]) {
+		title = hunt.title
+		description = hunt.description
+		self.puzzles = puzzles.map { HuntPuzzleSaveRestoreData($0) }
+	}
+}
+
+/// Used during bulk export/import to save and restore a `Puzzle`, including its answer and hints. This is purposefully full-fidelity,
+/// unlike the redacted `HuntPuzzleData` DTO returned by the public API, since this is only ever used for Admin-to-Admin server transfer.
+struct HuntPuzzleSaveRestoreData: Content, Sendable {
+	let title: String
+	let body: String
+	let answer: String
+	let hints: [String: String]
+	let unlockTime: Date?
+}
+
+extension HuntPuzzleSaveRestoreData {
+	init(_ puzzle: Puzzle) {
+		title = puzzle.title
+		body = puzzle.body
+		answer = puzzle.answer
+		hints = puzzle.hints
+		unlockTime = puzzle.unlockTime
+	}
 }
 
 /// An array of totals for various database entities. Each value in the array is essentially a `SQL SELECT COUNT() FROM <table>`,

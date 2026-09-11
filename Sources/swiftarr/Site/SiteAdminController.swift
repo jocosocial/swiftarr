@@ -54,13 +54,13 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.post("announcement", announcementIDParam, "edit", use: announcementEditPostHandler)
 		privateTTRoutes.post("announcement", announcementIDParam, "delete", use: announcementDeletePostHandler)
 
-		privateTTRoutes.get("dailythemes", use: dailyThemesViewHandler)
-		privateTTRoutes.get("dailytheme", "create", use: dailyThemeCreateViewHandler)
-		privateTTRoutes.post("dailytheme", "create", use: dailyThemeCreatePostHandler)
-		privateTTRoutes.get("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditViewHandler)
-		privateTTRoutes.post("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditPostHandler)
-		privateTTRoutes.post("dailytheme", dailyThemeParam, "delete", use: dailyThemeDeletePostHandler)
-		privateTTRoutes.delete("dailytheme", dailyThemeParam, use: dailyThemeDeletePostHandler)
+		privateTTRoutes.get("dailythemes", use: dailyThemesViewHandler).setUsedForPreregistration()
+		privateTTRoutes.get("dailytheme", "create", use: dailyThemeCreateViewHandler).setUsedForPreregistration()
+		privateTTRoutes.post("dailytheme", "create", use: dailyThemeCreatePostHandler).setUsedForPreregistration()
+		privateTTRoutes.get("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditViewHandler).setUsedForPreregistration()
+		privateTTRoutes.post("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditPostHandler).setUsedForPreregistration()
+		privateTTRoutes.post("dailytheme", dailyThemeParam, "delete", use: dailyThemeDeletePostHandler).setUsedForPreregistration()
+		privateTTRoutes.delete("dailytheme", dailyThemeParam, use: dailyThemeDeletePostHandler).setUsedForPreregistration()
 
 		privateTTRoutes.get("serversettings", use: settingsViewHandler)
 		privateTTRoutes.post("serversettings", use: settingsPostHandler)
@@ -96,12 +96,12 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.post("userroles", userRoleParam, "removerole", userIDParam, use: removeRoleFromUser)
 
 		
-		privateTTRoutes.get("hunts", use: huntHandler)
-		privateTTRoutes.post("hunt", "create", use: huntPostHandler)
-		privateTTRoutes.post("hunt", huntIDParam, "delete", use: huntDeleteHandler)
-		privateTTRoutes.get("hunt", huntIDParam, "edit", use: huntEditHandler)
-		privateTTRoutes.post("hunt", huntIDParam, "edit", use: huntEditPostHandler)
-		privateTTRoutes.post("puzzle", puzzleIDParam, "edit", use: puzzleEditPostHandler)
+		privateTTRoutes.get("hunts", use: huntHandler).setUsedForPreregistration()
+		privateTTRoutes.post("hunt", "create", use: huntPostHandler).setUsedForPreregistration()
+		privateTTRoutes.post("hunt", huntIDParam, "delete", use: huntDeleteHandler).setUsedForPreregistration()
+		privateTTRoutes.get("hunt", huntIDParam, "edit", use: huntEditHandler).setUsedForPreregistration()
+		privateTTRoutes.post("hunt", huntIDParam, "edit", use: huntEditPostHandler).setUsedForPreregistration()
+		privateTTRoutes.post("puzzle", puzzleIDParam, "edit", use: puzzleEditPostHandler).setUsedForPreregistration()
 
 		// Mods, TwitarrTeam, and THO levels can all be promoted to, but they all demote back to Verified.
 		let privateTHORoutes = getPrivateRoutes(app, minAccess: .tho, path: "admin")
@@ -911,7 +911,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var trunk: TrunkContext
 
 			init(_ req: Request) throws {
-				trunk = .init(req, title: "Bulk User Import/Export", tab: .admin)
+				trunk = .init(req, title: "Bulk Data Import/Export", tab: .admin)
 			}
 		}
 		let ctx = try BulkUserRootContext(req)
@@ -950,7 +950,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var diff: BulkUserUpdateVerificationData
 
 			init(_ req: Request, verificationData: BulkUserUpdateVerificationData) throws {
-				trunk = .init(req, title: "Verify Bulk User Import Changes", tab: .admin)
+				trunk = .init(req, title: "Verify Bulk Data Import Changes", tab: .admin)
 				self.diff = verificationData
 			}
 		}
@@ -975,7 +975,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var diff: BulkUserUpdateVerificationData
 
 			init(_ req: Request, verificationData: BulkUserUpdateVerificationData) throws {
-				trunk = .init(req, title: "Bulk User Import Applied", tab: .admin)
+				trunk = .init(req, title: "Bulk Data Import Applied", tab: .admin)
 				self.diff = verificationData
 			}
 		}

@@ -1,5 +1,4 @@
 import FluentSQL
-import PostgresNIO
 import Vapor
 
 /// The collection of `/api/v3/admin` route endpoints and handler functions related to admin tasks.
@@ -42,10 +41,10 @@ struct AdminController: APIRouteCollection {
 
 		// endpoints available for THO and Admin only
 		let thoAuthGroup = adminRoutes.tokenRoutes(minAccess: .tho)
-		thoAuthGroup.on(.POST, "dailytheme", "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: addDailyThemeHandler)
-		thoAuthGroup.on(.POST, "dailytheme", dailyThemeIDParam, "edit", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: editDailyThemeHandler)
-		thoAuthGroup.post("dailytheme", dailyThemeIDParam, "delete", use: deleteDailyThemeHandler)
-		thoAuthGroup.delete("dailytheme", dailyThemeIDParam, use: deleteDailyThemeHandler)
+		thoAuthGroup.on(.POST, "dailytheme", "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: addDailyThemeHandler).setUsedForPreregistration()
+		thoAuthGroup.on(.POST, "dailytheme", dailyThemeIDParam, "edit", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: editDailyThemeHandler).setUsedForPreregistration()
+		thoAuthGroup.post("dailytheme", dailyThemeIDParam, "delete", use: deleteDailyThemeHandler).setUsedForPreregistration()
+		thoAuthGroup.delete("dailytheme", dailyThemeIDParam, use: deleteDailyThemeHandler).setUsedForPreregistration()
 
 		// Note that there's several promote method that promote to different access levels, but
 		// only one demote, that returns the user to Verified.
@@ -93,7 +92,7 @@ struct AdminController: APIRouteCollection {
 		do {
 			try await dailyTheme.save(on: req.db)
 		}
-		catch let error as PostgresError where error.code == .uniqueViolation {
+		catch let error as DatabaseError where error.isConstraintFailure {
 			throw Abort(.conflict, reason: "A daily theme for day \(data.cruiseDay) already exists. Edit the existing theme instead.")
 		}
 		return .created
@@ -122,7 +121,7 @@ struct AdminController: APIRouteCollection {
 		do {
 			try await dailyTheme.save(on: req.db)
 		}
-		catch let error as PostgresError where error.code == .uniqueViolation {
+		catch let error as DatabaseError where error.isConstraintFailure {
 			throw Abort(.conflict, reason: "A daily theme for day \(data.cruiseDay) already exists.")
 		}
 		return .created
@@ -888,7 +887,12 @@ struct AdminController: APIRouteCollection {
 		let performers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).with(\.$events).all()
 		let performerData = try performers.map { try PerformerUploadData($0) }
 		let needsPhotographerEvents = try await Event.query(on: req.db).filter(\.$needsPhotographer == true).all().map { $0.uid }
-		let dto = SaveRestoreData(users: userData, performers: performerData, needsPhotographer: needsPhotographerEvents)
+		let dailyThemes = try await DailyTheme.query(on: req.db).all()
+		let dailyThemeData = dailyThemes.map { DailyThemeSaveRestoreData($0) }
+		let hunts = try await Hunt.query(on: req.db).with(\.$puzzles).all()
+		let huntData = hunts.map { HuntSaveRestoreData($0, $0.puzzles) }
+		let dto = SaveRestoreData(users: userData, performers: performerData, needsPhotographer: needsPhotographerEvents,
+				dailyThemes: dailyThemeData, hunts: huntData)
 		let data = try JSONEncoder().encode(dto)
 		let userfile = sourceDirectoryURL.appendingPathComponent("userfile.json", isDirectory: true)
 		try data.write(to: userfile, options: .atomic)
@@ -897,7 +901,7 @@ struct AdminController: APIRouteCollection {
 		let destImageDir = sourceDirectoryURL.appendingPathComponent("userImages", isDirectory: true)
 		try FileManager.default.createDirectory(at: destImageDir, withIntermediateDirectories: true)
 		let imageNames = users.compactMap { $0.userImage } + users.compactMap { $0.performer?.photo } +
-				performerData.compactMap { $0.photo.filename }
+				performerData.compactMap { $0.photo.filename } + dailyThemes.compactMap { $0.image }
 		for imageName in imageNames {
 			do {
 				let imgSource = Settings.shared.userImagesRootPath.appendingPathComponent(ImageSizeGroup.full.rawValue)
@@ -1018,6 +1022,12 @@ struct AdminController: APIRouteCollection {
 		}
 		for needsPhotog in importData.needsPhotographer {
 			await importNeedPhotographer_Event(req, eventUID: needsPhotog, verifyOnly: verifyOnly, verification: &verification)
+		}
+		for theme in importData.dailyThemes {
+			await importDailyTheme(req, themeData: theme, verifyOnly: verifyOnly, verification: &verification)
+		}
+		for hunt in importData.hunts {
+			await importHunt(req, huntData: hunt, verifyOnly: verifyOnly, verification: &verification)
 		}
 		return verification
 	}
@@ -1313,6 +1323,69 @@ struct AdminController: APIRouteCollection {
 		catch {
 			verification.needsPhotographerCounts.errorCount += 1
 			verification.otherErrors.append("Error when importing Needs Photographer flag for event with UID \(eventUID): \(error.localizedDescription)")
+		}
+	}
+
+	// Imports a single DailyTheme. `cruiseDay` is unique in the db, so we use it to detect duplicates--this lets the same
+	// bulk import file be applied more than once without creating multiple theme records for the same day.
+	func importDailyTheme(_ req: Request, themeData: DailyThemeSaveRestoreData, verifyOnly: Bool,
+			verification: inout BulkUserUpdateVerificationData) async {
+		// Copy the theme's image first, if it has one.
+		var copiedImage: String?
+		do {
+			if let image = themeData.image {
+				copiedImage = try await copyImage(image, verifyOnly: verifyOnly, on: req)
+			}
+		}
+		catch {
+			verification.otherErrors.append("Couldn't copy image for Daily Theme \"\(themeData.title)\": \(error.localizedDescription)")
+		}
+
+		verification.dailyThemeCounts.totalRecordsProcessed += 1
+		do {
+			if try await DailyTheme.query(on: req.db).filter(\.$cruiseDay == themeData.cruiseDay).first() != nil {
+				verification.dailyThemeCounts.duplicateCount += 1
+				return
+			}
+			let theme = DailyTheme(title: themeData.title, info: themeData.info, image: copiedImage, day: themeData.cruiseDay)
+			if !verifyOnly {
+				try await theme.save(on: req.db)
+			}
+			verification.dailyThemeCounts.importedCount += 1
+		}
+		catch {
+			verification.otherErrors.append("Error when importing Daily Theme \"\(themeData.title)\": \(error.localizedDescription)")
+			verification.dailyThemeCounts.errorCount += 1
+		}
+	}
+
+	// Imports a single Hunt, along with all of its child Puzzles, as a single unit. Hunt has no natural unique key, so
+	// we dedupe on title--if a Hunt with the same title already exists we assume it's a true duplicate (e.g. this import
+	// file was already applied) and skip it rather than trying to merge/update its puzzles.
+	func importHunt(_ req: Request, huntData: HuntSaveRestoreData, verifyOnly: Bool,
+			verification: inout BulkUserUpdateVerificationData) async {
+		verification.huntCounts.totalRecordsProcessed += 1
+		do {
+			if try await Hunt.query(on: req.db).filter(\.$title == huntData.title).first() != nil {
+				verification.huntCounts.duplicateCount += 1
+				return
+			}
+			if !verifyOnly {
+				try await req.db.transaction { transaction in
+					let hunt = try Hunt(title: huntData.title, description: huntData.description)
+					try await hunt.create(on: transaction)
+					for puzzleData in huntData.puzzles {
+						let puzzle = try Puzzle(hunt: hunt, title: puzzleData.title, body: puzzleData.body,
+								answer: puzzleData.answer, hints: puzzleData.hints, unlockTime: puzzleData.unlockTime)
+						try await puzzle.create(on: transaction)
+					}
+				}
+			}
+			verification.huntCounts.importedCount += 1
+		}
+		catch {
+			verification.otherErrors.append("Error when importing Hunt \"\(huntData.title)\": \(error.localizedDescription)")
+			verification.huntCounts.errorCount += 1
 		}
 	}
 
