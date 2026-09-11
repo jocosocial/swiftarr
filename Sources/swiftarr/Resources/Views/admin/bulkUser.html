@@ -6,19 +6,19 @@
 					<nav aria-label="breadcrumb">
 						<ol class="breadcrumb">
 							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
-							<li class="breadcrumb-item active" aria-current="page">Bulk User Import/Export</li>
+							<li class="breadcrumb-item active" aria-current="page">Bulk Data Import/Export</li>
 						</ol>
 					</nav>
 				</div>
 			</div>
 			<ul class="list-group">
 				<li class="list-group-item active">
-					<b>Download archive of registered users</b>
+					<b>Download data export archive</b>
 				</li>
 				<li class="list-group-item bg-transparent">
-					This creates and downloads a ZIP archive of all users who registered with a registration code. Archive does not contain
-					'special' users like @admin, @twitarrteam, and @moderator, nor does it contain test users or users who were issued
-					codes tied to their Discord username.
+					This creates and downloads a ZIP archive of all users who registered with a registration code, along with other data.
+					Archive does not contain 'special' users like @admin, @twitarrteam, and @moderator, nor does it contain test users
+					or users who were issued codes tied to their Discord username.
 				</li>
 				<li class="list-group-item bg-transparent">
 					The server needs to be in Admin-only mode (Admin->Server Settings->Minimum User Access Level) and 
@@ -33,18 +33,18 @@
 			</ul>
 			<ul class="list-group mt-3">
 				<li class="list-group-item active">
-					<b>Upload archive of registered users</b>
+					<b>Upload data import archive</b>
 				</li>
 				<li class="list-group-item bg-transparent">
-					Uploads a user archive file and validates its contents. After tapping 'Upload' you'll be taken to a page that previews
-					what changes the import will have on the database. 
+					Uploads a data export archive and validates its contents. After tapping 'Upload' you'll be taken to a page that previews
+					what changes the import will have on the database.
 				</li>
 				<li class="list-group-item bg-transparent">
 					The server needs to be in Admin-only mode to perform an import. Ideally the server has been admin-only since installation
 					and admin-only can be turned off after this import is completed.
 				</li>
 				<li class="list-group-item bg-transparent">
-					The user archive file *should* be named 'Twitarr_userfile.zip'.
+					The data export archive file *should* be named 'Twitarr_userfile.zip'.
 				</li>
 				<li class="list-group-item bg-transparent mb-3">				
 					<form class="ajax fileupload" action="/admin/bulkuser/upload" enctype="multipart/form-data" method="POST" data-successurl="/admin/bulkuser/upload/verify" id="userfileuploadform">

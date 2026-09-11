@@ -911,7 +911,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var trunk: TrunkContext
 
 			init(_ req: Request) throws {
-				trunk = .init(req, title: "Bulk User Import/Export", tab: .admin)
+				trunk = .init(req, title: "Bulk Data Import/Export", tab: .admin)
 			}
 		}
 		let ctx = try BulkUserRootContext(req)
@@ -950,7 +950,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var diff: BulkUserUpdateVerificationData
 
 			init(_ req: Request, verificationData: BulkUserUpdateVerificationData) throws {
-				trunk = .init(req, title: "Verify Bulk User Import Changes", tab: .admin)
+				trunk = .init(req, title: "Verify Bulk Data Import Changes", tab: .admin)
 				self.diff = verificationData
 			}
 		}
@@ -975,7 +975,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var diff: BulkUserUpdateVerificationData
 
 			init(_ req: Request, verificationData: BulkUserUpdateVerificationData) throws {
-				trunk = .init(req, title: "Bulk User Import Applied", tab: .admin)
+				trunk = .init(req, title: "Bulk Data Import Applied", tab: .admin)
 				self.diff = verificationData
 			}
 		}
