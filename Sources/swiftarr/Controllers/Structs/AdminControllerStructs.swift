@@ -1,3 +1,4 @@
+import Fluent
 import Vapor
 
 /// structs in this file should only be used by Admin APIs, that is: API calls that require administrator access.
@@ -491,6 +492,109 @@ struct ServerRollupData: Content {
 		// Quartermaster
 		case quartermasterItem
 		case quartermasterItemEdit
+
+		/// A short, stable, snake_case name for this count type, suitable for use as a Prometheus label value.
+		var metricName: String {
+			switch self {
+			case .user: return "user"
+			case .profileEdit: return "profile_edit"
+			case .userNote: return "user_note"
+			case .alertword: return "alert_word"
+			case .muteword: return "mute_word"
+			case .photoStream: return "photo_stream"
+			case .lfg: return "lfg"
+			case .lfgParticipant: return "lfg_participant"
+			case .lfgPost: return "lfg_post"
+			case .seamail: return "seamail"
+			case .seamailPost: return "seamail_post"
+			case .privateEvent: return "private_event"
+			case .personalEvent: return "personal_event"
+			case .forum: return "forum"
+			case .forumPost: return "forum_post"
+			case .forumPostEdit: return "forum_post_edit"
+			case .forumPostLike: return "forum_post_like"
+			case .karaokePlayedSong: return "karaoke_played_song"
+			case .microKaraokeSnippet: return "micro_karaoke_snippet"
+			case .userFavorite: return "user_favorite"
+			case .eventFavorite: return "event_favorite"
+			case .forumFavorite: return "forum_favorite"
+			case .forumPostFavorite: return "forum_post_favorite"
+			case .boardgameFavorite: return "boardgame_favorite"
+			case .karaokeFavorite: return "karaoke_favorite"
+			case .report: return "report"
+			case .moderationAction: return "moderation_action"
+			case .quartermasterItem: return "quartermaster_item"
+			case .quartermasterItemEdit: return "quartermaster_item_edit"
+			}
+		}
+	}
+
+	/// Runs the full set of table-count queries and returns a `ServerRollupData`. Shared by the
+	/// on-demand `GET /api/v3/admin/rollup` endpoint and `TableCountsJob`, which caches the results
+	/// as Prometheus gauges on a timer so the counts don't need to be recomputed on every metrics scrape.
+	static func computeRollupCounts(on db: Database) async throws -> ServerRollupData {
+		let counts = try await withThrowingTaskGroup(of: (countType: CountType, value: Int32).self) { group in
+			let tasks: [CountType: EventLoopFuture<Int>] = [
+				// User
+				.user: User.query(on: db).count(),
+				.profileEdit: ProfileEdit.query(on: db).count(),
+				.userNote: UserNote.query(on: db).count(),
+				.alertword: AlertWord.query(on: db).count(),
+				.muteword: MuteWord.query(on: db).count(),
+				.photoStream: StreamPhoto.query(on: db).count(),
+
+				// LFGs and Seamails
+				.lfg: FriendlyFez.query(on: db).filter(\.$fezType ~~ FezType.lfgTypes).count(),
+				.lfgParticipant: FezParticipant.query(on: db)
+					.join(FriendlyFez.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
+					.filter(FriendlyFez.self, \.$fezType ~~ FezType.lfgTypes).count(),
+				.lfgPost: FezPost.query(on: db).join(FriendlyFez.self, on: \FezPost.$fez.$id == \FriendlyFez.$id)
+					.filter(FriendlyFez.self, \.$fezType ~~ FezType.lfgTypes).count(),
+				.seamail: FriendlyFez.query(on: db).filter(\.$fezType ~~ FezType.seamailTypes).count(),
+				.seamailPost: FezPost.query(on: db).join(FriendlyFez.self, on: \FezPost.$fez.$id == \FriendlyFez.$id)
+					.filter(FriendlyFez.self, \.$fezType ~~ FezType.seamailTypes).count(),
+				.privateEvent: FriendlyFez.query(on: db).filter(\.$fezType == FezType.privateEvent).count(),
+				.personalEvent: FriendlyFez.query(on: db).filter(\.$fezType == FezType.personalEvent).count(),
+
+				// Forums
+				.forum: Forum.query(on: db).count(),
+				.forumPost: ForumPost.query(on: db).count(),
+				.forumPostEdit: ForumPostEdit.query(on: db).count(),
+				.forumPostLike: PostLikes.query(on: db).filter(\.$likeType != nil).count(),
+
+				// Games and Karaoke
+				.karaokePlayedSong: KaraokePlayedSong.query(on: db).count(),
+				.microKaraokeSnippet: MKSnippet.query(on: db).count(),
+
+				// Favorites
+				.userFavorite: UserFavorite.query(on: db).count(),
+				.eventFavorite: EventFavorite.query(on: db).count(),
+				.forumFavorite: ForumReaders.query(on: db).filter(\.$isFavorite == true).count(),
+				.forumPostFavorite: PostLikes.query(on: db).filter(\.$isFavorite == true).count(),
+				.boardgameFavorite: BoardgameFavorite.query(on: db).count(),
+				.karaokeFavorite: KaraokeFavorite.query(on: db).count(),
+
+				// Moderation
+				.report: Report.query(on: db).count(),
+				.moderationAction: ModeratorAction.query(on: db).count(),
+
+				// Quartermaster
+				.quartermasterItem: QuartermasterItem.query(on: db).count(),
+				.quartermasterItemEdit: QuartermasterItemEdit.query(on: db).count(),
+			]
+
+			for (key, task) in tasks {
+				group.addTask {
+					return try await (key, Int32(task.get()))
+				}
+			}
+			var result = [Int32](repeating: 0, count: tasks.count)
+			for try await (key, value) in group {
+				result[key.rawValue] = value
+			}
+			return result
+		}
+		return ServerRollupData(counts: counts)
 	}
 }
 
