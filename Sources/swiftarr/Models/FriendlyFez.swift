@@ -28,6 +28,9 @@ final class FriendlyFez: Model, Searchable, @unchecked Sendable {
 	/// The type of fez; what its purpose is..
 	@Field(key: "fezType") var fezType: FezType
 
+	/// Who besides the fez's members can view (and, for `.privateEvent`, join) the fez.
+	@Field(key: "visibility") var visibility: FezVisibility
+
 	/// The title of the fez.
 	@Field(key: "title") var title: String
 
@@ -107,6 +110,7 @@ final class FriendlyFez: Model, Searchable, @unchecked Sendable {
 	init(
 		owner: UUID,
 		fezType: FezType,
+		visibility: FezVisibility? = nil,
 		title: String = "",
 		info: String = "",
 		location: String?,
@@ -117,6 +121,7 @@ final class FriendlyFez: Model, Searchable, @unchecked Sendable {
 	) {
 		self.$owner.id = owner
 		self.fezType = fezType
+		self.visibility = visibility ?? FezVisibility.defaultVisibility(for: fezType)
 		self.title = title
 		self.info = info
 		self.location = location
@@ -133,6 +138,7 @@ final class FriendlyFez: Model, Searchable, @unchecked Sendable {
 	init(owner: UUID) {
 		self.$owner.id = owner
 		self.fezType = .closed
+		self.visibility = .private
 		self.title = ""
 		self.info = ""
 		self.location = nil
@@ -183,5 +189,26 @@ struct CreateFriendlyFezSchema: AsyncMigration {
 
 	func revert(on database: Database) async throws {
 		try await database.schema("friendlyfez").delete()
+	}
+}
+
+struct AddVisibilityFieldToFriendlyFezSchema: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("friendlyfez")
+			.field("visibility", .string, .required, .sql(.default("private")))
+			.update()
+		// Backfill: existing LFGs become .public (their correct default); everything else
+		// (seamail, personalEvent, privateEvent) is already correctly defaulted to .private.
+		let lfgFezzes = try await FriendlyFez.query(on: database)
+			.filter(\.$fezType ~~ FezType.lfgTypes)
+			.all()
+		for fez in lfgFezzes {
+			fez.visibility = .public
+			try await fez.save(on: database)
+		}
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema("friendlyfez").deleteField("visibility").update()
 	}
 }
