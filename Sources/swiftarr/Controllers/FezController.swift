@@ -66,6 +66,7 @@ struct FezController: APIRouteCollection {
 		tokenAuthGroup.on(.POST, "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: createHandler)
 		tokenAuthGroup.on(.POST, fezIDParam, "post", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: postAddHandler)
 		tokenAuthGroup.webSocket(fezIDParam, "socket", onUpgrade: createFezSocket)
+		tokenAuthGroup.post(fezIDParam, "markRead", use: fezMarkReadHandler)
 		tokenAuthGroup.post(fezIDParam, "cancel", use: cancelHandler)
 		tokenAuthGroup.post(fezIDParam, "join", use: joinHandler)
 		tokenAuthGroup.post(fezIDParam, "unjoin", use: unjoinHandler)
@@ -338,7 +339,33 @@ struct FezController: APIRouteCollection {
 		}
 		return fezData
 	}
-	
+
+	/// `POST /api/v3/fez/ID/markRead`
+	///
+	/// Mark the specified `FriendlyFez` (Seamail, LFG, or Private Event chat) as read for the current user.
+	/// This sets the user's read count to the fez's current post count, effectively marking all posts as
+	/// read without requiring the user to re-fetch them. Intended for chats whose latest post(s) were
+	/// already rendered live via websocket, so the caller doesn't have to re-request the thread just to
+	/// clear its unread state.
+	///
+	/// - Parameter fezID: in URL path
+	/// - Throws: 404 error if the fez is not available, or if the user is not a member.
+	/// - Returns: 201 Created if the read count advanced; 200 OK if already marked as read.
+	func fezMarkReadHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard let pivot = try await getUserPivot(lfg: fez, userID: cacheUser.userID, on: req.db) else {
+			throw Abort(.notFound, reason: "user is not member of \(fez.fezType.lfgLabel)")
+		}
+		if pivot.readCount + pivot.hiddenCount >= fez.postCount {
+			return .ok
+		}
+		pivot.readCount = fez.postCount - pivot.hiddenCount
+		try await pivot.save(on: req.db)
+		try await markNotificationViewed(user: cacheUser, type: .chatUnreadMsg(fez.requireID(), fez.fezType), on: req)
+		return .created
+	}
+
 	/// `GET /api/v3/fez/former`
 	/// 
 	/// **Query Parameters:**

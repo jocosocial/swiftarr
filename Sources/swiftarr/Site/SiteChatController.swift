@@ -200,6 +200,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		privateRoutes.post(fezIDParam, "favorite", use: fezAddFavoritePostHandler)
 		privateRoutes.delete(fezIDParam, "favorite", use: fezRemoveFavoritePostHandler)
 		privateRoutes.post(fezIDParam, "post", use: fezThreadPostHandler)
+		privateRoutes.post(fezIDParam, "markRead", use: fezMarkReadPostHandler)
 		privateRoutes.post("post", postIDParam, "delete", use: fezPostDeleteHandler)
 		privateRoutes.delete("post", postIDParam, use: fezPostDeleteHandler)
 		privateRoutes.post(fezIDParam, "cancel", use: fezCancelPostHandler)
@@ -453,6 +454,18 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		let postContent = postStruct.buildPostContentData()
 		try await apiQuery(req, endpoint: "/fez/\(fezID)/post", method: .POST, encodeContent: postContent)
 		return .created
+	}
+
+	// POST /lfg/:fez_ID/markRead
+	//
+	// Marks an LFG/Private Event chat as read for the current user. Used by the live-message websocket JS
+	// to clear unread state for posts that were already rendered into the page live.
+	func fezMarkReadPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id")
+		}
+		let response = try await apiQuery(req, endpoint: "/fez/\(fezID)/markRead", method: .POST)
+		return response.status
 	}
 
 	// POST /lfg/post/:fezPost_ID/delete
