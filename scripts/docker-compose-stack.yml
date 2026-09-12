@@ -21,6 +21,7 @@ services:
       - ${REDIS_PORT}:6379
 
   web:
+    image: swiftarr-web:ci-build
     build:
       context: ..
       dockerfile: Dockerfile
