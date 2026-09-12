@@ -111,6 +111,20 @@ class ContentStructValidationTests: XCTestCase {
 		XCTAssertTrue(post.postAsTwitarrTeam)
 	}
 
+	func testPostContent_BothModeratorFlagsAreRejected() throws {
+		let errs = try validationErrors(
+			PostContentData.self,
+			#"{"text":"hello","images":[],"postAsModerator":true,"postAsTwitarrTeam":true}"#
+		)
+		XCTAssertTrue(errs.contains("cannot post as both @moderator and @TwitarrTeam"), "errs=\(errs)")
+	}
+
+	func testForumCreate_BothModeratorFlagsOnFirstPostAreRejected() throws {
+		let json = #"{"title":"My Forum","firstPost":{"text":"hello","images":[],"postAsModerator":true,"postAsTwitarrTeam":true}}"#
+		let errs = try validationErrors(ForumCreateData.self, json)
+		XCTAssertTrue(errs.contains("cannot post as both @moderator and @TwitarrTeam"), "errs=\(errs)")
+	}
+
 	// MARK: - ClientSettingsData
 
 	func testClientSettings_EncodesMaxImageSize() throws {
