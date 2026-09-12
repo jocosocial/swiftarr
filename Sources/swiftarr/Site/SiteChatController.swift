@@ -199,6 +199,8 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		privateRoutes.post(fezIDParam, "leave", use: fezLeavePostHandler)
 		privateRoutes.post(fezIDParam, "favorite", use: fezAddFavoritePostHandler)
 		privateRoutes.delete(fezIDParam, "favorite", use: fezRemoveFavoritePostHandler)
+		privateRoutes.post(fezIDParam, "mute", use: fezAddMutePostHandler)
+		privateRoutes.delete(fezIDParam, "mute", use: fezRemoveMutePostHandler)
 		privateRoutes.post(fezIDParam, "post", use: fezThreadPostHandler)
 		privateRoutes.post("post", postIDParam, "delete", use: fezPostDeleteHandler)
 		privateRoutes.delete("post", postIDParam, use: fezPostDeleteHandler)
@@ -296,7 +298,10 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 	// POST /lfg/create
 	// POST /lfg/ID/update
 	// Handles the POST from either the Create Or Update Fez page
-	func fezCreateOrUpdatePostHandler(_ req: Request) async throws -> HTTPStatus {
+	func fezCreateOrUpdatePostHandler(_ req: Request) async throws -> Response {
+		struct NewFezResponse: Content {
+			var fezID: UUID
+		}
 		let postStruct = try req.content.decode(CreateFezPostFormContent.self)
 		var fezType: FezType
 		switch postStruct.eventtype {
@@ -323,12 +328,18 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			maxCapacity: postStruct.maximum,
 			initialUsers: []
 		)
+		let isCreating = req.parameters.get(fezIDParam.paramString) == nil
 		var path = "/fez/create"
 		if let updatingFezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() {
 			path = "/fez/\(updatingFezID)/update"
 		}
-		try await apiQuery(req, endpoint: path, method: .POST, encodeContent: fezContentData)
-		return .created
+		let apiResponse = try await apiQuery(req, endpoint: path, method: .POST, encodeContent: fezContentData)
+		let response = Response(status: .created)
+		if isCreating {
+			let newFez = try apiResponse.content.decode(FezData.self)
+			try response.content.encode(NewFezResponse(fezID: newFez.fezID))
+		}
+		return response
 	}
 
 	// GET /lfg/ID
@@ -358,9 +369,14 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 
 			init(_ req: Request, fez: FezData) throws {
 				let cacheUser = try req.auth.require(UserCacheData.self)
-				trunk = .init(req, title: "\(fez.title) | LFG", tab: .lfg)
-				self.fez = fez
 				self.typeName = fez.fezType.lfgLabel
+				if fez.fezType.isPrivateEventType {
+					trunk = .init(req, title: "\(fez.title) | \(self.typeName)", tab: .home)
+				}
+				else {
+					trunk = .init(req, title: "\(fez.title) | LFG", tab: .lfg)
+				}
+				self.fez = fez
 				self.breadcrumbLink = fez.fezType.isPrivateEventType ? "/dayplanner" : "/lfg"
 				self.userID = cacheUser.userID
 				userIsMember = false
@@ -508,6 +524,28 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Missing fez_id")
 		}
 		try await apiQuery(req, endpoint: "/fez/\(fezID)/favorite/remove", method: .POST)
+		return .noContent
+	}
+
+	// POST /lfg/ID/mute
+	//
+	// Mutes a fez.
+	func fezAddMutePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id")
+		}
+		try await apiQuery(req, endpoint: "/fez/\(fezID)/mute", method: .POST)
+		return .created
+	}
+
+	// DELETE /lfg/ID/mute
+	//
+	// Unmutes a fez.
+	func fezRemoveMutePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id")
+		}
+		try await apiQuery(req, endpoint: "/fez/\(fezID)/mute/remove", method: .POST)
 		return .noContent
 	}
 

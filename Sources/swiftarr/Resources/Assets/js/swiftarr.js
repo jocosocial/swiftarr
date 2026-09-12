@@ -17,6 +17,7 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "muteForum": // Different than mute[User] due to code in spinnerButtonAction.
 		case "pinForum":
 		case "muteSeamail":
+		case "muteFez":
 		case "unblock":
 		case "unfavorite":
 		case "unmute":
@@ -614,6 +615,16 @@ async function submitAJAXForm(formElement, event) {
 			let successURL = formElement.dataset.successurl;
 			if (!successURL) {
 				location.reload();
+				return;
+			}
+			if (successURL == "createdFez") {
+				let data = await response.json();
+				location.assign("/lfg/" + data.fezID);
+				return;
+			}
+			if (successURL == "createdPrivateEvent") {
+				let data = await response.json();
+				location.assign("/privateevent/" + data.fezID);
 				return;
 			}
 			if (successURL == "message") {
