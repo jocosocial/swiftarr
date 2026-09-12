@@ -280,68 +280,7 @@ struct AdminController: APIRouteCollection {
 	///  More sophisticated servers run an operation like this on a cronjob and analyze the results each time to check that recent db activity matches expectations.
 	///  Mostly this is just a quick way for us to check usage.
 	func serverRollupCounts(_ req: Request) async throws -> ServerRollupData {
-		let counts = try await withThrowingTaskGroup(of: (countType: ServerRollupData.CountType, value: Int32).self) { group in
-			let tasks: [ServerRollupData.CountType : EventLoopFuture<Int>] = [
-					// User
-					.user :  User.query(on: req.db).count(),
-					.profileEdit: ProfileEdit.query(on: req.db).count(),
-					.userNote: UserNote.query(on: req.db).count(),
-					.alertword: AlertWord.query(on: req.db).count(),
-					.muteword: MuteWord.query(on: req.db).count(),
-					.photoStream: StreamPhoto.query(on: req.db).count(),
-
-					// LFGs and Seamails
-					.lfg: FriendlyFez.query(on: req.db).filter(\.$fezType ~~ FezType.lfgTypes).count(),
-					.lfgParticipant: FezParticipant.query(on: req.db)
-							.join(FriendlyFez.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
-							.filter(FriendlyFez.self, \.$fezType  ~~ FezType.lfgTypes).count(),
-					.lfgPost: FezPost.query(on: req.db).join(FriendlyFez.self, on: \FezPost.$fez.$id == \FriendlyFez.$id)
-							.filter(FriendlyFez.self, \.$fezType ~~ FezType.lfgTypes).count(),
-					.seamail: FriendlyFez.query(on: req.db).filter(\.$fezType ~~ FezType.seamailTypes).count(),
-					.seamailPost: FezPost.query(on: req.db).join(FriendlyFez.self, on: \FezPost.$fez.$id == \FriendlyFez.$id)
-							.filter(FriendlyFez.self, \.$fezType ~~ FezType.seamailTypes).count(),
-					.privateEvent: FriendlyFez.query(on: req.db).filter(\.$fezType == FezType.privateEvent).count(),
-					.personalEvent: FriendlyFez.query(on: req.db).filter(\.$fezType == FezType.personalEvent).count(),
-
-					// Forums
-					.forum: Forum.query(on: req.db).count(),
-					.forumPost: ForumPost.query(on: req.db).count(),
-					.forumPostEdit: ForumPostEdit.query(on: req.db).count(),
-					.forumPostLike: PostLikes.query(on: req.db).filter(\.$likeType != nil).count(),
-					
-					// Games and Karaoke
-					.karaokePlayedSong: KaraokePlayedSong.query(on: req.db).count(),
-					.microKaraokeSnippet: MKSnippet.query(on: req.db).count(),
-					
-					// Favorites
-					.userFavorite: UserFavorite.query(on: req.db).count(),
-					.eventFavorite: EventFavorite.query(on: req.db).count(),
-					.forumFavorite: ForumReaders.query(on: req.db).filter(\.$isFavorite == true).count(),
-					.forumPostFavorite: PostLikes.query(on: req.db).filter(\.$isFavorite == true).count(),
-					.boardgameFavorite: BoardgameFavorite.query(on: req.db).count(),
-					.karaokeFavorite: KaraokeFavorite.query(on: req.db).count(),
-
-					// Moderation
-					.report: Report.query(on: req.db).count(),
-					.moderationAction: ModeratorAction.query(on: req.db).count(),
-
-					// Quartermaster
-					.quartermasterItem: QuartermasterItem.query(on: req.db).count(),
-					.quartermasterItemEdit: QuartermasterItemEdit.query(on: req.db).count(),
-			]
-			
-			for (key, task) in tasks {
-				group.addTask {
-					return try await (key, Int32(task.get()))
-				}
-			}
-			var result = [Int32](repeating: 0, count: tasks.count)
-			for try await (key, value) in group {
-				result[key.rawValue] = Int32(value)
-			}
-			return result
-		}
-		return ServerRollupData(counts: counts)
+		return try await ServerRollupData.computeRollupCounts(on: req.db)
 	}
 	
 	

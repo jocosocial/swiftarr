@@ -91,6 +91,16 @@ struct SwiftarrConfigurator {
 		// As a lifecycle handler, our 'didBoot' callback got put in a list with Redis's, and we had to hope Vapor called them first.
 		try await app.initializeUserCache(app)
 
+		// Populate the table-count gauges immediately so they aren't simply missing from
+		// /api/v3/client/metrics for up to a full schedule interval after every restart.
+		// A failure here shouldn't block startup; the scheduled job will retry on its own cadence.
+		do {
+			try await TableCountsJob.recordTableCounts(on: app.db, logger: app.logger)
+		}
+		catch {
+			app.logger.notice("Initial TableCountsJob run failed: \(String(reflecting: error))")
+		}
+
 		// Add custom commands
 		configureCommands(app)
 	}
@@ -552,6 +562,12 @@ struct SwiftarrConfigurator {
 		}
 		app.queues.schedule(UserEventNotificationJob()).minutely().at(0)
 		app.queues.schedule(UpdateRedisJob()).daily().at(.init(integerLiteral: Settings.shared.nightlyJobHour), 0)
+		// Queues has no native "every N minutes" builder, so register the same job on 6 fixed
+		// minute-of-hour offsets to approximate a 10-minute cadence.
+		// A scrape before this has run for the first time is typically treated as "no data".
+		for minute in stride(from: 0, to: 60, by: 10) {
+			app.queues.schedule(TableCountsJob()).hourly().at(.init(integerLiteral: minute))
+		}
 		app.queues.add(OnDemandScheduleUpdateJob())
 		app.queues.add(OnDemandUpdateRedisJob())
 		try app.queues.startInProcessJobs(on: .default)
