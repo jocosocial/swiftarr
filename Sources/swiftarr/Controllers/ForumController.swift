@@ -1407,7 +1407,14 @@ struct ForumController: APIRouteCollection {
 	/// behavior of removing the current user's like/love/laugh reaction.
 	func postUnreactHandler(_ req: Request) async throws -> PostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let maybeEmoji = try? req.content.decode(PostReactionData.self).validatedReaction()
+		let maybeEmoji: String?
+		if req.method == .DELETE {
+			// Legacy DELETE /laugh, /like, and /love routes have no JSON body.
+			maybeEmoji = nil
+		}
+		else {
+			maybeEmoji = try req.content.decode(PostReactionData.self).validatedReaction()
+		}
 		// get post and forum
 		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
 			query.with(\.$forum) { forum in
