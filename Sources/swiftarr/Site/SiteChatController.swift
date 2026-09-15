@@ -358,6 +358,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			var post: MessagePostContext  // New post area
 			var paginator: PaginatorContext  // For > 50 posts in thread.
 			var breadcrumbLink: String		
+			var reactionActionPrefix: String
 
 			init(_ req: Request, fez: FezData) throws {
 				let cacheUser = try req.auth.require(UserCacheData.self)
@@ -365,6 +366,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				self.fez = fez
 				self.typeName = fez.fezType.lfgLabel
 				self.breadcrumbLink = fez.fezType.isPrivateEventType ? "/dayplanner" : "/lfg"
+				self.reactionActionPrefix = "/lfg/post"
 				self.userID = cacheUser.userID
 				userIsMember = false
 				showModButton = trunk.userIsMod && ![.closed, .open].contains(fez.fezType)
