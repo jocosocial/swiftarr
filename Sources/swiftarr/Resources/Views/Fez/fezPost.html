@@ -27,16 +27,25 @@
 						</div>
 					</div>
 				#endif
-				#if(fez.fezType != "closed"):
+				#if(fez.fezType != "closed" || userID != fezPost.author.userID):
 					<div class="row mt-1 justify-content-end row-cols-auto collapse" data-label="actionbar">
 						<div class="col col-auto btn-group btn-group-sm" role="group" aria-label="Post actions">
 							#if(showModButton):
 								<a class="btn btn-outline-primary btn-sm" href="/moderate/fezpost/#(fezPost.postID)">Mod</a>
 							#endif
 							#if(userID == fezPost.author.userID):
-								<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
+								#if(fez.fezType != "closed"):
+									<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
+								#endif
 							#else:
-								<a class="btn btn-outline-primary" href="/lfg/post/report/#(fezPost.postID)">Report</a>
+								<div class="input-group input-group-sm">
+									<input aria-label="Emoji reaction" class="form-control" data-reaction-input placeholder="Emoji or :custom:" maxlength="64" type="text">
+									<button class="btn btn-outline-primary" data-reaction-action="react" data-reactionpath="#(reactionActionPrefix)/#(fezPost.postID)/react" type="button">React</button>
+									<button class="btn btn-outline-primary" data-reaction-action="unreact" data-reactionpath="#(reactionActionPrefix)/#(fezPost.postID)/unreact" type="button">Remove</button>
+								</div>
+								#if(fez.fezType != "closed"):
+									<a class="btn btn-outline-primary" href="/lfg/post/report/#(fezPost.postID)">Report</a>
+								#endif
 							#endif
 						</div>
 					</div>

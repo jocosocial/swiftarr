@@ -41,6 +41,9 @@ final class FezPost: Model, Searchable, @unchecked Sendable {
 	/// The post's author.
 	@Parent(key: "author") var author: User
 
+	/// The child reaction pivots for this post.
+	@Children(for: \.$post) var reactions: [FezPostReaction]
+
 	// MARK: Initialization
 
 	/// Used by Fluent

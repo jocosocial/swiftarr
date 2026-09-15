@@ -62,6 +62,40 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 	}
 }
 
+// Add or remove an emoji reaction entered beside a Fez post. Reactions use a JSON body so
+// Unicode and custom emoji tokens never need to be encoded in a URL path.
+for (let button of document.querySelectorAll('[data-reaction-action]')) {
+	button.addEventListener("click", async event => {
+		event.stopPropagation();
+		let post = button.closest('[data-postid]');
+		let input = post?.querySelector('[data-reaction-input]');
+		let reaction = input?.value.trim();
+		if (!reaction) {
+			input?.focus();
+			return;
+		}
+		button.disabled = true;
+		try {
+			let response = await fetch(button.dataset.reactionpath, {
+				method: "POST",
+				headers: {"Content-Type": "application/json"},
+				body: JSON.stringify({reaction}),
+			});
+			if (!response.ok) {
+				let error = await response.json();
+				throw new Error(error.reason);
+			}
+			location.reload();
+		}
+		catch (error) {
+			alert(error.message ?? "Could not update reaction");
+		}
+		finally {
+			button.disabled = false;
+		}
+	});
+}
+
 // Updates button state for buttons that perform a data-action
 function setActionButtonsState(tappedButton, state, isRadioButton) {
 	if (!tappedButton) { return }

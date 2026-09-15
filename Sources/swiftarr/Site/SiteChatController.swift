@@ -201,6 +201,8 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		privateRoutes.delete(fezIDParam, "favorite", use: fezRemoveFavoritePostHandler)
 		privateRoutes.post(fezIDParam, "post", use: fezThreadPostHandler)
 		privateRoutes.post(fezIDParam, "markRead", use: fezMarkReadPostHandler)
+		privateRoutes.post("post", postIDParam, "react", use: fezPostReactHandler)
+		privateRoutes.post("post", postIDParam, "unreact", use: fezPostUnreactHandler)
 		privateRoutes.post("post", postIDParam, "delete", use: fezPostDeleteHandler)
 		privateRoutes.delete("post", postIDParam, use: fezPostDeleteHandler)
 		privateRoutes.post(fezIDParam, "cancel", use: fezCancelPostHandler)
@@ -356,6 +358,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			var post: MessagePostContext  // New post area
 			var paginator: PaginatorContext  // For > 50 posts in thread.
 			var breadcrumbLink: String		
+			var reactionActionPrefix: String
 
 			init(_ req: Request, fez: FezData) throws {
 				let cacheUser = try req.auth.require(UserCacheData.self)
@@ -363,6 +366,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				self.fez = fez
 				self.typeName = fez.fezType.lfgLabel
 				self.breadcrumbLink = fez.fezType.isPrivateEventType ? "/dayplanner" : "/lfg"
+				self.reactionActionPrefix = "/lfg/post"
 				self.userID = cacheUser.userID
 				userIsMember = false
 				showModButton = trunk.userIsMod && ![.closed, .open].contains(fez.fezType)
@@ -466,6 +470,26 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		}
 		let response = try await apiQuery(req, endpoint: "/fez/\(fezID)/markRead", method: .POST)
 		return response.status
+	}
+
+	/// Adds the selected Unicode or custom emoji reaction to a chat post.
+	func fezPostReactHandler(_ req: Request) async throws -> FezPostData {
+		return try await fezPostReactionHandler(req, endpoint: "react")
+	}
+
+	/// Removes the selected Unicode or custom emoji reaction from a chat post.
+	func fezPostUnreactHandler(_ req: Request) async throws -> FezPostData {
+		return try await fezPostReactionHandler(req, endpoint: "unreact")
+	}
+
+	/// Forwards a reaction request from the site UI to the API.
+	private func fezPostReactionHandler(_ req: Request, endpoint: String) async throws -> FezPostData {
+		guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez post ID")
+		}
+		let reaction = try req.content.decode(PostReactionData.self)
+		let response = try await apiQuery(req, endpoint: "/fez/post/\(postID)/\(endpoint)", method: .POST, encodeContent: reaction)
+		return try response.content.decode(FezPostData.self)
 	}
 
 	// POST /lfg/post/:fezPost_ID/delete

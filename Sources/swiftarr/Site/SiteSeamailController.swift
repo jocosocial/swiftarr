@@ -111,6 +111,8 @@ struct SiteSeamailController: SiteControllerUtils {
 		privateRoutes.post("seamail", "create", use: seamailCreatePostHandler)
 		privateRoutes.post("seamail", fezIDParam, use: seamailViewPageHandler)
 		privateRoutes.post("seamail", fezIDParam, "post", use: seamailThreadPostHandler)
+		privateRoutes.post("seamail", "post", postIDParam, "react", use: seamailPostReactHandler)
+		privateRoutes.post("seamail", "post", postIDParam, "unreact", use: seamailPostUnreactHandler)
 		privateRoutes.post("seamail", fezIDParam, "markRead", use: seamailMarkReadPostHandler)
 		privateRoutes.post("seamail", fezIDParam, "mute", use: seamailAddMutePostHandler)
 		privateRoutes.delete("seamail", fezIDParam, "mute", use: seamailRemoveMutePostHandler)
@@ -294,10 +296,14 @@ struct SiteSeamailController: SiteControllerUtils {
 			var paginator: PaginatorContext
 			var breadcrumbTitle: String
 			var canEditTitle: Bool
+			var userID: UUID
+			var reactionActionPrefix: String
 
 			init(_ req: Request, fez: FezData) throws {
 				let (title, tab) = titleAndTab(for: req, seamail: fez)
 				trunk = .init(req, title: title, tab: tab)
+				userID = trunk.userID
+				reactionActionPrefix = "/seamail/post"
 				self.fez = fez
 				oldPosts = []
 				newPosts = []
@@ -420,6 +426,31 @@ struct SiteSeamailController: SiteControllerUtils {
 		let postContent = postStruct.buildPostContentData()
 		try await apiQuery(req, endpoint: "/fez/\(fezID)/post", method: .POST, encodeContent: postContent)
 		return .created
+	}
+
+	/// Adds the selected Unicode or custom emoji reaction to a Seamail post.
+	func seamailPostReactHandler(_ req: Request) async throws -> FezPostData {
+		return try await seamailPostReactionHandler(req, endpoint: "react")
+	}
+
+	/// Removes the selected Unicode or custom emoji reaction from a Seamail post.
+	func seamailPostUnreactHandler(_ req: Request) async throws -> FezPostData {
+		return try await seamailPostReactionHandler(req, endpoint: "unreact")
+	}
+
+	/// Forwards a Seamail reaction request from the site UI to the API.
+	private func seamailPostReactionHandler(_ req: Request, endpoint: String) async throws -> FezPostData {
+		guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing Seamail post ID")
+		}
+		let reaction = try req.content.decode(PostReactionData.self)
+		let response = try await apiQuery(
+			req,
+			endpoint: "/fez/post/\(postID)/\(endpoint)",
+			method: .POST,
+			encodeContent: reaction
+		)
+		return try response.content.decode(FezPostData.self)
 	}
 
 	// POST /seamail/:seamail_ID/markRead

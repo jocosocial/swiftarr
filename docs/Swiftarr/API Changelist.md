@@ -309,3 +309,10 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Sep 12, 2026
 
 - Added `POST /api/v3/fez/:fez_ID/markRead`, mirroring the existing forum `markRead` endpoint.
+## Sep 14, 2026
+
+- Forum and Fez (LFG, Seamail, and private-event chat) posts now return grouped `reactions`, supporting Unicode emoji and custom emoji tokens such as `:arr:`.
+- New endpoints add or remove an individual reaction with a JSON body of `{"reaction":"…"}`:
+  - `POST /api/v3/forum/post/:post_ID/react` and `POST /api/v3/forum/post/:post_ID/unreact`
+  - `POST /api/v3/fez/post/:post_ID/react` and `POST /api/v3/fez/post/:post_ID/unreact`
+- Existing forum like, love, and laugh endpoints and their legacy response fields remain available for older clients.

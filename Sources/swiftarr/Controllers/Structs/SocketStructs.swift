@@ -50,6 +50,14 @@ extension SocketFezPostData {
 	}
 }
 
+/// Informs chat socket clients that reactions on an existing post changed.
+struct SocketFezReactionData: Content {
+	/// The post whose reactions changed.
+	var postID: Int
+	/// The complete, grouped reaction state for that post.
+	var reactions: [ReactionData]
+}
+
 /// Informs Fez WebSocket clients of a change in Fez membership.
 ///
 /// If joined is FALSE, the user has left the fez. Although seamail sockets use the same endpoint (seamail threads are Fezzes internally),
