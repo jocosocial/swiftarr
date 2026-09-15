@@ -1037,9 +1037,11 @@ struct FezController: APIRouteCollection {
 					var userID: UUID
 					var fezPost: SocketFezPostData
 					var showModButton: Bool
+					var reactionActionPrefix: String
 				}
 				let ctx = FezPostContext(userID: userSocket.userID, fezPost: leafPost,
-						showModButton: socketOwner.accessLevel.hasAccess(.moderator) && fez.fezType != .closed)
+						showModButton: socketOwner.accessLevel.hasAccess(.moderator) && fez.fezType != .closed,
+						reactionActionPrefix: fez.fezType == .closed ? "/seamail/post" : "/lfg/post")
 				leafPost.html = try await req.view.render("Fez/fezPost", ctx) .flatMapThrowing { postBuffer -> String? in
 					if let data = postBuffer.data.getData(at: 0, length: postBuffer.data.readableBytes),
 							let htmlString = String(data: data, encoding: .utf8) {
@@ -1052,6 +1054,23 @@ struct FezController: APIRouteCollection {
 			if let dataString = String(data: data, encoding: .utf8) {
 				try await userSocket.socket.send(dataString)
 			}
+		}
+	}
+
+	/// Sends the complete reaction state for a post to members currently viewing the chat.
+	func forwardReactionChangeToSockets(_ fez: FriendlyFez, postData: FezPostData, on req: Request) async throws {
+		let payload = SocketFezReactionData(postID: postData.postID, reactions: postData.reactions)
+		let data = try JSONEncoder().encode(payload)
+		guard let dataString = String(data: data, encoding: .utf8) else {
+			return
+		}
+		let sockets = try await req.webSocketStore.getChatSockets(fez.requireID())
+		for userSocket in sockets {
+			guard !userSocket.htmlOutput,
+				let socketOwner = req.userCache.getUser(userSocket.userID),
+				userCanViewMemberData(user: socketOwner, fez: fez)
+			else { continue }
+			try await userSocket.socket.send(dataString)
 		}
 	}
 
