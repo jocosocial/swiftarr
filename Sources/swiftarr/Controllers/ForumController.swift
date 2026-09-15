@@ -1285,7 +1285,9 @@ struct ForumController: APIRouteCollection {
 		try await processForumMentions(post: forumPost, editedText: nil, isCreate: true, on: req)
 		// return as PostData, with 201 status
 		let response = Response(status: .created)
-		try response.content.encode(PostData(post: forumPost, author: effectiveAuthor.makeHeader()))
+		try response.content.encode(
+			PostData(post: forumPost, author: effectiveAuthor.makeHeader(), reactions: [])
+		)
 		return response
 	}
 
