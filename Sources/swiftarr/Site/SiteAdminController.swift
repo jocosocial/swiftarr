@@ -32,6 +32,8 @@ extension ServerRollupData.CountType {
 			case .karaokeFavorite: return "Karaoke Song Favorites"
 			case .report: return "Moderation Reports"
 			case .moderationAction: return "Moderation Actions"
+			case .quartermasterItem: return "Quartermastarr Items"
+			case .quartermasterItemEdit: return "Quartermastarr Item Edits"
 		}
 	}
 }
@@ -45,8 +47,6 @@ struct SiteAdminController: SiteControllerUtils {
 		// Routes for non-shareable content. If you're not logged in we failscreen.
 		let privateTTRoutes = getPrivateRoutes(app, minAccess: .twitarrteam, path: "admin")
 
-		privateTTRoutes.get("", use: adminRootPageHandler)
-
 		privateTTRoutes.get("announcements", use: announcementsAdminPageHandler)
 		privateTTRoutes.get("announcement", "create", use: announcementCreatePageHandler)
 		privateTTRoutes.post("announcement", "create", use: announcementCreatePostHandler)
@@ -54,13 +54,13 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.post("announcement", announcementIDParam, "edit", use: announcementEditPostHandler)
 		privateTTRoutes.post("announcement", announcementIDParam, "delete", use: announcementDeletePostHandler)
 
-		privateTTRoutes.get("dailythemes", use: dailyThemesViewHandler)
-		privateTTRoutes.get("dailytheme", "create", use: dailyThemeCreateViewHandler)
-		privateTTRoutes.post("dailytheme", "create", use: dailyThemeCreatePostHandler)
-		privateTTRoutes.get("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditViewHandler)
-		privateTTRoutes.post("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditPostHandler)
-		privateTTRoutes.post("dailytheme", dailyThemeParam, "delete", use: dailyThemeDeletePostHandler)
-		privateTTRoutes.delete("dailytheme", dailyThemeParam, use: dailyThemeDeletePostHandler)
+		privateTTRoutes.get("dailythemes", use: dailyThemesViewHandler).setUsedForPreregistration()
+		privateTTRoutes.get("dailytheme", "create", use: dailyThemeCreateViewHandler).setUsedForPreregistration()
+		privateTTRoutes.post("dailytheme", "create", use: dailyThemeCreatePostHandler).setUsedForPreregistration()
+		privateTTRoutes.get("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditViewHandler).setUsedForPreregistration()
+		privateTTRoutes.post("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditPostHandler).setUsedForPreregistration()
+		privateTTRoutes.post("dailytheme", dailyThemeParam, "delete", use: dailyThemeDeletePostHandler).setUsedForPreregistration()
+		privateTTRoutes.delete("dailytheme", dailyThemeParam, use: dailyThemeDeletePostHandler).setUsedForPreregistration()
 
 		privateTTRoutes.get("serversettings", use: settingsViewHandler)
 		privateTTRoutes.post("serversettings", use: settingsPostHandler)
@@ -86,8 +86,6 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.get("bulkuser", "upload", "commit", use: bulkUserUpdateCommitHandler)
 		
 
-		privateTTRoutes.get("regcodes", use: getRegCodeHandler)
-		privateTTRoutes.get("regcodes", "showuser", userIDParam, use: getRegCodeForUserHandler)
 		privateTTRoutes.get("regcodes", "discord", "assign", use: assignRegCodeToDiscordUser)
 		privateTTRoutes.post("regcodes", "discord", "assign", use: assignRegCodeToDiscordUserResult)
 		
@@ -98,12 +96,12 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.post("userroles", userRoleParam, "removerole", userIDParam, use: removeRoleFromUser)
 
 		
-		privateTTRoutes.get("hunts", use: huntHandler)
-		privateTTRoutes.post("hunt", "create", use: huntPostHandler)
-		privateTTRoutes.post("hunt", huntIDParam, "delete", use: huntDeleteHandler)
-		privateTTRoutes.get("hunt", huntIDParam, "edit", use: huntEditHandler)
-		privateTTRoutes.post("hunt", huntIDParam, "edit", use: huntEditPostHandler)
-		privateTTRoutes.post("puzzle", puzzleIDParam, "edit", use: puzzleEditPostHandler)
+		privateTTRoutes.get("hunts", use: huntHandler).setUsedForPreregistration()
+		privateTTRoutes.post("hunt", "create", use: huntPostHandler).setUsedForPreregistration()
+		privateTTRoutes.post("hunt", huntIDParam, "delete", use: huntDeleteHandler).setUsedForPreregistration()
+		privateTTRoutes.get("hunt", huntIDParam, "edit", use: huntEditHandler).setUsedForPreregistration()
+		privateTTRoutes.post("hunt", huntIDParam, "edit", use: huntEditPostHandler).setUsedForPreregistration()
+		privateTTRoutes.post("puzzle", puzzleIDParam, "edit", use: puzzleEditPostHandler).setUsedForPreregistration()
 
 		// Mods, TwitarrTeam, and THO levels can all be promoted to, but they all demote back to Verified.
 		let privateTHORoutes = getPrivateRoutes(app, minAccess: .tho, path: "admin")
@@ -120,6 +118,13 @@ struct SiteAdminController: SiteControllerUtils {
 		privateAdminRoutes.post("karaoke", "reload", use: karaokePostHandler)
 		privateAdminRoutes.get("boardgames", use: boardGamesHandler)
 		privateAdminRoutes.post("boardgames", "reload", use: boardGamesPostHandler)
+
+		// TwitarrTeam and above, or users with the Account Manager role
+		let accountMgrRoutes = getPrivateRoutes(app, minAccess: .verified, path: "admin")
+		accountMgrRoutes.get("", use: adminRootPageHandler)
+		accountMgrRoutes.get("regcodes", use: getRegCodeHandler)
+		accountMgrRoutes.get("regcodes", "showuser", userIDParam, use: getRegCodeForUserHandler)
+		accountMgrRoutes.post("regcodes", "showuser", userIDParam, "unlock", use: unlockRegCodePostHandler)
 	}
 
 	// MARK: - Admin Pages
@@ -166,6 +171,7 @@ struct SiteAdminController: SiteControllerUtils {
 	// GET /admin
 	// Shows the root admin page, which just shows links to other pages.
 	func adminRootPageHandler(_ req: Request) async throws -> View {
+		try req.auth.require(UserCacheData.self).guardCanManageAccounts()
 		struct AdminRootPageContext: Encodable {
 			var trunk: TrunkContext
 
@@ -202,10 +208,17 @@ struct SiteAdminController: SiteControllerUtils {
 		struct AnnouncementEditContext: Encodable {
 			var trunk: TrunkContext
 			var post: MessagePostContext
+			var showPostAsRadios: Bool
+			var showAdminPostAsRadio: Bool
 
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "Create Announcement", tab: .admin)
 				self.post = .init(forType: .announcement)
+				showPostAsRadios = post.showsPostAsRadios(
+					userIsTHO: trunk.userIsTHO,
+					userIsAdmin: trunk.userIsAdmin
+				)
+				showAdminPostAsRadio = MessagePostContext.showsAdminPostAsRadio(userIsAdmin: trunk.userIsAdmin)
 			}
 		}
 		let ctx = try AnnouncementEditContext(req)
@@ -221,7 +234,11 @@ struct SiteAdminController: SiteControllerUtils {
 		guard let displayUntilDate = dateFromW3DatetimeString(displayUntil) else {
 			throw Abort(.badRequest, reason: "Display Until date is misformatted.")
 		}
-		let postContent = AnnouncementCreateData(text: text, displayUntil: displayUntilDate)
+		let postContent = AnnouncementCreateData(
+			text: text,
+			displayUntil: displayUntilDate,
+			postAsUser: postStruct.postAsUser
+		)
 		try await apiQuery(
 			req,
 			endpoint: "/notification/announcement/create",
@@ -243,10 +260,17 @@ struct SiteAdminController: SiteControllerUtils {
 		struct AnnouncementEditContext: Encodable {
 			var trunk: TrunkContext
 			var post: MessagePostContext
+			var showPostAsRadios: Bool
+			var showAdminPostAsRadio: Bool
 
 			init(_ req: Request, data: AnnouncementData) throws {
 				trunk = .init(req, title: "Edit Announcement", tab: .admin)
 				self.post = .init(forType: .announcementEdit(data))
+				showPostAsRadios = post.showsPostAsRadios(
+					userIsTHO: trunk.userIsTHO,
+					userIsAdmin: trunk.userIsAdmin
+				)
+				showAdminPostAsRadio = MessagePostContext.showsAdminPostAsRadio(userIsAdmin: trunk.userIsAdmin)
 			}
 		}
 		let ctx = try AnnouncementEditContext(req, data: announcementData)
@@ -266,7 +290,11 @@ struct SiteAdminController: SiteControllerUtils {
 		guard let displayUntilDate = dateFromW3DatetimeString(displayUntil) else {
 			throw Abort(.badRequest, reason: "Display Until date is misformatted.")
 		}
-		let postContent = AnnouncementCreateData(text: text, displayUntil: displayUntilDate)
+		let postContent = AnnouncementCreateData(
+			text: text,
+			displayUntil: displayUntilDate,
+			postAsUser: postStruct.postAsUser
+		)
 		try await apiQuery(
 			req,
 			endpoint: "/notification/announcement/\(announcementID)/edit",
@@ -449,6 +477,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var maximumForumPosts: Int
 			var maxImageSize: Int
 			var maxForumPostImages: Int
+			var photostreamUploadRateLimit: Int
 			var forumAutoQuarantineThreshold: Int
 			var postAutoQuarantineThreshold: Int
 			var userAutoQuarantineThreshold: Int
@@ -493,6 +522,7 @@ struct SiteAdminController: SiteControllerUtils {
 			maximumForumPosts: postStruct.maximumForumPosts,
 			maxImageSize: postStruct.maxImageSize * 1_048_576,
 			maxForumPostImages: postStruct.maxForumPostImages,
+			photostreamUploadRateLimit: postStruct.photostreamUploadRateLimit,
 			forumAutoQuarantineThreshold: postStruct.forumAutoQuarantineThreshold,
 			postAutoQuarantineThreshold: postStruct.postAutoQuarantineThreshold,
 			userAutoQuarantineThreshold: postStruct.userAutoQuarantineThreshold,
@@ -881,7 +911,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var trunk: TrunkContext
 
 			init(_ req: Request) throws {
-				trunk = .init(req, title: "Bulk User Import/Export", tab: .admin)
+				trunk = .init(req, title: "Bulk Data Import/Export", tab: .admin)
 			}
 		}
 		let ctx = try BulkUserRootContext(req)
@@ -920,7 +950,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var diff: BulkUserUpdateVerificationData
 
 			init(_ req: Request, verificationData: BulkUserUpdateVerificationData) throws {
-				trunk = .init(req, title: "Verify Bulk User Import Changes", tab: .admin)
+				trunk = .init(req, title: "Verify Bulk Data Import Changes", tab: .admin)
 				self.diff = verificationData
 			}
 		}
@@ -945,7 +975,7 @@ struct SiteAdminController: SiteControllerUtils {
 			var diff: BulkUserUpdateVerificationData
 
 			init(_ req: Request, verificationData: BulkUserUpdateVerificationData) throws {
-				trunk = .init(req, title: "Bulk User Import Applied", tab: .admin)
+				trunk = .init(req, title: "Bulk Data Import Applied", tab: .admin)
 				self.diff = verificationData
 			}
 		}
@@ -959,55 +989,59 @@ struct SiteAdminController: SiteControllerUtils {
 	//
 	// Shows stats on reg code use. Lets admins search on a regcode and get the user it's associated with, if any.
 	func getRegCodeHandler(_ req: Request) async throws -> View {
+		try req.auth.require(UserCacheData.self).guardCanManageAccounts()
 		var regCodeSearchResults = ""
+		var searchedRegCode = ""
 		var searchResultHeaders = [UserHeader]()
-		if let regCode = req.query[String.self, at: "search"]?.removingPercentEncoding?.lowercased()
-			.filter({ $0 != " " })
+		if let rawSearch = req.query[String.self, at: "search"]?.removingPercentEncoding,
+			RegistrationCode.isWellFormed(rawSearch)
 		{
-			regCodeSearchResults = "Invalid registration code"
-			if regCode.count == 6, regCode.allSatisfy({ $0.isLetter || $0.isNumber }) {
-				do {
-					let response = try await apiQuery(req, endpoint: "/admin/regcodes/find/\(regCode)")
-					searchResultHeaders = try response.content.decode([UserHeader].self)
-					if searchResultHeaders.count > 0 {
-						regCodeSearchResults =
-							"User \"\(searchResultHeaders[0].username)\" is associated with registration code \"\(regCode)\""
-					}
-					else {
-						regCodeSearchResults = "\(regCode) is a valid code, not associated with a user."
-					}
-				}
-				catch let error as ErrorResponse {
-					regCodeSearchResults = "Error: \(error.reason)"
-				}
-				catch {
-					regCodeSearchResults = error.localizedDescription
-				}
+			let regCode = RegistrationCode.normalized(rawSearch)
+			searchedRegCode = regCode
+			regCodeSearchResults = ""
+			do {
+				let response = try await apiQuery(req, endpoint: "/admin/regcodes/find/\(regCode)")
+				searchResultHeaders = try response.content.decode([UserHeader].self)
 			}
+			catch let error as ErrorResponse {
+				regCodeSearchResults = "Error: \(error.reason)"
+			}
+			catch {
+				regCodeSearchResults = error.localizedDescription
+			}
+		}
+		else if req.query[String.self, at: "search"] != nil {
+			regCodeSearchResults = "Invalid registration code"
 		}
 		let response = try await apiQuery(req, endpoint: "/admin/regcodes/stats")
 		let regCodeData = try response.content.decode(RegistrationCodeStatsData.self)
 		struct RegCodeStatsContext: Encodable {
 			var trunk: TrunkContext
 			var stats: RegistrationCodeStatsData
+			var searchedRegCode: String
 			var searchResults: String
 			var searchResultUsers: [UserHeader]
+			var associatedUsername: String
 
 			init(
 				_ req: Request,
 				stats: RegistrationCodeStatsData,
+				searchedRegCode: String,
 				searchResults: String,
 				searchResultUsers: [UserHeader]
 			) throws {
 				trunk = .init(req, title: "Registration Codes", tab: .admin)
 				self.stats = stats
+				self.searchedRegCode = searchedRegCode
 				self.searchResults = searchResults
 				self.searchResultUsers = searchResultUsers
+				self.associatedUsername = searchResultUsers.first?.username ?? ""
 			}
 		}
 		let ctx = try RegCodeStatsContext(
 			req,
 			stats: regCodeData,
+			searchedRegCode: searchedRegCode,
 			searchResults: regCodeSearchResults,
 			searchResultUsers: searchResultHeaders
 		)
@@ -1018,6 +1052,7 @@ struct SiteAdminController: SiteControllerUtils {
 	//
 	// Shows stats on reg code use. Lets admins search on a regcode and get the user it's associated with, if any.
 	func getRegCodeForUserHandler(_ req: Request) async throws -> View {
+		try req.auth.require(UserCacheData.self).guardCanManageAccounts()
 		guard let targetUserID = req.parameters.get(userIDParam.paramString, as: UUID.self) else {
 			throw Abort(.badRequest, reason: "Missing user_id parameter")
 		}
@@ -1031,18 +1066,28 @@ struct SiteAdminController: SiteControllerUtils {
 			var data: RegistrationCodeUserData
 			var primaryUser: UserHeader
 			var altUsers: [UserHeader]
-			var regCode: String
 
 			init(_ req: Request, data: RegistrationCodeUserData) throws {
 				trunk = .init(req, title: "Registration Code for User", tab: .admin)
 				self.data = data
 				self.primaryUser = data.users[0]
 				self.altUsers = Array(data.users.dropFirst(1))
-				self.regCode = data.regCode.isEmpty ? "No registration code found for this user" : data.regCode
 			}
 		}
 		let ctx = try RegCodeUserContext(req, data: regCodeData)
 		return try await req.view.render("admin/regCodeForUser", ctx)
+	}
+
+	// POST /admin/regcodes/showuser/:user_id/unlock
+	//
+	// Re-enables one-time password recovery via registration code for this user.
+	func unlockRegCodePostHandler(_ req: Request) async throws -> HTTPStatus {
+		try req.auth.require(UserCacheData.self).guardCanManageAccounts()
+		guard let targetUserID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing user_id parameter")
+		}
+		let response = try await apiQuery(req, endpoint: "/admin/regcodes/unlock/\(targetUserID)", method: .POST)
+		return response.status
 	}
 	
 	// GET /admin/regcodes/discord/assign
@@ -1228,12 +1273,13 @@ struct SiteAdminController: SiteControllerUtils {
 				searchResults: [UserHeader]?,
 				role: String?
 			) throws {
-				trunk = .init(req, title: "Karaoke Managers", tab: .admin)
+				let roleName = UserRoleType(fromString: role)?.label ?? "User Roles"
+				trunk = .init(req, title: roleName, tab: .admin)
 				self.currentMgrs = currentMgrs
 				self.userSearch = searchStr
 				self.searchResults = searchResults
 				self.role = role
-				self.rolename = UserRoleType(fromString: role)?.label ?? "User Roles"
+				self.rolename = roleName
 			}
 		}
 		let ctx = try KaraokeManagersViewContext(

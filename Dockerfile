@@ -1,12 +1,12 @@
 # Builder image
 # 
 # This sets up the environment used to build swiftarr.
-FROM docker.io/library/swift:6.2-noble AS builder
+FROM docker.io/library/swift:6.3-noble AS builder
 
 ARG env
 
 RUN apt-get -qq update && apt-get install -y \
-    libssl-dev zlib1g-dev libgd-dev
+    libssl-dev zlib1g-dev libvips-dev
 RUN mkdir -p /build/lib && cp -HR /usr/lib/swift/linux/*.so* /build/lib
 
 WORKDIR /app

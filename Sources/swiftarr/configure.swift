@@ -8,7 +8,6 @@ import Queues
 import QueuesRedisDriver
 import Redis
 import Vapor
-import gd
 
 /// # Launching Swiftarr
 ///
@@ -59,6 +58,9 @@ struct SwiftarrConfigurator {
 		ContentConfiguration.global.use(encoder: jsonEncoder, for: .json)
 		ContentConfiguration.global.use(decoder: jsonDecoder, for: .json)
 
+		// Initialize libvips for image processing
+		SwiftarrImage.initializeVips()
+
 		// Set up all the settings that we don't need Redis to acquire.
 		try configureBundle(app)
 		try configureBasicSettings(app)
@@ -88,6 +90,16 @@ struct SwiftarrConfigurator {
 		// for use until its 'didBoot' lifecycle handler has run, and I don't like opaque ordering dependencies.
 		// As a lifecycle handler, our 'didBoot' callback got put in a list with Redis's, and we had to hope Vapor called them first.
 		try await app.initializeUserCache(app)
+
+		// Populate the table-count gauges immediately so they aren't simply missing from
+		// /api/v3/client/metrics for up to a full schedule interval after every restart.
+		// A failure here shouldn't block startup; the scheduled job will retry on its own cadence.
+		do {
+			try await TableCountsJob.recordTableCounts(on: app.db, logger: app.logger)
+		}
+		catch {
+			app.logger.notice("Initial TableCountsJob run failed: \(String(reflecting: error))")
+		}
 
 		// Add custom commands
 		configureCommands(app)
@@ -182,9 +194,9 @@ struct SwiftarrConfigurator {
 			}
 			Settings.shared.portTimeZone = portTimeZone
 		}
-		// This sets both the cruiseStartDateComponents and cruiseStartDayOfWeek from the same
-		// SWIFTARR_START_DATE value. If you don't specify this env var, the defaults in Settings.swift
-		// take over. That isn't quite as intelligent.
+		// This sets the cruiseStartDateComponents from the SWIFTARR_START_DATE value
+		// (cruiseStartDayOfWeek is derived from the components). If you don't specify this
+		// env var, the defaults in Settings.swift take over.
 		if let cruiseStartDate = Environment.get("SWIFTARR_START_DATE"), cruiseStartDate != "" {
 			let startFormatter = DateFormatter()
 			startFormatter.dateFormat = "yyyy-MM-dd"  // 2023-03-05
@@ -193,13 +205,9 @@ struct SwiftarrConfigurator {
 			}
 			Settings.shared.cruiseStartDateComponents = Calendar(identifier: .gregorian)
 				.dateComponents(
-					[.year, .month, .day, .weekday],
+					[.year, .month, .day],
 					from: date
 				)
-			guard let cruiseStartDayOfWeek = Settings.shared.cruiseStartDateComponents.weekday else {
-				fatalError("Cannot determine day-of-week from SWIFTARR_START_DATE.")
-			}
-			Settings.shared.cruiseStartDayOfWeek = cruiseStartDayOfWeek
 		}
 
 		// Late Day Flip in Site UI
@@ -207,23 +215,11 @@ struct SwiftarrConfigurator {
 			Settings.shared.enableLateDayFlip = Bool(enableLateDayFlip) ?? false
 		}
 
-		// Ask the GD Image library what filetypes are available on the local machine.
-		// gd, gd2, xbm, xpm, wbmp, some other useless formats culled.
-		let fileTypes = [".gif", ".bmp", ".tga", ".png", ".jpg", ".heif", ".heix", ".avif", ".tif", ".webp"]
-		var supportedInputTypes = fileTypes.filter { gdSupportsFileType($0, 0) != 0 }
-		var supportedOutputTypes = fileTypes.filter { gdSupportsFileType($0, 1) != 0 }
-		if supportedInputTypes.contains(".jpg") {
-			supportedInputTypes.append(".jpeg")
-		}
-		if supportedOutputTypes.contains(".jpg") {
-			supportedOutputTypes.append(".jpeg")
-		}
-		Settings.shared.validImageInputTypes = supportedInputTypes
-		Settings.shared.validImageOutputTypes = supportedOutputTypes
-
-		// On my machine: heif, heix, avif not supported
-		// [".gif", ".bmp", ".tga", ".png", ".jpg", ".tif", ".webp"] inputs
-		// [".gif", ".bmp",		 ".png", ".jpg", ".tif", ".webp"] outputs
+		// libvips supports these formats natively. All uploads are re-encoded as JPEG,
+		// so output types only need JPEG and PNG (for generated images like QR codes).
+		Settings.shared.validImageInputTypes = [".gif", ".bmp", ".tga", ".png", ".jpg", ".jpeg",
+				".heif", ".heix", ".avif", ".tif", ".webp", ".jxl"]
+		Settings.shared.validImageOutputTypes = [".png", ".jpg", ".jpeg"]
 
 		// Set the app's views dir, which is where all the Leaf template files are.
 		app.directory.viewsDirectory =
@@ -535,7 +531,9 @@ struct SwiftarrConfigurator {
 		app.leaf.tags["dinnerTeamTag"] = DinnerTeamTag()
 		app.leaf.tags["lfgLabel"] = LFGLabelTag()
 		app.leaf.tags["notEmpty"] = NotEmptyTag()
+		app.leaf.tags["urlEncode"] = URLEncodeTag()
 		app.leaf.tags["countOrZero"] = CountZeroTag()
+		app.leaf.tags["regCode"] = RegCodeTag()
 	}
 
 	func configureQueues(_ app: Application) throws {
@@ -552,10 +550,24 @@ struct SwiftarrConfigurator {
 			Settings.shared.nightlyJobHour = nightlyJobHour
 		}
 
+		// Check if UpdateScheduleJob should be enabled (defaults to true)
+		var enableUpdateScheduleJob = true
+		if let rawEnableUpdateScheduleJob = Environment.get("SWIFTARR_ENABLE_UPDATE_SCHEDULE_JOB"), rawEnableUpdateScheduleJob != "" {
+			enableUpdateScheduleJob = Bool(rawEnableUpdateScheduleJob) ?? true
+		}
+
 		// Setup the schedule update job to run at an interval and on-demand.
-		app.queues.schedule(UpdateScheduleJob()).hourly().at(5)
+		if enableUpdateScheduleJob {
+			app.queues.schedule(UpdateScheduleJob()).hourly().at(5)
+		}
 		app.queues.schedule(UserEventNotificationJob()).minutely().at(0)
 		app.queues.schedule(UpdateRedisJob()).daily().at(.init(integerLiteral: Settings.shared.nightlyJobHour), 0)
+		// Queues has no native "every N minutes" builder, so register the same job on 6 fixed
+		// minute-of-hour offsets to approximate a 10-minute cadence.
+		// A scrape before this has run for the first time is typically treated as "no data".
+		for minute in stride(from: 0, to: 60, by: 10) {
+			app.queues.schedule(TableCountsJob()).hourly().at(.init(integerLiteral: minute))
+		}
 		app.queues.add(OnDemandScheduleUpdateJob())
 		app.queues.add(OnDemandUpdateRedisJob())
 		try app.queues.startInProcessJobs(on: .default)
@@ -602,6 +614,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateForumPostEditSchema(), to: .psql)
 		app.migrations.add(CreateForumReadersSchema(), to: .psql)
 		app.migrations.add(CreatePostLikesSchema(), to: .psql)
+		app.migrations.add(CreateForumPostReactionSchema(), to: .psql)
 		app.migrations.add(CreateEventSchema(), to: .psql)
 		app.migrations.add(CreateEventFavoriteSchema(), to: .psql)
 		app.migrations.add(CreateTwarrtSchema(), to: .psql)
@@ -610,7 +623,10 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateFriendlyFezSchema(), to: .psql)
 		app.migrations.add(CreateFezParticipantSchema(), to: .psql)
 		app.migrations.add(CreateFezPostSchema(), to: .psql)
+		app.migrations.add(CreateFezPostReactionSchema(), to: .psql)
 		app.migrations.add(CreateFriendlyFezEditSchema(), to: .psql)
+		app.migrations.add(CreateQuartermasterItemSchema(), to: .psql)
+		app.migrations.add(CreateQuartermasterItemEditSchema(), to: .psql)
 		app.migrations.add(CreateDailyThemeSchema(), to: .psql)
 		app.migrations.add(CreateBoardgameSchema(), to: .psql)
 		app.migrations.add(CreateBoardgameFavoriteSchema(), to: .psql)
@@ -640,6 +656,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateEventPerformerSchema(), to: .psql)
 		app.migrations.add(StreamPhotoSchemaV2(), to: .psql)
 		app.migrations.add(AddDeletedTimestampToFezParticipantSchema(), to: .psql)
+		app.migrations.add(AddAddedToFieldToFezParticipantSchema(), to: .psql)
 		app.migrations.add(CreateHuntSchema(), to: .psql)
 		app.migrations.add(CreatePuzzleSchema(), to: .psql)
 		app.migrations.add(CreatePuzzleCallInSchema(), to: .psql)
@@ -647,8 +664,8 @@ struct SwiftarrConfigurator {
 		app.migrations.add(UpdateEventSchema_NeedsPhotographer(), to: .psql)
 		app.migrations.add(UpdateEventFavoriteSchema_Photographer(), to: .psql)
 		app.migrations.add(UpdateUserDiscordHandleMigration(), to: .psql)
-		app.migrations.add(CreateForumPostReactionSchema(), to: .psql)
-		app.migrations.add(CreateFezPostReactionSchema(), to: .psql)
+		app.migrations.add(AddPerformerAlternativeNamesMigration(), to: .psql)
+		app.migrations.add(AddFavoriteFieldToFezParticipantSchema(), to: .psql)
 		app.migrations.add(MigratePostLikesToReactions(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
@@ -685,7 +702,8 @@ struct SwiftarrConfigurator {
 		app.migrations.add(AddFoodDrinkCategory(), to: .psql)
 		app.migrations.add(CreateMicroKaraokeUser(), to: .psql)
 		app.migrations.add(RemoveCovidCategory(), to: .psql)
-		
+		app.migrations.add(CreateQuartermasterSearchIndexes(), to: .psql)
+
 		// DON'T add schema-modification migrations down here. Appending migrations that modify a table's schema at the end will
 		// break migrations that use Fluent to populate that table with data, as Fluent only models the current db schema.
 		// When resetting the db (or a new install), all the migrations run in the listed order, and the schema needs to match Fluent before

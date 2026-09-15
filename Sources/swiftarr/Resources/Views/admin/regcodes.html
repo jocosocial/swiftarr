@@ -48,7 +48,17 @@
 			</div>
 			<div class="row my-2">
 				<div class="col">
-					#(searchResults)
+					#if(notEmpty(searchedRegCode)):
+						#if(count(searchResultUsers) > 0):
+							User "#(associatedUsername)" is associated with registration code #regCode(searchedRegCode)
+						#elseif(notEmpty(searchResults)):
+							#(searchResults)
+						#else:
+							#regCode(searchedRegCode) is a valid code, not associated with a user.
+						#endif
+					#else:
+						#(searchResults)
+					#endif
 				</div>
 			</div>
 			#if(count(searchResultUsers) > 0):
@@ -60,7 +70,9 @@
 				#for(header in searchResultUsers):
 					<div class="row mb-2 mx-0">
 						<div class="col col-auto border">
-							#avatar(header) #userByline(header)
+							<a href="/admin/regcodes/showuser/#(header.userID)">
+								#avatar(header) #userByline(header, "nolink")
+							</a>
 						</div>				
 					</div>
 				#endfor

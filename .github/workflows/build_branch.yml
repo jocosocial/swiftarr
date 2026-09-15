@@ -9,6 +9,9 @@ on:
 jobs:
   BuildAndDeployStack:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout Swiftarr
         uses: actions/checkout@v2
@@ -26,3 +29,80 @@ jobs:
         run: scripts/stack.sh -e production logs web
       - name: Test For Health
         run: .github/workflows/check_health.sh -e production
+      - name: Log in to GHCR
+        if: github.repository == 'jocosocial/swiftarr' && github.ref == 'refs/heads/master' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tag and Push Image to GHCR
+        if: github.repository == 'jocosocial/swiftarr' && github.ref == 'refs/heads/master' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          docker tag swiftarr-web:ci-build ghcr.io/jocosocial/swiftarr:${SHORT_SHA}
+          docker tag swiftarr-web:ci-build ghcr.io/jocosocial/swiftarr:latest
+          docker push ghcr.io/jocosocial/swiftarr:${SHORT_SHA}
+          docker push ghcr.io/jocosocial/swiftarr:latest
+
+  Test:
+    runs-on: ubuntu-24.04
+    container:
+      image: swift:6.3-noble
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: swiftarr
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: swiftarr-test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # The job runs inside a container, so services are reachable by label on their own
+      # default ports. These overrides matter because configure.swift defaults .testing to
+      # 5433/6380, which are the host-side ports of the docker-compose stack.
+      DATABASE_HOSTNAME: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: swiftarr
+      DATABASE_PASSWORD: password
+      REDIS_HOSTNAME: redis
+      REDIS_PORT: 6379
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install image system libraries
+        run: apt-get update && apt-get install -y libgd-dev libvips-dev
+      - name: Restore SwiftPM cache
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-swift-${{ hashFiles('Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-swift-
+      - name: Build
+        run: swift build
+      - name: Migrate the test database
+        # Required, and the failure it prevents is misleading. Application.testable() calls
+        # SwiftarrConfigurator.configure() and then Settings.shared.readTimeZoneChanges(app)
+        # BEFORE withApp reaches app.autoMigrate(). Against an empty database that read fails
+        # with `relation "time_zone_change" does not exist`, which surfaces as a generic
+        # PSQLError at Application+Testable.swift:17 on every single test — it reads like a
+        # broken harness rather than a missing schema.
+        run: ./.build/debug/swiftarr migrate --env testing --yes
+      - name: Run tests
+        # SettingsTests is the one suite still excluded, and not for infrastructure reasons:
+        # it fails against a migrated database because its expectations are stale
+        # (testEmbarkationStartDate expects 2024-03-09, master produces 2025-03-02). Everything
+        # else in the suite passes with the services above.
+        run: swift test --enable-test-discovery --skip SettingsTests

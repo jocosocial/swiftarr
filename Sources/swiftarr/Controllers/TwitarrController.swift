@@ -66,8 +66,8 @@ public struct TwarrtQueryOptions: Content {
 		return (after != nil) || (afterdate != nil) || (from == "first") || (replyGroup != nil)
 	}
 
-	func computedLimit() -> Int {
-		return limit ?? 50
+	var pagination: Pagination {
+		return Pagination(start: start, limit: limit, maxPageSize: Settings.shared.maximumTwarrts)
 	}
 
 	func buildQuery(baseURL: String, anchor: Int, startOffset: Int) -> String? {
@@ -290,13 +290,12 @@ struct TwitarrController: APIRouteCollection {
 		let filters = try req.query.decode(TwarrtQueryOptions.self)
 
 		// Query builder always filters out blocks and mutes, and the range always applies.
-		let start = filters.start ?? 0
-		let limit = (filters.limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
+		let pagination = filters.pagination
 		var postFilterMentions: String? = nil
 		var applyMutes = true
 		let twarrtQuery = Twarrt.query(on: req.db)
 			.filter(\.$author.$id !~ cachedUser.getBlocks())
-			.range(start..<(start + limit))
+			.range(pagination.range)
 
 		// Process query params that set an anchor twarrt and search direction.
 		// SearchDescending refers to the sort order in the database query, which affects start and limit.
@@ -330,7 +329,7 @@ struct TwitarrController: APIRouteCollection {
 		// Process query params that filter for specific content.
 		if let searchStr = filters.search {
 			twarrtQuery.fullTextFilter(\.$text, searchStr)
-			if !searchStr.contains(" ") && start == 0 {
+			if !searchStr.contains(" ") && pagination.start == 0 {
 				try await markNotificationViewed(user: cachedUser, type: .alertwordTwarrt(searchStr, 0), on: req)
 			}
 		}

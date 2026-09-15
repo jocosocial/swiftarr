@@ -28,7 +28,7 @@ The first time you run `swiftly` it will set itself up and insert itself into yo
 ```
 Installed release toolchains
 ----------------------------
-Swift 6.2.0 (in use) (default)
+Swift 6.3.3 (in use) (default)
 
 Installed snapshot toolchains
 ----------------------------
@@ -37,17 +37,17 @@ Installed snapshot toolchains
 At the root of this repository run `swiftly install`. This will read the `.swift-version` file then install/activate the correct toolchain version. This will automatically activate when you're working in that directory. You can confirm by running `swift --version`:
 
 ```
-Swift version 6.2 (swift-6.2-RELEASE)
+Swift version 6.3.3 (swift-6.3.3-RELEASE)
 Target: x86_64-unknown-linux-gnu
 ```
 
 ### Library Dependencies
 
-Swiftarr uses GD for image manipulation, and also links with jpeglib directly because of cases where GD is bad at its job. GD uses jpeglib, but chooses to ignore orientation directives in jpeg files, which necessitates a workaround.
+Swiftarr uses libvips for image manipulation, including format detection, EXIF orientation handling, alpha flattening, resizing, and animated GIF/WebP support.
 
-Install these with your system package manager:
-* Fedora: `gd-devel` `libjpeg-turbo-devel`
-* Ubuntu: `libgd-dev` `libjpeg-dev`
+Install with your system package manager:
+* Fedora: `vips-devel`
+* Ubuntu: `libvips-dev`
 
 ### Configuration (Optional)
 

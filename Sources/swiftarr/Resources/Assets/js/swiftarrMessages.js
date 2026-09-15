@@ -23,6 +23,10 @@ function startLiveMessageStream() {
 				postCountSpan.innerText = String(postCount + 1);
 			}
 		}
+		// The post was just rendered live into the page, so tell the server we've read it too.
+		// This keeps the "new"/unread badges from lighting up for content the user already saw.
+		let markReadURL = socketURL.replace(/\/socket$/, '/markRead');
+		fetch(markReadURL, { method: 'POST' });
 	};
 
 	ws.onclose = () => {

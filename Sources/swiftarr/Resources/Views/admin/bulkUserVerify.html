@@ -6,7 +6,7 @@
 					<nav aria-label="breadcrumb">
 						<ol class="breadcrumb">
 							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
-							<li class="breadcrumb-item"><a href="/admin/bulkuser">Bulk User Update</a></li>
+							<li class="breadcrumb-item"><a href="/admin/bulkuser">Bulk Data Import/Export</a></li>
 							<li class="breadcrumb-item active" aria-current="page">Verify Updates</li>
 						</ol>
 					</nav>
@@ -20,9 +20,9 @@
 				</div>
 			#else:
 				<div class="alert alert-info mt-3" role="alert">
-					Shown below are the validation results--what this user import is likely to do once applied.
-					Review that these results match expectations and then tap the <b>Perform User Import</b> button to apply them.
-					<br><a class="btn btn-primary mt-2" href="/admin/bulkuser/upload/commit">Perform User Import</a>
+					Shown below are the validation results--what this data import is likely to do once applied.
+					Review that these results match expectations and then tap the <b>Perform Data Import</b> button to apply them.
+					<br><a class="btn btn-primary mt-2" href="/admin/bulkuser/upload/commit">Perform Data Import</a>
 				</div>
 			#endif
 			
@@ -106,7 +106,61 @@
 					</tr>
 				</tbody>
 			</table>
-			
+
+			<table class="table table-bordered">
+				<thead>
+					<tr class="table-secondary">
+						<th scope="col">Daily Theme Import</th>
+						<th scope="col">#</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<th scope="row">Total Records Processed</th>
+						<td>#(diff.dailyThemeCounts.totalRecordsProcessed)</td>
+					</tr>
+					<tr>
+						<th scope="row">Records Imported</th>
+						<td>#(diff.dailyThemeCounts.importedCount)</td>
+					</tr>
+					<tr>
+						<th scope="row">Duplicates Found</th>
+						<td>#(diff.dailyThemeCounts.duplicateCount)</td>
+					</tr>
+					<tr>
+						<th scope="row">Errors</th>
+						<td>#(diff.dailyThemeCounts.errorCount)</td>
+					</tr>
+				</tbody>
+			</table>
+
+			<table class="table table-bordered">
+				<thead>
+					<tr class="table-secondary">
+						<th scope="col">Puzzle Hunt Import</th>
+						<th scope="col">#</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<th scope="row">Total Records Processed</th>
+						<td>#(diff.huntCounts.totalRecordsProcessed)</td>
+					</tr>
+					<tr>
+						<th scope="row">Records Imported</th>
+						<td>#(diff.huntCounts.importedCount)</td>
+					</tr>
+					<tr>
+						<th scope="row">Duplicates Found</th>
+						<td>#(diff.huntCounts.duplicateCount)</td>
+					</tr>
+					<tr>
+						<th scope="row">Errors</th>
+						<td>#(diff.huntCounts.errorCount)</td>
+					</tr>
+				</tbody>
+			</table>
+
 			<div class="accordion mb-2" id="importErrors">
 				<div class="accordion-item">
 					<h2 class="accordion-header" id="regCodeConflictHeader">

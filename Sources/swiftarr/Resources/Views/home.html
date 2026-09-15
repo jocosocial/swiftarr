@@ -62,7 +62,12 @@
 					<div class="card mb-2">	
 						<div class="card-header bg-success">
 							<span class="text-white">
-								<b>From:</b> #userByline(ann.author, "link-light")
+								<b>From:</b>
+								#if(trunk.preregistrationApplies):
+									#userByline(ann.author, "nolink")
+								#else:
+									#userByline(ann.author, "link-light")
+								#endif
 							</span>
 						</div>
 						<div class="card-body bg-light">
@@ -95,7 +100,7 @@
 							</a>
 						#endif
 						#if(trunk.alertCounts.addedToLFGCount > 0 || trunk.alertCounts.newFezMessageCount > 0):
-							<a class="list-group-item list-group-item-action" href="/lfg/joined">
+							<a class="list-group-item list-group-item-action" href="/lfg/joined?onlynew=true">
 								#if(trunk.alertCounts.addedToLFGCount > 0 && trunk.alertCounts.newFezMessageCount > 0):
 									You've been added to #(trunk.alertCounts.addedToLFGCount) new LFG#if(trunk.alertCounts.addedToLFGCount != 1):s#endif,
 									and #(trunk.alertCounts.newFezMessageCount) LFG chat#if(trunk.alertCounts.newFezMessageCount != 1):s have#else: has#endif new messages
@@ -230,6 +235,9 @@
 						<li class="list-group-item"><a href="/performers/shadow">Shadow Event Organizers</a></li>
 						<li class="list-group-item"><a href="/map">Ship Map</a></li>
 						<li class="list-group-item"><a href="/boardgames">Board Games</a></li>
+						#if(trunk.userIsLoggedIn && trunk.showQuartermasterNav):
+							<li class="list-group-item"><a href="/quartermaster">Quartermastarr (Have/Need)</a></li>
+						#endif
 						<li class="list-group-item"><a href="/karaoke">Karaoke</a></li>
 						<li class="list-group-item"><a href="/hunts">Puzzle Hunts</a></li>
 						#if(trunk.userIsLoggedIn && !trunk.preregistrationApplies):
@@ -250,15 +258,18 @@
 					<div class="row mb-2">
 						<div class="col">
 							<ul class="list-group">
+								<li class="list-group-item"><a href="/dayplanner/shutternauts">Shutternaut Shared Calendar</a></li>
 								#if(contains(trunk.userRoles, "shutternautmanager")):
 									<li class="list-group-item"><a href="/userrole/shutternaut/manage">Manage Shutternauts</a></li>
 								#endif
-								<li class="list-group-item"><a href="/dayplanner/shutternauts">Shutternaut Shared Calendar</a></li>
+								#if(contains(trunk.userRoles, "shutternautmanager") || trunk.userIsTwitarrTeam):
+									<li class="list-group-item"><a href="/events/photographerreport">Photographer Schedule Report</a></li>
+								#endif
 							</ul>
 						</div>
 					</div>
 				#endif
-				#if(trunk.userIsMod || trunk.userIsTwitarrTeam && !trunk.preregistrationApplies):
+				#if(trunk.userIsMod || trunk.userCanManageAccounts && !trunk.preregistrationApplies):
 					<div class="row mt-2">
 						<div class="col">
 							<h4><b>Site Management:</b></h4>
@@ -290,7 +301,7 @@
 										#endif
 									</li>
 								#endif
-								#if(trunk.userIsTwitarrTeam):
+								#if(trunk.userCanManageAccounts):
 									<li class="list-group-item align-items-center">
 										<a class="nav-link#" href="/admin">Admin Pages</a>
 										#if(trunk.alertCounts.moderatorData.newTTSeamailMessageCount > 0):

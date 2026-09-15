@@ -33,6 +33,8 @@ custom_categories:
       - Roadmap
       - Special Files
       - Release Calendar
+      - Preregistration
+      - Editorial
 
   - name: Operations
     children:

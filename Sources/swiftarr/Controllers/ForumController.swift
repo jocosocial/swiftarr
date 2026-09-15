@@ -64,8 +64,7 @@ struct ForumController: APIRouteCollection {
 		tokenAuthGroup.post("post", postIDParam, "delete", use: postDeleteHandler)
 		tokenAuthGroup.delete("post", postIDParam, use: postDeleteHandler)
 
-		tokenAuthGroup.post("post", postIDParam, "react", ":emoji", use: postReactHandler)
-		tokenAuthGroup.delete("post", postIDParam, "react", ":emoji", use: postUnreactHandler)
+		tokenAuthGroup.post("post", postIDParam, "react", use: postReactHandler)
 		// Backward-compatible legacy reaction routes for LikeType clients.
 		tokenAuthGroup.post("post", postIDParam, "laugh", use: postLaughHandler)
 		tokenAuthGroup.post("post", postIDParam, "like", use: postLikeHandler)
@@ -166,8 +165,7 @@ struct ForumController: APIRouteCollection {
 	/// - Returns: `CategoryData` containing category forums.
 	func categoryForumsHandler(_ req: Request) async throws -> CategoryData {
 		let cacheUser: UserCacheData = try req.auth.require(UserCacheData.self)
-		let start = (req.query[Int.self, at: "start"] ?? 0)
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
+		let pagination = Pagination(on: req, maxPageSize: Settings.shared.maximumForums)
 		let category = try await Category.findFromParameter(categoryIDParam, on: req)
 		try guardUserCanAccessCategory(cacheUser, category: category)
 		// remove blocks from results, unless it's an admin category
@@ -236,7 +234,7 @@ struct ForumController: APIRouteCollection {
 				countQuery.filter(\.$createdAt > afterDate)
 			}
 		}
-		let forumsQuery = countQuery.copy().range(start..<(start + limit))
+		let forumsQuery = countQuery.copy().range(pagination.range)
 		let forums = try await forumsQuery.all()
 		// We store the number of threads in a category in the database via Category.forumCount.
 		// But this is global and doesn't account for users blocks. For the purposes of Pagination
@@ -246,7 +244,7 @@ struct ForumController: APIRouteCollection {
 		return try CategoryData(
 			category,
 			restricted: category.accessLevelToCreate > cacheUser.accessLevel,
-			paginator: Paginator(total: forumCount, start: start, limit: limit),
+			paginator: Paginator(total: forumCount, start: pagination.start, limit: pagination.limit),
 			forumThreads: forumList
 		)
 	}
@@ -292,18 +290,17 @@ struct ForumController: APIRouteCollection {
 			var limit: Int?
 			var sort: String?
 			var order: String?
+
+			var pagination: Pagination {
+				return Pagination(start: start, limit: limit, maxPageSize: Settings.shared.maximumForums)
+			}
 			
 			mutating func afterDecode() throws {
-				start = start ?? 0
-				limit = (limit ?? 50).clamped(to: 0...Settings.shared.maximumForums)
-				// postgres "_" and "%" are wildcards, so escape for literals
-				search = search?.replacingOccurrences(of: "_", with: "\\_").replacingOccurrences(of: "%", with: "\\%")
-						.trimmingCharacters(in: .whitespacesAndNewlines)
+				search = search?.escapedForSQLWildcards()
 				if let search = search, search.isEmpty {
 					throw Abort(.badRequest, reason: "Search string, while optional, must not be empty if it exists.")
 				}
-				searchposts = searchposts?.replacingOccurrences(of: "_", with: "\\_").replacingOccurrences(of: "%", with: "\\%")
-						.trimmingCharacters(in: .whitespacesAndNewlines)
+				searchposts = searchposts?.escapedForSQLWildcards()
 				if let searchposts = searchposts, searchposts.isEmpty {
 					throw Abort(.badRequest, reason: "Search string, while optional, must not be empty if it exists.")
 				}
@@ -311,6 +308,7 @@ struct ForumController: APIRouteCollection {
 		}
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		var urlQuery = try req.query.decode(QueryStruct.self)
+		let pagination = urlQuery.pagination
 		// Vapor/URLEncodedForm/URLEncodedFormDecoder.swift doesn't seem to want to decode 'flag' URL query params into structs.
 		// Because of that, we have to do this to set the values. See https://github.com/vapor/vapor/issues/3163
 		urlQuery.creatorself = req.query[Bool.self, at: "creatorself"]
@@ -378,10 +376,8 @@ struct ForumController: APIRouteCollection {
 		}
 		// get forums and total forum count, turn into [ForumListData] and then insert into ForumSearchData
 		let forumCount = try await countQuery.count()
-		let start = urlQuery.start ?? 0
-		let limit = urlQuery.limit ?? 50
 		let orderDirection = req.orderDirection();
-		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
+		let forumQuery = countQuery.copy().range(pagination.range).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
 			case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
 			case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
@@ -389,7 +385,10 @@ struct ForumController: APIRouteCollection {
 		}
 		let forums = try await forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser)
-		return ForumSearchData( paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
+		return ForumSearchData(
+			paginator: Paginator(total: forumCount, start: pagination.start, limit: pagination.limit),
+			forumThreads: forumList
+		)
 	}
 
 	/// `GET /api/v3/forum/owner`
@@ -406,8 +405,7 @@ struct ForumController: APIRouteCollection {
 	/// - Returns: A `ForumSearchData` containing all forums created by the user.
 	func ownerHandler(_ req: Request) async throws -> ForumSearchData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let start = (req.query[Int.self, at: "start"] ?? 0)
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
+		let pagination = Pagination(on: req, maxPageSize: Settings.shared.maximumForums)
 		let countQuery = Forum.query(on: req.db).filter(\.$creator.$id == cacheUser.userID)
 			.categoryAccessFilter(for: cacheUser)
 		if let cat = req.query[UUID.self, at: "cat"] {
@@ -415,7 +413,7 @@ struct ForumController: APIRouteCollection {
 		}
 		let forumCount = try await countQuery.count()
 		let orderDirection = req.orderDirection();
-		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
+		let forumQuery = countQuery.copy().range(pagination.range).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
 		case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
 		case "update": _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
@@ -423,7 +421,10 @@ struct ForumController: APIRouteCollection {
 		}
 		async let forums = try forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser)
-		return ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
+		return ForumSearchData(
+			paginator: Paginator(total: forumCount, start: pagination.start, limit: pagination.limit),
+			forumThreads: forumList
+		)
 	}
 
 	/// `GET /api/v3/forum/favorites`
@@ -440,8 +441,7 @@ struct ForumController: APIRouteCollection {
 	/// - Returns: A `ForumSearchData` containing the user's favorited forums.
 	func favoritesHandler(_ req: Request) async throws -> ForumSearchData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let start = (req.query[Int.self, at: "start"] ?? 0)
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
+		let pagination = Pagination(on: req, maxPageSize: Settings.shared.maximumForums)
 		let countQuery = Forum.query(on: req.db).filter(\.$creator.$id !~ cacheUser.getBlocks())
 			.categoryAccessFilter(for: cacheUser)
 			.join(ForumReaders.self, on: \Forum.$id == \ForumReaders.$forum.$id)
@@ -452,7 +452,7 @@ struct ForumController: APIRouteCollection {
 		}
 		let forumCount = try await countQuery.count()
 		let orderDirection = req.orderDirection()
-		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
+		let forumQuery = countQuery.copy().range(pagination.range).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
 		case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
 		case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
@@ -460,7 +460,10 @@ struct ForumController: APIRouteCollection {
 		}
 		async let forums = try forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser, forceIsFavorite: true)
-		return ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
+		return ForumSearchData(
+			paginator: Paginator(total: forumCount, start: pagination.start, limit: pagination.limit),
+			forumThreads: forumList
+		)
 	}
 
 	/// `GET /api/v3/forum/mutes`
@@ -477,8 +480,7 @@ struct ForumController: APIRouteCollection {
 	/// - Returns: A `ForumSearchData` containing the user's muted forums.
 	func mutesHandler(_ req: Request) async throws -> ForumSearchData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let start = (req.query[Int.self, at: "start"] ?? 0)
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
+		let pagination = Pagination(on: req, maxPageSize: Settings.shared.maximumForums)
 		let countQuery = Forum.query(on: req.db).filter(\.$creator.$id !~ cacheUser.getBlocks())
 			.categoryAccessFilter(for: cacheUser)
 			.join(ForumReaders.self, on: \Forum.$id == \ForumReaders.$forum.$id)
@@ -489,7 +491,7 @@ struct ForumController: APIRouteCollection {
 		}
 		let forumCount = try await countQuery.count()
 		let orderDirection = req.orderDirection()
-		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
+		let forumQuery = countQuery.copy().range(pagination.range).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
 		case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
 		case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
@@ -497,7 +499,10 @@ struct ForumController: APIRouteCollection {
 		}
 		async let forums = try forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser, forceIsMuted: true)
-		return ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
+		return ForumSearchData(
+			paginator: Paginator(total: forumCount, start: pagination.start, limit: pagination.limit),
+			forumThreads: forumList
+		)
 	}
 
 	/// `GET /api/v3/forum/unread`
@@ -514,8 +519,7 @@ struct ForumController: APIRouteCollection {
 	/// - Returns: A `ForumSearchData` containing the user's muted forums.
 	func unreadHandler(_ req: Request) async throws -> ForumSearchData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let start = (req.query[Int.self, at: "start"] ?? 0)
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
+		let pagination = Pagination(on: req, maxPageSize: Settings.shared.maximumForums)
 		// https://github.com/jocosocial/swiftarr/issues/217
 		// Lots of swearing, source code reading, and AI hallucinations went into the crafting of this
 		// join. Unfortunately we can't do:
@@ -544,7 +548,7 @@ struct ForumController: APIRouteCollection {
 		}
 		let forumCount = try await countQuery.count()
 		let orderDirection = req.orderDirection()
-		let forumQuery = countQuery.copy().range(start..<(start + limit)).join(child: \.$scheduleEvent, method: .left)
+		let forumQuery = countQuery.copy().range(pagination.range).join(child: \.$scheduleEvent, method: .left)
 		switch req.query[String.self, at: "sort"] {
 		case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
 		case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
@@ -552,7 +556,10 @@ struct ForumController: APIRouteCollection {
 		}
 		let forums = try await forumQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser)
-		return ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
+		return ForumSearchData(
+			paginator: Paginator(total: forumCount, start: pagination.start, limit: pagination.limit),
+			forumThreads: forumList
+		)
 	}
 
 	/// `GET /api/v3/forum/recent`
@@ -566,19 +573,21 @@ struct ForumController: APIRouteCollection {
 	/// - Returns: A `ForumSearchData` containing the user's favorited forums.
 	func recentsHandler(_ req: Request) async throws -> ForumSearchData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let start = (req.query[Int.self, at: "start"] ?? 0)
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForums)
+		let pagination = Pagination(on: req, maxPageSize: Settings.shared.maximumForums)
 		let countQuery = Forum.query(on: req.db).filter(\.$creator.$id !~ cacheUser.getBlocks())
 				.categoryAccessFilter(for: cacheUser)
 				.join(ForumReaders.self, on: \Forum.$id == \ForumReaders.$forum.$id)
 				.filter(ForumReaders.self, \.$user.$id == cacheUser.userID)
 		let forumCount = try await countQuery.count()
-		let rangeQuery = countQuery.copy().range(start..<(start + limit))
+		let rangeQuery = countQuery.copy().range(pagination.range)
 				.sort(ForumReaders.self, \.$updatedAt, .descending)
 				.join(child: \.$scheduleEvent, method: .left)
 		let forums = try await rangeQuery.all()
 		let forumList = try await buildForumListData(forums, on: req, user: cacheUser, forceIsFavorite: false)
-		return ForumSearchData(paginator: Paginator(total: forumCount, start: start, limit: limit), forumThreads: forumList)
+		return ForumSearchData(
+			paginator: Paginator(total: forumCount, start: pagination.start, limit: pagination.limit),
+			forumThreads: forumList
+		)
 	}
 
 	// MARK: Returns Posts
@@ -710,10 +719,15 @@ struct ForumController: APIRouteCollection {
 			groupedReactions[postReaction.emoji, default: []].append(postReaction.$user.id)
 		}
 		let reactions = groupedReactions.keys.sorted().map { emoji in
-			ReactionData(emoji: emoji, users: req.userCache.getHeaders(groupedReactions[emoji] ?? []))
+			ReactionData(reaction: emoji, users: req.userCache.getHeaders(groupedReactions[emoji] ?? []))
 		}
-		// init return struct
-		var postDetailData = try PostDetailData(post: post, author: req.userCache.getHeader(post.$author.id))
+		// init return struct. Editors (moderators) see the real text/images of quarantined posts so
+		// that editing one preserves its images instead of wiping them; matches ModerationController.
+		var postDetailData = try PostDetailData(
+			post: post,
+			author: req.userCache.getHeader(post.$author.id),
+			overrideQuarantine: cacheUser.accessLevel.canEditOthersContent()
+		)
 		postDetailData.isBookmarked = isFavorite
 		postDetailData.userLike = ReactionData.legacyLikeType(in: reactions, for: cacheUser.userID)
 		postDetailData.laughs = ReactionData.users(in: reactions, for: .laugh)
@@ -752,8 +766,7 @@ struct ForumController: APIRouteCollection {
 	func postSearchHandler(_ req: Request) async throws -> PostSearchData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		var postFilterMentions: String? = nil
-		let start = (req.query[Int.self, at: "start"] ?? 0)
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumForumPosts)
+		let pagination = Pagination(on: req, maxPageSize: Settings.shared.maximumForumPosts)
 		// Start building a query.
 		// Note: categoryAccessFilter() joins the post's forum and category, but other filters (below) may require the join as well.
 		var query = ForumPost.query(on: req.db).filter(\.$author.$id !~ cacheUser.getBlocks())
@@ -800,19 +813,14 @@ struct ForumController: APIRouteCollection {
 		}
 
 		if var searchStr = req.query[String.self, at: "search"] {
-			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
-				.replacingOccurrences(of: "%", with: "\\%")
-				.trimmingCharacters(in: .whitespacesAndNewlines)
+			searchStr = searchStr.escapedForSQLWildcards()
 			query.fullTextFilter(\.$text, searchStr)
-			if !searchStr.contains(" ") && start == 0 {
+			if !searchStr.contains(" ") && pagination.start == 0 {
 				try await markNotificationViewed(user: cacheUser, type: .alertwordPost(searchStr, 0), on: req)
 			}
 		}
 		if var hashtag = req.query[String.self, at: "hashtag"] {
-			// postgres "_" and "%" are wildcards, so escape for literals
-			hashtag = hashtag.replacingOccurrences(of: "_", with: "\\_")
-				.replacingOccurrences(of: "%", with: "\\%")
-				.trimmingCharacters(in: .whitespacesAndNewlines)
+			hashtag = hashtag.escapedForSQLWildcards()
 			if !hashtag.hasPrefix("#") {
 				hashtag = "#\(hashtag)"
 			}
@@ -850,7 +858,7 @@ struct ForumController: APIRouteCollection {
 		let countQuery = query.copy()
 		let rangeQuery = query.copy()
 		let totalPostsFound = try await countQuery.count()
-		let posts = try await rangeQuery.range(start..<(start + limit)).all()
+		let posts = try await rangeQuery.range(pagination.range).all()
 		// The filter() for mentions will include usernames that are prefixes for other usernames and other false positives.
 		// This filters those out after the query.
 		var postFilteredPosts = posts
@@ -862,7 +870,7 @@ struct ForumController: APIRouteCollection {
 		}
 		let postData = try await buildPostData(postFilteredPosts, userID: cacheUser.userID, on: req, mutewords: cacheUser.mutewords)
 		return PostSearchData(queryString: req.url.query ?? "", posts: postData,
-				paginator: Paginator(total: totalPostsFound, start: start, limit: limit))
+				paginator: Paginator(total: totalPostsFound, start: pagination.start, limit: pagination.limit))
 	}
 
 	// MARK: POST and DELETE actions
@@ -1348,13 +1356,11 @@ struct ForumController: APIRouteCollection {
 		return try await postReactHandler(req, emoji: ReactionData.legacyEmoji(for: .love), replaceLegacyReaction: true)
 	}
 
-	/// `POST /api/v3/forum/post/ID/react/:emoji`
+	/// `POST /api/v3/forum/post/ID/react`
 	///
-	/// Adds the specified emoji reaction to the post. This endpoint is idempotent.
+	/// Adds the `PostReactionData` reaction to the post. This endpoint is idempotent.
 	func postReactHandler(_ req: Request) async throws -> PostData {
-		guard let emoji = req.parameters.get("emoji"), !emoji.isEmpty else {
-			throw Abort(.badRequest, reason: "emoji path parameter is required")
-		}
+		let emoji = try req.content.decode(PostReactionData.self).validatedReaction()
 		return try await postReactHandler(req, emoji: emoji, replaceLegacyReaction: false)
 	}
 
@@ -1393,12 +1399,13 @@ struct ForumController: APIRouteCollection {
 		return postDataArray[0]
 	}
 
-	/// `DELETE /api/v3/forum/post/ID/react/:emoji`
+	/// `POST /api/v3/forum/post/ID/unreact`
 	///
-	/// Removes the specified emoji reaction from the post.
+	/// Removes the `PostReactionData` reaction from the post. A missing body preserves the legacy
+	/// behavior of removing the current user's like/love/laugh reaction.
 	func postUnreactHandler(_ req: Request) async throws -> PostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let maybeEmoji = req.parameters.get("emoji")
+		let maybeEmoji = try? req.content.decode(PostReactionData.self).validatedReaction()
 		// get post and forum
 		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
 			query.with(\.$forum) { forum in
@@ -1762,7 +1769,7 @@ extension ForumController {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		var readerPivot = try await forum.$readers.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
 			.first()
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 1...Settings.shared.maximumForumPosts)
+		let requestedPagination = Pagination(on: req, maxPageSize: Settings.shared.maximumForumPosts)
 		let query = forum.$posts.query(on: req.db)
 			.filter(\.$author.$id !~ cacheUser.getBlocks())
 			.filter(\.$author.$id !~ cacheUser.getMutes())
@@ -1770,24 +1777,26 @@ extension ForumController {
 		let postCount = try await query.count()
 
 		// Determine the start offset into the posts array.
-		var start = 0
-		if let startParam = req.query[Int.self, at: "start"] {
-			start = max(startParam, 0)
-		}
-		else if let startPostIDParam = req.query[Int.self, at: "startPost"] {
+		var start = requestedPagination.start
+		if req.query[Int.self, at: "start"] == nil, let startPostIDParam = req.query[Int.self, at: "startPost"] {
 			start = try await forum.$posts.query(on: req.db).filter(\.$id < startPostIDParam)
 				.filter(\.$author.$id !~ cacheUser.getBlocks()).filter(\.$author.$id !~ cacheUser.getMutes()).count()
 		}
-		else if let directStartPostID = startPostID {
+		else if req.query[Int.self, at: "start"] == nil, let directStartPostID = startPostID {
 			start = try await forum.$posts.query(on: req.db).filter(\.$id < directStartPostID)
 				.filter(\.$author.$id !~ cacheUser.getBlocks()).filter(\.$author.$id !~ cacheUser.getMutes()).count()
 		}
-		else if let lastReadPost = readerPivot?.lastPostReadID {
+		else if req.query[Int.self, at: "start"] == nil, let lastReadPost = readerPivot?.lastPostReadID {
 			start = try await forum.$posts.query(on: req.db).filter(\.$id < lastReadPost)
 				.filter(\.$author.$id !~ cacheUser.getBlocks()).filter(\.$author.$id !~ cacheUser.getMutes()).count()
-			start = max((start / limit) * limit, 0)
+			start = max((start / requestedPagination.limit) * requestedPagination.limit, 0)
 		}
-		let posts = try await query.range(start...start + max(limit - 1, 0)).all()
+		let pagination = Pagination(
+			start: start,
+			limit: requestedPagination.limit,
+			maxPageSize: Settings.shared.maximumForumPosts
+		)
+		let posts = try await query.range(pagination.range).all()
 		if let lastPostID = posts.last?.id {
 			if readerPivot == nil {
 				readerPivot = try ForumReaders(cacheUser.userID, forum)
@@ -1804,7 +1813,7 @@ extension ForumController {
 			mutewords: cacheUser.mutewords
 		)
 		let creatorHeader = try req.userCache.getHeader(forum.$creator.id)
-		let pager = Paginator(total: postCount, start: start, limit: limit)
+		let pager = Paginator(total: postCount, start: pagination.start, limit: pagination.limit)
 		// For event forums
 		var event: Event? = nil
 		if forum.category.isEventCategory {
@@ -1862,7 +1871,7 @@ extension ForumController {
 			let author = try req.userCache.getHeader(post.$author.id)
 			let bookmarked = assumeBookmarked ?? userLikeDict[postID]?.isFavorite ?? false
 			let reactions = (postReactionMap[postID] ?? [:]).keys.sorted().map { emoji in
-				ReactionData(emoji: emoji, users: req.userCache.getHeaders(postReactionMap[postID]?[emoji] ?? []))
+				ReactionData(reaction: emoji, users: req.userCache.getHeaders(postReactionMap[postID]?[emoji] ?? []))
 			}
 			let userLike = ReactionData.legacyLikeType(in: reactions, for: userID)
 			let likeCount = ReactionData.legacyLikeCount(in: reactions)

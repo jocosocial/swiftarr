@@ -23,6 +23,7 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 		case "alertWordDelete":
 		case "muteWordDelete":
 		case "redirect":
+		case "showSuccess":
 			btn.addEventListener("click", spinnerButtonAction);
 			break;
 		case "delete": btn.addEventListener("click", deleteAction); break;
@@ -35,6 +36,10 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 			dropdownButtonSetup(btn);
 			btn.addEventListener("click", fezFilterDropdownTappedAction);
 			break;
+		case "filterPhotographerReportDay":
+			dropdownButtonSetup(btn);
+			btn.addEventListener("click", photographerReportDayFilterTappedAction);
+			break;
 		case "sortForumDirection":
 			dropdownButtonSetup(btn);
 			btn.addEventListener("click", forumSortDirectionDropdownTappedAction);
@@ -45,7 +50,50 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 				btn.classList.remove("d-none");
 			}
 			break;
+		case "copyLink":
+			if (window.isSecureContext) {
+				btn.addEventListener("click", copyLinkToClipboard);
+				btn.classList.remove("d-none");
+			}
+			break;
+		case "addQuartermasterRow":
+			btn.addEventListener("click", addQuartermasterRowAction);
+			break;
 	}
+}
+
+// Add or remove an emoji reaction entered beside a Fez post. Reactions use a JSON body so
+// Unicode and custom emoji tokens never need to be encoded in a URL path.
+for (let button of document.querySelectorAll('[data-reaction-action]')) {
+	button.addEventListener("click", async event => {
+		event.stopPropagation();
+		let post = button.closest('[data-postid]');
+		let input = post?.querySelector('[data-reaction-input]');
+		let reaction = input?.value.trim();
+		if (!reaction) {
+			input?.focus();
+			return;
+		}
+		button.disabled = true;
+		try {
+			let response = await fetch(button.dataset.reactionpath, {
+				method: "POST",
+				headers: {"Content-Type": "application/json"},
+				body: JSON.stringify({reaction}),
+			});
+			if (!response.ok) {
+				let error = await response.json();
+				throw new Error(error.reason);
+			}
+			location.reload();
+		}
+		catch (error) {
+			alert(error.message ?? "Could not update reaction");
+		}
+		finally {
+			button.disabled = false;
+		}
+	});
 }
 
 // Updates button state for buttons that perform a data-action
@@ -152,6 +200,16 @@ async function spinnerButtonAction() {
 				case "unmute": acknowledgeRemovalAction(tappedButton, "unmuted"); break;
 				case "alertWordDelete": acknowledgeRemovalAction(tappedButton, "removed"); break;
 				case "muteWordDelete": acknowledgeRemovalAction(tappedButton, "removed"); break;
+				case "showSuccess":
+					document.getElementById(tappedButton.dataset.successdiv)?.classList.remove("d-none");
+					if (tappedButton.dataset.statustarget) {
+						let statusElem = document.getElementById(tappedButton.dataset.statustarget);
+						if (statusElem) {
+							statusElem.innerText = tappedButton.dataset.statusvalue ?? "";
+						}
+					}
+					tappedButton.classList.add("d-none");
+					break;
 			}
 		}
 		else {
@@ -299,6 +357,106 @@ function copyToClipboard() {
 	navigator.clipboard.writeText(contents);
 	event.target.innerHTML="Copied";
 }
+
+// Copies a full, shareable link built from the current origin plus a relative path
+// (data-copy-path), e.g. a permalink to a single Quartermaster item. Stops propagation so this
+// doesn't also trigger an enclosing `.has-action-bar`'s click handler, which would otherwise
+// collapse the action bar the button lives in right after the copy.
+function copyLinkToClipboard() {
+	event.stopPropagation();
+	let url = window.location.origin + event.target.dataset.copyPath;
+	navigator.clipboard.writeText(url);
+	event.target.innerHTML = "Copied";
+}
+
+// MARK: - Quartermaster Add Item(s) form
+
+// Each row's three fields need names unique to their position (itemName0/itemDescription0/itemImage0,
+// itemName1/..., ...) -- Vapor's multipart decoder can't collect repeated same-named parts into an
+// array the way a plain form-urlencoded body can, and mixing an array field into the same keyed
+// container as several sibling Optional fields corrupts decoding of the array field too (see
+// QuartermasterFormContent's doc comment), so the server expects discrete per-slot fields for all
+// three instead. Rows can be added/removed after page load, so this renumbers every row's fields by
+// current DOM position whenever the row list changes, keeping names contiguous.
+function renumberQmRowInputs() {
+	document.querySelectorAll("#itemRows .qm-item-row").forEach(function (row, index) {
+		let nameInput = row.querySelector(".qm-item-name");
+		let descInput = row.querySelector(".qm-item-description");
+		let fileInput = row.querySelector(".qm-item-image");
+		if (nameInput) { nameInput.name = "itemName" + index; }
+		if (descInput) { descInput.name = "itemDescription" + index; }
+		if (fileInput) { fileInput.name = "itemImage" + index; }
+	});
+}
+renumberQmRowInputs();
+
+// Clones the row <template> into the rows container, up to data-max rows. Button lookups happen by
+// ID (data-container, data-template) so this works regardless of how many rows already exist.
+function addQuartermasterRowAction() {
+	let btn = event.currentTarget;
+	let container = document.getElementById(btn.dataset.container);
+	let template = document.getElementById(btn.dataset.template);
+	let max = parseInt(btn.dataset.max || "10", 10);
+	if (!container || !template) { return; }
+	if (container.children.length >= max) { return; }
+	container.appendChild(template.content.cloneNode(true));
+	renumberQmRowInputs();
+	if (container.children.length >= max) {
+		btn.disabled = true;
+	}
+}
+
+// Delegated listener for the per-row Remove buttons, since rows can be added after page load.
+// Keeps at least one row -- there's always something to submit.
+document.addEventListener("click", function (event) {
+	let removeBtn = event.target.closest(".qm-remove-row");
+	if (!removeBtn) { return; }
+	let row = removeBtn.closest(".qm-item-row");
+	let container = row?.parentElement;
+	if (!row || !container || container.children.length <= 1) { return; }
+	row.remove();
+	renumberQmRowInputs();
+	document.getElementById("qmAddRowBtn")?.removeAttribute("disabled");
+});
+
+// Shows/hides a Quartermaster item row's photo preview based on its current state: a newly-chosen
+// file wins, then the existing server-side image (unless "Remove photo" is checked), then nothing.
+function updateQmImagePreview(row) {
+	let fileInput = row?.querySelector(".qm-item-image");
+	let img = row?.querySelector(".qm-item-image-preview");
+	if (!fileInput || !img) { return; }
+	let removeCheckbox = row.querySelector(".qm-remove-item-image");
+	let currentImageInput = row.querySelector(".qm-current-item-image");
+	if (fileInput.files.length > 0) {
+		img.src = window.URL.createObjectURL(fileInput.files[0]);
+		img.classList.remove("d-none");
+		if (removeCheckbox) { removeCheckbox.checked = false; }
+	}
+	else if (currentImageInput?.value && !removeCheckbox?.checked) {
+		img.src = "/api/v3/image/thumb/" + currentImageInput.value;
+		img.classList.remove("d-none");
+	}
+	else {
+		img.src = "";
+		img.classList.add("d-none");
+	}
+}
+
+// Delegated listeners for per-row image controls -- rows can be added after page load, and both
+// `change` events bubble, so delegation covers rows added later without extra rebinding.
+document.addEventListener("change", function (event) {
+	if (event.target.matches(".qm-item-image") || event.target.matches(".qm-remove-item-image")) {
+		updateQmImagePreview(event.target.closest(".qm-item-row"));
+	}
+});
+document.addEventListener("click", function (event) {
+	let clearBtn = event.target.closest(".qm-item-image-clear");
+	if (!clearBtn) { return; }
+	let row = clearBtn.closest(".qm-item-row");
+	let fileInput = row?.querySelector(".qm-item-image");
+	if (fileInput) { fileInput.value = null; }
+	updateQmImagePreview(row);
+});
 
 // MARK: - messagePostForm Handlers
 
@@ -466,19 +624,43 @@ async function submitAJAXForm(formElement, event) {
 	if (!formElement.classList.contains('ajax')) {
 		return;
 	}
-	let spinnerElem = formElement.querySelector(".spinner-border");
+	let submitter = event.submitter;
+	let spinnerElem = submitter?.querySelector(".spinner-border") ?? formElement.querySelector(".spinner-border");
 	event.preventDefault();
 	try {
 		spinnerElem?.classList.remove("d-none");
 		var uploadBody = new FormData(formElement);
+		if (submitter?.name) {
+			uploadBody.append(submitter.name, submitter.value);
+		}
 		if (formElement.classList.contains('fileupload')) {
 			uploadBody = formElement.querySelector('input[type=file]').files[0];
 		}
+		else if (!formElement.querySelector('input[type=file]')) {
+			// For forms without file inputs, use URL-encoded instead of multipart/form-data
+			// to avoid MultipartKit parsing issues with simple text/checkbox forms.
+			uploadBody = new URLSearchParams(uploadBody);
+		}
+		formElement.querySelector('.alert-danger')?.classList.add("d-none");
+		formElement.querySelector('.alert-success')?.classList.add("d-none");
 		let response = await fetch(formElement.action, { method: 'POST', body: uploadBody });
 		if (response.status < 300) {
 			let successURL = formElement.dataset.successurl;
 			if (!successURL) {
 				location.reload();
+				return;
+			}
+			if (successURL == "message") {
+				let data = await response.json();
+				let successAlert = formElement.querySelector('.alert-success');
+				let field = formElement.dataset.successfield;
+				let valueElem = successAlert?.querySelector("[data-success-value]");
+				if (successAlert && valueElem && field && data[field] != null) {
+					valueElem.textContent = data[field];
+					successAlert.classList.remove("d-none");
+				}
+				formElement.reset();
+				spinnerElem?.classList.add("d-none");
 				return;
 			}
 			formElement.reset();
@@ -696,6 +878,24 @@ function applyFezSearchFilters() {
 	window.location.href = window.location.href.split("?")[0] + queryString;
 }
 
+function photographerReportDayFilterTappedAction(event) {
+	updateDropdownButton(event.target);
+	applyPhotographerReportDayFilter();
+}
+
+function applyPhotographerReportDayFilter() {
+	let url = new URL(window.location.href);
+	url.searchParams.delete("start");
+	url.searchParams.delete("limit");
+	let daySelection = document.getElementById("photographerReportDayFilterMenu").dataset.selected;
+	if (daySelection == "all") {
+		url.searchParams.delete("cruiseday");
+	} else {
+		url.searchParams.set("cruiseday", daySelection);
+	}
+	window.location.href = url.toString();
+}
+
 // MARK: - Forum Handlers
 
 function forumSortDirectionDropdownTappedAction(event) {
@@ -736,6 +936,7 @@ userSearch?.addEventListener('input', function (event) {
 				for (user of userHeaders) {
 					let listItem = document.getElementById('potentialMemberTemplate').content.firstElementChild.cloneNode(true);
 					listItem.dataset.userid = user.userID;
+					listItem.dataset.username = user.username;
 					listItem.querySelector('.username-here').innerHTML = ["@", user.username, " <b>", user.displayName, "</b>"].join('');
 					suggestionDiv.append(listItem);
 					let checkbox = listItem.querySelector('.btn-check');

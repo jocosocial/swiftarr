@@ -11,6 +11,10 @@ struct SiteSeamailController: SiteControllerUtils {
 		var paginator: PaginatorContext
 		var query: SeamailQueryOptions
 		var queryDescription: String
+		var unreadFilterURL: String?
+		var unreadFilterActive: Bool
+		var favoriteFilterURL: String?
+		var favoriteFilterActive: Bool
 
 		init(_ req: Request, fezList: FezListData, fezzes: [FezData]) throws {
 			effectiveUser = req.query[String.self, at: "foruser"]
@@ -22,6 +26,10 @@ struct SiteSeamailController: SiteControllerUtils {
 			let searchQuery = try req.query.decode(SeamailQueryOptions.self)
 			query = searchQuery
 			queryDescription = query.describeQuery()
+			unreadFilterActive = searchQuery.onlynew == true
+			favoriteFilterActive = searchQuery.favorite == true
+			unreadFilterURL = searchQuery.toggling(onlynew: true, baseURL: "/seamail")
+			favoriteFilterURL = searchQuery.toggling(favorite: true, baseURL: "/seamail")
 			if query.search != nil {
 				paginator = .init(fezList.paginator) { pageIndex in
 					// "/seamail/search?start=\(pageIndex * limit)&limit=\(limit)"
@@ -41,9 +49,10 @@ struct SiteSeamailController: SiteControllerUtils {
 		var start: Int?
 		var limit: Int?
 		var onlynew: Bool?
-		
+		var favorite: Bool?
+
 		func describeQuery() -> String {
-			return "\(onlynew == true ? "New " : "")Seamail\(search != nil ? " containing \"\(search!)\"" : "")"
+			return "\(onlynew == true ? "New " : "")\(favorite == true ? "Favorite " : "")Seamail\(search != nil ? " containing \"\(search!)\"" : "")"
 		}
 
 		// Builds a new URL given the saved query options plus the given baseURL and startOffset. Used
@@ -60,9 +69,20 @@ struct SiteSeamailController: SiteControllerUtils {
 			if newOffset != 0 { elements.append(URLQueryItem(name: "start", value: String(newOffset))) }
 			if let limit = limit { elements.append(URLQueryItem(name: "limit", value: String(limit))) }
 			if let onlynew = onlynew { elements.append(URLQueryItem(name: "onlynew", value: String(onlynew))) }
+			if let favorite = favorite { elements.append(URLQueryItem(name: "favorite", value: String(favorite))) }
 
 			components.queryItems = elements
 			return components.string
+		}
+
+		// Builds the URL for a filter toggle button: flips the given flag (onlynew/favorite) while
+		// preserving the other query options, and clears pagination since the result set changes.
+		func toggling(onlynew toggleOnlynew: Bool = false, favorite toggleFavorite: Bool = false, baseURL: String) -> String? {
+			var newOptions = self
+			newOptions.start = 0
+			if toggleOnlynew { newOptions.onlynew = (onlynew == true) ? nil : true }
+			if toggleFavorite { newOptions.favorite = (favorite == true) ? nil : true }
+			return newOptions.buildQuery(baseURL: baseURL, startOffset: 0)
 		}
 	}
 
@@ -91,8 +111,11 @@ struct SiteSeamailController: SiteControllerUtils {
 		privateRoutes.post("seamail", "create", use: seamailCreatePostHandler)
 		privateRoutes.post("seamail", fezIDParam, use: seamailViewPageHandler)
 		privateRoutes.post("seamail", fezIDParam, "post", use: seamailThreadPostHandler)
+		privateRoutes.post("seamail", fezIDParam, "markRead", use: seamailMarkReadPostHandler)
 		privateRoutes.post("seamail", fezIDParam, "mute", use: seamailAddMutePostHandler)
 		privateRoutes.delete("seamail", fezIDParam, "mute", use: seamailRemoveMutePostHandler)
+		privateRoutes.post("seamail", fezIDParam, "favorite", use: seamailAddFavoritePostHandler)
+		privateRoutes.delete("seamail", fezIDParam, "favorite", use: seamailRemoveFavoritePostHandler)
 		privateRoutes.get("seamail", fezIDParam, "edit", use: seamailEditViewHandler)
 		privateRoutes.post("seamail", fezIDParam, "edit", use: seamailEditHandler)
 		privateRoutes.webSocket("seamail", fezIDParam, "socket", shouldUpgrade: shouldCreateMsgSocket, onUpgrade: createMsgSocket)
@@ -138,6 +161,7 @@ struct SiteSeamailController: SiteControllerUtils {
 	//
 	// Query Parameters:
 	// * `?withuser=UUID` - prefills the participant list with the given user. Currently can only be applied once.
+	// * `?withsubject=STRING` - prefills the subject line.
 	//
 	// Shows the Create New Seamail page. This page lets you add users to the chat, and give the chat a subject and initial message.
 	func seamailCreatePageHandler(_ req: Request) async throws -> View {
@@ -151,10 +175,12 @@ struct SiteSeamailController: SiteControllerUtils {
 			var trunk: TrunkContext
 			var post: MessagePostContext
 			var withUser: UserHeader?
+			var withSubject: String
 
 			init(_ req: Request, withUser: UserHeader?) throws {
 				trunk = .init(req, title: "New Seamail", tab: .seamail)
 				self.withUser = withUser
+				withSubject = req.query[String.self, at: "withsubject"] ?? ""
 				post = .init(forType: .seamail)
 			}
 		}
@@ -169,7 +195,11 @@ struct SiteSeamailController: SiteControllerUtils {
 		guard let searchString = req.parameters.get("searchString")?.percentEncodeFilePathEntry() else {
 			throw "Missing search string"
 		}
-		let response = try await apiQuery(req, endpoint: "/users/match/allnames/\(searchString)")
+		let response = try await apiQuery(
+			req,
+			endpoint: "/users/match/allnames/\(searchString)",
+			query: [URLQueryItem(name: "sort", value: "favorites")]
+		)
 		return try await response.encodeResponse(for: req)
 	}
 
@@ -392,6 +422,18 @@ struct SiteSeamailController: SiteControllerUtils {
 		return .created
 	}
 
+	// POST /seamail/:seamail_ID/markRead
+	//
+	// Marks a seamail as read for the current user. Used by the live-message websocket JS to clear
+	// unread state for posts that were already rendered into the page live.
+	func seamailMarkReadPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id parameter.")
+		}
+		let response = try await apiQuery(req, endpoint: "/fez/\(fezID)/markRead", method: .POST)
+		return response.status
+	}
+
 	// POST /seamail/mute/:seamail_ID
 	//
 	// Adds a seamail to the user's mute list.
@@ -411,6 +453,28 @@ struct SiteSeamailController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Missing fez_id parameter.")
 		}
 		try await apiQuery(req, endpoint: "/fez/\(fezID)/mute/remove", method: .POST)
+		return .noContent
+	}
+
+	// POST /seamail/:seamail_ID/favorite
+	//
+	// Adds a seamail to the user's favorites list.
+	func seamailAddFavoritePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id parameter.")
+		}
+		try await apiQuery(req, endpoint: "/fez/\(fezID)/favorite", method: .POST)
+		return .created
+	}
+
+	// DELETE /seamail/:seamail_ID/favorite
+	//
+	// Removes a seamail from the user's favorites list.
+	func seamailRemoveFavoritePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id parameter.")
+		}
+		try await apiQuery(req, endpoint: "/fez/\(fezID)/favorite/remove", method: .POST)
 		return .noContent
 	}
 

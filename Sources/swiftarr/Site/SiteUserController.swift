@@ -77,6 +77,7 @@ struct SiteUserController: SiteControllerUtils {
 		// redirect-chained through /login and back.
 		let globalRoutes = getGlobalRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .users))
 		globalRoutes.get("user", userIDParam, use: userProfilePageHandler).destination("the user profile for this user")
+		globalRoutes.get("user", userIDParam, "vcard", use: userVCardHandler)
 		globalRoutes.get("username", ":username", use: usernameProfilePageHandler)
 			.destination("the user profile for this user")
 		globalRoutes.get("profile", ":username", use: usernameProfilePageHandler)
@@ -118,9 +119,9 @@ struct SiteUserController: SiteControllerUtils {
 
 		// User Role Management, which for now means Shutternaut management
 		// These paths may well change to take the role as a parameter and become generic Role mgmt methods.
-		privateRoutes.get("userrole", "shutternaut", "manage", use: getShutternautsHandler)
-		privateRoutes.post("userrole", "shutternaut", "add", userIDParam, use: addShutternautHandler)
-		privateRoutes.post("userrole", "shutternaut", "remove", userIDParam, use: removeShutternautHandler)
+		privateRoutes.get("userrole", "shutternaut", "manage", use: getShutternautsHandler).setUsedForPreregistration()
+		privateRoutes.post("userrole", "shutternaut", "add", userIDParam, use: addShutternautHandler).setUsedForPreregistration()
+		privateRoutes.post("userrole", "shutternaut", "remove", userIDParam, use: removeShutternautHandler).setUsedForPreregistration()
 	}
 
 	/// GET /avatar/full/ID
@@ -190,6 +191,17 @@ struct SiteUserController: SiteControllerUtils {
 		let profile = try response.content.decode(ProfilePublicData.self)
 		let ctx = try PublicProfileContext(req, profile: profile)
 		return try await req.view.render("User/userProfile", ctx)
+	}
+
+	// GET /user/:user_id/vcard
+	//
+	// Downloads a vCard for the given user. Proxies the API so the session cookie is used
+	// instead of requiring a bearer token from the browser.
+	func userVCardHandler(_ req: Request) async throws -> Response {
+		guard let userID = req.parameters.get(userIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw "Invalid user ID"
+		}
+		return try await apiQuery(req, endpoint: "/users/\(userID)/vcard").encodeResponse(for: req)
 	}
 
 	// GET /user/STRING
@@ -591,7 +603,7 @@ struct SiteUserController: SiteControllerUtils {
 			var searchResults: [UserHeader]?
 
 			init(_ req: Request, currentMgrs: [UserHeader], searchStr: String, searchResults: [UserHeader]?) throws {
-				trunk = .init(req, title: "Karaoke Managers", tab: .admin)
+				trunk = .init(req, title: "Shutternauts", tab: .admin)
 				self.currentMgrs = currentMgrs
 				self.userSearch = searchStr
 				self.searchResults = searchResults

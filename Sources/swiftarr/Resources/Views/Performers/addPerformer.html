@@ -34,6 +34,23 @@
 						</div>
 					</div>
 				</form>
+				<form action="/admin/performer/add">
+					<div class="card mb-2">	
+						<div class="card-header bg-primary">
+							<span class="text-white">
+								Autofill from Performer's page on sched.com:
+							</span>
+						</div>
+						<div class="card-body bg-light">
+							<input type="text" class="form-control" id="schedurl" name="schedurl" aria-describedby="schedurlhelp" placeholder="sched.com URL">
+							<div id="schedurlhelp" class="form-text">
+							</div>
+							<div class="col col-auto">
+								<button type="submit" class="btn btn-primary">Fill Form<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+							</div>
+						</div>
+					</div>
+				</form>
 			#else:
 				<p>This form is for TwitarrTeam and above to edit the bio page for an shadow event organizer. This form does not attach
 					the performer to any events (Users need to do that themselves).</p>
@@ -54,6 +71,21 @@
 						</div>
 					</div>
 				</div>
+				#if(performer.header.isOfficialPerformer):
+				<div class="row mt-4">
+    				<div class="col">
+						<label for="alternativeNames" class="form-label">Alternative Names</label>
+						<input type="text" class="form-control" id="alternativeNames" name="alternativeNames"
+								aria-describedby="alternativeNamesHelp"
+								value="#for(altName in alternativeNames):#(altName)#if(!isLast):, #endif#endfor">
+    					<div id="alternativeNamesHelp" class="form-text">
+    						Comma-separated list of alternative names for matching this performer during bulk import.
+    						For example, if the performer's name is "Mollylele" but the spreadsheet lists them as "Molly Lewis",
+    						add "Molly Lewis" here.
+						</div>
+					</div>
+				</div>
+				#endif
 				<div class="row mt-4">
     				<div class="col">
 						<label for="name" class="form-label">Performer's' Pronouns</label>

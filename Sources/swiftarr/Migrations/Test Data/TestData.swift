@@ -10,10 +10,12 @@ struct CreateTestData: AsyncMigration {
 		try await createTestForumPosts(on: database)
 		try await createTestLargeForumPosts(on: database)
 		try await createTestLargeSeamailThread(on: database)
+		try await createTestQuartermasterItems(on: database)
 	}
 
 	func revert(on database: Database) async throws {
 		try await Twarrt.query(on: database).delete()
+		try await QuartermasterItem.query(on: database).delete()
 		guard let category = try await Category.query(on: database).filter(\.$title == "General").first() else {
 			throw Abort(.internalServerError, reason: "No category found.")
 		}
@@ -159,5 +161,54 @@ struct CreateTestData: AsyncMigration {
 		}
 		bigFez.postCount = 825
 		try await bigFez.save(on: database)
+	}
+
+	// Creates a handful of Quartermaster have/need items across the test users, so the Have/Need/Owned
+	// boards have something to look at without needing to add items by hand.
+	func createTestQuartermasterItems(on database: Database) async throws {
+		let users = try await User.query(on: database).filter(\.$username ~~ ["james", "heidi", "sam", "verified"])
+			.all()
+		let userByName = Dictionary(uniqueKeysWithValues: users.map { ($0.username, $0) })
+		guard let james = userByName["james"], let heidi = userByName["heidi"], let sam = userByName["sam"],
+			let verified = userByName["verified"]
+		else {
+			throw Abort(.internalServerError, reason: "Users for test Quartermaster items don't exist.")
+		}
+
+		let items = try [
+			QuartermasterItem(
+				ownerID: james.requireID(),
+				category: .have,
+				itemName: "Extra sunscreen",
+				itemDescription: "SPF 50, barely used.",
+				location: "Lido Pool Area, Deck 9, Midship"
+			),
+			QuartermasterItem(
+				ownerID: heidi.requireID(),
+				category: .need,
+				itemName: "Phone charger cable",
+				itemDescription: "USB-C, mine just died.",
+				location: "Ocean Bar, Deck 3, Midship"
+			),
+			QuartermasterItem(
+				ownerID: sam.requireID(),
+				category: .have,
+				itemName: "Formal night bow tie",
+				itemDescription: "Black, self-tie. Happy to lend for the evening."
+			),
+			QuartermasterItem(
+				ownerID: verified.requireID(),
+				category: .need,
+				itemName: "Seasickness bands",
+				location: "Explorer's Lounge, Deck 2, Aft",
+				hideOwnerName: true
+			),
+			QuartermasterItem(
+				ownerID: james.requireID(),
+				category: .need,
+				itemName: "Folding deck chair"
+			),
+		]
+		try await items.create(on: database)
 	}
 }

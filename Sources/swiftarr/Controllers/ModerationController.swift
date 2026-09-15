@@ -62,6 +62,15 @@ struct ModerationController: APIRouteCollection {
 			use: fezPostSetModerationStateHandler
 		)
 
+		moderatorAuthGroup.get("quartermaster", quartermasterIDParam, use: quartermasterModerationHandler)
+		moderatorAuthGroup.post(
+			"quartermaster",
+			quartermasterIDParam,
+			"setstate",
+			modStateParam,
+			use: quartermasterSetModerationStateHandler
+		)
+
 		moderatorAuthGroup.get("profile", userIDParam, use: profileModerationHandler)
 		moderatorAuthGroup.post(
 			"profile",
@@ -88,7 +97,8 @@ struct ModerationController: APIRouteCollection {
 		moderatorAuthGroup.delete("microkaraoke", "snippet", mkSnippetIDParam, use: deleteSnippet)
 		moderatorAuthGroup.post("microkaraoke", "approve", mkSongIDParam, use: approveSong)
 
-		moderatorAuthGroup.get("personalevent", personalEventIDParam, use: personalEventModerationHandler)
+		moderatorAuthGroup.get("personalevent", personalEventIDParam, use: privateEventModerationHandler)
+		moderatorAuthGroup.get("privateevent", personalEventIDParam, use: privateEventModerationHandler)
 	}
 
 	// MARK: - tokenAuthGroup Handlers (logged in)
@@ -185,13 +195,15 @@ struct ModerationController: APIRouteCollection {
 	/// - Throws: 403 error if the user is not an admin.
 	/// - Returns: An array of `ModeratorActionLogData` records.
 	func moderatorActionLogHandler(_ req: Request) async throws -> ModeratorActionLogResponseData {
-		let start = (req.query[Int.self, at: "start"] ?? 0)
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...200)
+		let pagination = Pagination(on: req, maxPageSize: 200)
 		let query = ModeratorAction.query(on: req.db)
 		let totalActionCount = try await query.count()
-		let result = try await query.copy().range(start..<(start + limit)).sort(\.$createdAt, .descending).all()
+		let result = try await query.copy().range(pagination.range).sort(\.$createdAt, .descending).all()
 				.map { try ModeratorActionLogData(action: $0, on: req) }
-		let response = ModeratorActionLogResponseData(actions: result, paginator: Paginator(total: totalActionCount, start: start, limit: limit))
+		let response = ModeratorActionLogResponseData(
+			actions: result,
+			paginator: Paginator(total: totalActionCount, start: pagination.start, limit: pagination.limit)
+		)
 		return response
 	}
 
@@ -426,7 +438,8 @@ struct ModerationController: APIRouteCollection {
 	/// `GET /api/v3/mod/fez/ID`
 	///
 	/// Moderator only. Returns info admins and moderators need to review a Fez. Works if fez has been deleted. Shows
-	/// fez's quarantine and reviewed states.
+	/// fez's quarantine and reviewed states. Covers LFGs specifically--Private Event reports surface via
+	/// `privateEventModerationHandler` instead, and Seamail chats aren't reportable at the container level at all.
 	///
 	/// The `FezModerationData` contains:
 	/// * The current fez contents, even if its deleted
@@ -450,7 +463,7 @@ struct ModerationController: APIRouteCollection {
 			.sort(\.$createdAt, .descending).all()
 		let edits = try await lfg.$edits.query(on: req.db).sort(\.$createdAt, .ascending).all()
 		let ownerHeader = try req.userCache.getHeader(lfg.$owner.id)
-		let fezData = try FezData(fez: lfg, owner: ownerHeader)
+		let fezData = try FezData(fez: lfg, owner: ownerHeader, overrideQuarantine: true)
 		let editData: [FezEditLogData] = try edits.map {
 			return try FezEditLogData($0, on: req)
 		}
@@ -552,6 +565,71 @@ struct ModerationController: APIRouteCollection {
 			on: req
 		)
 		try await lfgPost.save(on: req.db)
+		return .ok
+	}
+
+	/// `GET /api/v3/mod/quartermaster/ID`
+	///
+	/// Moderator only. Returns info admins and moderators need to review a Quartermaster item. Works if the item has been
+	/// deleted. Shows the item's quarantine and reviewed states.
+	///
+	/// The `QuartermasterModerationData` contains:
+	/// * The current item contents, even if deleted or quarantined (never masked, unlike the public API)
+	/// * Previous edits of the item
+	/// * Reports against the item
+	/// * The item's current deletion and moderation status.
+	///
+	/// - Parameter quartermasterID: in URL path.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `QuartermasterModerationData` containing a bunch of data pertinient to moderating the item.
+	func quartermasterModerationHandler(_ req: Request) async throws -> QuartermasterModerationData {
+		guard let itemIDString = req.parameters.get(quartermasterIDParam.paramString), let itemID = UUID(itemIDString) else {
+			throw Abort(.badRequest, reason: "Request parameter \(quartermasterIDParam.paramString) is missing.")
+		}
+		guard let item = try await QuartermasterItem.query(on: req.db).filter(\.$id == itemID).withDeleted().first() else {
+			throw Abort(.notFound, reason: "no value found for identifier '\(itemID)'")
+		}
+		let reports = try await Report.query(on: req.db)
+			.filter(\.$reportType == .quartermasterItem)
+			.filter(\.$reportedID == itemIDString)
+			.sort(\.$createdAt, .descending).all()
+		let edits = try await item.$edits.query(on: req.db).sort(\.$createdAt, .ascending).all()
+		let editData: [QuartermasterEditLogData] = try edits.map { try QuartermasterEditLogData($0, on: req) }
+		let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
+		let ownerHeader = try req.userCache.getHeader(item.$owner.id)
+		let itemData = try QuartermasterData(item: item, owner: ownerHeader, showOwner: true, overrideQuarantine: true)
+		let modData = QuartermasterModerationData(
+			item: itemData,
+			isDeleted: item.deletedAt != nil,
+			moderationStatus: item.moderationStatus,
+			edits: editData,
+			reports: reportData
+		)
+		return modData
+	}
+
+	/// `POST /api/v3/mod/quartermaster/ID/setstate/STRING`
+	///
+	/// Moderator only. Sets the moderation state enum on the Quartermaster item identified by ID to the `ContentModerationStatus`
+	/// in STRING. Logs the action to the moderator log unless the user owns the item.
+	///
+	/// - Parameter quartermasterID: in URL path.
+	/// - Parameter moderationState: in URL path. Value must match a `ContentModerationStatus` rawValue.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `HTTPStatus` .ok if the requested moderation status was set.
+	func quartermasterSetModerationStateHandler(_ req: Request) async throws -> HTTPStatus {
+		let user = try req.auth.require(UserCacheData.self)
+		guard let modState = req.parameters.get(modStateParam.paramString) else {
+			throw Abort(.badRequest, reason: "Request parameter `Moderation_State` is missing.")
+		}
+		let item = try await QuartermasterItem.findFromParameter(quartermasterIDParam, on: req)
+		try item.moderationStatus.setFromParameterString(modState)
+		await item.logIfModeratorAction(
+			ModeratorActionType.setFromModerationStatus(item.moderationStatus),
+			user: user,
+			on: req
+		)
+		try await item.save(on: req.db)
 		return .ok
 	}
 
@@ -908,9 +986,13 @@ struct ModerationController: APIRouteCollection {
 	// MARK: PersonalEvent
 
 	/// `GET /api/v3/mod/personalevent/:eventID`
+	/// `GET /api/v3/mod/privateevent/:eventID`
 	///
-	/// Return moderation data for a PersonalEvent.
-	func personalEventModerationHandler(_ req: Request) async throws -> PersonalEventModerationData {
+	/// Return moderation data for a Private Event or Personal Event. Only Private Events (events with other
+	/// participants) can actually be reported--see `FezController.reportFezHandler`--so a genuine solo Personal
+	/// Event will always show an empty `reports` array here. Both routes call this same handler; `personalevent`
+	/// is kept for compatibility, `privateevent` is the more accurate name going forward.
+	func privateEventModerationHandler(_ req: Request) async throws -> PersonalEventModerationData {
 		guard let eventID = req.parameters.get(personalEventIDParam.paramString, as: UUID.self) else {
 			throw Abort(.badRequest, reason: "Request parameter \(personalEventIDParam.paramString) is missing.")
 		}
@@ -918,7 +1000,7 @@ struct ModerationController: APIRouteCollection {
 			throw Abort(.notFound, reason: "no value found for identifier '\(eventID.uuidString)'")
 		}
 		let reports = try await Report.query(on: req.db)
-			.filter(\.$reportType == .personalEvent)
+			.filter(\.$reportType == .privateEvent)
 			.filter(\.$reportedID == eventID.uuidString)
 			.sort(\.$createdAt, .descending).all()
 

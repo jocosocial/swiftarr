@@ -65,6 +65,18 @@ public struct UserCacheData: Authenticatable, SessionAuthenticatable, Sendable {
 		return mutes ?? []
 	}
 
+	/// TwitarrTeam and above, or users granted the Account Manager role, may look up accounts by
+	/// registration code and re-enable one-time password recovery.
+	var canManageAccounts: Bool {
+		accessLevel.hasAccess(.twitarrteam) || userRoles.contains(.accountmanager)
+	}
+
+	func guardCanManageAccounts() throws {
+		guard canManageAccounts else {
+			throw Abort(.forbidden, reason: "Access is restricted to TwitarrTeam or Account Managers.")
+		}
+	}
+
 	func makeHeader() -> UserHeader {
 		return UserHeader(
 			userID: userID,

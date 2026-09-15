@@ -46,6 +46,7 @@ struct CreatePostLikesSchema: AsyncMigration {
 		try await database.schema("post+likes")
 			.id()
 			.unique(on: "user", "forumPost")
+			.field("liketype", .string)
 			.field("favorite", .bool, .required)
 			.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
 			.field("forumPost", .int, .required, .references("forumpost", "id", onDelete: .cascade))

@@ -153,14 +153,17 @@ struct PersonalEventController: APIRouteCollection {
 
 	/// `POST /api/v3/personalevents/:eventID/report`
 	///
-	/// Creates a `Report` regarding the specified `PersonalEvent`.
+	/// Creates a `Report` regarding the specified event. This only succeeds if the event is actually a shared
+	/// Private Event (has other participants), producing a `.privateEvent` report--a genuine solo Personal Event
+	/// can't be reported, since it's visible only to its owner and there's nobody else to report it.
 	///
 	/// - Note: The accompanying report message is optional on the part of the submitting user,
 	///   but the `ReportData` is mandatory in order to allow one. If there is no message,
 	///   send an empty string in the `.message` field.
 	///
-	/// - Parameter eventID: in URL path, the PersonalEvent ID to report.
+	/// - Parameter eventID: in URL path, the event ID to report.
 	/// - Parameter requestBody: `ReportData`
+	/// - Throws: 403 error if the event is a genuine solo Personal Event.
 	/// - Returns: 201 Created on success.
 	func personalEventReportHandler(_ req: Request) async throws -> HTTPStatus {
 		return try await FezController().reportFezHandler(req)

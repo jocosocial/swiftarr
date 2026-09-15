@@ -17,6 +17,7 @@ struct TrunkContext: Encodable {
 		// Under the Twitarr title
 		case home
 		case lfg
+		case quartermaster
 		case games
 		case karaoke
 		case moderator
@@ -34,11 +35,14 @@ struct TrunkContext: Encodable {
 	var userIsMod: Bool
 	var userIsTwitarrTeam: Bool
 	var userIsTHO: Bool
+	var userIsAdmin: Bool
+	var userCanManageAccounts: Bool
 	var userRoles: [String]  // Use "contains(trunk.userRoles, "shutternautmanager")" or similar to check
 	var minAccessLevel: String?  // Minimum access required to view Twitarr pages; Value from Settings.
 	var preregistrationMode: Bool  // Mirrors the value in Settings.
 	var preregistrationApplies: Bool  // TRUE if the current user is subject to Pre-Reg restrictions.
 	var pageIsForDisabledFeature: SwiftarrFeature?  // Middleware marked this request disabled for normal users but we're showing it to THO/admin
+	var showQuartermasterNav: Bool  // FALSE if the Quartermaster feature is disabled, unless the user is THO/admin (who can still reach the page).
 
 	var username: String
 	var userID: UUID
@@ -48,6 +52,9 @@ struct TrunkContext: Encodable {
 	var newTweetAlertwords: Bool
 	var newForumAlertwords: Bool
 
+	/// Theme preference: "auto" | "light" | "dark". Read from the swiftarr_theme cookie.
+	var theme: String
+
 	init(_ req: Request, title: String, tab: Tab) {
 		var userAccessLevel: UserAccessLevel = .banned  // Not logged in is equivalent to can't log in, for our purposes here
 		if let user = req.auth.get(UserCacheData.self) {
@@ -56,6 +63,8 @@ struct TrunkContext: Encodable {
 			userIsMod = userAccessLevel.hasAccess(.moderator)
 			userIsTwitarrTeam = userAccessLevel.hasAccess(.twitarrteam)
 			userIsTHO = userAccessLevel.hasAccess(.tho)
+			userIsAdmin = userAccessLevel.hasAccess(.admin)
+			userCanManageAccounts = user.canManageAccounts
 			username = user.username
 			userID = user.userID
 			userRoles = user.userRoles.map { $0.rawValue }
@@ -65,6 +74,8 @@ struct TrunkContext: Encodable {
 			userIsMod = false
 			userIsTwitarrTeam = false
 			userIsTHO = false
+			userIsAdmin = false
+			userCanManageAccounts = false
 			username = ""
 			userID = UUID()
 			userRoles = []
@@ -74,6 +85,9 @@ struct TrunkContext: Encodable {
 		preregistrationMode = Settings.shared.enablePreregistration
 		preregistrationApplies = Settings.shared.enablePreregistration && userAccessLevel < minAccess
 		pageIsForDisabledFeature = req.storage.get(FeatureDisableOverrideStorageKey.self)
+		// Mirrors the THO/admin bypass in DisabledSiteSectionMiddleware.
+		showQuartermasterNav = !Settings.shared.disabledFeatures.isFeatureDisabled(.quartermaster, inApp: .swiftarr)
+			|| ["THO", "admin"].contains(username)
 		eventStartingSoon = false
 		if req.route != nil, let alertsStr = req.session.data["alertCounts"],
 			let alertData = alertsStr.data(using: .utf8)
@@ -102,6 +116,16 @@ struct TrunkContext: Encodable {
 
 		newTweetAlertwords = alertCounts.alertWords.contains { $0.newTwarrtMentionCount > 0 }
 		newForumAlertwords = alertCounts.alertWords.contains { $0.newForumMentionCount > 0 }
+		theme = Self.resolveTheme(from: req.cookies["swiftarr_theme"]?.string)
+	}
+
+	/// Resolves a raw cookie value to a valid theme preference.
+	/// Returns "auto" for nil, empty, or any value not in the allowed set.
+	static func resolveTheme(from cookieValue: String?) -> String {
+		guard let value = cookieValue, ["auto", "light", "dark"].contains(value) else {
+			return "auto"
+		}
+		return value
 	}
 }
 
@@ -177,6 +201,8 @@ struct MessagePostContext: Encodable {
 	var showModPostOptions: Bool = false
 	var showCruiseDaySelector: Bool = false
 	var isEdit: Bool = false
+	var postAsUser: String = "self"
+
 
 	// Used as an parameter to the initializer
 	enum InitType {
@@ -197,7 +223,28 @@ struct MessagePostContext: Encodable {
 		case themeEdit(DailyThemeData)
 	}
 
-	init(forType: InitType, userRoles: Set<UserRoleType>? = nil) {
+	/// Why the user opened an edit form. Set from the `intent` query parameter on the edit page's URL,
+	/// which the moderation views append to their Edit links. It is deliberately not inferred from the
+	/// user's access level: a moderator editing one of their own posts from the forum is an ordinary
+	/// edit and should return to the forum, not to the moderation view.
+	enum EditIntent: String {
+		/// The user reached the edit form the ordinary way, from the content itself.
+		case normal
+		/// The user reached the edit form from a moderation view, and should be returned there.
+		case modEdit
+
+		/// Reads the intent from a request's `intent` query parameter. An absent or unrecognized
+		/// value is `.normal`, so a hand-edited URL cannot do anything but the default.
+		init(_ req: Request) {
+			self = req.query[String.self, at: "intent"].flatMap(EditIntent.init(rawValue:)) ?? .normal
+		}
+	}
+
+	init(
+		forType: InitType,
+		userRoles: Set<UserRoleType>? = nil,
+		editIntent: EditIntent = .normal
+	) {
 		allowedImageTypes = Settings.shared.validImageInputTypes.joined(separator: ", ")
 		// Determine max images based on user role (shutternauts get 8, others get setting value)
 		let maxImages: Int
@@ -259,7 +306,10 @@ struct MessagePostContext: Encodable {
 				photoFilenames.append("")
 			}
 			formAction = "/forumpost/edit/\(withForumPost.postID)"
-			postSuccessURL = "/forum/\(withForumPost.forumID)"
+			switch editIntent {
+			case .modEdit: postSuccessURL = "/moderate/forumpost/\(withForumPost.postID)"
+			case .normal: postSuccessURL = "/forum/\(withForumPost.forumID)"
+			}
 			isEdit = true
 		// For creating a new Seamail thread
 		case .seamail:
@@ -289,6 +339,7 @@ struct MessagePostContext: Encodable {
 		case .announcement:
 			formAction = "/admin/announcement/create"
 			postSuccessURL = "/admin/announcements"
+			postAsUser = "self"
 		// For editing an announcement
 		case .announcementEdit(let announcementData):
 			messageText = announcementData.text
@@ -299,6 +350,7 @@ struct MessagePostContext: Encodable {
 			formAction = "/admin/announcement/\(announcementData.id)/edit"
 			postSuccessURL = "/admin/announcements"
 			isEdit = true
+			postAsUser = ""
 		// For creating a daily theme
 		case .theme:
 			formAction = "/admin/dailytheme/create"
@@ -321,6 +373,16 @@ struct MessagePostContext: Encodable {
 			forumTitlePlaceholder = "Daily Theme Title"
 			messageTextPlaceholder = "Info about Daily Theme"
 		}
+	}
+
+	/// Post-as controls are only available when creating an announcement; edits keep the existing author.
+	func showsPostAsRadios(userIsTHO: Bool, userIsAdmin: Bool) -> Bool {
+		!isEdit
+	}
+
+	/// The admin account is already the real caller, so showing this option would duplicate the self radio.
+	static func showsAdminPostAsRadio(userIsAdmin: Bool) -> Bool {
+		!userIsAdmin
 	}
 }
 
@@ -349,6 +411,7 @@ struct MessagePostFormContent: Codable {
 	let cruiseDay: Int32?  // Used for Daily Themes
 	let postAsTwitarrTeam: String?
 	let postAsModerator: String?
+	let postAsUser: String?
 }
 
 extension MessagePostFormContent {
@@ -438,6 +501,14 @@ struct ReportPageContext: Encodable {
 		reportTitle = "Report a Photostream Photo"
 		reportFormAction = "/photostream/report/\(photostreamID)"
 		reportSuccessURL = req.headers.first(name: "Referer") ?? "/photostream)"
+	}
+
+	// For reporting a Quartermaster item
+	init(_ req: Request, quartermasterItemID: String) throws {
+		trunk = .init(req, title: "Report Item", tab: .quartermaster)
+		reportTitle = "Report a Quartermastarr Item"
+		reportFormAction = "/quartermaster/report/\(quartermasterItemID)"
+		reportSuccessURL = req.headers.first(name: "Referer") ?? "/quartermaster"
 	}
 }
 
@@ -668,6 +739,7 @@ extension SiteControllerUtils {
 	var forumIDParam: PathComponent { PathComponent(":forum_id") }
 	var postIDParam: PathComponent { PathComponent(":post_id") }
 	var fezIDParam: PathComponent { PathComponent(":fez_id") }
+	var quartermasterIDParam: PathComponent { PathComponent(":quartermaster_id") }
 	var userIDParam: PathComponent { PathComponent(":user_id") }
 	var eventIDParam: PathComponent { PathComponent(":event_id") }
 	var reportIDParam: PathComponent { PathComponent(":report_id") }

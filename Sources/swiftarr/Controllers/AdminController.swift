@@ -16,6 +16,13 @@ struct AdminController: APIRouteCollection {
 		// Open routes with no auth requirements
 		adminRoutes.get("timezonechanges", use: timeZoneChangeHandler).setUsedForPreregistration()
 
+		// endpoints available to TwitarrTeam and above, or users with the Account Manager role
+		let accountMgrAuthGroup = adminRoutes.tokenRoutes(minAccess: .verified)
+		accountMgrAuthGroup.get("regcodes", "stats", use: regCodeStatsHandler)
+		accountMgrAuthGroup.get("regcodes", "find", searchStringParam, use: userForRegCodeHandler)
+		accountMgrAuthGroup.get("regcodes", "findbyuser", userIDParam, use: regCodeForUserHandler)
+		accountMgrAuthGroup.post("regcodes", "unlock", userIDParam, use: unlockRegCodeHandler)
+
 		// endpoints available to TwitarrTeam and above
 		let ttAuthGroup = adminRoutes.tokenRoutes(minAccess: .twitarrteam)
 		ttAuthGroup.post("schedule", "update", use: scheduleUploadPostHandler)
@@ -25,9 +32,6 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.get("schedule", "viewlog", scheduleLogIDParam, use: scheduleGetLogEntryHandler)
 		ttAuthGroup.post("schedule", "reload", use: reloadScheduleHandler)
 
-		ttAuthGroup.get("regcodes", "stats", use: regCodeStatsHandler)
-		ttAuthGroup.get("regcodes", "find", searchStringParam, use: userForRegCodeHandler)
-		ttAuthGroup.get("regcodes", "findbyuser", userIDParam, use: regCodeForUserHandler)
 		ttAuthGroup.get("regcodes", "discord", "allocate", searchStringParam, use: assignDiscordRegCode)
 
 		ttAuthGroup.get("serversettings", use: settingsHandler)
@@ -37,10 +41,10 @@ struct AdminController: APIRouteCollection {
 
 		// endpoints available for THO and Admin only
 		let thoAuthGroup = adminRoutes.tokenRoutes(minAccess: .tho)
-		thoAuthGroup.on(.POST, "dailytheme", "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: addDailyThemeHandler)
-		thoAuthGroup.on(.POST, "dailytheme", dailyThemeIDParam, "edit", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: editDailyThemeHandler)
-		thoAuthGroup.post("dailytheme", dailyThemeIDParam, "delete", use: deleteDailyThemeHandler)
-		thoAuthGroup.delete("dailytheme", dailyThemeIDParam, use: deleteDailyThemeHandler)
+		thoAuthGroup.on(.POST, "dailytheme", "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: addDailyThemeHandler).setUsedForPreregistration()
+		thoAuthGroup.on(.POST, "dailytheme", dailyThemeIDParam, "edit", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: editDailyThemeHandler).setUsedForPreregistration()
+		thoAuthGroup.post("dailytheme", dailyThemeIDParam, "delete", use: deleteDailyThemeHandler).setUsedForPreregistration()
+		thoAuthGroup.delete("dailytheme", dailyThemeIDParam, use: deleteDailyThemeHandler).setUsedForPreregistration()
 
 		// Note that there's several promote method that promote to different access levels, but
 		// only one demote, that returns the user to Verified.
@@ -85,7 +89,12 @@ struct AdminController: APIRouteCollection {
 		let filenames = try await processImages(imageArray, usage: .dailyTheme, on: req)
 		let filename = filenames.isEmpty ? nil : filenames[0]
 		let dailyTheme = DailyTheme(title: data.title, info: data.info, image: filename, day: data.cruiseDay)
-		try await dailyTheme.save(on: req.db)
+		do {
+			try await dailyTheme.save(on: req.db)
+		}
+		catch let error as DatabaseError where error.isConstraintFailure {
+			throw Abort(.conflict, reason: "A daily theme for day \(data.cruiseDay) already exists. Edit the existing theme instead.")
+		}
 		return .created
 	}
 
@@ -109,7 +118,12 @@ struct AdminController: APIRouteCollection {
 		dailyTheme.info = data.info
 		dailyTheme.image = filenames.isEmpty ? nil : filenames[0]
 		dailyTheme.cruiseDay = data.cruiseDay
-		try await dailyTheme.save(on: req.db)
+		do {
+			try await dailyTheme.save(on: req.db)
+		}
+		catch let error as DatabaseError where error.isConstraintFailure {
+			throw Abort(.conflict, reason: "A daily theme for day \(data.cruiseDay) already exists.")
+		}
 		return .created
 	}
 
@@ -175,6 +189,9 @@ struct AdminController: APIRouteCollection {
 		}
 		if let value = data.maxForumPostImages {
 			Settings.shared.maxForumPostImages = value
+		}
+		if let value = data.photostreamUploadRateLimit {
+			Settings.shared.photostreamUploadRateLimit = value
 		}
 		if let value = data.forumAutoQuarantineThreshold {
 			Settings.shared.forumAutoQuarantineThreshold = value
@@ -263,64 +280,7 @@ struct AdminController: APIRouteCollection {
 	///  More sophisticated servers run an operation like this on a cronjob and analyze the results each time to check that recent db activity matches expectations.
 	///  Mostly this is just a quick way for us to check usage.
 	func serverRollupCounts(_ req: Request) async throws -> ServerRollupData {
-		let counts = try await withThrowingTaskGroup(of: (countType: ServerRollupData.CountType, value: Int32).self) { group in
-			let tasks: [ServerRollupData.CountType : EventLoopFuture<Int>] = [
-					// User
-					.user :  User.query(on: req.db).count(),
-					.profileEdit: ProfileEdit.query(on: req.db).count(),
-					.userNote: UserNote.query(on: req.db).count(),
-					.alertword: AlertWord.query(on: req.db).count(),
-					.muteword: MuteWord.query(on: req.db).count(),
-					.photoStream: StreamPhoto.query(on: req.db).count(),
-
-					// LFGs and Seamails
-					.lfg: FriendlyFez.query(on: req.db).filter(\.$fezType ~~ FezType.lfgTypes).count(),
-					.lfgParticipant: FezParticipant.query(on: req.db)
-							.join(FriendlyFez.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
-							.filter(FriendlyFez.self, \.$fezType  ~~ FezType.lfgTypes).count(),
-					.lfgPost: FezPost.query(on: req.db).join(FriendlyFez.self, on: \FezPost.$fez.$id == \FriendlyFez.$id)
-							.filter(FriendlyFez.self, \.$fezType ~~ FezType.lfgTypes).count(),
-					.seamail: FriendlyFez.query(on: req.db).filter(\.$fezType ~~ FezType.seamailTypes).count(),
-					.seamailPost: FezPost.query(on: req.db).join(FriendlyFez.self, on: \FezPost.$fez.$id == \FriendlyFez.$id)
-							.filter(FriendlyFez.self, \.$fezType ~~ FezType.seamailTypes).count(),
-					.privateEvent: FriendlyFez.query(on: req.db).filter(\.$fezType == FezType.privateEvent).count(),
-					.personalEvent: FriendlyFez.query(on: req.db).filter(\.$fezType == FezType.personalEvent).count(),
-
-					// Forums
-					.forum: Forum.query(on: req.db).count(),
-					.forumPost: ForumPost.query(on: req.db).count(),
-					.forumPostEdit: ForumPostEdit.query(on: req.db).count(),
-					.forumPostLike: ForumPostReaction.query(on: req.db).count(),
-					
-					// Games and Karaoke
-					.karaokePlayedSong: KaraokePlayedSong.query(on: req.db).count(),
-					.microKaraokeSnippet: MKSnippet.query(on: req.db).count(),
-					
-					// Favorites
-					.userFavorite: UserFavorite.query(on: req.db).count(),
-					.eventFavorite: EventFavorite.query(on: req.db).count(),
-					.forumFavorite: ForumReaders.query(on: req.db).filter(\.$isFavorite == true).count(),
-					.forumPostFavorite: PostLikes.query(on: req.db).filter(\.$isFavorite == true).count(),
-					.boardgameFavorite: BoardgameFavorite.query(on: req.db).count(),
-					.karaokeFavorite: KaraokeFavorite.query(on: req.db).count(),
-
-					// Moderation
-					.report: Report.query(on: req.db).count(),
-					.moderationAction: ModeratorAction.query(on: req.db).count(),
-			]
-			
-			for (key, task) in tasks {
-				group.addTask {
-					return try await (key, Int32(task.get()))
-				}
-			}
-			var result = [Int32](repeating: 0, count: tasks.count)
-			for try await (key, value) in group {
-				result[key.rawValue] = Int32(value)
-			}
-			return result
-		}
-		return ServerRollupData(counts: counts)
+		return try await ServerRollupData.computeRollupCounts(on: req.db)
 	}
 	
 	
@@ -333,6 +293,7 @@ struct AdminController: APIRouteCollection {
 	///
 	/// - Returns: `RegistrationCodeStatsData`
 	func regCodeStatsHandler(_ req: Request) async throws -> RegistrationCodeStatsData {
+		try req.auth.require(UserCacheData.self).guardCanManageAccounts()
 		let codeCount = try await RegistrationCode.query(on: req.db).filter(\.$isDiscordUser == false).count()
 		let usedCodes = try await RegistrationCode.query(on: req.db).filter(\.$isDiscordUser == false).filter(\.$user.$id != nil).count()
 		let allocatedDiscord = try await RegistrationCode.query(on: req.db).filter(\.$isDiscordUser == true).count()
@@ -358,12 +319,15 @@ struct AdminController: APIRouteCollection {
 	/// - Returns: [] if no user has created an account using this reg code yet. If they have, returns an array containing the UserHeaders of all users associated with
 	/// the registration code. The first item in the array will be the primary account.
 	func userForRegCodeHandler(_ req: Request) async throws -> [UserHeader] {
-		guard let regCode = req.parameters.get(searchStringParam.paramString, as: String.self)?.lowercased() else {
+		try req.auth.require(UserCacheData.self).guardCanManageAccounts()
+		guard let rawCode = req.parameters.get(searchStringParam.paramString, as: String.self) else {
 			throw Abort(.badRequest, reason: "Missing search parameter")
 		}
-		guard regCode.count == 6, regCode.allSatisfy({ $0.isLetter || $0.isNumber }) else {
+		let decoded = rawCode.removingPercentEncoding ?? rawCode
+		guard RegistrationCode.isWellFormed(decoded) else {
 			throw Abort(.badRequest, reason: "Registration code search parameter is malformed.")
 		}
+		let regCode = RegistrationCode.normalized(decoded)
 		guard let foundRecord = try await RegistrationCode.query(on: req.db).filter(\.$code == regCode).first() else {
 			throw Abort(.badRequest, reason: "\(regCode) is not found in the registration code table.")
 		}
@@ -384,14 +348,52 @@ struct AdminController: APIRouteCollection {
 	/// - Throws: 400 Bad Request if the userID isn't found in the db or if it's malformed.
 	/// - Returns: [] if no user has created an account using this reg code yet. If they have, returns a one-item array containing the UserHeader of that user.
 	func regCodeForUserHandler(_ req: Request) async throws -> RegistrationCodeUserData {
+		try req.auth.require(UserCacheData.self).guardCanManageAccounts()
 		let user = try await User.findFromParameter(userIDParam, on: req)
+		return try await registrationCodeUserData(for: user, on: req)
+	}
+
+	/// `POST /api/v3/admin/regcodes/unlock/:userID`
+	///
+	/// Re-enables one-time password recovery via registration code for the given user and all of their alt accounts.
+	/// Strips the '*' prefix from `User.verification` (see `AuthController.recoveryHandler`) and clears
+	/// `recoveryAttempts` so a lockout after 5 failed recoveries can be reset by staff.
+	///
+	/// - Throws: 403 if the caller is not TwitarrTeam or an Account Manager. 400 if the userID is missing or unknown.
+	/// - Returns: Updated `RegistrationCodeUserData`.
+	func unlockRegCodeHandler(_ req: Request) async throws -> RegistrationCodeUserData {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		try cacheUser.guardCanManageAccounts()
+		let user = try await User.findFromParameter(userIDParam, on: req)
+		let allAccounts = try await user.allAccounts(on: req.db)
+		for account in allAccounts {
+			account.unlockVerification()
+			account.recoveryAttempts = 0
+			try await account.save(on: req.db)
+		}
+		let targetUserID = try user.requireID()
+		req.logger.info(
+			"User \(cacheUser.username) (\(cacheUser.userID)) unlocked password recovery for \(user.username) (\(targetUserID))"
+		)
+		return try await registrationCodeUserData(for: user, on: req)
+	}
+
+	/// Builds `RegistrationCodeUserData` for a user (primary plus alts).
+	func registrationCodeUserData(for user: User, on req: Request) async throws -> RegistrationCodeUserData {
 		let allAccounts = try await user.allAccounts(on: req.db)
 		let userIDs = try allAccounts.map { try $0.requireID() }
 		let regCodeResult = try await RegistrationCode.query(on: req.db).filter(\.$user.$id ~~ userIDs).first()
 		let regCode = regCodeResult?.code ?? ""
 		let resultUsers = req.userCache.getHeaders(userIDs)
-		return RegistrationCodeUserData(users: resultUsers, regCode: regCode, isForDiscordUser: regCodeResult?.isDiscordUser ?? false,
-				discordUsername: regCodeResult?.discordUsername)
+		let hasUsed = allAccounts.contains { $0.verificationUsed }
+		return RegistrationCodeUserData(
+			users: resultUsers,
+			regCode: regCode,
+			isForDiscordUser: regCodeResult?.isDiscordUser ?? false,
+			discordUsername: regCodeResult?.discordUsername,
+			hasUsedRegCodeForPasswordRecovery: hasUsed,
+			accountCreatedAt: allAccounts.first?.createdAt
+		)
 	}
 	
 	/// `POST /api/v3/admin/regcodes/discord/allocate/:username`
@@ -417,7 +419,14 @@ struct AdminController: APIRouteCollection {
 		}
 		registrationCode.discordUsername = discordUser
 		try await registrationCode.save(on: req.db)
-		return RegistrationCodeUserData(users: [], regCode: registrationCode.code, isForDiscordUser: true, discordUsername: discordUser)
+		return RegistrationCodeUserData(
+			users: [],
+			regCode: registrationCode.code,
+			isForDiscordUser: true,
+			discordUsername: discordUser,
+			hasUsedRegCodeForPasswordRecovery: false,
+			accountCreatedAt: nil
+		)
 	}
 
 	// MARK: - Promote/Demote
@@ -651,6 +660,9 @@ struct AdminController: APIRouteCollection {
 		var schedule = try req.content.decode(EventsUpdateData.self).schedule
 		schedule = schedule.replacingOccurrences(of: "&amp;", with: "&")
 		schedule = schedule.replacingOccurrences(of: "\\,", with: ",")
+		if schedule.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+			schedule = emptySchedulePayload
+		}
 		let filepath = try uploadSchedulePath()
 		// If we attempt an upload, it's important we end up with the uploaded file or nothing at the filepath.
 		// Leaving the previous file there would be bad.
@@ -814,7 +826,12 @@ struct AdminController: APIRouteCollection {
 		let performers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).with(\.$events).all()
 		let performerData = try performers.map { try PerformerUploadData($0) }
 		let needsPhotographerEvents = try await Event.query(on: req.db).filter(\.$needsPhotographer == true).all().map { $0.uid }
-		let dto = SaveRestoreData(users: userData, performers: performerData, needsPhotographer: needsPhotographerEvents)
+		let dailyThemes = try await DailyTheme.query(on: req.db).all()
+		let dailyThemeData = dailyThemes.map { DailyThemeSaveRestoreData($0) }
+		let hunts = try await Hunt.query(on: req.db).with(\.$puzzles).all()
+		let huntData = hunts.map { HuntSaveRestoreData($0, $0.puzzles) }
+		let dto = SaveRestoreData(users: userData, performers: performerData, needsPhotographer: needsPhotographerEvents,
+				dailyThemes: dailyThemeData, hunts: huntData)
 		let data = try JSONEncoder().encode(dto)
 		let userfile = sourceDirectoryURL.appendingPathComponent("userfile.json", isDirectory: true)
 		try data.write(to: userfile, options: .atomic)
@@ -823,7 +840,7 @@ struct AdminController: APIRouteCollection {
 		let destImageDir = sourceDirectoryURL.appendingPathComponent("userImages", isDirectory: true)
 		try FileManager.default.createDirectory(at: destImageDir, withIntermediateDirectories: true)
 		let imageNames = users.compactMap { $0.userImage } + users.compactMap { $0.performer?.photo } +
-				performerData.compactMap { $0.photo.filename }
+				performerData.compactMap { $0.photo.filename } + dailyThemes.compactMap { $0.image }
 		for imageName in imageNames {
 			do {
 				let imgSource = Settings.shared.userImagesRootPath.appendingPathComponent(ImageSizeGroup.full.rawValue)
@@ -944,6 +961,12 @@ struct AdminController: APIRouteCollection {
 		}
 		for needsPhotog in importData.needsPhotographer {
 			await importNeedPhotographer_Event(req, eventUID: needsPhotog, verifyOnly: verifyOnly, verification: &verification)
+		}
+		for theme in importData.dailyThemes {
+			await importDailyTheme(req, themeData: theme, verifyOnly: verifyOnly, verification: &verification)
+		}
+		for hunt in importData.hunts {
+			await importHunt(req, huntData: hunt, verifyOnly: verifyOnly, verification: &verification)
 		}
 		return verification
 	}
@@ -1242,6 +1265,69 @@ struct AdminController: APIRouteCollection {
 		}
 	}
 
+	// Imports a single DailyTheme. `cruiseDay` is unique in the db, so we use it to detect duplicates--this lets the same
+	// bulk import file be applied more than once without creating multiple theme records for the same day.
+	func importDailyTheme(_ req: Request, themeData: DailyThemeSaveRestoreData, verifyOnly: Bool,
+			verification: inout BulkUserUpdateVerificationData) async {
+		// Copy the theme's image first, if it has one.
+		var copiedImage: String?
+		do {
+			if let image = themeData.image {
+				copiedImage = try await copyImage(image, verifyOnly: verifyOnly, on: req)
+			}
+		}
+		catch {
+			verification.otherErrors.append("Couldn't copy image for Daily Theme \"\(themeData.title)\": \(error.localizedDescription)")
+		}
+
+		verification.dailyThemeCounts.totalRecordsProcessed += 1
+		do {
+			if try await DailyTheme.query(on: req.db).filter(\.$cruiseDay == themeData.cruiseDay).first() != nil {
+				verification.dailyThemeCounts.duplicateCount += 1
+				return
+			}
+			let theme = DailyTheme(title: themeData.title, info: themeData.info, image: copiedImage, day: themeData.cruiseDay)
+			if !verifyOnly {
+				try await theme.save(on: req.db)
+			}
+			verification.dailyThemeCounts.importedCount += 1
+		}
+		catch {
+			verification.otherErrors.append("Error when importing Daily Theme \"\(themeData.title)\": \(error.localizedDescription)")
+			verification.dailyThemeCounts.errorCount += 1
+		}
+	}
+
+	// Imports a single Hunt, along with all of its child Puzzles, as a single unit. Hunt has no natural unique key, so
+	// we dedupe on title--if a Hunt with the same title already exists we assume it's a true duplicate (e.g. this import
+	// file was already applied) and skip it rather than trying to merge/update its puzzles.
+	func importHunt(_ req: Request, huntData: HuntSaveRestoreData, verifyOnly: Bool,
+			verification: inout BulkUserUpdateVerificationData) async {
+		verification.huntCounts.totalRecordsProcessed += 1
+		do {
+			if try await Hunt.query(on: req.db).filter(\.$title == huntData.title).first() != nil {
+				verification.huntCounts.duplicateCount += 1
+				return
+			}
+			if !verifyOnly {
+				try await req.db.transaction { transaction in
+					let hunt = try Hunt(title: huntData.title, description: huntData.description)
+					try await hunt.create(on: transaction)
+					for puzzleData in huntData.puzzles {
+						let puzzle = try Puzzle(hunt: hunt, title: puzzleData.title, body: puzzleData.body,
+								answer: puzzleData.answer, hints: puzzleData.hints, unlockTime: puzzleData.unlockTime)
+						try await puzzle.create(on: transaction)
+					}
+				}
+			}
+			verification.huntCounts.importedCount += 1
+		}
+		catch {
+			verification.otherErrors.append("Error when importing Hunt \"\(huntData.title)\": \(error.localizedDescription)")
+			verification.huntCounts.errorCount += 1
+		}
+	}
+
 	// Copy an image from the uploaded data bundle to the expected location on the filesystem.
 	func copyImage(_ image: String, verifyOnly: Bool, on req: Request) async throws -> String {
 		let archiveSource = try uploadUserDirPath().appendingPathComponent("Twitarr_userfile/userImages", isDirectory: true)
@@ -1271,6 +1357,20 @@ struct AdminController: APIRouteCollection {
 	func uploadSchedulePath() throws -> URL {
 		let filePath = Settings.shared.adminDirectoryPath.appendingPathComponent("uploadschedule.ics")
 		return filePath
+	}
+
+	private var emptySchedulePayload: String {
+		"""
+		BEGIN:VCALENDAR
+		VERSION:2.0
+		X-WR-CALNAME:jococruise2026
+		X-WR-CALDESC:Event Calendar
+		METHOD:PUBLISH
+		CALSCALE:GREGORIAN
+		PRODID:-//Sched.com JoCo Cruise 2026//EN
+		X-WR-TIMEZONE:UTC
+		END:VCALENDAR
+		"""
 	}
 
 	// Gets the directory path to the directory where we store the "Twitarr_userfile.zip" and the unzipped "Twitarr_userfile" dir.

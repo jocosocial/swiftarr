@@ -16,6 +16,7 @@ struct FezController: APIRouteCollection {
 		var excludetype: [String] = []
 		var lfgtypes: Bool?
 		var onlynew: Bool?
+		var favorite: Bool?
 		var start: Int?
 		var limit: Int?
 		var cruiseday: Int?
@@ -41,18 +42,8 @@ struct FezController: APIRouteCollection {
 			return excludeTypes.count > 0 ? excludeTypes : nil
 		}
 
-		func calcStart() -> Int {
-			return start ?? 0
-		}
-
-		func calcLimit() -> Int {
-			return (limit ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
-		}
-
-		// Used for: dbQuery.range(urlQuery.calcRange())
-		func calcRange() -> Range<Int> {
-			let rangeStart = calcStart()
-			return rangeStart..<(rangeStart + calcLimit())
+		var pagination: Pagination {
+			return Pagination(start: start, limit: limit, maxPageSize: Settings.shared.maximumTwarrts)
 		}
 	}
 
@@ -72,16 +63,17 @@ struct FezController: APIRouteCollection {
 		tokenAuthGroup.get("joined", use: joinedHandler)
 		tokenAuthGroup.get("owner", use: ownerHandler)
 		tokenAuthGroup.get(fezIDParam, use: fezHandler)
-		tokenAuthGroup.post("create", use: createHandler)
+		tokenAuthGroup.on(.POST, "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: createHandler)
 		tokenAuthGroup.on(.POST, fezIDParam, "post", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: postAddHandler)
 		tokenAuthGroup.webSocket(fezIDParam, "socket", onUpgrade: createFezSocket)
+		tokenAuthGroup.post(fezIDParam, "markRead", use: fezMarkReadHandler)
 		tokenAuthGroup.post(fezIDParam, "cancel", use: cancelHandler)
 		tokenAuthGroup.post(fezIDParam, "join", use: joinHandler)
 		tokenAuthGroup.post(fezIDParam, "unjoin", use: unjoinHandler)
 		tokenAuthGroup.post("post", fezPostIDParam, "delete", use: postDeleteHandler)
 		tokenAuthGroup.delete("post", fezPostIDParam, use: postDeleteHandler)
-		tokenAuthGroup.post("post", fezPostIDParam, "react", ":emoji", use: fezPostReactHandler)
-		tokenAuthGroup.delete("post", fezPostIDParam, "react", ":emoji", use: fezPostUnreactHandler)
+		tokenAuthGroup.post("post", fezPostIDParam, "react", use: fezPostReactHandler)
+		tokenAuthGroup.post("post", fezPostIDParam, "unreact", use: fezPostUnreactHandler)
 		tokenAuthGroup.post(fezIDParam, "user", userIDParam, "add", use: userAddHandler)
 		tokenAuthGroup.post(fezIDParam, "user", userIDParam, "remove", use: userRemoveHandler)
 		tokenAuthGroup.post(fezIDParam, "update", use: updateHandler)
@@ -93,6 +85,9 @@ struct FezController: APIRouteCollection {
 		tokenAuthGroup.post(fezIDParam, "mute", use: muteAddHandler)
 		tokenAuthGroup.delete(fezIDParam, "mute", use: muteRemoveHandler)
 		tokenAuthGroup.post(fezIDParam, "mute", "remove", use: muteRemoveHandler)
+		tokenAuthGroup.post(fezIDParam, "favorite", use: favoriteAddHandler)
+		tokenAuthGroup.delete(fezIDParam, "favorite", use: favoriteRemoveHandler)
+		tokenAuthGroup.post(fezIDParam, "favorite", "remove", use: favoriteRemoveHandler)
 	}
 
 	// MARK: - tokenAuthGroup Handlers (logged in)
@@ -126,6 +121,7 @@ struct FezController: APIRouteCollection {
 	/// - Returns: An array of `FezData` containing current fezzes with open slots.
 	func openHandler(_ req: Request) async throws -> FezListData {
 		let urlQuery = try req.query.decode(FezURLQueryStruct.self)
+		let pagination = urlQuery.pagination
 		let cacheUser = try req.auth.require(UserCacheData.self)
 
 		let fezQuery = FriendlyFez.query(on: req.db)
@@ -151,9 +147,7 @@ struct FezController: APIRouteCollection {
 			fezQuery.filter(\.$startTime >= dayStart).filter(\.$startTime < dayEnd)
 		}
 		if var searchStr = urlQuery.search {
-			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
-				.replacingOccurrences(of: "%", with: "\\%")
-				.trimmingCharacters(in: .whitespacesAndNewlines)
+			searchStr = searchStr.escapedForSQLWildcards()
 			fezQuery.group(.or) { group in
 				group.fullTextFilter(FriendlyFez.self, \.$title, searchStr)
 					.fullTextFilter(FriendlyFez.self, \.$info, searchStr)
@@ -161,7 +155,7 @@ struct FezController: APIRouteCollection {
 		}
 		let fezCount = try await fezQuery.count()
 		let fezzes = try await fezQuery.sort(\.$startTime, .ascending).sort(\.$title, .ascending)
-			.range(urlQuery.calcRange()).all()
+			.range(pagination.range).all()
 		let fezDataArray: [FezData] = try fezzes.compactMap { fez in
 			// Fezzes are only 'open' if their waitlist is < 1/2 the size of their capacity. A fez with a max of 10 people
 			// could have a waitlist of 5, then it stops showing up in 'open' searches.
@@ -173,7 +167,7 @@ struct FezController: APIRouteCollection {
 			return nil
 		}
 		return FezListData(
-			paginator: Paginator(total: fezCount, start: urlQuery.calcStart(), limit: urlQuery.calcLimit()),
+			paginator: Paginator(total: fezCount, start: pagination.start, limit: pagination.limit),
 			fezzes: fezDataArray
 		)
 	}
@@ -187,6 +181,7 @@ struct FezController: APIRouteCollection {
 	/// - `?type=STRING` - Only return fezzes of the given fezType. See `FezType` for a list.
 	/// - `?excludetype=STRING` - Don't return fezzes of the given type. See `FezType` for a list.
 	/// - `?onlynew=TRUE` - Only return fezzes with unread messages.
+	/// - `?favorite=TRUE` - Only return fezzes the user has favorited.
 	/// - `?start=INT` - The offset to the first result to return in the filtered + sorted array of results.
 	/// - `?limit=INT` - The maximum number of fezzes to return; defaults to 50.
 	/// - `?search=STRING` - Only show fezzes whose title, info, or any post contains the given string.
@@ -224,14 +219,14 @@ struct FezController: APIRouteCollection {
 	/// * `?limit=INT` - The maximum number of fezzes to return; defaults to 50.
 	/// - `?hidepast=BOOLEAN` - Hide fezzes that started more than one hour in the past. For this endpoint, this defaults to FALSE.
 	/// - `?lfgtypes=BOOLEAN` - Shorthand to include/exliude all the LFG types (Activity, Gaming, Dining, etc.) Acts the same as using multiple `type=` or `exludetype=` params.
+	/// - `?favorite=TRUE` - Only return fezzes the user has favorited.
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: An array of `FezData` containing all the fezzes created by the user.
 	func ownerHandler(_ req: Request) async throws -> FezListData {
 		let urlQuery = try req.query.decode(FezURLQueryStruct.self)
+		let pagination = urlQuery.pagination
 		let user = try req.auth.require(UserCacheData.self)
-		let start = (req.query[Int.self, at: "start"] ?? 0)
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
 		let query = FriendlyFez.query(on: req.db).filter(\.$owner.$id == user.userID)
 			.join(FezParticipant.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
 			.filter(FezParticipant.self, \.$user.$id == user.userID)
@@ -240,6 +235,9 @@ struct FezController: APIRouteCollection {
 		}
 		else if let excludeTypes = try urlQuery.getExcludeTypes() {
 			query.filter(\.$fezType !~ excludeTypes)
+		}
+		if urlQuery.favorite == true {
+			query.filter(FezParticipant.self, \.$isFavorite == true)
 		}
 
 		if let dayFilter = req.query[Int.self, at: "cruiseday"] {
@@ -258,9 +256,7 @@ struct FezController: APIRouteCollection {
 		}
 
 		if var searchStr = urlQuery.search {
-			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
-				.replacingOccurrences(of: "%", with: "\\%")
-				.trimmingCharacters(in: .whitespacesAndNewlines)
+			searchStr = searchStr.escapedForSQLWildcards()
 			query.group(.or) { group in
 				group.fullTextFilter(FriendlyFez.self, \.$title, searchStr)
 					.fullTextFilter(FriendlyFez.self, \.$info, searchStr)
@@ -269,13 +265,16 @@ struct FezController: APIRouteCollection {
 
 		// get owned fezzes
 		let fezCount = try await query.count()
-		let fezzes = try await query.range(start..<(start + limit)).sort(\.$createdAt, .descending).all()
+		let fezzes = try await query.range(pagination.range).sort(\.$createdAt, .descending).all()
 		// convert to FezData
 		let fezDataArray = try fezzes.map { (fez) -> FezData in
 			let userParticipant = try fez.joined(FezParticipant.self)
 			return try buildFezData(from: fez, with: userParticipant, for: user, on: req)
 		}
-		return FezListData(paginator: Paginator(total: fezCount, start: start, limit: limit), fezzes: fezDataArray)
+		return FezListData(
+			paginator: Paginator(total: fezCount, start: pagination.start, limit: pagination.limit),
+			fezzes: fezDataArray
+		)
 	}
 
 	/// `GET /api/v3/fez/:fez_ID`
@@ -315,7 +314,25 @@ struct FezController: APIRouteCollection {
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
 			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
 		}
-		let pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first()
+
+		// For privileged mailboxes, use the actual user's ID to query/ensure per-user FezParticipant
+		// This ensures each user has their own read tracking for privileged mailbox conversations
+		let pivot: FezParticipant?
+		if effectiveUser.userID != cacheUser.userID {
+			// For privileged mailboxes, ensure a pivot exists for the actual user
+			// This will query and create if needed, avoiding redundant queries
+			pivot = try await ensureFezParticipantForUser(fez: fez, user: cacheUser, on: req, isPrivilegedMailbox: true)
+		} else {
+			// For normal cases, just query for existing pivot (don't create if missing)
+			pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first()
+		}
+
+		// Clear the addedTo flag when the user views the fez
+		if let pivot = pivot, pivot.addedTo == true {
+			pivot.addedTo = false
+			try await pivot.save(on: req.db)
+		}
+ 
 		var fezData = try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
 		if let _ = fezData.members {
 			let (posts, paginator) = try await buildPostsForFez(fez, pivot: pivot, on: req, user: cacheUser, as: effectiveUser)
@@ -324,7 +341,33 @@ struct FezController: APIRouteCollection {
 		}
 		return fezData
 	}
-	
+
+	/// `POST /api/v3/fez/ID/markRead`
+	///
+	/// Mark the specified `FriendlyFez` (Seamail, LFG, or Private Event chat) as read for the current user.
+	/// This sets the user's read count to the fez's current post count, effectively marking all posts as
+	/// read without requiring the user to re-fetch them. Intended for chats whose latest post(s) were
+	/// already rendered live via websocket, so the caller doesn't have to re-request the thread just to
+	/// clear its unread state.
+	///
+	/// - Parameter fezID: in URL path
+	/// - Throws: 404 error if the fez is not available, or if the user is not a member.
+	/// - Returns: 201 Created if the read count advanced; 200 OK if already marked as read.
+	func fezMarkReadHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard let pivot = try await getUserPivot(lfg: fez, userID: cacheUser.userID, on: req.db) else {
+			throw Abort(.notFound, reason: "user is not member of \(fez.fezType.lfgLabel)")
+		}
+		if pivot.readCount + pivot.hiddenCount >= fez.postCount {
+			return .ok
+		}
+		pivot.readCount = fez.postCount - pivot.hiddenCount
+		try await pivot.save(on: req.db)
+		try await markNotificationViewed(user: cacheUser, type: .chatUnreadMsg(fez.requireID(), fez.fezType), on: req)
+		return .created
+	}
+
 	/// `GET /api/v3/fez/former`
 	/// 
 	/// **Query Parameters:**
@@ -335,6 +378,7 @@ struct FezController: APIRouteCollection {
 	/// closed Seamails or Personal Events as their member lists cannot change.
 	func formerlyJoinedFezHandler(_ req: Request) async throws -> FezListData {
 		let urlQuery = try req.query.decode(FezURLQueryStruct.self)
+		let pagination = urlQuery.pagination
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let effectiveUser = try getEffectiveUser(user: cacheUser, req: req)
 		// .withDeleted keeps Fluent from filtering out soft-deleted FriendlyFezzes and FezParticipants. The deletedAt filter then matches
@@ -344,12 +388,15 @@ struct FezController: APIRouteCollection {
 				.filter(FriendlyFez.self, \.$fezType !~ [.closed, .personalEvent])
 				.withDeleted().filter(\.$deletedAt < Date())
 		let fezCount = try await query.count()
-		let pivots = try await query.copy().sort(FriendlyFez.self, \.$createdAt, .descending).range(urlQuery.calcRange()).all()
+		let pivots = try await query.copy().sort(FriendlyFez.self, \.$createdAt, .descending).range(pagination.range).all()
 		let fezDataArray = try pivots.map { pivot -> FezData in
 			let fez = try pivot.joined(FriendlyFez.self)
 			return try buildFezData(from: fez, with: nil, for: effectiveUser, on: req)
 		}
-		return FezListData(paginator: Paginator(total: fezCount, start: urlQuery.calcStart(), limit: urlQuery.calcLimit()), fezzes: fezDataArray)
+		return FezListData(
+			paginator: Paginator(total: fezCount, start: pagination.start, limit: pagination.limit),
+			fezzes: fezDataArray
+		)
 	}
 
 	// MARK: Membership
@@ -391,6 +438,7 @@ struct FezController: APIRouteCollection {
 		try await fez.save(on: req.db)
 		let newParticipant = try await getUserPivotForAdd(lfg: fez, userID: cacheUser.userID, on: req.db)
 		newParticipant.readCount = 0
+		newParticipant.addedTo = false  // Clear addedTo for voluntary joins (user wasn't added by someone else)
 		let blocksAndMutes = cacheUser.getBlocks().union(cacheUser.getMutes())
 		newParticipant.hiddenCount = try await fez.$fezPosts.query(on: req.db).filter(\.$author.$id ~~ blocksAndMutes)
 			.count()
@@ -463,12 +511,6 @@ struct FezController: APIRouteCollection {
 		guard fez.fezType != .personalEvent else {
 			throw Abort(.badRequest, reason: "Personal Events don't have posts.")
 		}
-		guard ![.closed, .open].contains(fez.fezType) || data.images.count == 0 else {
-			throw Abort(.badRequest, reason: "Private conversations can't contain photos.")
-		}
-		guard data.images.count <= 1 else {
-			throw Abort(.badRequest, reason: "posts may only have one image")
-		}
 		guard fez.participantArray.contains(cacheUser.userID) || cacheUser.accessLevel.hasAccess(.moderator) else {
 			throw Abort(.forbidden, reason: "user is not member of \(fez.fezType.lfgLabel); cannot post")
 		}
@@ -478,6 +520,19 @@ struct FezController: APIRouteCollection {
 		guard fez.moderationStatus != .locked else {
 			// Note: Users should still be able to post in a quarantined LFG so they can figure out what (else) to do.
 			throw Abort(.badRequest, reason: "\(fez.fezType.lfgLabel) is locked; cannot post.")
+		}
+		return try await addFezPost(to: fez, data: data, cacheUser: cacheUser, on: req)
+	}
+
+	// This is the bulk of postAddHandler, pulled out into a separate fn so createChat can use it to create
+	// a Fez's optional initial post using the same rules (image limits, notifications, hidden-post bookkeeping)
+	// as posting to an existing Fez. Callers are responsible for any membership/lock/personalEvent guards.
+	func addFezPost(to fez: FriendlyFez, data: PostContentData, cacheUser: UserCacheData, on req: Request) async throws -> FezPostData {
+		guard ![.closed, .open].contains(fez.fezType) || data.images.count == 0 else {
+			throw Abort(.badRequest, reason: "Private conversations can't contain photos.")
+		}
+		guard data.images.count <= 1 else {
+			throw Abort(.badRequest, reason: "posts may only have one image")
 		}
 		// process image
 		let filenames = try await processImages(data.images, usage: .fezPost, on: req)
@@ -523,7 +578,7 @@ struct FezController: APIRouteCollection {
 			pivot.readCount = fez.postCount - pivot.hiddenCount
 			try await pivot.save(on: req.db)
 		}
-		return try FezPostData(post: post, author: effectiveAuthor.makeHeader(), reactions: [])
+		return try FezPostData(post: post, author: effectiveAuthor.makeHeader())
 	}
 
 	/// `POST /api/v3/fez/post/ID/delete`
@@ -579,49 +634,59 @@ struct FezController: APIRouteCollection {
 		return .noContent
 	}
 
-	/// `POST /api/v3/fez/post/ID/react/:emoji`
+	/// `POST /api/v3/fez/post/ID/react`
+	///
+	/// Adds the `PostReactionData` reaction to a chat post. This endpoint is idempotent.
 	func fezPostReactHandler(_ req: Request) async throws -> FezPostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		guard let emoji = req.parameters.get("emoji"), !emoji.isEmpty else {
-			throw Abort(.badRequest, reason: "emoji path parameter is required")
-		}
+		let reactionValue = try req.content.decode(PostReactionData.self).validatedReaction()
 		let post = try await FezPost.findFromParameter(fezPostIDParam, on: req)
 		let fez = try await post.$fez.get(on: req.db)
-		guard fez.participantArray.contains(cacheUser.userID) || cacheUser.accessLevel.hasAccess(.moderator) else {
-			throw Abort(.forbidden, reason: "user is not member of \(fez.fezType.lfgLabel); cannot react")
+		guard userCanViewMemberData(user: cacheUser, fez: fez) else {
+			throw Abort(.forbidden, reason: "user cannot view this \(fez.fezType.lfgLabel)")
+		}
+		guard post.$author.id != cacheUser.userID else {
+			throw Abort(.forbidden, reason: "user cannot react to own post")
 		}
 		if try await FezPostReaction.query(on: req.db)
 			.filter(\.$user.$id == cacheUser.userID)
 			.filter(\.$post.$id == post.requireID())
-			.filter(\.$emoji == emoji)
+			.filter(\.$emoji == reactionValue)
 			.first() == nil
 		{
-			let reaction = try FezPostReaction(cacheUser.userID, post, emoji: emoji)
+			let reaction = try FezPostReaction(cacheUser.userID, post, emoji: reactionValue)
 			try await reaction.save(on: req.db)
 		}
-		return try await buildFezPostData(post, for: cacheUser, on: req)
+		let postData = try await buildFezPostData(post, for: cacheUser, on: req)
+		try await forwardReactionChangeToSockets(fez, postData: postData, on: req)
+		return postData
 	}
 
-	/// `DELETE /api/v3/fez/post/ID/react/:emoji`
+	/// `POST /api/v3/fez/post/ID/unreact`
+	///
+	/// Removes the `PostReactionData` reaction from a chat post. This endpoint is idempotent.
 	func fezPostUnreactHandler(_ req: Request) async throws -> FezPostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		guard let emoji = req.parameters.get("emoji"), !emoji.isEmpty else {
-			throw Abort(.badRequest, reason: "emoji path parameter is required")
-		}
+		let reactionValue = try req.content.decode(PostReactionData.self).validatedReaction()
 		let post = try await FezPost.findFromParameter(fezPostIDParam, on: req)
 		let fez = try await post.$fez.get(on: req.db)
-		guard fez.participantArray.contains(cacheUser.userID) || cacheUser.accessLevel.hasAccess(.moderator) else {
-			throw Abort(.forbidden, reason: "user is not member of \(fez.fezType.lfgLabel); cannot react")
+		guard userCanViewMemberData(user: cacheUser, fez: fez) else {
+			throw Abort(.forbidden, reason: "user cannot view this \(fez.fezType.lfgLabel)")
+		}
+		guard post.$author.id != cacheUser.userID else {
+			throw Abort(.forbidden, reason: "user cannot react to own post")
 		}
 		if let reaction = try await FezPostReaction.query(on: req.db)
 			.filter(\.$user.$id == cacheUser.userID)
 			.filter(\.$post.$id == post.requireID())
-			.filter(\.$emoji == emoji)
+			.filter(\.$emoji == reactionValue)
 			.first()
 		{
 			try await reaction.delete(on: req.db)
 		}
-		return try await buildFezPostData(post, for: cacheUser, on: req)
+		let postData = try await buildFezPostData(post, for: cacheUser, on: req)
+		try await forwardReactionChangeToSockets(fez, postData: postData, on: req)
+		return postData
 	}
 
 	/// `POST /api/v3/fez/post/ID/report`
@@ -667,6 +732,14 @@ struct FezController: APIRouteCollection {
 	///
 	/// A value of 0 in either the `.minCapacity` or `.maxCapacity` fields indicates an undefined
 	/// limit: "there is no minimum", "there is no maximum".
+	///
+	/// `FezContentData` may optionally include a `firstPost`, which creates the fez's opening post
+	/// in the same call--similar to how `POST /api/v3/forum/categories/ID/create` takes a `firstPost`.
+	/// This is ignored for `.personalEvent` fez types, which don't support posts. The same image-count
+	/// rules that apply to `POST /api/v3/fez/ID/post` apply here (0 images for Seamail types, 1 image
+	/// otherwise). `firstPost`'s own `postAsModerator`/`postAsTwitarrTeam` flags govern the post's
+	/// author independently of this call's `createdByModerator`/`createdByTwitarrTeam` flags; set both
+	/// if the fez owner and post author should match.
 	///
 	/// - Parameter requestBody: `FezContentData` payload in the HTTP body.
 	/// - Throws: 400 error if the supplied data does not validate.
@@ -792,15 +865,15 @@ struct FezController: APIRouteCollection {
 		let newParticipant = try await getUserPivotForAdd(lfg: fez, userID: addingUserID, on: req.db)
 		newParticipant.readCount = 0
 		newParticipant.hiddenCount = hiddenPostCount
+		newParticipant.addedTo = true
 		try await req.db.transaction { transaction in
 			try await fez.save(on: transaction)
 			try await newParticipant.save(on: transaction)
 		}
 		// Tell chat members listening on chat sockets about the new member
 		try await forwardMembershipChangeToSockets(fez, participantID: addingUserID, joined: true, on: req)
-		// Tell the new member they've been added by the chat owner.
-		let infoStr = "@\(requester.username) added you to their \(fez.fezType.lfgLabel) titled \"\(fez.title)\""
-		try await addNotifications(users: [addingUserID], type: .addedToChat(fez.requireID(), fez.fezType), info: infoStr, on: req)
+		// Set addedTo = true and notify the new member they've been added
+		try await notifyAddedToFez(fez, for: newParticipant, by: requester, on: req)
 		let effectiveUser = getEffectiveUser(user: requester, req: req, fez: fez)
 		let requesterPivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first()
 		_ = try await storeNextJoinedAppointment(userID: addingUserID, on: req)
@@ -810,11 +883,13 @@ struct FezController: APIRouteCollection {
 	/// `POST /api/v3/fez/:fezID/user/:userID/remove`
 	///
 	/// Remove the specified `User` from the specified FriendlyFez. This lets a fez owner remove others.
+	/// Moderators may also remove users from a fez they don't own; this is logged in the moderator action log.
 	///
 	/// - Parameter fezID: in URL path.
 	/// - Parameter userID: in URL path.
 	/// - Throws: 400 error if user is not in the barrel. 403 error if requester is not fez
-	///   owner. A 5xx response should be reported as a likely bug, please and thank you.
+	///   owner or a moderator, or if the target user is the fez's owner. A 5xx response should
+	///   be reported as a likely bug, please and thank you.
 	/// - Returns: `FezData` containing the updated fez info.
 	func userRemoveHandler(_ req: Request) async throws -> FezData {
 		let requester = try req.auth.require(UserCacheData.self)
@@ -825,15 +900,14 @@ struct FezController: APIRouteCollection {
 		guard fez.fezType != .closed else {
 			throw Abort(.forbidden, reason: "Cannot remove users from closed chat")
 		}
-		guard fez.$owner.id == requester.userID else {
-			throw Abort(.forbidden, reason: "requester does not own \(fez.fezType.lfgLabel)")
-		}
-		guard removeUserID != requester.userID else {
-			throw Abort(.forbidden, reason: "Owner cannot remove themselves from \(fez.fezType.lfgLabel)")
+		try requester.guardCanModifyContent(fez, customErrorString: "requester does not own \(fez.fezType.lfgLabel)")
+		guard removeUserID != fez.$owner.id else {
+			throw Abort(.forbidden, reason: "Cannot remove the owner from \(fez.fezType.lfgLabel)")
 		}
 		// Save a FezEditRecord containing the participant list before removal
 		let fezEdit = try FriendlyFezEdit(fez: fez, editorID: requester.userID)
 		try await fezEdit.save(on: req.db)
+		try await fez.logIfModeratorAction(.edit, moderatorID: requester.userID, on: req)
 		// remove user
 		guard let index = fez.participantArray.firstIndex(of: removeUserID) else {
 			throw Abort(.badRequest, reason: "user is not a member of this \(fez.fezType.lfgLabel)")
@@ -855,19 +929,25 @@ struct FezController: APIRouteCollection {
 	/// Creates a `Report` regarding the specified `Fez`. This reports on the Fez itself, not any of its posts in particular. This could mean a
 	/// Fez with reportable content in its Title, Info, or Location fields, or a bunch of reportable posts in the fez.
 	///
+	/// Only LFGs and Private Events can be reported at the container level this way; the resulting report's type
+	/// will be `.fez` for an LFG or `.privateEvent` for a Private Event. Seamail chats (open or closed) can't be
+	/// reported as a whole--report individual messages instead. Personal Events can't be reported at all, since
+	/// they're visible only to their owner.
+	///
 	/// - Note: The accompanying report message is optional on the part of the submitting user,
 	///   but the `ReportData` is mandatory in order to allow one. If there is no message,
 	///   send an empty string in the `.message` field.
 	///
 	/// - Parameter fezID: in URL path, the Fez ID to report.
 	/// - Parameter requestBody: `ReportData`
+	/// - Throws: 403 error if the Fez is a Seamail chat or a Personal Event.
 	/// - Returns: 201 Created on success.
 	func reportFezHandler(_ req: Request) async throws -> HTTPStatus {
 		let submitter = try req.auth.require(UserCacheData.self)
 		let data = try req.content.decode(ReportData.self)
 		let reportedFez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
-		guard reportedFez.fezType != .closed else {
-			throw Abort(.forbidden, reason: "Cannot file reports on closed chats")
+		guard !reportedFez.fezType.isSeamailType else {
+			throw Abort(.forbidden, reason: "Cannot file reports on Seamail chats. Report individual messages instead.")
 		}
 		guard reportedFez.fezType != .personalEvent else {
 			throw Abort(.forbidden, reason: "Cannot file reports on your own personal event")
@@ -944,6 +1024,22 @@ struct FezController: APIRouteCollection {
 		}
 	}
 
+	/// Sends the complete reaction state for a post to members currently viewing the chat.
+	func forwardReactionChangeToSockets(_ fez: FriendlyFez, postData: FezPostData, on req: Request) async throws {
+		let payload = SocketFezReactionData(postID: postData.postID, reactions: postData.reactions)
+		let data = try JSONEncoder().encode(payload)
+		guard let dataString = String(data: data, encoding: .utf8) else {
+			return
+		}
+		let sockets = try await req.webSocketStore.getChatSockets(fez.requireID())
+		for userSocket in sockets {
+			guard let socketOwner = req.userCache.getUser(userSocket.userID), userCanViewMemberData(user: socketOwner, fez: fez) else {
+			continue
+		}
+			try await userSocket.socket.send(dataString)
+		}
+	}
+
 	// Checks for sockets open on this fez, and sends the membership change info to each of them.
 	func forwardMembershipChangeToSockets(_ fez: FriendlyFez, participantID: UUID, joined: Bool, on req: Request) async throws
 	{
@@ -975,20 +1071,10 @@ struct FezController: APIRouteCollection {
 	func muteAddHandler(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
-		let effectiveUser = getEffectiveUser(user: cacheUser, req: req, fez: fez)
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
 			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
 		}
-		// Without this check Moderator A could mute a chat for all Moderators which
-		// doesn't feel super good. It's also a confusing UX and would require Help
-		// signage to work around. So we're just going to the option to do that.
-		guard effectiveUser.userID == cacheUser.userID else {
-			throw Abort(.badRequest, reason: "Privileged mailbox chats cannot be muted")
-		}
-		guard let fezParticipant = try await fez.$participants.$pivots.query(on: req.db)
-				.filter(\.$user.$id == effectiveUser.userID).first() else {
-			throw Abort(.forbidden, reason: "user is not a member of this fez")
-		}
+		let fezParticipant = try await getOwnFezParticipant(fez: fez, cacheUser: cacheUser, req: req)
 
 		if fezParticipant.isMuted == true {
 			return .ok
@@ -1010,14 +1096,10 @@ struct FezController: APIRouteCollection {
 	func muteRemoveHandler(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
-		let effectiveUser = getEffectiveUser(user: cacheUser, req: req, fez: fez)
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
 			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
 		}
-		guard let fezParticipant = try await fez.$participants.$pivots.query(on: req.db)
-				.filter(\.$user.$id == effectiveUser.userID).first() else {
-			throw Abort(.forbidden, reason: "user is not a member of this fez")
-		}
+		let fezParticipant = try await getOwnFezParticipant(fez: fez, cacheUser: cacheUser, req: req)
 
 		if fezParticipant.isMuted != true {
 			return .ok
@@ -1025,6 +1107,58 @@ struct FezController: APIRouteCollection {
 		fezParticipant.isMuted = nil
 		try await fezParticipant.save(on: req.db)
 		_ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
+		return .noContent
+	}
+
+	/// `POST /api/v3/fez/:fez_ID/favorite`
+	///
+	/// Favorite the specified `Fez` for the current user. Lets the user flag a chat (Seamail, LFG, or
+	/// Private Event) they intend to come back to later; offers a filter criteria similar to `onlynew`.
+	/// Only members of the fez may favorite it. Unjoining a fez implies unfavoriting it, as the favorite
+	/// flag is stored on the per-user membership pivot, which is deleted on unjoin.
+	///
+	/// For privileged mailboxes (the shared `@moderator`/`@TwitarrTeam` seamail), favoriting uses the
+	/// requesting user's own `FezParticipant` pivot, not a pivot shared by the whole team, so favoriting
+	/// a privileged-mailbox chat only affects the user who favorited it.
+	///
+	/// - Parameter fez_ID: In the URL path.
+	/// - Returns: 201 Created on success; 200 OK if already favorited.
+	func favoriteAddHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
+			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
+		}
+		let fezParticipant = try await getOwnFezParticipant(fez: fez, cacheUser: cacheUser, req: req)
+
+		if fezParticipant.isFavorite {
+			return .ok
+		}
+		fezParticipant.isFavorite = true
+		try await fezParticipant.save(on: req.db)
+		return .created
+	}
+
+	/// `POST /api/v3/fez/:fez_ID/favorite/remove`
+	/// `DELETE /api/v3/fez/:fez_ID/favorite`
+	///
+	/// Unfavorite the specified `Fez` for the current user.
+	///
+	/// - Parameter fez_ID: In the URL path.
+	/// - Returns: 204 No Content on success; 200 OK if already not favorited.
+	func favoriteRemoveHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
+			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
+		}
+		let fezParticipant = try await getOwnFezParticipant(fez: fez, cacheUser: cacheUser, req: req)
+
+		if !fezParticipant.isFavorite {
+			return .ok
+		}
+		fezParticipant.isFavorite = false
+		try await fezParticipant.save(on: req.db)
 		return .noContent
 	}
 }
@@ -1036,10 +1170,43 @@ extension FezController {
 	// This is the bulk of the joinedHandler, pulled out into a separate fn. This allows us to modify the urlQuery arguments
 	// before calling.
 	func getJoinedChats(_ req: Request, urlQuery: FezURLQueryStruct) async throws -> FezListData {
+		let pagination = urlQuery.pagination
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let effectiveUser = try getEffectiveUser(user: cacheUser, req: req)
-		let query = FezParticipant.query(on: req.db).filter(\.$user.$id == effectiveUser.userID)
+
+		// If accessing a privileged mailbox, we need to include fezzes where the privileged mailbox user is a participant
+		// and ensure FezParticipants exist for the actual user
+		if effectiveUser.userID != cacheUser.userID {
+			// Find all FezParticipants where the privileged mailbox user is the participant
+			// This gives us all fezzes where the privileged mailbox user is a member
+			let privilegedPivots = try await FezParticipant.query(on: req.db)
+				.filter(\.$user.$id == effectiveUser.userID)
+				.join(FriendlyFez.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
+				.all()
+			
+			// Ensure FezParticipants exist for the actual user for these privileged mailbox conversations
+			for privilegedPivot in privilegedPivots {
+				let fez = try privilegedPivot.joined(FriendlyFez.self)
+				_ = try await ensureFezParticipantForUser(fez: fez, user: cacheUser, on: req, isPrivilegedMailbox: true)
+			}
+		}
+		
+		// We just also need to do a particiation check against the effective user
+		// now that we build pivots for privileged mailboxes.
+		let query = FezParticipant.query(on: req.db)
 			.join(FriendlyFez.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
+			// Use the actual user's ID because we always track particiation now.
+			.filter(\.$user.$id == cacheUser.userID)
+			// This next part is hideous but seems to be the only schema-safe way to do a
+			// "FIELD contains VALUE" filter when what we want is "VALUE in FIELD".
+			// This uses the effective user because that dictates whether you're coming in as
+			// actual user or privileged mailbox user. Simply filtering on actual shows privileged
+			// chats in the personal seamail.
+			.filter(
+				DatabaseQuery.Field.path(FriendlyFez.path(for: \.$participantArray), schema: FriendlyFez.schema),
+				.custom("@>"),
+				DatabaseQuery.Value.custom("ARRAY['\(unsafeRaw: effectiveUser.userID.uuidString)']::uuid[]" as SQLQueryString)
+			)
 		if let includeTypes = try urlQuery.getTypes() {
 			query.filter(FriendlyFez.self, \.$fezType ~~ includeTypes)
 		}
@@ -1062,17 +1229,33 @@ extension FezController {
 
 		if let onlyNew = urlQuery.onlynew {
 			// Uses a custom filter to test "readCount + hiddenCount < FriendlyFez.postCount". If true, there's unread messages
-			// in this chat. Because it uses a custom filter for parameter 1, the other params use the weird long-form notation.
-			query.filter(
-				DatabaseQuery.Field.custom("\(FezParticipant().$readCount.key) + \(FezParticipant().$hiddenCount.key)"),
-				onlyNew ? DatabaseQuery.Filter.Method.lessThan : DatabaseQuery.Filter.Method.equal,
-				DatabaseQuery.Field.path(FriendlyFez.path(for: \.$postCount), schema: FriendlyFez.schema)
-			)
+			// in this chat. Also includes chats where addedTo == true (user was recently added to the chat).
+			// Because it uses a custom filter for parameter 1, the other params use the weird long-form notation.
+			if onlyNew {
+				// Include fezzes with unread messages OR where user was recently added
+				query.group(.or) { group in
+					group.filter(
+						DatabaseQuery.Field.custom("\(FezParticipant().$readCount.key) + \(FezParticipant().$hiddenCount.key)"),
+						DatabaseQuery.Filter.Method.lessThan,
+						DatabaseQuery.Field.path(FriendlyFez.path(for: \.$postCount), schema: FriendlyFez.schema)
+					)
+					group.filter(FezParticipant.self, \.$addedTo == true)
+				}
+			} else {
+				// Only include fezzes with no unread messages AND not recently added
+				query.filter(
+					DatabaseQuery.Field.custom("\(FezParticipant().$readCount.key) + \(FezParticipant().$hiddenCount.key)"),
+					DatabaseQuery.Filter.Method.equal,
+					DatabaseQuery.Field.path(FriendlyFez.path(for: \.$postCount), schema: FriendlyFez.schema)
+				)
+				query.filter(FezParticipant.self, \.$addedTo == false)
+			}
+		}
+		if urlQuery.favorite == true {
+			query.filter(FezParticipant.self, \.$isFavorite == true)
 		}
 		if var searchStr = urlQuery.search {
-			searchStr = searchStr.replacingOccurrences(of: "_", with: "\\_")
-				.replacingOccurrences(of: "%", with: "\\%")
-				.trimmingCharacters(in: .whitespacesAndNewlines)
+			searchStr = searchStr.escapedForSQLWildcards()
 			query.join(FezPost.self, on: \FezPost.$fez.$id == \FriendlyFez.$id, method: .left)
 			query.group(.or) { group in
 				group.fullTextFilter(FezPost.self, \.$text, searchStr)
@@ -1087,12 +1270,12 @@ extension FezController {
 		}
 		let fezCount = try await query.count()
 		let pivots = try await query.copy().sort(FezParticipant.self, \.$isMuted, .descending)
-			.sort(FriendlyFez.self, \.$updatedAt, .descending).range(urlQuery.calcRange()).all()
+			.sort(FriendlyFez.self, \.$updatedAt, .descending).range(pagination.range).all()
 		let fezDataArray = try pivots.map { pivot -> FezData in
 			let fez = try pivot.joined(FriendlyFez.self)
-			return try buildFezData(from: fez, with: pivot, for: effectiveUser, on: req)
+			return try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
 		}
-		return FezListData(paginator: Paginator(total: fezCount, start: urlQuery.calcStart(), limit: urlQuery.calcLimit()),
+		return FezListData(paginator: Paginator(total: fezCount, start: pagination.start, limit: pagination.limit),
 				fezzes: fezDataArray)
 	}
 
@@ -1147,10 +1330,17 @@ extension FezController {
 			_ = try await storeNextJoinedAppointment(userID: fezParticipant, on: req)
 		}
 		let addedInitialUsers = Set(initialUsers).subtracting([user.userID, creator.userID])
-		let infoStr = "@\(creator.username) added you to their \(fez.fezType.lfgLabel) titled \"\(fez.title)\""
-		try await addNotifications(users: Array(addedInitialUsers), type: .addedToChat(fez.requireID(), fez.fezType), info: infoStr, on: req)
+		// Notify users who were added (does not include the creator)
+		try await notifyAddedToFez(fez, for: Array(addedInitialUsers), by: creator, on: req)
+		var posts: [FezPostData] = []
+		if let firstPost = data.firstPost {
+			guard fez.fezType != .personalEvent else {
+				throw Abort(.badRequest, reason: "Personal Events don't have posts.")
+			}
+			posts = [try await addFezPost(to: fez, data: firstPost, cacheUser: user, on: req)]
+		}
 		let creatorPivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == creator.userID).first()
-		let fezData = try buildFezData(from: fez, with: creatorPivot, posts: [], for: user, on: req)
+		let fezData = try buildFezData(from: fez, with: creatorPivot, posts: posts, for: user, on: req)
 		return fezData
 	}
 	
@@ -1241,7 +1431,8 @@ extension FezController {
 			// appears with unread messages that cannot be cleared.
 			let postCount = fez.postCount - (pivot?.hiddenCount ?? 0)
 			fezData.members = FezData.MembersOnlyData(participants: participants, waitingList: waitingList, postCount: postCount,
-					readCount: pivot?.readCount ?? postCount, posts: posts, isMuted: pivot?.isMuted ?? false)
+					readCount: pivot?.readCount ?? postCount, posts: posts, isMuted: pivot?.isMuted ?? false,
+					isFavorite: pivot?.isFavorite ?? false)
 		} else if fez.fezType.isPrivateEventType {
 			// We need to let non-members see private events they're not currently a member of (so they can report them), but
 			// they should only see a minimum amount of info on the event they're not in.
@@ -1253,14 +1444,22 @@ extension FezController {
 		return fezData
 	}
 
-	// Remember that there can be posts by authors who are not currently participants.
+	/// Builds one chat post response with all current reactions.
 	private func buildFezPostData(_ post: FezPost, for user: UserCacheData, on req: Request) async throws -> FezPostData {
 		let reactions = try await FezPostReaction.query(on: req.db).filter(\.$post.$id == post.requireID()).all()
 		let groupedReactions = Dictionary(grouping: reactions, by: \.emoji)
-		let reactionData = groupedReactions.keys.sorted().map { emoji in
-			ReactionData(emoji: emoji, users: req.userCache.getHeaders(groupedReactions[emoji]?.map(\.$user.id) ?? []))
+		let reactionData = groupedReactions.keys.sorted().map { reaction in
+			ReactionData(
+				reaction: reaction,
+				users: req.userCache.getHeaders(groupedReactions[reaction]?.map(\.$user.id) ?? [])
+			)
 		}
-		return try FezPostData(post: post, author: req.userCache.getHeader(post.$author.id), reactions: reactionData, overrideQuarantine: user.accessLevel.hasAccess(.moderator))
+		return try FezPostData(
+			post: post,
+			author: req.userCache.getHeader(post.$author.id),
+			reactions: reactionData,
+			overrideQuarantine: user.accessLevel.hasAccess(.moderator)
+		)
 	}
 
 	// Remember that there can be posts by authors who are not currently participants.
@@ -1269,63 +1468,61 @@ extension FezController {
 	{
 		let readCount = pivot?.readCount ?? 0
 		let hiddenCount = pivot?.hiddenCount ?? 0
-		let limit = (req.query[Int.self, at: "limit"] ?? 50).clamped(to: 0...Settings.shared.maximumTwarrts)
-		let start = (req.query[Int.self, at: "start"] ?? ((readCount - 1) / limit) * limit)
-			.clamped(to: 0...fez.postCount)
+		let requestedPagination = Pagination(on: req, maxPageSize: Settings.shared.maximumTwarrts)
+		let defaultStart = ((readCount - 1) / requestedPagination.limit) * requestedPagination.limit
+		let pagination = Pagination(
+			start: req.query[Int.self, at: "start"],
+			limit: requestedPagination.limit,
+			defaultStart: defaultStart,
+			maxPageSize: Settings.shared.maximumTwarrts
+		)
+		let boundedPagination = Pagination(
+			start: pagination.start.clamped(to: 0...fez.postCount),
+			limit: pagination.limit,
+			maxPageSize: Settings.shared.maximumTwarrts
+		)
 		// get posts
 		let posts = try await FezPost.query(on: req.db)
 			.filter(\.$fez.$id == fez.requireID())
 			.filter(\.$author.$id !~ user.getBlocks())
 			.filter(\.$author.$id !~ user.getMutes())
 			.sort(\.$createdAt, .ascending)
-			.range(start..<(start + limit))
+			.range(boundedPagination.range)
 			.all()
 		let postIDs = try posts.map { try $0.requireID() }
 		let allReactions = try await FezPostReaction.query(on: req.db).filter(\.$post.$id ~~ postIDs).all()
 		var postReactionMap = [Int: [String: [UUID]]]()
 		for reaction in allReactions {
-			let postID = reaction.$post.id
-			postReactionMap[postID, default: [:]][reaction.emoji, default: []].append(reaction.$user.id)
+			postReactionMap[reaction.$post.id, default: [:]][reaction.emoji, default: []].append(reaction.$user.id)
 		}
-		let postDatas = try posts.map {
-			let postID = try $0.requireID()
+		let postDatas = try posts.map { post in
+			let postID = try post.requireID()
 			let grouped = postReactionMap[postID] ?? [:]
-			let reactionData = grouped.keys.sorted().map { emoji in
-				ReactionData(emoji: emoji, users: req.userCache.getHeaders(grouped[emoji] ?? []))
+			let reactionData = grouped.keys.sorted().map { reaction in
+				ReactionData(reaction: reaction, users: req.userCache.getHeaders(grouped[reaction] ?? []))
 			}
 			return try FezPostData(
-				post: $0,
-				author: req.userCache.getHeader($0.$author.id),
+				post: post,
+				author: req.userCache.getHeader(post.$author.id),
 				reactions: reactionData,
 				overrideQuarantine: user.accessLevel.hasAccess(.moderator)
 			)
 		}
-		let paginator = Paginator(total: fez.postCount - hiddenCount, start: start, limit: limit)
+		let paginator = Paginator(
+			total: fez.postCount - hiddenCount,
+			start: boundedPagination.start,
+			limit: boundedPagination.limit
+		)
 
 		// If this batch of posts is farther into the thread than the user has previously read, increase
 		// the user's read count.
-		if let pivot = pivot, start + limit > pivot.readCount {
-			pivot.readCount = min(start + limit, fez.postCount - pivot.hiddenCount)
+		if let pivot = pivot, boundedPagination.range.upperBound > pivot.readCount {
+			pivot.readCount = min(boundedPagination.range.upperBound, fez.postCount - pivot.hiddenCount)
 			try await pivot.save(on: req.db)
 			// If the user has now read all the posts (except those hidden from them) mark this notification as viewed.
+			// Only mark as read for the current user, not all users in the privileged mailbox group.
 			if pivot.readCount + pivot.hiddenCount >= fez.postCount {
 				try await markNotificationViewed(user: user, type: .chatUnreadMsg(fez.requireID(), fez.fezType), on: req)
-				// If the user is part of a privileged mailbox (currently TwitarrTeam and Moderator)
-				// the first user to read the message counts it as read for everyone. The pivot
-				// has already been updated to reflect this, but a Redis notification will exist
-				// until this block executes which will mark the conversation read for all other
-				// privileged users of that level.
-				if let effectiveUsername = PrivilegedUser(rawValue: effectiveUser.username) {
-					var cacheUsers: [UserCacheData] = []
-					switch effectiveUsername {
-						case .TwitarrTeam: cacheUsers = req.userCache.allUsersWithAccessLevel(.twitarrteam)
-						case .moderator: cacheUsers = req.userCache.allUsersWithAccessLevel(.moderator)
-						case .admin, .THO: break // No special mailboxes for them.
-					}
-					// Mark as read for everyone in the group except the current user. We already
-					// did that above. Very minor optimization.
-					try await markNotificationViewed(for: cacheUsers.filter { $0.userID != user.userID }, type: .chatUnreadMsg(fez.requireID(), fez.fezType), on: req)
-				}
 			}
 		}
 		return (postDatas, paginator)
@@ -1344,6 +1541,107 @@ extension FezController {
 			return result
 		}
 		return try FezParticipant(userID, lfg)
+	}
+
+	/// Resolves the `FezParticipant` pivot to use for per-user chat settings (mute, favorite) actions.
+	/// These settings are always tracked per actual user, even when the fez is a privileged mailbox chat
+	/// (`@moderator`/`@TwitarrTeam` seamail) that multiple real users share access to--each real user gets
+	/// their own pivot for it (see `ensureFezParticipantForUser`), so muting/favoriting a privileged-mailbox
+	/// chat only affects the user who did it. We don't want `getEffectiveUser(user:req:fez:)`'s persona
+	/// substitution here, only its "is this a privileged mailbox chat" signal, to decide whether to
+	/// auto-create the calling user's own pivot if they haven't got one yet.
+	///
+	/// - Parameters:
+	///   - fez: The FriendlyFez being muted/favorited.
+	///   - cacheUser: The actual requesting user (never a moderator/TwitarrTeam persona).
+	///   - req: The Request for database access.
+	/// - Throws: 403 error if the fez isn't a privileged mailbox chat and the user has no existing pivot (isn't a member).
+	/// - Returns: The requesting user's own `FezParticipant` pivot for this fez.
+	func getOwnFezParticipant(fez: FriendlyFez, cacheUser: UserCacheData, req: Request) async throws -> FezParticipant {
+		let effectiveUser = getEffectiveUser(user: cacheUser, req: req, fez: fez)
+		if effectiveUser.userID != cacheUser.userID {
+			return try await ensureFezParticipantForUser(fez: fez, user: cacheUser, on: req, isPrivilegedMailbox: true)
+		}
+		guard let pivot = try await fez.$participants.$pivots.query(on: req.db)
+				.filter(\.$user.$id == cacheUser.userID).first() else {
+			throw Abort(.forbidden, reason: "user is not a member of this fez")
+		}
+		return pivot
+	}
+
+	/// Ensures a FezParticipant exists for the given user and fez, creating and initializing it if needed.
+	/// This is used when accessing privileged mailbox conversations to ensure per-user read tracking.
+	///
+	/// - Parameters:
+	///   - fez: The FriendlyFez to ensure participation for
+	///   - user: The UserCacheData for the actual user (not the effective/privileged mailbox user)
+	///   - req: The Request for database access
+	///   - isPrivilegedMailbox: Whether this is for a privileged mailbox context (effectiveUser != cacheUser)
+	/// - Returns: The FezParticipant for the user, either existing or newly created
+	func ensureFezParticipantForUser(fez: FriendlyFez, user: UserCacheData, on req: Request, isPrivilegedMailbox: Bool = false) async throws -> FezParticipant {
+		// Check if a FezParticipant already exists
+		if let existingPivot = try await getUserPivot(lfg: fez, userID: user.userID, on: req.db) {
+			return existingPivot
+		}
+		
+		// Create a new FezParticipant for the user
+		let pivot = try await getUserPivotForAdd(lfg: fez, userID: user.userID, on: req.db)
+		
+		// Initialize readCount and hiddenCount
+		let blocksAndMutes = user.getBlocks().union(user.getMutes())
+		pivot.hiddenCount = try await fez.$fezPosts.query(on: req.db).filter(\.$author.$id ~~ blocksAndMutes).count()
+		
+		// Initialize readCount based on context
+		if isPrivilegedMailbox {
+			// For privileged mailbox conversations, check Redis for existing unread notifications
+			// This ensures the readCount matches the Redis notification state
+			// Exception: If the user is the owner of the fez, they created it, so start as all read
+			if fez.$owner.id == user.userID {
+				// User created this conversation, initialize as all read
+				pivot.readCount = fez.postCount - pivot.hiddenCount
+			} else if let mailbox = getPrivilegedMailboxForFez(fez: fez, on: req) {
+				// Check Redis for unread count
+				let fezID = try fez.requireID()
+				if let redisUnreadCount = try await req.redis.getChatUnreadCount(fezID, for: user.userID, in: mailbox) {
+					// Redis has unread notifications, initialize readCount to reflect unread state
+					// readCount should be: postCount - redisUnreadCount - hiddenCount
+					// This ensures readCount + hiddenCount < postCount when there are unreads
+					pivot.readCount = max(0, fez.postCount - redisUnreadCount - pivot.hiddenCount)
+				} else {
+					// No Redis notification, initialize as all read
+					pivot.readCount = fez.postCount - pivot.hiddenCount
+				}
+			} else {
+				// Couldn't determine mailbox, default to all read
+				pivot.readCount = fez.postCount - pivot.hiddenCount
+			}
+		} else {
+			// For regular conversations, initialize as all read
+			pivot.readCount = fez.postCount - pivot.hiddenCount
+		}
+		
+		try await pivot.save(on: req.db)
+		return pivot
+	}
+
+	/// Determines the appropriate MailInbox for a fez based on privileged mailbox participants.
+	/// Returns the privileged mailbox inbox if TwitarrTeam or moderator is a participant, otherwise returns nil.
+	/// - Parameters:
+	///   - fez: The FriendlyFez to check
+	///   - req: The Request for userCache access
+	/// - Returns: The MailInbox if a privileged mailbox user is a participant, nil otherwise
+	func getPrivilegedMailboxForFez(fez: FriendlyFez, on req: Request) -> MailInbox? {
+		// Check if TwitarrTeam is a participant
+		if let ttUser = req.userCache.getUser(username: PrivilegedUser.TwitarrTeam.rawValue),
+		   fez.participantArray.contains(ttUser.userID) {
+			return .twitarrTeamSeamail
+		}
+		// Check if moderator is a participant
+		if let modUser = req.userCache.getUser(username: PrivilegedUser.moderator.rawValue),
+		   fez.participantArray.contains(modUser.userID) {
+			return .moderatorSeamail
+		}
+		return nil
 	}
 
 	func userCanViewMemberData(user: UserCacheData, fez: FriendlyFez) -> Bool {
@@ -1420,5 +1718,39 @@ extension FezController {
 		}
 		// User is or is not a member of the fez. But they are themself and not anyone special.
 		return user
+	}
+
+	// Sets addedTo = true for the specified users and sends them .addedToChat notifications.
+	// Call this when users are added to a fez by someone else (not when they join voluntarily).
+	func notifyAddedToFez(_ fez: FriendlyFez, for addedUserIDs: [UUID], by adder: UserCacheData, on req: Request) async throws {
+		guard !addedUserIDs.isEmpty else { return }
+		
+		// Set addedTo = true for all added users
+		let addedPivots = try await fez.$participants.$pivots.query(on: req.db)
+			.filter(\.$user.$id ~~ addedUserIDs)
+			.all()
+		for pivot in addedPivots {
+			pivot.addedTo = true
+			try await pivot.save(on: req.db)
+		}
+		
+		// Send notifications to added users
+		try await redisNotifyAddedToFez(fez, users: addedUserIDs, by: adder, on: req)
+	}
+	
+	// Overload that takes a single FezParticipant directly (for when you already have the pivot).
+	// Sends an .addedToChat notification to that user.
+	//
+	// The only caller right now of this function has a preceeding database transaction that sets addedTo = true.
+	// I am keeping this function here for future use and to keep the logic of notifying
+	// in one place.
+	func notifyAddedToFez(_ fez: FriendlyFez, for participant: FezParticipant, by adder: UserCacheData, on req: Request) async throws {
+		try await redisNotifyAddedToFez(fez, users: [participant.$user.id], by: adder, on: req)
+	}
+
+	// Helper function to send a .addedToChat notification to a list of users.
+	private func redisNotifyAddedToFez(_ fez: FriendlyFez, users: [UUID], by adder: UserCacheData, on req: Request) async throws {
+		let infoStr = "@\(adder.username) added you to their \(fez.fezType.lfgLabel) titled \"\(fez.title)\""
+		try await addNotifications(users: users, type: .addedToChat(fez.requireID(), fez.fezType), info: infoStr, on: req)
 	}
 }

@@ -197,7 +197,12 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 
 		privateRoutes.post(fezIDParam, "join", use: fezJoinPostHandler)
 		privateRoutes.post(fezIDParam, "leave", use: fezLeavePostHandler)
+		privateRoutes.post(fezIDParam, "favorite", use: fezAddFavoritePostHandler)
+		privateRoutes.delete(fezIDParam, "favorite", use: fezRemoveFavoritePostHandler)
 		privateRoutes.post(fezIDParam, "post", use: fezThreadPostHandler)
+		privateRoutes.post(fezIDParam, "markRead", use: fezMarkReadPostHandler)
+		privateRoutes.post("post", postIDParam, "react", use: fezPostReactHandler)
+		privateRoutes.post("post", postIDParam, "unreact", use: fezPostUnreactHandler)
 		privateRoutes.post("post", postIDParam, "delete", use: fezPostDeleteHandler)
 		privateRoutes.delete("post", postIDParam, use: fezPostDeleteHandler)
 		privateRoutes.post(fezIDParam, "cancel", use: fezCancelPostHandler)
@@ -453,6 +458,38 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		return .created
 	}
 
+	// POST /lfg/:fez_ID/markRead
+	//
+	// Marks an LFG/Private Event chat as read for the current user. Used by the live-message websocket JS
+	// to clear unread state for posts that were already rendered into the page live.
+	func fezMarkReadPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id")
+		}
+		let response = try await apiQuery(req, endpoint: "/fez/\(fezID)/markRead", method: .POST)
+		return response.status
+	}
+
+	/// Adds the selected Unicode or custom emoji reaction to a chat post.
+	func fezPostReactHandler(_ req: Request) async throws -> FezPostData {
+		return try await fezPostReactionHandler(req, endpoint: "react")
+	}
+
+	/// Removes the selected Unicode or custom emoji reaction from a chat post.
+	func fezPostUnreactHandler(_ req: Request) async throws -> FezPostData {
+		return try await fezPostReactionHandler(req, endpoint: "unreact")
+	}
+
+	/// Forwards a reaction request from the site UI to the API.
+	private func fezPostReactionHandler(_ req: Request, endpoint: String) async throws -> FezPostData {
+		guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez post ID")
+		}
+		let reaction = try req.content.decode(PostReactionData.self)
+		let response = try await apiQuery(req, endpoint: "/fez/post/\(postID)/\(endpoint)", method: .POST, encodeContent: reaction)
+		return try response.content.decode(FezPostData.self)
+	}
+
 	// POST /lfg/post/:fezPost_ID/delete
 	// DELETE /lfg/post/:fezPost_ID
 	//
@@ -485,6 +522,28 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 		}
 		try await apiQuery(req, endpoint: "/fez/\(fezID)/unjoin", method: .POST)
 		return .created
+	}
+
+	// POST /lfg/ID/favorite
+	//
+	// Favorites a fez.
+	func fezAddFavoritePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id")
+		}
+		try await apiQuery(req, endpoint: "/fez/\(fezID)/favorite", method: .POST)
+		return .created
+	}
+
+	// DELETE /lfg/ID/favorite
+	//
+	// Unfavorites a fez.
+	func fezRemoveFavoritePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id")
+		}
+		try await apiQuery(req, endpoint: "/fez/\(fezID)/favorite/remove", method: .POST)
+		return .noContent
 	}
 
 	// POST /lfg/ID/cancel

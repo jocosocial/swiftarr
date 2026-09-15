@@ -14,17 +14,17 @@
 			</div>
 			<ul class="list-group mt-3">
 				<li class="list-group-item active">
-					<b>Upload Schedule Excel Document</b>
+					<b>Upload Performer-Event Links File</b>
 				</li>
 				<li class="list-group-item bg-transparent">
-					Uploads an Excel spreadsheet with info on which performers are performing in which events. This document comes from THO. After tapping 'Upload' you'll be taken to a page that previews
-					what changes the import will have on the database. 
+					Upload the THO performer spreadsheet as an Excel file (.xlsx). Swiftarr reads the <code>Full Schedule</code> worksheet and expects columns named <code>Day</code>, <code>Start</code>, <code>EventName</code>, and <code>Featuring</code>.<br><br>
+					Event names and performer names must match the database exactly. After tapping 'Upload' you'll be taken to a page that previews what changes the import will have on the database.
 				</li>
 				<li class="list-group-item bg-transparent mb-3">				
 					<form class="ajax" action="/admin/performer/link/upload" enctype="multipart/form-data" method="POST" data-successurl="/admin/performer/link/verify" id="userfileuploadform">
 						<div class="container-fluid">
 							<div class="row mb-2"> 
-								<input type="file" accept=".txt" name="performerlinks" required>
+								<input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" name="performerlinks" required>
 							</div>
 							<div class="alert alert-danger mt-3 d-none" role="alert"></div>
 							<div class="row mb-2">

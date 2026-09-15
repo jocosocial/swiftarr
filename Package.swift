@@ -1,10 +1,10 @@
-// swift-tools-version:6.0
+// swift-tools-version:6.3
 import PackageDescription
 
 let package = Package(
 	name: "swiftarr",
 	platforms: [
-		.macOS(.v13)
+		.macOS(.v15)
 	],
 	dependencies: [
 		// Vapor is the server package underlying Twitarr
@@ -30,11 +30,14 @@ let package = Package(
 	    .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.6.0"),
 	    // Cross-platform QR Code generator. Linux doesn't have access to Core Image
 		.package(url: "https://github.com/ApolloZhu/swift_qrcodejs.git", from: "2.2.2"),
+		// FileType is a Swift port of file-type, used to detect image formats from magic bytes.
+		.package(url: "https://github.com/velocityzen/FileType", from: "2.2.1"),
+		// vCard (RFC 6350) encoder for contact export
+		.package(url: "https://github.com/thoven87/icalendar-kit.git", from: "2.1.1"),
 	],
 	targets: [
-		.systemLibrary(name: "gd", pkgConfig: "gdlib", providers: [.apt(["libgd-dev"]), .brew(["gd"]), .yum(["gd-devel"])]),
-		.systemLibrary(name: "jpeg", pkgConfig: "libjpeg", providers: [.apt(["libjpeg-dev"]), .brew(["jpeg-turbo"]), .yum(["libjpeg-turbo-devel"])]),
-		.target(name: "gdOverrides", dependencies: ["gd", "jpeg"], publicHeadersPath: "."),
+		.systemLibrary(name: "Cvips", pkgConfig: "vips", providers: [.apt(["libvips-dev"]), .brew(["vips"]), .yum(["vips-devel"])]),
+		.target(name: "CvipsShim", dependencies: ["Cvips"], publicHeadersPath: "."),
 		.executableTarget(
 			name: "swiftarr",
 			dependencies: [
@@ -48,11 +51,11 @@ let package = Package(
 				.product(name: "Ink", package: "ink"),
 				.product(name: "CoreXLSX", package: "CoreXLSX"),
 				.product(name: "SwiftSoup", package: "SwiftSoup"),
-				"gd",
-				"jpeg",
-				"gdOverrides",
+				"CvipsShim",
 				"ZIPFoundation",
 				.product(name: "QRCodeSwift", package: "swift_qrcodejs"),
+				.product(name: "FileType", package: "FileType"),
+				.product(name: "VCard", package: "icalendar-kit"),
 			],
 			resources: [
 				.copy("Resources"),

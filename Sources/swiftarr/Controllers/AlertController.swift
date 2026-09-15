@@ -29,8 +29,8 @@ struct AlertController: APIRouteCollection {
 		let flexAuthGroup = alertRoutes.flexRoutes()
 		flexAuthGroup.get("global", use: globalNotificationHandler)
 		flexAuthGroup.get("user", use: globalNotificationHandler)
-		flexAuthGroup.get("announcements", use: getAnnouncements)
-		flexAuthGroup.get("dailythemes", use: getDailyThemes)
+		flexAuthGroup.get("announcements", use: getAnnouncements).setUsedForPreregistration()
+		flexAuthGroup.get("dailythemes", use: getDailyThemes).setUsedForPreregistration()
 
 		// endpoints available only when logged in
 		let tokenAuthGroup = alertRoutes.tokenRoutes()
@@ -87,9 +87,9 @@ struct AlertController: APIRouteCollection {
 		}
 		// Get the number of fezzes with unread messages
 		async let userHash = try req.redis.getUserHash(userID: user.userID)
-		async let seamailCounts = try req.redis.getChatUnreadCounts(userID: user.userID, inbox: .seamail)
-		async let lfgCounts = try req.redis.getChatUnreadCounts(userID: user.userID, inbox: .lfgMessages)
-		async let privateEventCounts = try req.redis.getChatUnreadCounts(userID: user.userID, inbox: .privateEvent)
+		async let seamailState = try req.redis.getChatUnreadState(userID: user.userID, inbox: .seamail)
+		async let lfgState = try req.redis.getChatUnreadState(userID: user.userID, inbox: .lfgMessages)
+		async let privateEventState = try req.redis.getChatUnreadState(userID: user.userID, inbox: .privateEvent)
 		async let actives = try getActiveAnnouncementIDs(on: req)
 		async let modData = try getModeratorNotifications(for: user, on: req)
 		let finishedSongCount = try await max(0, req.redis.getIntFromUserHash(userHash, field: .microKaraokeSongReady(0)) -
@@ -111,9 +111,9 @@ struct AlertController: APIRouteCollection {
 			nextLFG = try await storeNextJoinedAppointment(userID: user.userID, on: req)
 		}
 		var result = try await UserNotificationData(
-			seamailCounts: seamailCounts,
-			lfgCounts: lfgCounts,
-			privateEventCounts: privateEventCounts,
+			seamailState: seamailState,
+			lfgState: lfgState,
+			privateEventState: privateEventState,
 			activeAnnouncementIDs: actives,
 			newAnnouncementCount: newAnnouncements,
 			nextEventTime: nextEvent?.0,
@@ -255,8 +255,9 @@ struct AlertController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "TwitarrTeam and THO only")
 		}
 		let announcementData = try ValidatingJSONDecoder().decode(AnnouncementCreateData.self, fromBodyOf: req)
+		let author = try announcementData.effectiveAuthor(on: req, for: .announcement)
 		let announcement = Announcement(
-			authorID: user.userID,
+			authorID: author.userID,
 			text: announcementData.text,
 			displayUntil: announcementData.displayUntil
 		)
@@ -355,6 +356,10 @@ struct AlertController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "TwitarrTeam and THO only")
 		}
 		let announcementData = try ValidatingJSONDecoder().decode(AnnouncementCreateData.self, fromBodyOf: req)
+		// Validate before restoring a deleted announcement so a rejected edit cannot mutate its state.
+		if announcementData.postAsUser != nil {
+			_ = try announcementData.effectiveAuthor(on: req, for: .announcement)
+		}
 		guard let announcementIDStr = req.parameters.get(announcementIDParam.paramString),
 			let announcementID = Int(announcementIDStr)
 		else {

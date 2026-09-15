@@ -14,13 +14,47 @@
 			</div>
 			<div class="row my-2">
 				<div class="col">
-					<b>Registered using code:</b> #(regCode)
+					<b>Registered using code:</b> #if(notEmpty(data.regCode)):#regCode(data.regCode)#else:No registration code found for this user#endif
 				</div>
 			</div>
+			#if(data.accountCreatedAt):
+				<div class="row my-2">
+					<div class="col">
+						<b>Account created:</b> #staticTime(data.accountCreatedAt)
+					</div>
+				</div>
+			#endif
 			#if(data.isForDiscordUser):
 				<div class="row my-2">
 					<div class="col">
 						This is a Discord reg code, given to Discord user "#(data.discordUsername)"
+					</div>
+				</div>
+			#endif
+			<div class="row my-2">
+				<div class="col">
+					<b>Code used to reset password:</b> <span id="recovery-status">#if(data.hasUsedRegCodeForPasswordRecovery):yes#else:no#endif</span>
+				</div>
+			</div>
+			#if(data.hasUsedRegCodeForPasswordRecovery):
+				<div class="row my-2">
+					<div class="col">
+						<button type="button" class="btn btn-primary" autocomplete="off" data-action="showSuccess"
+								data-actionpath="/admin/regcodes/showuser/#(primaryUser.userID)/unlock"
+								data-errordiv="unlock_errorDisplay"
+								data-successdiv="unlock_successDisplay"
+								data-statustarget="recovery-status"
+								data-statusvalue="no">
+							Unlock Password Reset
+							<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+							<span class="visually-hidden">Loading...</span>
+						</button>
+						<div class="alert alert-success d-none mt-2" id="unlock_successDisplay" role="alert">
+							Password reset unlocked.
+						</div>
+						<div class="text-danger d-none mt-2" id="unlock_errorDisplay">
+							Could not unlock password reset: <span class="errortext"></span>
+						</div>
 					</div>
 				</div>
 			#endif

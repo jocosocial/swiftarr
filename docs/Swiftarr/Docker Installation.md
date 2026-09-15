@@ -51,18 +51,18 @@ Run
 
 Images
 ------
-As of 2025-10-27:
+Postgres and Redis use Docker Official Images (`docker.io/library/postgres:15` and `docker.io/library/redis:7`).
+Those tags are available for both AMD64 and ARM64. Containers run as the image users (`postgres` / `redis`), not root.
 
-Bitnami (specifically their new corporate parent Broadcom) obliterated the open source community around their images. Only the `latest` tag is now available. For development use this is fine but can lead to significant swings in underlying tool version. I wish there was an easier solution but none of the other images are both 1) updated recently and 2) present an easy entrypoint for devs.
+Redis does not take a password from an environment variable the way Bitnami did. The stack compose file passes
+`--requirepass` from `REDIS_PASSWORD` in your env file. Postgres uses the Official `POSTGRES_DB` /
+`POSTGRES_USER` / `POSTGRES_PASSWORD` names (aliased from `DATABASE_*` in `Docker-Template.env`).
 
-As of 2022-07-31:
+Data directories differ from the old Bitnami layout (`/bitnami/postgresql` and `/bitnami/redis/data`).
+Existing named volumes will not be read at the new paths (`/var/lib/postgresql/data` and `/data`). After
+switching, recreate volumes and re-migrate:
 
-We desire to support both AMD64 and ARM64 architectures since this offers interoperability between M*-Mac
-devs and Linux devs. Unfortunately the dependency ecosystem around ARM64 is somewhat fragmented. Bitnami,
-who publish excellent images, do [not yet support ARM64 images](https://github.com/bitnami/charts/issues/7305). The
-"Official" images (ie, `docker.io/library/*`) do support ARM64 but lack the convenience wrappers that publishers
-often add (like setting Redis credentials, etc). Canonical started publishing a bunch of images that offer both
-ARM64 support and convenience wrappers but they're still stamped Beta. Until Bitnami improves their ecosystem we're
-gonna use the Ubuntu images.
-
-Historical note: They did improve their ecosystem about a year later and we went back.
+```
+scripts/instance.sh down -v
+scripts/stack.sh -e production down -v
+```

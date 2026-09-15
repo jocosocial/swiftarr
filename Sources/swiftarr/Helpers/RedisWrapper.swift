@@ -228,20 +228,11 @@ extension RedisClient {
 		_ = try await delete(Request.Redis.activeAnnouncementRedisKey).get()
 	}
 
-	// This returns a tuple where the first Int is the number of chats the user has been added to but not yet viewed,
-	// and the second Int is number of chats with unread messages (not the total number of unread messages).
-	func getChatUnreadCounts(userID: UUID, inbox: MailInbox) async throws -> (Int, Int) {
-		let hash = try await hvals(in: inbox.unreadMailRedisKey(userID), as: Int.self).get()
-		let counts = hash.reduce((0, 0)) {
-			if let hashVal = $1 {
-				if hashVal > 9000 {
-					return ($0.0 + 1, $0.1)
-				}
-				return ($0.0, $0.1 + 1)
-			}
-			return $0
-		}
-		return counts
+	// Returns the chats the user was added to but hasn't yet viewed, along with the number of chats that have
+	// unread messages. See `ChatUnreadState`.
+	func getChatUnreadState(userID: UUID, inbox: MailInbox) async throws -> ChatUnreadState {
+		let hash = try await hgetall(from: inbox.unreadMailRedisKey(userID), as: Int.self).get()
+		return ChatUnreadState(unreadMailHash: hash)
 	}
 
 	// Get the unread message count for a given chat in a mailinbox for a user.
@@ -342,5 +333,38 @@ extension RedisClient {
 	// for a given MailInbox for given user to a given value.
 	func setChatUnreadCount(_ value: Int, chatID: UUID, userID: UUID, inbox: MailInbox) async throws {
 		_ = try await hset(chatID.uuidString, to: value, in: inbox.unreadMailRedisKey(userID)).get()
+	}
+}
+
+/// Summarizes the unread state of a single `MailInbox` for a single user. Built from one read of that inbox's hash,
+/// so the chats the user was added to and the counts derived from them can never disagree with each other.
+struct ChatUnreadState {
+	/// The IDs of the chats the user has been added to but has not yet viewed, in no particular order.
+	var addedToChatIDs: [UUID] = []
+	/// The number of chats with unread messages. Not the total number of unread messages; a single chat with 10
+	/// unread messages counts as 1. Chats the user was added to and hasn't yet viewed aren't counted here.
+	var unreadChatCount: Int = 0
+
+	/// The number of chats the user has been added to but not yet viewed.
+	var addedToChatCount: Int { addedToChatIDs.count }
+
+	init() {}
+
+	/// Splits a raw "Unread<mailboxname>-<userID>" hash into the two buckets. Chats the user was added to are stored
+	/// with a value > 9000 (see `userAddedToChat`), so the value tells us which bucket a given chat belongs in.
+	init(unreadMailHash: [String: Int?]) {
+		for (field, value) in unreadMailHash {
+			guard let value else {
+				continue
+			}
+			if value > 9000 {
+				if let chatID = UUID(uuidString: field) {
+					addedToChatIDs.append(chatID)
+				}
+			}
+			else {
+				unreadChatCount += 1
+			}
+		}
 	}
 }

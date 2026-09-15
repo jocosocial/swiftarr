@@ -36,6 +36,11 @@
 							#if(userID == fezPost.author.userID):
 								<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
 							#else:
+								<div class="input-group input-group-sm">
+									<input aria-label="Emoji reaction" class="form-control" data-reaction-input placeholder="Emoji or :custom:" maxlength="64" type="text">
+									<button class="btn btn-outline-primary" data-reaction-action="react" data-reactionpath="/lfg/post/#(fezPost.postID)/react" type="button">React</button>
+									<button class="btn btn-outline-primary" data-reaction-action="unreact" data-reactionpath="/lfg/post/#(fezPost.postID)/unreact" type="button">Remove</button>
+								</div>
 								<a class="btn btn-outline-primary" href="/lfg/post/report/#(fezPost.postID)">Report</a>
 							#endif
 						</div>

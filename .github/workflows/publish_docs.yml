@@ -7,24 +7,32 @@ on:
       - master
 jobs:
   Build:
-    runs-on: macos-15
+    runs-on: ubuntu-24.04
+    container: docker.io/library/swift:6.3-noble
     steps:
-      - name: Install SourceKitten
-        run: brew install sourcekitten
+      - name: Install system dependencies
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends \
+            libvips-dev pkg-config ruby-full build-essential git
       - name: Install Jazzy
-        run: sudo gem install jazzy
-      # They don't support Swift 6 yet.
-      # https://github.com/swift-actions/setup-swift/issues/683
-      # - name: Install Swift
-      #   uses: swift-actions/setup-swift@v2
-      #   with:
-      #     swift-version: "5.10.0"
+        # mustache 1.1.3 (released 2026-08-20) rewrote template_path= to expect a String or
+        # Array; jazzy 0.15.4 hands it a Pathname, so `jazzy` aborts before it renders a page:
+        # "undefined method `map' for #<Pathname:...>". jazzy allows `mustache ~> 1.1`, so an
+        # unpinned install picks 1.1.3 and every docs run fails. Install 1.1.2 first; the
+        # resolver leaves an already-satisfied dependency alone. Drop the pin once jazzy ships
+        # a release that passes a String.
+        run: |
+          gem install mustache -v 1.1.2 --no-document
+          gem install jazzy --no-document
+      - name: Install SourceKitten
+        run: |
+          git clone --depth 1 https://github.com/jpsim/SourceKitten.git /tmp/sourcekitten
+          cd /tmp/sourcekitten && swift build -c release
+          cp .build/release/sourcekitten /usr/local/bin/sourcekitten
       - name: Confirm Swift Version
         run: swift --version
-      - name: Install Swiftarr Dependencies
-        run: brew install gd
       - name: Checkout Swiftarr
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Generate Docs
         run: scripts/generatedocs.sh
       - name: Upload Artifact

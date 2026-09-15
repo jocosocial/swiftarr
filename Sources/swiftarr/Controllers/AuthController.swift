@@ -55,6 +55,7 @@ struct AuthController: APIRouteCollection {
 
 		// open access endpoints
 		authRoutes.post("recovery", use: recoveryHandler)
+		authRoutes.post("username", use: usernameHandler)
 
 		// endpoints available only when not logged in
 		let basicAuthGroup = authRoutes.addBasicAuthRequirement()
@@ -101,7 +102,8 @@ struct AuthController: APIRouteCollection {
 		// see `UserRecoveryData.validations()`
 		let data = try ValidatingJSONDecoder().decode(UserRecoveryData.self, fromBodyOf: req)
 		// find data.username user
-		guard let user = try await User.query(on: req.db).filter(\.$username, .custom("ilike"), data.username).first() else {
+		guard let user = try await User.query(on: req.db).filter(\.$username, .custom("ilike"), data.username).first()
+		else {
 			throw Abort(.badRequest, reason: "username \"\(data.username)\" not found")
 		}
 		// no login for punks
@@ -113,25 +115,24 @@ struct AuthController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "please see a Twit-arr Team member for password recovery")
 		}
 
-		// registration codes and recovery keys are normalized prior to storage
-		let normalizedKey = data.recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
-
-		// protect against ping-pong attack from compromised registration code...
-		// if the code being sent normalizes to 6 characters, it is most likely a
-		// registration code, so abort if it's already been used
-		if normalizedKey.count == 6 {
-			guard user.verification?.first != "*" else {
-				throw Abort(.badRequest, reason: "account must be recovered using the recovery key")
-			}
-		}
-
-		// attempt data.recoveryKey match
+		// Registration codes are normalized (lowercase, all whitespace stripped) prior to storage.
+		// Recovery keys are hashed after ASCII spaces are removed; passwords are matched as typed.
 		var foundMatch = false
-		if normalizedKey == user.verification {
-			foundMatch = true
-			// prevent .verification from being used again
-			if let newVerification = user.verification {
-				user.verification = "*" + newVerification
+		if RegistrationCode.isWellFormed(data.recoveryKey) {
+			// A 6-character alphanumeric key is a registration code, not a password or recovery key.
+			// Spent codes are stored with a '*' prefix on User.verification; do not fall through.
+			if user.verificationUsed {
+				throw Abort(
+					.badRequest,
+					reason: "account must be recovered using the recovery key or an account manager"
+				)
+			}
+			let normalizedKey = RegistrationCode.normalized(data.recoveryKey)
+			if let stored = user.unspentVerification,
+				RegistrationCode.normalized(stored) == normalizedKey
+			{
+				foundMatch = true
+				user.markVerificationUsed()
 			}
 		}
 		else {
@@ -141,8 +142,9 @@ struct AuthController: APIRouteCollection {
 				foundMatch = true
 			}
 			else {
-				// user.recoveryKey is normalized prior to hashing
-				if try verifier.verify(normalizedKey, created: user.recoveryKey) {
+				// user.recoveryKey is hashed from the 3-word key with ASCII spaces removed
+				let normalizedRecoveryKey = data.recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
+				if try verifier.verify(normalizedRecoveryKey, created: user.recoveryKey) {
 					foundMatch = true
 				}
 			}
@@ -172,6 +174,86 @@ struct AuthController: APIRouteCollection {
 			try await req.userCache.updateUser(user.requireID())
 			return try TokenStringData(user: user, token: token)
 		}
+	}
+
+	/// `POST /api/v3/auth/username`
+	///
+	/// Looks up a forgotten username from a registration code plus a second factor. The second
+	/// factor must be the account password or the recovery key generated at account creation.
+	/// A registration code is not accepted as the second factor — even the same code, and even
+	/// a different well-formed 6-character code.
+	///
+	/// The use case is a forgotten username during preregistration or later. The caller already
+	/// has a registration code (mailed before the cruise) and either the password they chose
+	/// or the recovery key shown when the account was created.
+	///
+	/// If the password matches a sub-account, that sub-account's `UserHeader` is returned. The
+	/// recovery key is shared across a primary account and its alts, so a recovery-key match
+	/// returns the primary account.
+	///
+	/// Username lookup does not spend the registration code and does not log the user in.
+	///
+	/// - Note: To prevent brute-force malicious attempts, there is a limit on successive
+	///   failed attempts, currently hard-coded to 5, shared with password recovery.
+	///
+	/// - Parameter requestBody: `UserUsernameLookupData`
+	/// - Throws: 400 error if the lookup fails or the second factor is a registration code.
+	///   403 error if the maximum number of successive failed recovery attempts has been reached.
+	/// - Returns: `UserHeader` for the matching account.
+	func usernameHandler(_ req: Request) async throws -> UserHeader {
+		// see `UserUsernameLookupData.validations()`
+		let data = try ValidatingJSONDecoder().decode(UserUsernameLookupData.self, fromBodyOf: req)
+		let storedCodes = User.storedVerificationValues(for: data.registrationCode)
+
+		let users = try await User.query(on: req.db).filter(\.$verification ~~ storedCodes).all()
+
+		// Same generic failure for unknown codes and bad second factors so a valid
+		// registration code is not distinguishable from a made-up one.
+		let noMatch = Abort(.badRequest, reason: "no match for supplied credentials")
+		guard !users.isEmpty else {
+			throw noMatch
+		}
+
+		// abort if account is seeing potential brute-force attack
+		guard users.allSatisfy({ $0.recoveryAttempts < 5 }) else {
+			throw Abort(.forbidden, reason: "please see a Twit-arr Team member for account recovery")
+		}
+
+		// Prefer a password match (identifies a specific primary or alt) over a recovery-key
+		// match (shared across the family). Walk primaries first so a recovery-key-only hit
+		// returns the account the registration code was originally assigned to.
+		let orderedUsers = users.sorted { lhs, rhs in
+			lhs.$parent.id == nil && rhs.$parent.id != nil
+		}
+		let verifier = BCryptDigest()
+		var passwordMatch: User?
+		var recoveryKeyMatch: User?
+		for user in orderedUsers {
+			// password is matched as typed
+			if try verifier.verify(data.recoveryKey, created: user.password) {
+				passwordMatch = user
+				break
+			}
+			// recoveryKey is hashed from the 3-word key with ASCII spaces removed
+			if recoveryKeyMatch == nil {
+				let normalizedRecoveryKey = data.recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
+				if try verifier.verify(normalizedRecoveryKey, created: user.recoveryKey) {
+					recoveryKeyMatch = user
+				}
+			}
+		}
+
+		// abort if no match
+		guard let matched = passwordMatch ?? recoveryKeyMatch else {
+			// track the attempt count on every account sharing this registration code
+			for user in users {
+				user.recoveryAttempts += 1
+				try await user.save(on: req.db)
+			}
+			throw noMatch
+		}
+
+		return try UserHeader(user: matched)
 	}
 
 	// MARK: - basicAuthGroup Handlers (not logged in)

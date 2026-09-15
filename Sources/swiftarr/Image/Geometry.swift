@@ -1,10 +1,10 @@
-/// Represents errors that can be thrown within the SwiftGD module.
+/// Represents errors that can be thrown by image processing operations.
 ///
 /// - invalidFormat: Image raster format mismatch on import/export
 /// - invalidImage: Contains the reason this error was thrown.
 /// - invalidColor: Contains the reason this error was thrown.
 /// - invalidMaxColors: Asserts sane values for creating indexed Images
-public enum GDError: Swift.Error {
+public enum ImageError: Swift.Error {
 	case invalidFormat
 	case invalidImage(reason: String)  // The reason this error was thrown
 	case invalidColor(reason: String)  // The reason this error was thrown.
@@ -119,7 +119,7 @@ extension Color {
 	public init(hex string: String, leadingAlpha: Bool = false) throws {
 		let string = try Color.sanitize(hex: string, leadingAlpha: leadingAlpha)
 		guard let code = Int(string, radix: 16) else {
-			throw GDError.invalidColor(reason: "0x\(string) is not a valid hex color code")
+			throw ImageError.invalidColor(reason: "0x\(string) is not a valid hex color code")
 		}
 		self.init(hex: code, leadingAlpha: leadingAlpha)
 	}
@@ -170,7 +170,7 @@ extension Color {
 		case 8:  // Fully fledged hex color including alpha (e.g. eebbaa44)
 			return string
 		default:
-			throw GDError.invalidColor(reason: "0x\(string) has invalid hex color string length")
+			throw ImageError.invalidColor(reason: "0x\(string) has invalid hex color string length")
 		}
 	}
 }

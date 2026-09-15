@@ -1,5 +1,0 @@
-module jpeg {
-	umbrella header "swift_jpeg.h"
-	link "jpeg"
-	export *
-}
