@@ -1409,7 +1409,14 @@ struct ForumController: APIRouteCollection {
 	/// Removes the specified emoji reaction from the post.
 	func postUnreactHandler(_ req: Request) async throws -> PostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let maybeEmoji = req.parameters.get("emoji")
+		let maybeEmoji: String?
+		if req.method == .DELETE {
+			// Legacy DELETE /laugh, /like, and /love routes have no JSON body.
+			maybeEmoji = nil
+		}
+		else {
+			maybeEmoji = try req.content.decode(PostReactionData.self).validatedReaction()
+		}
 		// get post and forum
 		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
 			query.with(\.$forum) { forum in
