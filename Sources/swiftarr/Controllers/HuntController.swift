@@ -18,7 +18,7 @@ struct HuntController: APIRouteCollection {
 		let tokenAuthGroup = huntRoutes.tokenRoutes(feature: .hunts)
 		tokenAuthGroup.post("puzzles", puzzleIDParam, "callin", use: callIn)
 
-		let adminAuthGroup = huntRoutes.tokenRoutes(feature: .hunts, minAccess: .twitarrteam)
+		let adminAuthGroup = huntRoutes.tokenRoutes(feature: .hunts, minAccess: .twitarrteam, allowedRoles: [.huntmanager])
 		adminAuthGroup.post("create", use: addHunt).setUsedForPreregistration()
 		adminAuthGroup.get(huntIDParam, "admin", use: getHuntAdmin).setUsedForPreregistration()
 		adminAuthGroup.patch(huntIDParam, use: updateHunt).setUsedForPreregistration()

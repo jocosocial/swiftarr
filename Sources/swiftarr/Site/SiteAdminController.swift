@@ -95,13 +95,13 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.post("userroles", userRoleParam, "addrole", userIDParam, use: addRoleToUser)
 		privateTTRoutes.post("userroles", userRoleParam, "removerole", userIDParam, use: removeRoleFromUser)
 
-		
-		privateTTRoutes.get("hunts", use: huntHandler).setUsedForPreregistration()
-		privateTTRoutes.post("hunt", "create", use: huntPostHandler).setUsedForPreregistration()
-		privateTTRoutes.post("hunt", huntIDParam, "delete", use: huntDeleteHandler).setUsedForPreregistration()
-		privateTTRoutes.get("hunt", huntIDParam, "edit", use: huntEditHandler).setUsedForPreregistration()
-		privateTTRoutes.post("hunt", huntIDParam, "edit", use: huntEditPostHandler).setUsedForPreregistration()
-		privateTTRoutes.post("puzzle", puzzleIDParam, "edit", use: puzzleEditPostHandler).setUsedForPreregistration()
+		let privateHuntRoutes = getPrivateRoutes(app, minAccess: .twitarrteam, allowedRoles: [.huntmanager], path: "admin")
+		privateHuntRoutes.get("hunts", use: huntHandler).setUsedForPreregistration()
+		privateHuntRoutes.post("hunt", "create", use: huntPostHandler).setUsedForPreregistration()
+		privateHuntRoutes.post("hunt", huntIDParam, "delete", use: huntDeleteHandler).setUsedForPreregistration()
+		privateHuntRoutes.get("hunt", huntIDParam, "edit", use: huntEditHandler).setUsedForPreregistration()
+		privateHuntRoutes.post("hunt", huntIDParam, "edit", use: huntEditPostHandler).setUsedForPreregistration()
+		privateHuntRoutes.post("puzzle", puzzleIDParam, "edit", use: puzzleEditPostHandler).setUsedForPreregistration()
 
 		// Mods, TwitarrTeam, and THO levels can all be promoted to, but they all demote back to Verified.
 		let privateTHORoutes = getPrivateRoutes(app, minAccess: .tho, path: "admin")

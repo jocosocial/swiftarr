@@ -890,7 +890,7 @@ extension SiteControllerUtils {
 	// token. They can initiate a web flow with a token, get a session back, and use that to complete the flow. However,
 	// we don't want apps to be able to jump to private web pages.
 	func getPrivateRoutes(_ app: Application, feature: SwiftarrFeature? = nil, minAccess: UserAccessLevel = .banned,
-			path: PathComponent..., overrideMinUserAccessLevel: Bool = false) -> RoutesBuilder {
+			allowedRoles: [UserRoleType] = [], path: PathComponent..., overrideMinUserAccessLevel: Bool = false) -> RoutesBuilder {
 		var builder = app.grouped(path).grouped([
 				app.sessions.middleware,
 				SiteErrorMiddleware(environment: app.environment),
@@ -901,7 +901,7 @@ extension SiteControllerUtils {
 			builder = builder.grouped(UserCacheData.guardMiddleware(throwing: Abort(.unauthorized, reason: "User not authenticated.")))
 		}
 		else {
-			builder = builder.grouped(SiteMinUserAccessLevelMiddleware(requireAuth: true, requireAccessLevel: minAccess))
+			builder = builder.grouped(SiteMinUserAccessLevelMiddleware(requireAuth: true, requireAccessLevel: minAccess, allowedUserRoles: allowedRoles))
 		}
 		if let feature = feature {
 			builder = builder.grouped(DisabledSiteSectionMiddleware(feature: feature))
