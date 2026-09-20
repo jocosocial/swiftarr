@@ -27,6 +27,8 @@ enum UserRoleType: String, CaseIterable, Codable {
 	case performerselfeditor
 	/// Account Managers can look up accounts by registration code and re-enable one-time password recovery.
 	case accountmanager
+	/// Hunt Managers can create and modify Puzzle Hunts.
+	case huntmanager
 
 	/// `.label` returns consumer-friendly case names.
 	var label: String {
@@ -37,6 +39,7 @@ enum UserRoleType: String, CaseIterable, Codable {
 		case .karaokeambassador: return "Micro Karaoke Ambassador"
 		case .performerselfeditor: return "\"Allowed to create/edit their Shadow Event Performer\""
 		case .accountmanager: return "Account Manager"
+		case .huntmanager: return "Hunt Manager"
 		}
 	}
 

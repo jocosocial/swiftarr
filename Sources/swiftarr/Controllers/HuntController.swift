@@ -18,12 +18,12 @@ struct HuntController: APIRouteCollection {
 		let tokenAuthGroup = huntRoutes.tokenRoutes(feature: .hunts)
 		tokenAuthGroup.post("puzzles", puzzleIDParam, "callin", use: callIn)
 
-		let adminAuthGroup = huntRoutes.tokenRoutes(feature: .hunts, minAccess: .twitarrteam)
-		adminAuthGroup.post("create", use: addHunt)
-		adminAuthGroup.get(huntIDParam, "admin", use: getHuntAdmin)
-		adminAuthGroup.patch(huntIDParam, use: updateHunt)
-		adminAuthGroup.patch("puzzles", puzzleIDParam, use: updatePuzzle)
-		adminAuthGroup.delete(huntIDParam, use: deleteHunt)
+		let adminAuthGroup = huntRoutes.tokenRoutes(feature: .hunts, minAccess: .twitarrteam, allowedRoles: [.huntmanager])
+		adminAuthGroup.post("create", use: addHunt).setUsedForPreregistration()
+		adminAuthGroup.get(huntIDParam, "admin", use: getHuntAdmin).setUsedForPreregistration()
+		adminAuthGroup.patch(huntIDParam, use: updateHunt).setUsedForPreregistration()
+		adminAuthGroup.patch("puzzles", puzzleIDParam, use: updatePuzzle).setUsedForPreregistration()
+		adminAuthGroup.delete(huntIDParam, use: deleteHunt).setUsedForPreregistration()
 	}
 
 	func list(_ req: Request) async throws -> HuntListData {

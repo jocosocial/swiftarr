@@ -66,6 +66,7 @@ struct FezController: APIRouteCollection {
 		tokenAuthGroup.on(.POST, "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: createHandler)
 		tokenAuthGroup.on(.POST, fezIDParam, "post", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: postAddHandler)
 		tokenAuthGroup.webSocket(fezIDParam, "socket", onUpgrade: createFezSocket)
+		tokenAuthGroup.post(fezIDParam, "markRead", use: fezMarkReadHandler)
 		tokenAuthGroup.post(fezIDParam, "cancel", use: cancelHandler)
 		tokenAuthGroup.post(fezIDParam, "join", use: joinHandler)
 		tokenAuthGroup.post(fezIDParam, "unjoin", use: unjoinHandler)
@@ -311,6 +312,9 @@ struct FezController: APIRouteCollection {
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
 			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
 		}
+		if fez.fezType.isPrivateEventType, !userCanViewMemberData(user: cacheUser, fez: fez) {
+			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
+		}
 
 		// For privileged mailboxes, use the actual user's ID to query/ensure per-user FezParticipant
 		// This ensures each user has their own read tracking for privileged mailbox conversations
@@ -338,7 +342,33 @@ struct FezController: APIRouteCollection {
 		}
 		return fezData
 	}
-	
+
+	/// `POST /api/v3/fez/ID/markRead`
+	///
+	/// Mark the specified `FriendlyFez` (Seamail, LFG, or Private Event chat) as read for the current user.
+	/// This sets the user's read count to the fez's current post count, effectively marking all posts as
+	/// read without requiring the user to re-fetch them. Intended for chats whose latest post(s) were
+	/// already rendered live via websocket, so the caller doesn't have to re-request the thread just to
+	/// clear its unread state.
+	///
+	/// - Parameter fezID: in URL path
+	/// - Throws: 404 error if the fez is not available, or if the user is not a member.
+	/// - Returns: 201 Created if the read count advanced; 200 OK if already marked as read.
+	func fezMarkReadHandler(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		guard let pivot = try await getUserPivot(lfg: fez, userID: cacheUser.userID, on: req.db) else {
+			throw Abort(.notFound, reason: "user is not member of \(fez.fezType.lfgLabel)")
+		}
+		if pivot.readCount + pivot.hiddenCount >= fez.postCount {
+			return .ok
+		}
+		pivot.readCount = fez.postCount - pivot.hiddenCount
+		try await pivot.save(on: req.db)
+		try await markNotificationViewed(user: cacheUser, type: .chatUnreadMsg(fez.requireID(), fez.fezType), on: req)
+		return .created
+	}
+
 	/// `GET /api/v3/fez/former`
 	/// 
 	/// **Query Parameters:**
@@ -362,7 +392,7 @@ struct FezController: APIRouteCollection {
 		let pivots = try await query.copy().sort(FriendlyFez.self, \.$createdAt, .descending).range(pagination.range).all()
 		let fezDataArray = try pivots.map { pivot -> FezData in
 			let fez = try pivot.joined(FriendlyFez.self)
-			return try buildFezData(from: fez, with: nil, for: effectiveUser, on: req)
+			return try buildFezData(from: fez, with: nil, for: effectiveUser, on: req, formerMember: true)
 		}
 		return FezListData(
 			paginator: Paginator(total: fezCount, start: pagination.start, limit: pagination.limit),
@@ -394,7 +424,10 @@ struct FezController: APIRouteCollection {
 			case .closed: throw Abort(.badRequest, reason: "Cannot add members to a closed chat")
 			case .open: throw Abort(.badRequest, reason: "Cannot add yourself to a Seamail chat. Ask the chat creator to add you.")
 			case .personalEvent: throw Abort(.badRequest, reason: "Cannot add members to a personal event")
-			case .privateEvent: throw Abort(.badRequest, reason: "Cannot add yourself to a Private Event. Ask the event creator to add you.")
+			case .privateEvent:
+				guard fez.visibility == .unlisted else {
+					throw Abort(.badRequest, reason: "Cannot add yourself to a Private Event. Ask the event creator to add you.")
+				}
 			default: break
 		}
 		guard !fez.participantArray.contains(cacheUser.userID) else {
@@ -457,7 +490,7 @@ struct FezController: APIRouteCollection {
 		try await deleteFezNotifications(userIDs: [cacheUser.userID], fez: fez, on: req)
 		try await forwardMembershipChangeToSockets(fez, participantID: cacheUser.userID, joined: false, on: req)
 		_ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
-		return try buildFezData(from: fez, with: nil, for: cacheUser, on: req)
+		return try buildFezData(from: fez, with: nil, for: cacheUser, on: req, formerMember: true)
 	}
 
 	// MARK: Posts
@@ -976,6 +1009,9 @@ struct FezController: APIRouteCollection {
 		}
 		let fezParticipant = try await getOwnFezParticipant(fez: fez, cacheUser: cacheUser, req: req)
 
+		if fezParticipant.isFavorite {
+			throw Abort(.badRequest, reason: "Cannot mute a favorited \(fez.fezType.lfgLabel).")
+		}
 		if fezParticipant.isMuted == true {
 			return .ok
 		}
@@ -1031,6 +1067,9 @@ struct FezController: APIRouteCollection {
 		}
 		let fezParticipant = try await getOwnFezParticipant(fez: fez, cacheUser: cacheUser, req: req)
 
+		if fezParticipant.isMuted == true {
+			throw Abort(.badRequest, reason: "Cannot favorite a muted \(fez.fezType.lfgLabel).")
+		}
 		if fezParticipant.isFavorite {
 			return .ok
 		}
@@ -1215,7 +1254,8 @@ extension FezController {
 		guard initialUsers.count >= 1 else {
 			throw Abort(.badRequest, reason: "Cannot create \(data.fezType.lfgLabel) with 0 participants")
 		}
-		let fez = FriendlyFez(owner: creator.userID, fezType: data.fezType, title: data.title, info: data.info,
+		let visibility = try resolveVisibilityForCreate(fezType: data.fezType, requested: data.visibility)
+		let fez = FriendlyFez(owner: creator.userID, fezType: data.fezType, visibility: visibility, title: data.title, info: data.info,
 				location: data.location, startTime: data.startTime, endTime: data.endTime, minCapacity: data.minCapacity,
 				maxCapacity: data.maxCapacity)
 		fez.participantArray = initialUsers
@@ -1265,13 +1305,15 @@ extension FezController {
 		if fez.fezType.isSeamailType {
 			try guardEditSeamail(fez: fez, data: data)
 		}
-		
+		let visibility = try resolveVisibilityForUpdate(fez: fez, requested: data.visibility, cacheUser: cacheUser)
+
 		if data.title != fez.title || data.location != fez.location || data.info != fez.info {
 			let fezEdit = try FriendlyFezEdit(fez: fez, editorID: cacheUser.userID)
 			try await fez.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: req)
 			try await fezEdit.save(on: req.db)
 		}
 		fez.fezType = data.fezType
+		fez.visibility = visibility
 		fez.title = data.title
 		fez.info = data.info
 		fez.startTime = Settings.shared.timeZoneChanges.serverTimeToPortTime(data.startTime)
@@ -1296,7 +1338,7 @@ extension FezController {
 	// To read the 'moderator' or 'twitarrteam' seamail, verify the requestor has access and call this fn with
 	// the effective user's account.
 	func buildFezData(from fez: FriendlyFez, with pivot: FezParticipant? = nil, posts: [FezPostData]? = nil,
-			for cacheUser: UserCacheData, on req: Request) throws -> FezData {
+			for cacheUser: UserCacheData, on req: Request, formerMember: Bool = false) throws -> FezData {
 		let userBlocks = cacheUser.getBlocks()
 		// init return struct
 		let ownerHeader = try req.userCache.getHeader(fez.$owner.id)
@@ -1333,13 +1375,18 @@ extension FezController {
 			fezData.members = FezData.MembersOnlyData(participants: participants, waitingList: waitingList, postCount: postCount,
 					readCount: pivot?.readCount ?? postCount, posts: posts, isMuted: pivot?.isMuted ?? false,
 					isFavorite: pivot?.isFavorite ?? false)
-		} else if fez.fezType.isPrivateEventType {
-			// We need to let non-members see private events they're not currently a member of (so they can report them), but
-			// they should only see a minimum amount of info on the event they're not in.
-			fezData.info = ""
-			fezData.startTime = nil
-			fezData.endTime = nil
-			fezData.location = nil
+		} else {
+			switch fez.visibility {
+			case .private:
+				// Former members retain the ability to see the (limited) data returned here, even though
+				// they're not currently members--e.g. `/fez/former`. Everyone else is denied outright.
+				guard formerMember else {
+					throw Abort(.forbidden, reason: "You do not have access to this \(fez.fezType.lfgLabel)")
+				}
+			case .public, .unlisted:
+				// fezData already has full title/info/location/times; .members stays nil.
+				break
+			}
 		}
 		return fezData
 	}
@@ -1510,6 +1557,46 @@ extension FezController {
 
 	func userCanViewMemberData(user: UserCacheData, fez: FriendlyFez) -> Bool {
 		return user.accessLevel.hasAccess(.moderator) || fez.participantArray.contains(user.userID)
+	}
+
+	/// Resolves and validates the `visibility` to use for a newly-created fez.
+	///
+	/// Every fez type other than `.privateEvent` has a fixed visibility (its `FezVisibility.defaultVisibility(for:)`);
+	/// requesting anything else for those types is a 400. `.privateEvent` may additionally be `.unlisted`, but never `.public`.
+	func resolveVisibilityForCreate(fezType: FezType, requested: FezVisibility?) throws -> FezVisibility {
+		let visibility = requested ?? FezVisibility.defaultVisibility(for: fezType)
+		guard fezType == .privateEvent else {
+			guard visibility == FezVisibility.defaultVisibility(for: fezType) else {
+				throw Abort(.badRequest, reason: "Cannot set visibility on a \(fezType.lfgLabel)")
+			}
+			return visibility
+		}
+		guard visibility != .public else {
+			throw Abort(.badRequest, reason: "Private Events cannot be set to public visibility")
+		}
+		return visibility
+	}
+
+	/// Resolves and validates the `visibility` to use when updating a fez.
+	///
+	/// Omitting `requested` leaves the fez's current visibility unchanged. Changing visibility is a 400 for
+	/// every fez type other than `.privateEvent` (it's fixed even for moderators), never allows `.public` on
+	/// a `.privateEvent`, and is otherwise owner-only.
+	func resolveVisibilityForUpdate(fez: FriendlyFez, requested: FezVisibility?, cacheUser: UserCacheData) throws -> FezVisibility {
+		let newVisibility = requested ?? fez.visibility
+		guard newVisibility != fez.visibility else {
+			return fez.visibility
+		}
+		guard fez.fezType == .privateEvent else {
+			throw Abort(.badRequest, reason: "Cannot change visibility of a \(fez.fezType.lfgLabel)")
+		}
+		guard newVisibility != .public else {
+			throw Abort(.badRequest, reason: "Private Events cannot be set to public visibility")
+		}
+		guard cacheUser.userID == fez.$owner.id else {
+			throw Abort(.forbidden, reason: "Only the owner can change this Private Event's visibility")
+		}
+		return newVisibility
 	}
 
 	/// Validates edits against a seamail.

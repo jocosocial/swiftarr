@@ -11,6 +11,11 @@ struct CreatePrivateEventPostFormContent: Codable {
 	var postText: String
 	var inviteOthers: String?
 	var participants: String  // Comma separated list of participant usernames
+	var unlisted: String?
+	// Hidden marker, present iff the visibility toggle was actually rendered on the page (only true for
+	// Private Events--not Personal Events--on both create and update). Distinguishes "toggle shown but left
+	// unchecked" (which must send .private) from "toggle not shown at all" (which must leave visibility untouched).
+	var showVisibilityOption: String?
 }
 
 struct PrivateEventListPageContext: Encodable {
@@ -411,7 +416,10 @@ struct SitePrivateEventController: SiteControllerUtils {
 	// POST /privateevent/create
 	// POST /privateevent/ID/update
 	// Handles the POST from either the Create Or Update Private Event page
-	func peCreateOrUpdatePostHandler(_ req: Request) async throws -> HTTPStatus {
+	func peCreateOrUpdatePostHandler(_ req: Request) async throws -> Response {
+		struct NewFezResponse: Content {
+			var fezID: UUID
+		}
 		let postStruct = try req.content.decode(CreatePrivateEventPostFormContent.self)
 		let fezType: FezType = postStruct.inviteOthers == "on" ? .privateEvent : .personalEvent
 		guard postStruct.subject.count > 0 else {
@@ -429,6 +437,7 @@ struct SitePrivateEventController: SiteControllerUtils {
 		participants = Array(Set(participants))
 		var fezContentData = FezContentData(
 			fezType: fezType,
+			visibility: postStruct.showVisibilityOption != nil ? (postStruct.unlisted == "on" ? .unlisted : .private) : nil,
 			title: postStruct.subject,
 			info: postStruct.postText,
 			startTime: startTime,
@@ -438,6 +447,7 @@ struct SitePrivateEventController: SiteControllerUtils {
 			maxCapacity: 0,
 			initialUsers: participants
 		)
+		let isCreating = req.parameters.get(fezIDParam.paramString) == nil
 		var path = "/fez/create"
 		if let updatingFezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() {
 			path = "/fez/\(updatingFezID)/update"
@@ -445,8 +455,13 @@ struct SitePrivateEventController: SiteControllerUtils {
 			let fez = try response.content.decode(FezData.self)
 			fezContentData.fezType = fez.fezType
 		}
-		try await apiQuery(req, endpoint: path, method: .POST, encodeContent: fezContentData)
-		return .created
+		let apiResponse = try await apiQuery(req, endpoint: path, method: .POST, encodeContent: fezContentData)
+		let response = Response(status: .created)
+		if isCreating {
+			let newFez = try apiResponse.content.decode(FezData.self)
+			try response.content.encode(NewFezResponse(fezID: newFez.fezID))
+		}
+		return response
 	}
 
 	// GET /privateevent/ID
