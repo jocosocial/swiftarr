@@ -411,7 +411,10 @@ struct SitePrivateEventController: SiteControllerUtils {
 	// POST /privateevent/create
 	// POST /privateevent/ID/update
 	// Handles the POST from either the Create Or Update Private Event page
-	func peCreateOrUpdatePostHandler(_ req: Request) async throws -> HTTPStatus {
+	func peCreateOrUpdatePostHandler(_ req: Request) async throws -> Response {
+		struct NewFezResponse: Content {
+			var fezID: UUID
+		}
 		let postStruct = try req.content.decode(CreatePrivateEventPostFormContent.self)
 		let fezType: FezType = postStruct.inviteOthers == "on" ? .privateEvent : .personalEvent
 		guard postStruct.subject.count > 0 else {
@@ -438,6 +441,7 @@ struct SitePrivateEventController: SiteControllerUtils {
 			maxCapacity: 0,
 			initialUsers: participants
 		)
+		let isCreating = req.parameters.get(fezIDParam.paramString) == nil
 		var path = "/fez/create"
 		if let updatingFezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() {
 			path = "/fez/\(updatingFezID)/update"
@@ -445,8 +449,13 @@ struct SitePrivateEventController: SiteControllerUtils {
 			let fez = try response.content.decode(FezData.self)
 			fezContentData.fezType = fez.fezType
 		}
-		try await apiQuery(req, endpoint: path, method: .POST, encodeContent: fezContentData)
-		return .created
+		let apiResponse = try await apiQuery(req, endpoint: path, method: .POST, encodeContent: fezContentData)
+		let response = Response(status: .created)
+		if isCreating {
+			let newFez = try apiResponse.content.decode(FezData.self)
+			try response.content.encode(NewFezResponse(fezID: newFez.fezID))
+		}
+		return response
 	}
 
 	// GET /privateevent/ID

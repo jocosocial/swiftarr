@@ -23,8 +23,8 @@
     			<div class="col">
 					<ul class="container-md mx-0 px-0 list-group">
 						<li class="list-group-item bg-transparent mb-3">				
-							<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST" 
-									data-successurl="#if(isPrivateEvent):/dayplanner#else:/lfg#endif">
+							<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST"
+									data-successurl="#if(fez):/privateevent/#(fez.fezID)#else:createdPrivateEvent#endif">
 								<input type="hidden" name="participants" id="participants_hidden" value="#(withUser.userID)">
 								<div class="row mb-3">
 									<div class="input-group">
