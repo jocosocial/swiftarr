@@ -111,6 +111,7 @@ struct SiteSeamailController: SiteControllerUtils {
 		privateRoutes.post("seamail", "create", use: seamailCreatePostHandler)
 		privateRoutes.post("seamail", fezIDParam, use: seamailViewPageHandler)
 		privateRoutes.post("seamail", fezIDParam, "post", use: seamailThreadPostHandler)
+		privateRoutes.post("seamail", fezIDParam, "markRead", use: seamailMarkReadPostHandler)
 		privateRoutes.post("seamail", fezIDParam, "mute", use: seamailAddMutePostHandler)
 		privateRoutes.delete("seamail", fezIDParam, "mute", use: seamailRemoveMutePostHandler)
 		privateRoutes.post("seamail", fezIDParam, "favorite", use: seamailAddFavoritePostHandler)
@@ -419,6 +420,18 @@ struct SiteSeamailController: SiteControllerUtils {
 		let postContent = postStruct.buildPostContentData()
 		try await apiQuery(req, endpoint: "/fez/\(fezID)/post", method: .POST, encodeContent: postContent)
 		return .created
+	}
+
+	// POST /seamail/:seamail_ID/markRead
+	//
+	// Marks a seamail as read for the current user. Used by the live-message websocket JS to clear
+	// unread state for posts that were already rendered into the page live.
+	func seamailMarkReadPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let fezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing fez_id parameter.")
+		}
+		let response = try await apiQuery(req, endpoint: "/fez/\(fezID)/markRead", method: .POST)
+		return response.status
 	}
 
 	// POST /seamail/mute/:seamail_ID

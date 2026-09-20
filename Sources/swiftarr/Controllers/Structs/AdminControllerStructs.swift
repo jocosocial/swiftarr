@@ -1,3 +1,4 @@
+import Fluent
 import Vapor
 
 /// structs in this file should only be used by Admin APIs, that is: API calls that require administrator access.
@@ -57,6 +58,10 @@ public struct BulkUserUpdateVerificationData: Content {
 	var performerCounts: BulkUserUpdateCounts
 	/// Counts for Events that were marked as needing photographers by the Shutternaut Manager.
 	var needsPhotographerCounts: BulkUserUpdateCounts
+	/// Counts for Daily Theme import.
+	var dailyThemeCounts: BulkUserUpdateCounts
+	/// Counts for Hunt import. Includes Hunts and their child Puzzles as a single unit.
+	var huntCounts: BulkUserUpdateCounts
 
 	/// Cases where the server has a registered user with the same regcode as the update file, but the usernames differ.
 	/// This may mean the user preregistered and then (somehow) registered on-boat with a different username before the bulk import happened.
@@ -77,6 +82,8 @@ extension BulkUserUpdateVerificationData {
 		userCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
 		performerCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
 		needsPhotographerCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
+		dailyThemeCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
+		huntCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
 		regCodeConflicts = []
 		usernameConflicts = []
 		errorNotImported = []
@@ -365,12 +372,69 @@ public struct RegistrationCodeStatsData: Content {
 
 /// The Bulk User Download file is a serialization of this object, plus a bunch of image files, all zipped up.
 public struct SaveRestoreData: Content {
-	/// Array of users to save and restore. 
+	/// Array of users to save and restore.
 	var users: [UserSaveRestoreData]
 	/// Array of official performers to save and restore.
 	var performers: [PerformerUploadData]
 	/// Array of event UIDs that need photographers.
 	var needsPhotographer: [String]
+	/// Array of Daily Themes to save and restore.
+	var dailyThemes: [DailyThemeSaveRestoreData]
+	/// Array of Hunts (with their Puzzles) to save and restore.
+	var hunts: [HuntSaveRestoreData]
+}
+
+/// Used during bulk export/import to save and restore `DailyTheme` records. Unlike `DailyThemeData` (the API-facing DTO),
+/// this is only ever used for Admin-to-Admin server transfer, so it carries the raw image filename rather than an upload/URL.
+struct DailyThemeSaveRestoreData: Content, Sendable {
+	let title: String
+	let info: String
+	let image: String?
+	let cruiseDay: Int32
+}
+
+extension DailyThemeSaveRestoreData {
+	init(_ theme: DailyTheme) {
+		title = theme.title
+		info = theme.info
+		image = theme.image
+		cruiseDay = theme.cruiseDay
+	}
+}
+
+/// Used during bulk export/import to save and restore a `Hunt` and its child `Puzzle`s as a single unit.
+struct HuntSaveRestoreData: Content, Sendable {
+	let title: String
+	let description: String
+	let puzzles: [HuntPuzzleSaveRestoreData]
+}
+
+extension HuntSaveRestoreData {
+	init(_ hunt: Hunt, _ puzzles: [Puzzle]) {
+		title = hunt.title
+		description = hunt.description
+		self.puzzles = puzzles.map { HuntPuzzleSaveRestoreData($0) }
+	}
+}
+
+/// Used during bulk export/import to save and restore a `Puzzle`, including its answer and hints. This is purposefully full-fidelity,
+/// unlike the redacted `HuntPuzzleData` DTO returned by the public API, since this is only ever used for Admin-to-Admin server transfer.
+struct HuntPuzzleSaveRestoreData: Content, Sendable {
+	let title: String
+	let body: String
+	let answer: String
+	let hints: [String: String]
+	let unlockTime: Date?
+}
+
+extension HuntPuzzleSaveRestoreData {
+	init(_ puzzle: Puzzle) {
+		title = puzzle.title
+		body = puzzle.body
+		answer = puzzle.answer
+		hints = puzzle.hints
+		unlockTime = puzzle.unlockTime
+	}
 }
 
 /// An array of totals for various database entities. Each value in the array is essentially a `SQL SELECT COUNT() FROM <table>`,
@@ -428,6 +492,109 @@ struct ServerRollupData: Content {
 		// Quartermaster
 		case quartermasterItem
 		case quartermasterItemEdit
+
+		/// A short, stable, snake_case name for this count type, suitable for use as a Prometheus label value.
+		var metricName: String {
+			switch self {
+			case .user: return "user"
+			case .profileEdit: return "profile_edit"
+			case .userNote: return "user_note"
+			case .alertword: return "alert_word"
+			case .muteword: return "mute_word"
+			case .photoStream: return "photo_stream"
+			case .lfg: return "lfg"
+			case .lfgParticipant: return "lfg_participant"
+			case .lfgPost: return "lfg_post"
+			case .seamail: return "seamail"
+			case .seamailPost: return "seamail_post"
+			case .privateEvent: return "private_event"
+			case .personalEvent: return "personal_event"
+			case .forum: return "forum"
+			case .forumPost: return "forum_post"
+			case .forumPostEdit: return "forum_post_edit"
+			case .forumPostLike: return "forum_post_like"
+			case .karaokePlayedSong: return "karaoke_played_song"
+			case .microKaraokeSnippet: return "micro_karaoke_snippet"
+			case .userFavorite: return "user_favorite"
+			case .eventFavorite: return "event_favorite"
+			case .forumFavorite: return "forum_favorite"
+			case .forumPostFavorite: return "forum_post_favorite"
+			case .boardgameFavorite: return "boardgame_favorite"
+			case .karaokeFavorite: return "karaoke_favorite"
+			case .report: return "report"
+			case .moderationAction: return "moderation_action"
+			case .quartermasterItem: return "quartermaster_item"
+			case .quartermasterItemEdit: return "quartermaster_item_edit"
+			}
+		}
+	}
+
+	/// Runs the full set of table-count queries and returns a `ServerRollupData`. Shared by the
+	/// on-demand `GET /api/v3/admin/rollup` endpoint and `TableCountsJob`, which caches the results
+	/// as Prometheus gauges on a timer so the counts don't need to be recomputed on every metrics scrape.
+	static func computeRollupCounts(on db: Database) async throws -> ServerRollupData {
+		let counts = try await withThrowingTaskGroup(of: (countType: CountType, value: Int32).self) { group in
+			let tasks: [CountType: EventLoopFuture<Int>] = [
+				// User
+				.user: User.query(on: db).count(),
+				.profileEdit: ProfileEdit.query(on: db).count(),
+				.userNote: UserNote.query(on: db).count(),
+				.alertword: AlertWord.query(on: db).count(),
+				.muteword: MuteWord.query(on: db).count(),
+				.photoStream: StreamPhoto.query(on: db).count(),
+
+				// LFGs and Seamails
+				.lfg: FriendlyFez.query(on: db).filter(\.$fezType ~~ FezType.lfgTypes).count(),
+				.lfgParticipant: FezParticipant.query(on: db)
+					.join(FriendlyFez.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
+					.filter(FriendlyFez.self, \.$fezType ~~ FezType.lfgTypes).count(),
+				.lfgPost: FezPost.query(on: db).join(FriendlyFez.self, on: \FezPost.$fez.$id == \FriendlyFez.$id)
+					.filter(FriendlyFez.self, \.$fezType ~~ FezType.lfgTypes).count(),
+				.seamail: FriendlyFez.query(on: db).filter(\.$fezType ~~ FezType.seamailTypes).count(),
+				.seamailPost: FezPost.query(on: db).join(FriendlyFez.self, on: \FezPost.$fez.$id == \FriendlyFez.$id)
+					.filter(FriendlyFez.self, \.$fezType ~~ FezType.seamailTypes).count(),
+				.privateEvent: FriendlyFez.query(on: db).filter(\.$fezType == FezType.privateEvent).count(),
+				.personalEvent: FriendlyFez.query(on: db).filter(\.$fezType == FezType.personalEvent).count(),
+
+				// Forums
+				.forum: Forum.query(on: db).count(),
+				.forumPost: ForumPost.query(on: db).count(),
+				.forumPostEdit: ForumPostEdit.query(on: db).count(),
+				.forumPostLike: PostLikes.query(on: db).filter(\.$likeType != nil).count(),
+
+				// Games and Karaoke
+				.karaokePlayedSong: KaraokePlayedSong.query(on: db).count(),
+				.microKaraokeSnippet: MKSnippet.query(on: db).count(),
+
+				// Favorites
+				.userFavorite: UserFavorite.query(on: db).count(),
+				.eventFavorite: EventFavorite.query(on: db).count(),
+				.forumFavorite: ForumReaders.query(on: db).filter(\.$isFavorite == true).count(),
+				.forumPostFavorite: PostLikes.query(on: db).filter(\.$isFavorite == true).count(),
+				.boardgameFavorite: BoardgameFavorite.query(on: db).count(),
+				.karaokeFavorite: KaraokeFavorite.query(on: db).count(),
+
+				// Moderation
+				.report: Report.query(on: db).count(),
+				.moderationAction: ModeratorAction.query(on: db).count(),
+
+				// Quartermaster
+				.quartermasterItem: QuartermasterItem.query(on: db).count(),
+				.quartermasterItemEdit: QuartermasterItemEdit.query(on: db).count(),
+			]
+
+			for (key, task) in tasks {
+				group.addTask {
+					return try await (key, Int32(task.get()))
+				}
+			}
+			var result = [Int32](repeating: 0, count: tasks.count)
+			for try await (key, value) in group {
+				result[key.rawValue] = value
+			}
+			return result
+		}
+		return ServerRollupData(counts: counts)
 	}
 }
 
