@@ -178,13 +178,30 @@ extension APIRouteCollection {
 	// did something. In that situation, the creatorID can be used to avoid notifying one person.
 	//
 	// Adding a new notification will also send out an update to all relevant users who are listening on notification sockets.
+	//
+	// `users` vs `stateChangeUsers`:
+	// `users` is the caller-supplied recipient list. For most notification types it's just the list of real users to
+	// notify, and that's also who gets the Redis count bump and the socket push.
+	// Seamail is the exception. "moderator" and "TwitarrTeam" are non-loginable phantom `User` rows (see
+	// `PrivilegedUser`) used as a single shared addressee/author identity for a privileged mailbox thread. Nobody can
+	// ever hold an open notification socket under a phantom account's UUID, and a single shared unread count
+	// wouldn't let each mod/TT member track their own read state independently. So for `.addedToChat` and
+	// `.chatUnreadMsg`, `bookkeepUserAddedToChat`/`bookkeepNewChatMessage` detect the phantom account in `users` and
+	// expand it to every real user currently holding that access level (`req.userCache.allUsersWithAccessLevel`),
+	// returning that expanded list as `stateChangeUsers`. Each real team member then gets their own Redis unread
+	// count under `.moderatorSeamail`/`.twitarrTeamSeamail` (see `MailInbox`), and — since `stateChangeUsers` is also
+	// what socket forwarding uses below — their own live socket push, exactly as if they'd each been mentioned
+	// individually (mirroring how forum `@moderator`/`@TwitarrTeam` mentions expand to real members before ever
+	// calling this function; see `ForumController.processForumMentions`). For every other notification type,
+	// `stateChangeUsers` is left equal to `users`, so this has no effect outside the privileged-mailbox case.
 	func addNotifications(users: [UUID], type: NotificationType, info: String, creatorID: UUID? = nil, on req: Request)
 		async throws
 	{
 		try await withThrowingTaskGroup(of: Void.self) { group -> Void in
 			var forwardToSockets = true
-			// Members of `users` get push notifications
-			// `stateChangeUsers` includes users that had their notification counts change, but don't send push notifications
+			// Defaults to `users`; `.addedToChat`/`.chatUnreadMsg` may expand this to include real members of a
+			// privileged mailbox (see the doc comment on this function) — that expanded set drives both the Redis
+			// state-change bookkeeping below and, as of `socketUsers` below, the live socket push.
 			var stateChangeUsers = users
 			switch type {
 			case .announcement:
@@ -267,7 +284,13 @@ extension APIRouteCollection {
 				// message of the event to it's creator. We do this by filtering out that user
 				// from the list of socket receivers. There is likely still some Redis
 				// updates to occur above so in effect the filtering has to happen twice.
-				var socketUsers = users
+				//
+				// Base this on `stateChangeUsers`, not `users`: for privileged-mailbox seamail
+				// (`.addedToChat`/`.chatUnreadMsg` addressed to "moderator"/"TwitarrTeam"), `users` still contains
+				// only the phantom account's UUID, which never has a live socket — `stateChangeUsers` is the
+				// expanded list of real mod/TT members computed above, and they're who actually needs the push.
+				// For every other notification type `stateChangeUsers == users`, so this is a no-op change there.
+				var socketUsers = stateChangeUsers
 				switch type {
 				case .alertwordPost: socketUsers = users.filter { $0 != creatorID }
 				default: break
