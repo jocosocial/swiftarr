@@ -201,8 +201,9 @@ struct MessagePostContext: Encodable {
 	var showModPostOptions: Bool = false
 	var showCruiseDaySelector: Bool = false
 	var isEdit: Bool = false
+	var postAsModerator: Bool = false
+	var postAsTwitarrTeam: Bool = false
 	var postAsUser: String = "self"
-
 
 	// Used as an parameter to the initializer
 	enum InitType {
@@ -243,7 +244,8 @@ struct MessagePostContext: Encodable {
 	init(
 		forType: InitType,
 		userRoles: Set<UserRoleType>? = nil,
-		editIntent: EditIntent = .normal
+		editIntent: EditIntent = .normal,
+		foruser: String? = nil
 	) {
 		allowedImageTypes = Settings.shared.validImageInputTypes.joined(separator: ", ")
 		// Determine max images based on user role (shutternauts get 8, others get setting value)
@@ -373,6 +375,9 @@ struct MessagePostContext: Encodable {
 			forumTitlePlaceholder = "Daily Theme Title"
 			messageTextPlaceholder = "Info about Daily Theme"
 		}
+		let mailbox = SeamailCreateMailbox(foruser: foruser)
+		postAsModerator = mailbox.postAsModerator
+		postAsTwitarrTeam = mailbox.postAsTwitarrTeam
 	}
 
 	/// Post-as controls are only available when creating an announcement; edits keep the existing author.
@@ -409,8 +414,7 @@ struct MessagePostFormContent: Codable {
 	let serverPhoto8: String?
 	let displayUntil: String?  // Used for announcements
 	let cruiseDay: Int32?  // Used for Daily Themes
-	let postAsTwitarrTeam: String?
-	let postAsModerator: String?
+	let postAs: String?
 	let postAsUser: String?
 }
 
@@ -434,8 +438,8 @@ extension MessagePostFormContent {
 		let postContent = PostContentData(
 			text: postText ?? "",
 			images: images,
-			postAsModerator: postAsModerator != nil,
-			postAsTwitarrTeam: postAsTwitarrTeam != nil
+			postAsModerator: postAs?.lowercased() == PrivilegedUser.moderator.queryParam,
+			postAsTwitarrTeam: postAs?.lowercased() == PrivilegedUser.TwitarrTeam.queryParam
 		)
 		return postContent
 	}

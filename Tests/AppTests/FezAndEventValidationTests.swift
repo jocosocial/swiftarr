@@ -78,6 +78,12 @@ class FezAndEventValidationTests: XCTestCase {
 		XCTAssertEqual(try validationErrors(FezContentData.self, fezJSON()), [])
 	}
 
+	func testFez_BothCreatorFlagsAreRejected() throws {
+		let json = fezJSON().dropLast() + #","createdByModerator":true,"createdByTwitarrTeam":true}"#
+		let errs = try validationErrors(FezContentData.self, String(json))
+		XCTAssertTrue(errs.contains("cannot create as both @moderator and @TwitarrTeam"), "errs=\(errs)")
+	}
+
 	// MARK: - FezContentData — startTime/endTime throw paths
 
 	func testFez_StartTimeWithoutEndTime_Throws() {
