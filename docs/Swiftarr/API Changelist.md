@@ -309,3 +309,7 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Sep 12, 2026
 
 - Added `POST /api/v3/fez/:fez_ID/markRead`, mirroring the existing forum `markRead` endpoint.
+
+## Sep 18, 2026
+
+- The admin operations under `/api/v3/hunts` are now accessible to TwitarrTeam and above **or** users with the `huntmanager` role.

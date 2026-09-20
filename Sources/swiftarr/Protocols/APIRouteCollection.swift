@@ -55,13 +55,13 @@ extension RoutesBuilder {
 		return builder
 	}
 
-	func tokenRoutes(feature: SwiftarrFeature? = nil, minAccess: UserAccessLevel = .banned, path: PathComponent...)
+	func tokenRoutes(feature: SwiftarrFeature? = nil, minAccess: UserAccessLevel = .banned, allowedRoles: [UserRoleType] = [], path: PathComponent...)
 		-> RoutesBuilder
 	{
 		var builder = self.grouped(path)
 			.grouped([
 				UserCacheData.TokenAuthenticator(),
-				MinUserAccessLevelMiddleware(requireAuth: true, requireAccessLevel: minAccess),
+				MinUserAccessLevelMiddleware(requireAuth: true, requireAccessLevel: minAccess, allowedUserRoles: allowedRoles),
 			])
 		if let feature = feature {
 			builder = builder.grouped(DisabledAPISectionMiddleware(feature: feature))
