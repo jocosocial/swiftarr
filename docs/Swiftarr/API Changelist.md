@@ -309,3 +309,11 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Sep 10, 2026
 
 - `GET /api/v3/performer/official` and `GET /api/v3/performer/shadow` now support a `?search=STRING` parameter, full-text searching across each performer's name, organization, title, and bio.
+
+## Sep 12, 2026
+
+- Added `POST /api/v3/fez/:fez_ID/markRead`, mirroring the existing forum `markRead` endpoint.
+
+## Sep 18, 2026
+
+- The admin operations under `/api/v3/hunts` are now accessible to TwitarrTeam and above **or** users with the `huntmanager` role.
