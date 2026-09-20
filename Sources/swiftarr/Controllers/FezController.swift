@@ -312,6 +312,9 @@ struct FezController: APIRouteCollection {
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
 			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
 		}
+		if fez.fezType.isPrivateEventType, !userCanViewMemberData(user: cacheUser, fez: fez) {
+			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
+		}
 
 		// For privileged mailboxes, use the actual user's ID to query/ensure per-user FezParticipant
 		// This ensures each user has their own read tracking for privileged mailbox conversations
@@ -1003,6 +1006,9 @@ struct FezController: APIRouteCollection {
 		}
 		let fezParticipant = try await getOwnFezParticipant(fez: fez, cacheUser: cacheUser, req: req)
 
+		if fezParticipant.isFavorite {
+			throw Abort(.badRequest, reason: "Cannot mute a favorited \(fez.fezType.lfgLabel).")
+		}
 		if fezParticipant.isMuted == true {
 			return .ok
 		}
@@ -1058,6 +1064,9 @@ struct FezController: APIRouteCollection {
 		}
 		let fezParticipant = try await getOwnFezParticipant(fez: fez, cacheUser: cacheUser, req: req)
 
+		if fezParticipant.isMuted == true {
+			throw Abort(.badRequest, reason: "Cannot favorite a muted \(fez.fezType.lfgLabel).")
+		}
 		if fezParticipant.isFavorite {
 			return .ok
 		}
