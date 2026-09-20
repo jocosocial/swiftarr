@@ -22,6 +22,7 @@ struct FezCreateUpdatePageContext: Encodable {
 	var fezTitle: String = ""
 	var fezLocation: String = ""
 	var fezType: String = ""
+	var visibility: String = ""
 	var groupLabel: String = ""		// Seamail, LFG, Private Event
 	var startTime: Date?
 	var minutes: Int = 0
@@ -53,6 +54,7 @@ struct FezCreateUpdatePageContext: Encodable {
 			fezTitle = fez.title
 			fezLocation = fez.location ?? ""
 			fezType = fez.fezType.rawValue
+			visibility = fez.visibility.rawValue
 			groupLabel = fez.fezType.lfgLabel
 			startTime = fez.startTime
 			if let start = fez.startTime, let end = fez.endTime {

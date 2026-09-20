@@ -122,9 +122,9 @@
 												<div class="row mb-3">
 													<div class="input-group">
 														<span class="input-group-text" id="basic-addon1">@</span>
-														<input type="text" class="form-control user-autocomplete" autofocus="true" 
-																placeholder="Search for users here" 
-																aria-label="participants" aria-describedby="basic-addon1" 
+														<input type="text" class="form-control user-autocomplete" autofocus="true"
+																placeholder="Search for users here"
+																aria-label="participants" aria-describedby="basic-addon1"
 																autocapitalize="off" autocomplete="off"
 																data-nameusage="seamail">
 													</div>
@@ -152,8 +152,25 @@
 														</li>
 													#endif
 												</ul>
+												<div class="row mt-2 ps-2">
+													<div class="col form-check">
+														<input type="hidden" name="showVisibilityOption" value="true">
+														<input type="checkbox" class="form-check-input" name="unlisted" id="unlistedCheckbox">
+														<label class="form-check-label" for="unlistedCheckbox">Allow anyone with a link to this event to view and join it</label>
+													</div>
+												</div>
 											</div>
 										</div>
+									#else:
+										#if(fezType == "privateEvent"):
+											<div class="row mb-2 ps-2">
+												<div class="col form-check">
+													<input type="hidden" name="showVisibilityOption" value="true">
+													<input type="checkbox" class="form-check-input" name="unlisted" id="unlistedCheckbox" #if(visibility == "unlisted"): checked#endif>
+													<label class="form-check-label" for="unlistedCheckbox">Allow anyone with a link to this event to view and join it</label>
+												</div>
+											</div>
+										#endif
 									#endif
 								#endif
 								<div class="alert alert-danger mt-3 d-none" role="alert">
