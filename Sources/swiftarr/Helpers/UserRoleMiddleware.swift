@@ -90,13 +90,16 @@ struct RequireAdminMiddleware: AsyncMiddleware {
 struct MinUserAccessLevelMiddleware: AsyncMiddleware {
 	var requireAuth: Bool
 	var requireAccessLevel: UserAccessLevel
+	var allowedUserRoles : [UserRoleType]
 
 	// Set requireAuth to TRUE to make this middleware act like an auth guard, returning a HTTP 401 if no user was authed.
 	// This makes this middleware act like guard middleware.
 	// Set a min accessLevel for routes that have one (like admin-only routes)
-	init(requireAuth: Bool = true, requireAccessLevel: UserAccessLevel? = nil) {
+	// If user roles are set, those override the access level--i.e. you can say ">= TwitarrTeam || HuntManager".
+	init(requireAuth: Bool = true, requireAccessLevel: UserAccessLevel? = nil, allowedUserRoles: [UserRoleType] = []) {
 		self.requireAuth = requireAuth
 		self.requireAccessLevel = requireAccessLevel ?? .banned
+		self.allowedUserRoles = allowedUserRoles
 	}
 
 	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
@@ -104,7 +107,7 @@ struct MinUserAccessLevelMiddleware: AsyncMiddleware {
 		if let user = request.auth.get(UserCacheData.self) {
 			// We throw forbidden here because the user authed but they're not allowed access either because 
 			// the route is permanently restricted (like a mod-only route) or the server is temporarily restricted.
-			if !user.accessLevel.hasAccess(requireAccessLevel) {
+			if !user.accessLevel.hasAccess(requireAccessLevel) && !allowedUserRoles.contains(where: { user.userRoles.contains($0) }) {
 				throw Abort(.forbidden, reason: "Access is restricted to \(requireAccessLevel.visibleName()) or higher.")
 			}
 			// 503 Service Unavailable might be better for some of these cases, coupled with some cache-direction headers.

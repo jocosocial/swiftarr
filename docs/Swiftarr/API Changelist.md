@@ -10,7 +10,7 @@ actual poster.
 
 ## Dec 5, 2021
 
-- Added a method to ModerationController to allow for mods to re-categorize forum threads: `POST /api/v3/mod/forum/:forum_ID/setcategory/:category_ID
+- Added a method to ModerationController to allow for mods to re-categorize forum threads: `POST /api/v3/mod/forum/:forum_ID/setcategory/:category_ID`
 - Modified `ForumModerationData` to include the categoryID of a forum being moderated.
 - Added a new `ModeratorActionType` case called `move` for moderator log entries where mods use their new power.
 
@@ -309,3 +309,15 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Sep 10, 2026
 
 - `FezData`, `FezContentData`, `PersonalEventData`, and `PersonalEventContentData` gain a `visibility` field (`private`/`public`/`unlisted`). Seamails/LFGs/Personal Events have a fixed visibility that can't be changed; Private Events default to `private` but the owner may set `unlisted`, which lets non-members view (without `.members`) and self-join via `POST /api/v3/fez/:fez_ID/join` without needing an invite.
+
+## Sep 12, 2026
+
+- Added `POST /api/v3/fez/:fez_ID/markRead`, mirroring the existing forum `markRead` endpoint.
+
+## Sep 18, 2026
+
+- The admin operations under `/api/v3/hunts` are now accessible to TwitarrTeam and above **or** users with the `huntmanager` role.
+
+## Sep 20, 2026
+
+- `GET /api/v3/performer/official` and `GET /api/v3/performer/shadow` now support a `?search=STRING` parameter, full-text searching across each performer's name, organization, title, and bio.
