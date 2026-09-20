@@ -10,7 +10,7 @@ actual poster.
 
 ## Dec 5, 2021
 
-- Added a method to ModerationController to allow for mods to re-categorize forum threads: \`POST /api/v3/mod/forum/:forum\_ID/setcategory/:category\_ID
+- Added a method to ModerationController to allow for mods to re-categorize forum threads: `POST /api/v3/mod/forum/:forum_ID/setcategory/:category_ID`
 - Modified `ForumModerationData` to include the categoryID of a forum being moderated.
 - Added a new `ModeratorActionType` case called `move` for moderator log entries where mods use their new power.
 
@@ -294,7 +294,7 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Sep 07, 2026
 
 - New endpoint `GET /api/v3/users/:user_id/vcard` returns a downloadable vCard (`.vcf`) of a user's land-based contact fields. The HTML profile page has a Save vCard button.
-- New endpoint `GET /api/v3/events/photographerreport` returns a paginated photography-coverage report (`Paginated[[ORCA_RICH_MD:165c1609146000eb3b739190ab454b1b:inline-html:%3CShutternautScheduleReportData%3E]]`) of events flagged as needing a photographer and/or assigned a Shutternaut.
+- New endpoint `GET /api/v3/events/photographerreport` returns a paginated photography-coverage report (`Paginated<ShutternautScheduleReportData>`) of events flagged as needing a photographer and/or assigned a Shutternaut.
 - New endpoint `GET /api/v3/events/photographerreport/download` returns the same report as a CSV of all matching rows.
 
 ## Sep 08, 2026
