@@ -213,18 +213,26 @@ struct FezController: APIRouteCollection {
 	/// * `?cruiseday=INT` - Only return fezzes occuring on this day of the cruise. Embarkation Day is day 0.
 	/// - `?type=STRING` - Only return fezzes of the given fezType. See `FezType` for a list.
 	/// - `?excludetype=STRING` - Don't return fezzes of the given type. See `FezType` for a list.
+	/// - `?onlynew=TRUE` - Only return fezzes with unread messages.
+	/// - `?favorite=TRUE` - Only return fezzes the user has favorited.
 	/// * `?start=INT` - The offset to the first result to return in the filtered + sorted array of results.
 	/// * `?limit=INT` - The maximum number of fezzes to return; defaults to 50.
+	/// - `?search=STRING` - Only show fezzes whose title, info, or any post contains the given string.
 	/// - `?hidepast=BOOLEAN` - Hide fezzes that started more than one hour in the past. For this endpoint, this defaults to FALSE.
+	/// - `?matchID=UUID` - Returns a single LFG with the given ID.
 	/// - `?lfgtypes=BOOLEAN` - Shorthand to include/exliude all the LFG types (Activity, Gaming, Dining, etc.) Acts the same as using multiple `type=` or `exludetype=` params.
-	/// - `?favorite=TRUE` - Only return fezzes the user has favorited.
+	///
+	/// Moderators and above can use the `foruser` query parameter to access pseudo-accounts:
+	///
+	/// - `?foruser=NAME` - Access the "moderator" or "twitarrteam" seamail accounts.
 	///
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: An array of `FezData` containing all the fezzes created by the user.
 	func ownerHandler(_ req: Request) async throws -> FezListData {
 		let urlQuery = try req.query.decode(FezURLQueryStruct.self)
 		let pagination = urlQuery.pagination
-		let user = try req.auth.require(UserCacheData.self)
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let user = try getEffectiveUser(user: cacheUser, req: req)
 		let query = FriendlyFez.query(on: req.db).filter(\.$owner.$id == user.userID)
 			.join(FezParticipant.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
 			.filter(FezParticipant.self, \.$user.$id == user.userID)
@@ -236,6 +244,33 @@ struct FezController: APIRouteCollection {
 		}
 		if urlQuery.favorite == true {
 			query.filter(FezParticipant.self, \.$isFavorite == true)
+		}
+		if let onlyNew = urlQuery.onlynew {
+			// Uses a custom filter to test "readCount + hiddenCount < FriendlyFez.postCount". If true, there's unread messages
+			// in this chat. Also includes chats where addedTo == true (user was recently added to the chat).
+			// Because it uses a custom filter for parameter 1, the other params use the weird long-form notation.
+			if onlyNew {
+				// Include fezzes with unread messages OR where user was recently added
+				query.group(.or) { group in
+					group.filter(
+						DatabaseQuery.Field.custom("\(FezParticipant().$readCount.key) + \(FezParticipant().$hiddenCount.key)"),
+						DatabaseQuery.Filter.Method.lessThan,
+						DatabaseQuery.Field.path(FriendlyFez.path(for: \.$postCount), schema: FriendlyFez.schema)
+					)
+					group.filter(FezParticipant.self, \.$addedTo == true)
+				}
+			} else {
+				// Only include fezzes with no unread messages AND not recently added
+				query.filter(
+					DatabaseQuery.Field.custom("\(FezParticipant().$readCount.key) + \(FezParticipant().$hiddenCount.key)"),
+					DatabaseQuery.Filter.Method.equal,
+					DatabaseQuery.Field.path(FriendlyFez.path(for: \.$postCount), schema: FriendlyFez.schema)
+				)
+				query.filter(FezParticipant.self, \.$addedTo == false)
+			}
+		}
+		if let matchID = urlQuery.matchID {
+			query.filter(\.$id == matchID)
 		}
 
 		if let dayFilter = req.query[Int.self, at: "cruiseday"] {
