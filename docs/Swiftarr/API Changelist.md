@@ -318,3 +318,7 @@ additive; the existing count fields are unchanged and are now derived from these
 
 - `GET /api/v3/performer/official` and `GET /api/v3/performer/shadow` now support a `?search=STRING` parameter, full-text searching across each performer's name, organization, title, and bio.
 - `FezData`, `FezContentData`, `PersonalEventData`, and `PersonalEventContentData` gain a `visibility` field (`private`/`public`/`unlisted`). Seamails/LFGs/Personal Events have a fixed visibility that can't be changed; Private Events default to `private` but the owner may set `unlisted`, which lets non-members view (without `.members`) and self-join via `POST /api/v3/fez/:fez_ID/join` without needing an invite.
+
+## Sep 26, 2026
+
+- `GET /api/v3/fez/owner` now supports `?onlynew`, `?matchID`, and `?foruser`, matching `GET /api/v3/fez/joined`.
