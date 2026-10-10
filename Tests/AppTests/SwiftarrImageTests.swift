@@ -85,12 +85,14 @@ class SwiftarrImageTests: XCTestCase {
 			var url = URLComponents()
 			url.path = "/api/v3/image/qrcode"
 			url.queryItems = [URLQueryItem(name: "string", value: text)]
+			url.percentEncodedQuery = url.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
 			let req = Request(
 				application: app,
 				method: .GET,
 				url: URI(string: try XCTUnwrap(url.string)),
 				on: app.eventLoopGroup.next()
 			)
+			XCTAssertEqual(req.query[String.self, at: "string"], text, "Query encoding must preserve the QR payload")
 			let response = try await ImageController().generateQRCode(req)
 			XCTAssertEqual(response.status, .ok)
 			XCTAssertEqual(response.headers.contentType, .png)

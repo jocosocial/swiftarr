@@ -322,3 +322,7 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Sep 26, 2026
 
 - `GET /api/v3/fez/owner` now supports `?onlynew`, `?matchID`, and `?foruser`, matching `GET /api/v3/fez/joined`.
+
+## Oct 10, 2026
+
+- Fixed corrupted QR code images from `GET /api/v3/image/qrcode` in Linux containers, including event feedback room posters. Generated images now own their pixel buffers.

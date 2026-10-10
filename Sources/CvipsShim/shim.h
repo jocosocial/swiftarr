@@ -51,7 +51,7 @@ void *swiftarr_vips_webpsave_buffer(VipsImage *in, int quality, size_t *out_len)
 
 // Create an image from raw pixel data in memory.
 // Data must be width * height * bands bytes of unsigned char.
-// The returned image does NOT own the data — caller must keep it alive.
+// The returned image owns a copy of the data; the caller can release its buffer.
 // Returns NULL on failure.
 VipsImage *swiftarr_vips_image_new_from_memory(const void *data, size_t size,
                                                 int width, int height, int bands);
@@ -64,7 +64,7 @@ void *swiftarr_vips_animated_thumbnail(const void *buf, size_t buf_len,
                                         int height, int is_gif,
                                         size_t *out_len);
 
-// Copy an image (forces pixel data to be owned by the new image).
+// Copy an image pipeline without copying its pixel data.
 // Returns 0 on success, non-zero on failure.
 int swiftarr_vips_copy(VipsImage *in, VipsImage **out);
 
