@@ -74,22 +74,13 @@ public class SwiftarrImage {
 			)
 		}
 
-		// vips_image_new_from_memory does NOT copy the data — it just references it.
-		// We need to copy into the image to avoid dangling pointer issues.
-		guard let memImage = pixels.withUnsafeBufferPointer({ buf in
+		// The image owns a copy of the pixels, so the caller can release or reuse its array.
+		guard let image = pixels.withUnsafeBufferPointer({ buf in
 			swiftarr_vips_image_new_from_memory(buf.baseAddress, buf.count, Int32(width), Int32(height), Int32(bands))
 		}) else {
 			throw ImageError.invalidImage(reason: "Failed to create image from pixel data")
 		}
-
-		// Force a copy so the image owns its pixel data (the array will go out of scope)
-		var copyOut: UnsafeMutablePointer<VipsImage>?
-		if swiftarr_vips_copy(memImage, &copyOut) != 0 || copyOut == nil {
-			g_object_unref(memImage)
-			throw ImageError.invalidImage(reason: "Failed to copy pixel data into image")
-		}
-		g_object_unref(memImage)
-		self.vipsImage = copyOut!
+		self.vipsImage = image
 		self.sourceData = nil
 	}
 

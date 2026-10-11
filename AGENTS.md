@@ -18,11 +18,16 @@ Notes for AI coding agents (Claude Code, Codex, etc.) working on swiftarr contri
 
 ## API changes
 
-- **Update the changelog.** When a PR adds a new controller or changes an existing
-  API/moderator endpoint's behavior, add a brief entry to
-  `docs/Swiftarr/API Changelist.md` under today's date. No need to enumerate every
-  new endpoint one-by-one — a short summary of the new controller/feature and any
+- **Update the changelog for client-facing changes.** When a PR changes the client API
+  specification in a way that requires client alterations to consume, add a brief entry
+  to `docs/Swiftarr/API Changelist.md` under today's date. Examples: adding a new
+  controller, or adding/removing/modifying endpoints, query parameters, or DTOs
+  (including moderator endpoints). No need to enumerate every new endpoint
+  one-by-one — a short summary of the new controller/feature and any
   moderator-facing change is enough.
+- **Skip the changelog for non-spec changes.** Bug fixes and internal changes that
+  don't alter the client API specification (e.g. fixing corrupted QR code images)
+  don't need an entry.
 
 ## Setup & docs
 

@@ -93,7 +93,7 @@ void *swiftarr_vips_webpsave_buffer(VipsImage *in, int quality, size_t *out_len)
 
 VipsImage *swiftarr_vips_image_new_from_memory(const void *data, size_t size,
                                                 int width, int height, int bands) {
-    return vips_image_new_from_memory(data, size, width, height, bands, VIPS_FORMAT_UCHAR);
+    return vips_image_new_from_memory_copy(data, size, width, height, bands, VIPS_FORMAT_UCHAR);
 }
 
 void *swiftarr_vips_animated_thumbnail(const void *buf, size_t buf_len,

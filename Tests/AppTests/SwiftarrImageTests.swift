@@ -1,4 +1,6 @@
 import XCTVapor
+import CvipsShim
+import QRCodeSwift
 @testable import swiftarr
 
 class SwiftarrImageTests: XCTestCase {
@@ -26,6 +28,105 @@ class SwiftarrImageTests: XCTestCase {
 		}
 		let image = try SwiftarrImage(width: width, height: height, pixels: pixels, bands: 4)
 		return try image.exportAsPNG()
+	}
+
+	// MARK: - Pixel Ownership
+
+	private func pixelsFromPNG(_ data: Data) throws -> [UInt8] {
+		try data.withUnsafeBytes { buffer in
+			let image = try XCTUnwrap(swiftarr_vips_load_buffer(buffer.baseAddress, buffer.count))
+			defer { g_object_unref(image) }
+			var count = 0
+			let pixels = try XCTUnwrap(vips_image_write_to_memory(image, &count))
+			defer { g_free(pixels) }
+			return Array(UnsafeBufferPointer(start: pixels.assumingMemoryBound(to: UInt8.self), count: count))
+		}
+	}
+
+	func testRawPixelsAreOwnedByImage() throws {
+		for bands in [3, 4] {
+			var pixels = [UInt8](repeating: 127, count: 10 * 10 * bands)
+			let image = try SwiftarrImage(width: 10, height: 10, pixels: pixels, bands: bands)
+			pixels.withUnsafeMutableBufferPointer { buffer in
+				buffer.update(repeating: 0)
+			}
+			let exported = try pixelsFromPNG(image.exportAsPNG())
+			XCTAssertEqual(exported, [UInt8](repeating: 127, count: pixels.count))
+		}
+	}
+
+	private func assertQRCode(_ data: Data, contains text: String) throws {
+		let image = try SwiftarrImage(data: data)
+		XCTAssertEqual(image.size.width, 400)
+		XCTAssertEqual(image.size.height, 400)
+		let pixels = try pixelsFromPNG(data)
+		XCTAssertEqual(pixels.count, 400 * 400 * 3)
+		guard pixels.count == 400 * 400 * 3 else { return }
+		let matrix = try QRCode(text).imageCodes
+		for y in matrix.indices {
+			for x in matrix[y].indices {
+				let imageX = Int((Double(x) + 0.5) * 400 / Double(matrix[y].count))
+				let imageY = Int((Double(y) + 0.5) * 400 / Double(matrix.count))
+				let offset = (imageY * 400 + imageX) * 3
+				let expected: UInt8 = matrix[y][x] ? 0 : 255
+				XCTAssertEqual(
+					Array(pixels[offset..<(offset + 3)]),
+					[expected, expected, expected],
+					"QR module at (\(x), \(y)) must match the encoded text"
+				)
+			}
+		}
+	}
+
+	func testQRCodeResponseContainsItsModules() async throws {
+		let app = try await Application.make(.testing)
+		do {
+			let text = "https://twitarr.com/eventfeedback?room=Rolling+Stone+Lounge"
+			var url = URLComponents()
+			url.path = "/api/v3/image/qrcode"
+			url.queryItems = [URLQueryItem(name: "string", value: text)]
+			url.percentEncodedQuery = url.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+			let req = Request(
+				application: app,
+				method: .GET,
+				url: URI(string: try XCTUnwrap(url.string)),
+				on: app.eventLoopGroup.next()
+			)
+			XCTAssertEqual(req.query[String.self, at: "string"], text, "Query encoding must preserve the QR payload")
+			let response = try await ImageController().generateQRCode(req)
+			XCTAssertEqual(response.status, .ok)
+			XCTAssertEqual(response.headers.contentType, .png)
+			let body = try XCTUnwrap(response.body.data)
+			try assertQRCode(body, contains: text)
+		}
+		catch {
+			try await app.asyncShutdown()
+			throw error
+		}
+		try await app.asyncShutdown()
+	}
+
+	func testQRCodeOverHTTPContainsItsModules() async throws {
+		let app = try await Application.make(.testing)
+		do {
+			let controller = ImageController()
+			app.get("api", "v3", "image", "qrcode", use: controller.generateQRCode)
+			let text = "https://twitarr.com/eventfeedback?room=Stuyvesant"
+			var url = URLComponents()
+			url.path = "/api/v3/image/qrcode"
+			url.queryItems = [URLQueryItem(name: "string", value: text)]
+			try await app.testable(method: .running(port: 5880))
+				.test(.GET, try XCTUnwrap(url.string)) { res async throws in
+					XCTAssertEqual(res.status, .ok)
+					XCTAssertEqual(res.headers.contentType, .png)
+					try self.assertQRCode(Data(res.body.readableBytesView), contains: text)
+				}
+		}
+		catch {
+			try await app.asyncShutdown()
+			throw error
+		}
+		try await app.asyncShutdown()
 	}
 
 	// MARK: - Loading
