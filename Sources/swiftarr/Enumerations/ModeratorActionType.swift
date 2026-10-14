@@ -45,6 +45,12 @@ enum ModeratorActionType: String, Codable {
 	case tempQuarantine
 	/// The mod cleared a temporary quarantine on the user.
 	case tempQuarantineCleared
+	/// An account manager searched for a user by their registration code.
+	case regCodeSearched
+	/// An account manager viewed a user's registration code.
+	case regCodeViewed
+	/// An account manager re-enabled one-time registration-code password recovery (unlocked the account).
+	case accountUnlocked
 
 	static func setFromModerationStatus(_ status: ContentModerationStatus) -> Self {
 		switch status {

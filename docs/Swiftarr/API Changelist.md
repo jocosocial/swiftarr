@@ -322,3 +322,7 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Sep 26, 2026
 
 - `GET /api/v3/fez/owner` now supports `?onlynew`, `?matchID`, and `?foruser`, matching `GET /api/v3/fez/joined`.
+
+## Oct 14, 2026
+
+- Added three new `ModeratorActionType` values logged by the account-manager registration-code endpoints: `regCodeSearched` (`GET /api/v3/admin/regcodes/find/:search_string`), `regCodeViewed` (`GET /api/v3/admin/regcodes/findbyuser/:userID`), and `accountUnlocked` (`POST /api/v3/admin/regcodes/unlock/:userID`). The moderator action log (`ModeratorActionLogData.actionType`) can now return these values.
