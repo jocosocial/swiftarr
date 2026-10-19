@@ -62,6 +62,8 @@ public struct BulkUserUpdateVerificationData: Content {
 	var dailyThemeCounts: BulkUserUpdateCounts
 	/// Counts for Hunt import. Includes Hunts and their child Puzzles as a single unit.
 	var huntCounts: BulkUserUpdateCounts
+	/// Counts for Client App import.
+	var clientAppCounts: BulkUserUpdateCounts
 
 	/// Cases where the server has a registered user with the same regcode as the update file, but the usernames differ.
 	/// This may mean the user preregistered and then (somehow) registered on-boat with a different username before the bulk import happened.
@@ -84,6 +86,7 @@ extension BulkUserUpdateVerificationData {
 		needsPhotographerCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
 		dailyThemeCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
 		huntCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
+		clientAppCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
 		regCodeConflicts = []
 		usernameConflicts = []
 		errorNotImported = []
@@ -382,6 +385,8 @@ public struct SaveRestoreData: Content {
 	var dailyThemes: [DailyThemeSaveRestoreData]
 	/// Array of Hunts (with their Puzzles) to save and restore.
 	var hunts: [HuntSaveRestoreData]
+	/// Array of Client Apps to save and restore.
+	var clientApps: [ClientAppSaveRestoreData]
 }
 
 /// Used during bulk export/import to save and restore `DailyTheme` records. Unlike `DailyThemeData` (the API-facing DTO),
@@ -399,6 +404,91 @@ extension DailyThemeSaveRestoreData {
 		info = theme.info
 		image = theme.image
 		cruiseDay = theme.cruiseDay
+	}
+}
+
+/// Describes a client app that users may want to download. Includes the links to get it on each platform it's available on.
+///
+/// Returned by: `GET /api/v3/admin/clients`, `GET /api/v3/admin/clients/:client_app_id`
+public struct ClientAppData: Content, Sendable {
+	var clientAppID: UUID
+	var name: String
+	var description: String
+	/// Filename of the app's icon. Get it from `/api/v3/image/full/ID` or `/api/v3/image/thumb/ID`. May be nil.
+	var image: String?
+	var developer: String
+	/// Clients should sort apps by this field.
+	var sortName: String
+	/// One entry for each platform the app is available on. A `url` that begins with "/" refers to this server.
+	var links: [ClientAppLink]
+	/// The platforms the app is available on, derived from `links`.
+	var platforms: [ClientAppPlatform]
+	/// If this app is one of the known Swiftarr clients, which one. Not intended to be shown to users.
+	var swiftarrClient: SwiftarrClientApp?
+}
+
+extension ClientAppData {
+	init(_ app: ClientApp) throws {
+		clientAppID = try app.requireID()
+		name = app.name
+		description = app.appDescription
+		image = app.image
+		developer = app.developer
+		sortName = app.sortName
+		links = app.links
+		platforms = app.platforms
+		swiftarrClient = app.swiftarrClient
+	}
+}
+
+/// For TwitarrTeam to create or edit client apps.
+///
+/// Required by: `POST /api/v3/admin/clients/create`, `POST /api/v3/admin/clients/:client_app_id/update`
+public struct ClientAppUploadData: Content, Sendable {
+	var name: String
+	var description: String
+	var developer: String
+	/// If nil or empty, `name` is used.
+	var sortName: String?
+	/// An optional icon. On edit, passing nil removes an existing image; pass the existing filename to keep it.
+	var image: ImageUploadData?
+	/// At least one link is required, and each platform may appear only once.
+	var links: [ClientAppLink]
+	var swiftarrClient: SwiftarrClientApp?
+}
+
+extension ClientAppUploadData: RCFValidatable {
+	func runValidations(using decoder: ValidatingDecoder) throws {
+		let tester = try decoder.validator(keyedBy: CodingKeys.self)
+		tester.validate(!name.trimmingCharacters(in: .whitespaces).isEmpty, forKey: .name, or: "Name cannot be empty")
+		tester.validate(!links.isEmpty, forKey: .links, or: "At least one link is required")
+		tester.validate(Set(links.map { $0.platform }).count == links.count, forKey: .links,
+				or: "Each platform may only have one link")
+		tester.validate(links.allSatisfy { !$0.url.trimmingCharacters(in: .whitespaces).isEmpty }, forKey: .links,
+				or: "Link URLs cannot be empty")
+	}
+}
+
+/// Used during bulk export/import to save and restore `ClientApp` records. Carries the raw image filename, like `DailyThemeSaveRestoreData`.
+struct ClientAppSaveRestoreData: Content, Sendable {
+	let name: String
+	let description: String
+	let image: String?
+	let developer: String
+	let sortName: String
+	let links: [ClientAppLink]
+	let swiftarrClient: SwiftarrClientApp?
+}
+
+extension ClientAppSaveRestoreData {
+	init(_ app: ClientApp) {
+		name = app.name
+		description = app.appDescription
+		image = app.image
+		developer = app.developer
+		sortName = app.sortName
+		links = app.links
+		swiftarrClient = app.swiftarrClient
 	}
 }
 

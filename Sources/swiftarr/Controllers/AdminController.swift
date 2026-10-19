@@ -15,6 +15,8 @@ struct AdminController: APIRouteCollection {
 		
 		// Open routes with no auth requirements
 		adminRoutes.get("timezonechanges", use: timeZoneChangeHandler).setUsedForPreregistration()
+		adminRoutes.get("clients", use: clientAppListHandler).setUsedForPreregistration()
+		adminRoutes.get("clients", clientAppIDParam, use: clientAppGetHandler).setUsedForPreregistration()
 
 		// endpoints available to TwitarrTeam and above, or users with the Account Manager role
 		let accountMgrAuthGroup = adminRoutes.tokenRoutes(minAccess: .verified)
@@ -38,6 +40,11 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.get("rollup", use: serverRollupCounts)
 
 		ttAuthGroup.post("notifications", "reload", use: triggerConsistencyJobHandler)
+
+		ttAuthGroup.on(.POST, "clients", "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: clientAppCreateHandler)
+		ttAuthGroup.on(.POST, "clients", clientAppIDParam, "update", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: clientAppUpdateHandler)
+		ttAuthGroup.post("clients", clientAppIDParam, "delete", use: clientAppDeleteHandler)
+		ttAuthGroup.delete("clients", clientAppIDParam, use: clientAppDeleteHandler)
 
 		// endpoints available for THO and Admin only
 		let thoAuthGroup = adminRoutes.tokenRoutes(minAccess: .tho)
@@ -71,6 +78,83 @@ struct AdminController: APIRouteCollection {
 
 		// Only admin may promote to THO
 		adminAuthGroup.post("tho", "promote", userIDParam, use: makeTHOHandler)
+	}
+
+	// MARK: - Client Apps
+
+	/// `GET /api/v3/admin/clients`
+	///
+	/// Returns the list of suggested client apps, sorted by `sortName`. No auth required.
+	///
+	/// - Parameter platform: Query parameter. `web`, `ios`, `android`, or `other` to only return apps available on that platform.
+	///   `all` or no parameter returns every app.
+	/// - Returns: `[ClientAppData]`
+	func clientAppListHandler(_ req: Request) async throws -> [ClientAppData] {
+		let platform = try ClientAppPlatform.fromAPIString(req.query[String.self, at: "platform"])
+		let apps = try await ClientApp.query(on: req.db).sort(\.$sortName).sort(\.$name).all()
+		return try apps.filter { platform == nil || $0.platforms.contains(platform!) }.map { try ClientAppData($0) }
+	}
+
+	/// `GET /api/v3/admin/clients/:client_app_id`
+	///
+	/// Returns a single client app. No auth required.
+	///
+	/// - Returns: `ClientAppData`
+	func clientAppGetHandler(_ req: Request) async throws -> ClientAppData {
+		return try ClientAppData(try await ClientApp.findFromParameter(clientAppIDParam, on: req))
+	}
+
+	/// `POST /api/v3/admin/clients/create`
+	///
+	/// Creates a new client app. TwitarrTeam and above.
+	///
+	/// - Parameter requestBody: `ClientAppUploadData`
+	/// - Returns: `HTTP 201 Created` with the new `ClientAppData`.
+	func clientAppCreateHandler(_ req: Request) async throws -> Response {
+		let data = try ValidatingJSONDecoder().decode(ClientAppUploadData.self, fromBodyOf: req)
+		let filenames = try await processImages(data.image.map { [$0] } ?? [], usage: .clientApp, maxImages: 1, on: req)
+		let app = ClientApp(name: data.name, description: data.description, image: filenames.first, developer: data.developer,
+				sortName: data.sortName?.isEmpty == false ? data.sortName : nil, links: data.links,
+				swiftarrClient: data.swiftarrClient)
+		try await app.save(on: req.db)
+		let response = Response(status: .created)
+		try response.content.encode(try ClientAppData(app), as: .json)
+		return response
+	}
+
+	/// `POST /api/v3/admin/clients/:client_app_id/update`
+	///
+	/// Edits a client app. Passing nil for the image removes an existing image. TwitarrTeam and above.
+	///
+	/// - Parameter requestBody: `ClientAppUploadData`
+	/// - Returns: `HTTP 201 Created` with the updated `ClientAppData`.
+	func clientAppUpdateHandler(_ req: Request) async throws -> Response {
+		let data = try ValidatingJSONDecoder().decode(ClientAppUploadData.self, fromBodyOf: req)
+		let app = try await ClientApp.findFromParameter(clientAppIDParam, on: req)
+		let filenames = try await processImages(data.image.map { [$0] } ?? [], usage: .clientApp, maxImages: 1, on: req)
+		app.name = data.name
+		app.appDescription = data.description
+		app.image = filenames.first
+		app.developer = data.developer
+		app.sortName = data.sortName?.isEmpty == false ? data.sortName! : data.name
+		app.links = data.links
+		app.swiftarrClient = data.swiftarrClient
+		try await app.save(on: req.db)
+		let response = Response(status: .created)
+		try response.content.encode(try ClientAppData(app), as: .json)
+		return response
+	}
+
+	/// `POST /api/v3/admin/clients/:client_app_id/delete`
+	/// `DELETE /api/v3/admin/clients/:client_app_id`
+	///
+	/// Deletes a client app. TwitarrTeam and above.
+	///
+	/// - Returns: `HTTP 204 No Content`
+	func clientAppDeleteHandler(_ req: Request) async throws -> HTTPStatus {
+		let app = try await ClientApp.findFromParameter(clientAppIDParam, on: req)
+		try await app.delete(on: req.db)
+		return .noContent
 	}
 
 	/// `POST /api/v3/admin/dailytheme/create`
@@ -830,8 +914,10 @@ struct AdminController: APIRouteCollection {
 		let dailyThemeData = dailyThemes.map { DailyThemeSaveRestoreData($0) }
 		let hunts = try await Hunt.query(on: req.db).with(\.$puzzles).all()
 		let huntData = hunts.map { HuntSaveRestoreData($0, $0.puzzles) }
+		let clientApps = try await ClientApp.query(on: req.db).all()
+		let clientAppData = clientApps.map { ClientAppSaveRestoreData($0) }
 		let dto = SaveRestoreData(users: userData, performers: performerData, needsPhotographer: needsPhotographerEvents,
-				dailyThemes: dailyThemeData, hunts: huntData)
+				dailyThemes: dailyThemeData, hunts: huntData, clientApps: clientAppData)
 		let data = try JSONEncoder().encode(dto)
 		let userfile = sourceDirectoryURL.appendingPathComponent("userfile.json", isDirectory: true)
 		try data.write(to: userfile, options: .atomic)
@@ -840,7 +926,8 @@ struct AdminController: APIRouteCollection {
 		let destImageDir = sourceDirectoryURL.appendingPathComponent("userImages", isDirectory: true)
 		try FileManager.default.createDirectory(at: destImageDir, withIntermediateDirectories: true)
 		let imageNames = users.compactMap { $0.userImage } + users.compactMap { $0.performer?.photo } +
-				performerData.compactMap { $0.photo.filename } + dailyThemes.compactMap { $0.image }
+				performerData.compactMap { $0.photo.filename } + dailyThemes.compactMap { $0.image } +
+				clientApps.compactMap { $0.image }
 		for imageName in imageNames {
 			do {
 				let imgSource = Settings.shared.userImagesRootPath.appendingPathComponent(ImageSizeGroup.full.rawValue)
@@ -967,6 +1054,9 @@ struct AdminController: APIRouteCollection {
 		}
 		for hunt in importData.hunts {
 			await importHunt(req, huntData: hunt, verifyOnly: verifyOnly, verification: &verification)
+		}
+		for clientApp in importData.clientApps {
+			await importClientApp(req, appData: clientApp, verifyOnly: verifyOnly, verification: &verification)
 		}
 		return verification
 	}
@@ -1295,6 +1385,38 @@ struct AdminController: APIRouteCollection {
 		catch {
 			verification.otherErrors.append("Error when importing Daily Theme \"\(themeData.title)\": \(error.localizedDescription)")
 			verification.dailyThemeCounts.errorCount += 1
+		}
+	}
+
+	// Imports a single ClientApp. Client apps have no natural unique key, so we dedupe on name--this lets the same bulk import
+	// file be applied more than once, and keeps us from duplicating the apps seeded at database creation.
+	func importClientApp(_ req: Request, appData: ClientAppSaveRestoreData, verifyOnly: Bool,
+			verification: inout BulkUserUpdateVerificationData) async {
+		verification.clientAppCounts.totalRecordsProcessed += 1
+		do {
+			if try await ClientApp.query(on: req.db).filter(\.$name == appData.name).first() != nil {
+				verification.clientAppCounts.duplicateCount += 1
+				return
+			}
+			var copiedImage: String?
+			do {
+				if let image = appData.image {
+					copiedImage = try await copyImage(image, verifyOnly: verifyOnly, on: req)
+				}
+			}
+			catch {
+				verification.otherErrors.append("Couldn't copy image for Client App \"\(appData.name)\": \(error.localizedDescription)")
+			}
+			let app = ClientApp(name: appData.name, description: appData.description, image: copiedImage, developer: appData.developer,
+					sortName: appData.sortName, links: appData.links, swiftarrClient: appData.swiftarrClient)
+			if !verifyOnly {
+				try await app.save(on: req.db)
+			}
+			verification.clientAppCounts.importedCount += 1
+		}
+		catch {
+			verification.otherErrors.append("Error when importing Client App \"\(appData.name)\": \(error.localizedDescription)")
+			verification.clientAppCounts.errorCount += 1
 		}
 	}
 
