@@ -322,3 +322,10 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Sep 26, 2026
 
 - `GET /api/v3/fez/owner` now supports `?onlynew`, `?matchID`, and `?foruser`, matching `GET /api/v3/fez/joined`.
+
+## Oct 19, 2026
+
+- Added a Client Apps index (mostly for printed posters):
+  - Open: `GET /api/v3/admin/clients` `GET /api/v3/admin/clients/:client_app_id` 
+  - TT and above: `POST /api/v3/admin/clients/create`, `POST /api/v3/admin/clients/:client_app_id/update`, `DELETE /api/v3/admin/clients/:client_app_id/update` `DELETE /api/v3/admin/clients/:client_app_id`.
+
