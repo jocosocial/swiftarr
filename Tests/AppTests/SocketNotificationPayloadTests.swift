@@ -5,7 +5,7 @@ import XCTVapor
 /// and on `secondaryContentID` to know which parent (the forum) a post belongs to.
 class SocketNotificationPayloadTests: XCTestCase {
 
-	private let forumID = UUID()
+	private let forumID = UUID().uuidString
 
 	// `type` is a synthesized-Codable enum, so it encodes as `{"forumMention": {}}`.
 	private func payload(_ type: NotificationType) throws -> [String: Any] {
@@ -20,28 +20,28 @@ class SocketNotificationPayloadTests: XCTestCase {
 		let json = try payload(.forumMention(42, forumID))
 		XCTAssertNotNil((json["type"] as? [String: Any])?["forumMention"])
 		XCTAssertEqual(json["contentID"] as? String, "42")
-		XCTAssertEqual(json["secondaryContentID"] as? String, forumID.uuidString)
+		XCTAssertEqual(json["secondaryContentID"] as? String, forumID)
 	}
 
 	func testModeratorForumMention_IncludesPostAndForum() throws {
 		let json = try payload(.moderatorForumMention(42, forumID))
 		XCTAssertNotNil((json["type"] as? [String: Any])?["moderatorForumMention"])
 		XCTAssertEqual(json["contentID"] as? String, "42")
-		XCTAssertEqual(json["secondaryContentID"] as? String, forumID.uuidString)
+		XCTAssertEqual(json["secondaryContentID"] as? String, forumID)
 	}
 
 	func testTwitarrTeamForumMention_IncludesPostAndForum() throws {
 		let json = try payload(.twitarrTeamForumMention(42, forumID))
 		XCTAssertNotNil((json["type"] as? [String: Any])?["twitarrTeamForumMention"])
 		XCTAssertEqual(json["contentID"] as? String, "42")
-		XCTAssertEqual(json["secondaryContentID"] as? String, forumID.uuidString)
+		XCTAssertEqual(json["secondaryContentID"] as? String, forumID)
 	}
 
 	func testAlertwordPost_IncludesPostAndForum() throws {
 		let json = try payload(.alertwordPost("kraken", 42, forumID))
 		XCTAssertNotNil((json["type"] as? [String: Any])?["alertwordPost"])
 		XCTAssertEqual(json["contentID"] as? String, "42")
-		XCTAssertEqual(json["secondaryContentID"] as? String, forumID.uuidString)
+		XCTAssertEqual(json["secondaryContentID"] as? String, forumID)
 	}
 
 	// MARK: - Other events are unchanged

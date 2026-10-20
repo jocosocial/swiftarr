@@ -1875,7 +1875,7 @@ extension ForumController {
 		async throws
 	{
 		let postID = post.id ?? 0
-		let forumID = post.$forum.id
+		let forumID = post.$forum.id.uuidString
 		try await withThrowingTaskGroup(of: Void.self) { group in
 			// Load the forum and category for this post, if we don't have it already. Usually these values are already loaded in.
 			if post.$forum.value == nil {

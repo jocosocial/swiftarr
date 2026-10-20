@@ -66,17 +66,17 @@ enum NotificationType {
 	case alertwordTwarrt(String, Int)
 	/// A new forum post that contains a word that a user was alerting on. Associated value is a tuple. First is the alert word that matched.
 	/// Second is the post ID. Could also happen if an existing post was edited, and the edit adds the alert word to the text.
-	/// The optional UUID is the ID of the forum containing the post; it's sent to socket clients as `secondaryContentID`.
-	case alertwordPost(String, Int, UUID? = nil)
+	/// The optional String is the ID of the forum containing the post; it's sent to socket clients as `secondaryContentID`.
+	case alertwordPost(String, Int, String? = nil)
 	/// A new or edited twarrt that now @mentions a user. Associated value is the twarrt ID.
 	case twarrtMention(Int)
 	/// A new or edited forum post that now @mentions a user. Associated value is the post ID.
-	/// The optional UUID is the ID of the forum containing the post; it's sent to socket clients as `secondaryContentID`.
-	case forumMention(Int, UUID? = nil)
+	/// The optional String is the ID of the forum containing the post; it's sent to socket clients as `secondaryContentID`.
+	case forumMention(Int, String? = nil)
 	/// A new or edited forum post that now @mentions @moderator. Associated value is the post ID.
-	case moderatorForumMention(Int, UUID? = nil)
+	case moderatorForumMention(Int, String? = nil)
 	/// A new or edited forum post that now @mentions @twitarrteam. Associated value is the post ID.
-	case twitarrTeamForumMention(Int, UUID? = nil)
+	case twitarrTeamForumMention(Int, String? = nil)
 
 // Micro Karaoke
 	/// A Micro Karaoke song the user contributed to is ready for viewing. Associated value is song ID
@@ -187,7 +187,7 @@ enum NotificationType {
 		switch self {
 		case .forumMention(_, let forumID), .moderatorForumMention(_, let forumID),
 			.twitarrTeamForumMention(_, let forumID), .alertwordPost(_, _, let forumID):
-			return forumID?.uuidString
+			return forumID
 		default: return nil
 		}
 	}
