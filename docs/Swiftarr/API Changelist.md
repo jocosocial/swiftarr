@@ -329,4 +329,3 @@ additive; the existing count fields are unchanged and are now derived from these
   - Open: `GET /api/v3/admin/clients` `GET /api/v3/admin/clients/:client_app_id` 
   - TT and above: `POST /api/v3/admin/clients/create`, `POST /api/v3/admin/clients/:client_app_id/update`, `DELETE /api/v3/admin/clients/:client_app_id/update` `DELETE /api/v3/admin/clients/:client_app_id`.
 
-- The bulk user export/import file (`SaveRestoreData`) gains a `clientApps` array.

@@ -914,10 +914,8 @@ struct AdminController: APIRouteCollection {
 		let dailyThemeData = dailyThemes.map { DailyThemeSaveRestoreData($0) }
 		let hunts = try await Hunt.query(on: req.db).with(\.$puzzles).all()
 		let huntData = hunts.map { HuntSaveRestoreData($0, $0.puzzles) }
-		let clientApps = try await ClientApp.query(on: req.db).all()
-		let clientAppData = clientApps.map { ClientAppSaveRestoreData($0) }
 		let dto = SaveRestoreData(users: userData, performers: performerData, needsPhotographer: needsPhotographerEvents,
-				dailyThemes: dailyThemeData, hunts: huntData, clientApps: clientAppData)
+				dailyThemes: dailyThemeData, hunts: huntData)
 		let data = try JSONEncoder().encode(dto)
 		let userfile = sourceDirectoryURL.appendingPathComponent("userfile.json", isDirectory: true)
 		try data.write(to: userfile, options: .atomic)
@@ -926,8 +924,7 @@ struct AdminController: APIRouteCollection {
 		let destImageDir = sourceDirectoryURL.appendingPathComponent("userImages", isDirectory: true)
 		try FileManager.default.createDirectory(at: destImageDir, withIntermediateDirectories: true)
 		let imageNames = users.compactMap { $0.userImage } + users.compactMap { $0.performer?.photo } +
-				performerData.compactMap { $0.photo.filename } + dailyThemes.compactMap { $0.image } +
-				clientApps.compactMap { $0.image }
+				performerData.compactMap { $0.photo.filename } + dailyThemes.compactMap { $0.image }
 		for imageName in imageNames {
 			do {
 				let imgSource = Settings.shared.userImagesRootPath.appendingPathComponent(ImageSizeGroup.full.rawValue)
@@ -1054,9 +1051,6 @@ struct AdminController: APIRouteCollection {
 		}
 		for hunt in importData.hunts {
 			await importHunt(req, huntData: hunt, verifyOnly: verifyOnly, verification: &verification)
-		}
-		for clientApp in importData.clientApps {
-			await importClientApp(req, appData: clientApp, verifyOnly: verifyOnly, verification: &verification)
 		}
 		return verification
 	}
@@ -1385,38 +1379,6 @@ struct AdminController: APIRouteCollection {
 		catch {
 			verification.otherErrors.append("Error when importing Daily Theme \"\(themeData.title)\": \(error.localizedDescription)")
 			verification.dailyThemeCounts.errorCount += 1
-		}
-	}
-
-	// Imports a single ClientApp. Client apps have no natural unique key, so we dedupe on name--this lets the same bulk import
-	// file be applied more than once. Like the other record types, an existing app with the same name is left alone, not overwritten.
-	func importClientApp(_ req: Request, appData: ClientAppSaveRestoreData, verifyOnly: Bool,
-			verification: inout BulkUserUpdateVerificationData) async {
-		verification.clientAppCounts.totalRecordsProcessed += 1
-		do {
-			if try await ClientApp.query(on: req.db).filter(\.$name == appData.name).first() != nil {
-				verification.clientAppCounts.duplicateCount += 1
-				return
-			}
-			var copiedImage: String?
-			do {
-				if let image = appData.image {
-					copiedImage = try await copyImage(image, verifyOnly: verifyOnly, on: req)
-				}
-			}
-			catch {
-				verification.otherErrors.append("Couldn't copy image for Client App \"\(appData.name)\": \(error.localizedDescription)")
-			}
-			let app = ClientApp(name: appData.name, description: appData.description, image: copiedImage, developer: appData.developer,
-					sortName: appData.sortName, links: appData.links, swiftarrClient: appData.swiftarrClient)
-			if !verifyOnly {
-				try await app.save(on: req.db)
-			}
-			verification.clientAppCounts.importedCount += 1
-		}
-		catch {
-			verification.otherErrors.append("Error when importing Client App \"\(appData.name)\": \(error.localizedDescription)")
-			verification.clientAppCounts.errorCount += 1
 		}
 	}
 

@@ -62,8 +62,6 @@ public struct BulkUserUpdateVerificationData: Content {
 	var dailyThemeCounts: BulkUserUpdateCounts
 	/// Counts for Hunt import. Includes Hunts and their child Puzzles as a single unit.
 	var huntCounts: BulkUserUpdateCounts
-	/// Counts for Client App import.
-	var clientAppCounts: BulkUserUpdateCounts
 
 	/// Cases where the server has a registered user with the same regcode as the update file, but the usernames differ.
 	/// This may mean the user preregistered and then (somehow) registered on-boat with a different username before the bulk import happened.
@@ -86,7 +84,6 @@ extension BulkUserUpdateVerificationData {
 		needsPhotographerCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
 		dailyThemeCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
 		huntCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
-		clientAppCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
 		regCodeConflicts = []
 		usernameConflicts = []
 		errorNotImported = []
@@ -385,8 +382,6 @@ public struct SaveRestoreData: Content {
 	var dailyThemes: [DailyThemeSaveRestoreData]
 	/// Array of Hunts (with their Puzzles) to save and restore.
 	var hunts: [HuntSaveRestoreData]
-	/// Array of Client Apps to save and restore.
-	var clientApps: [ClientAppSaveRestoreData]
 }
 
 /// Used during bulk export/import to save and restore `DailyTheme` records. Unlike `DailyThemeData` (the API-facing DTO),
@@ -466,29 +461,6 @@ extension ClientAppUploadData: RCFValidatable {
 				or: "Each platform may only have one link")
 		tester.validate(links.allSatisfy { !$0.url.trimmingCharacters(in: .whitespaces).isEmpty }, forKey: .links,
 				or: "Link URLs cannot be empty")
-	}
-}
-
-/// Used during bulk export/import to save and restore `ClientApp` records. Carries the raw image filename, like `DailyThemeSaveRestoreData`.
-struct ClientAppSaveRestoreData: Content, Sendable {
-	let name: String
-	let description: String
-	let image: String?
-	let developer: String
-	let sortName: String
-	let links: [ClientAppLink]
-	let swiftarrClient: SwiftarrClientApp?
-}
-
-extension ClientAppSaveRestoreData {
-	init(_ app: ClientApp) {
-		name = app.name
-		description = app.appDescription
-		image = app.image
-		developer = app.developer
-		sortName = app.sortName
-		links = app.links
-		swiftarrClient = app.swiftarrClient
 	}
 }
 
