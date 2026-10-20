@@ -673,11 +673,11 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateAdminUsers(), to: .psql)
 		app.migrations.add(CreateClientUsers(), to: .psql)
 		app.migrations.add(CreateCategories(), to: .psql)
-		app.migrations.add(CreateClientApps(), to: .psql)
 		// Add test data, if applicable.
 		if app.environment == .testing || app.environment == .development {
 			app.migrations.add(CreateTestUsers(), to: .psql)
 			app.migrations.add(CreateTestData(), to: .psql)
+			app.migrations.add(CreateClientApps(), to: .psql)
 		}
 		app.migrations.add(PopulateForumLastPostIDMigration(), to: .psql)
 		app.migrations.add(GenerateDiscordRegistrationCodes(), to: .psql)

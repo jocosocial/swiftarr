@@ -1389,7 +1389,7 @@ struct AdminController: APIRouteCollection {
 	}
 
 	// Imports a single ClientApp. Client apps have no natural unique key, so we dedupe on name--this lets the same bulk import
-	// file be applied more than once, and keeps us from duplicating the apps seeded at database creation.
+	// file be applied more than once. Like the other record types, an existing app with the same name is left alone, not overwritten.
 	func importClientApp(_ req: Request, appData: ClientAppSaveRestoreData, verifyOnly: Bool,
 			verification: inout BulkUserUpdateVerificationData) async {
 		verification.clientAppCounts.totalRecordsProcessed += 1
