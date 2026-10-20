@@ -130,8 +130,7 @@ struct PhotostreamController: APIRouteCollection {
 	/// 
 	/// Returns a list of currently-valid placenames that can be used to tag a photo. This list includes events currently happening as well as a few
 	/// general ship locations. These values are valid to be returned to `/api/v3/photostream/upload`.  Note that this means the result of this call is ephermal
-	/// and will change as events end and new ones start. Similar to how the  'now' functionality works in Schedule, long-running 'events' are filtered out (e.g. "Cosplay Day", running
-	/// from 8:00 AM to mindnight).
+	/// and will change as events end and new ones start. Dining events and events longer than 6 hours (e.g. theme days) are filtered out. Shadow events are exempt from the duration limit.
 	/// 
 	/// - Returns: `PhotostreamLocationData` contining currently-running events and general boat placenames.
 	func getPlacenames(_ req: Request) async throws -> PhotostreamLocationData {
@@ -299,12 +298,15 @@ struct PhotostreamController: APIRouteCollection {
 		let effectiveDate = cal.date(byAdding: cruiseWeekOffset, to: cruiseStart, wrappingComponents: false)
 		// Search for current events; if we're validating an upload include the event if it ended in the last 5 mins
 		let currentPortTime = try await TimeZoneChangeSet(req.db).displayTimeToPortTime(effectiveDate)
-		let validationEndTime = forValidation ? currentPortTime + 300.0 : currentPortTime
+		let validationEndTime = forValidation ? currentPortTime - 300.0 : currentPortTime
 		let currentEvents = try await Event.query(on: req.db).filter(\.$startTime <= currentPortTime).filter(\.$endTime > validationEndTime)
+				.filter(\.$eventType != .dining)
 				.joinWithFilter(method: .left, from: \.$id, to: \EventFavorite.$event.$id, otherFilters: 
 				[.value(.path(EventFavorite.path(for: \.$user.$id), schema: EventFavorite.schema), .equal, .bind(user.userID))]).all()
+		// Long-running events (theme days, all-day room closures, open-all-day venues) aren't useful photo tags.
+		// Shadow events are exempt, as they're real events that can run long (e.g. megagames).
 		let eventData: [EventData] = try currentEvents.compactMap {
-			if $0.endTime.timeIntervalSince($0.startTime) > 3600 * 2 {
+			if $0.eventType != .shadow && $0.endTime.timeIntervalSince($0.startTime) > 3600 * 6 {
 				return nil
 			}
 			let isFav = (try? $0.joined(EventFavorite.self)) != nil

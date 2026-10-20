@@ -29,6 +29,25 @@ Notes for AI coding agents (Claude Code, Codex, etc.) working on swiftarr contri
   don't alter the client API specification (e.g. fixing corrupted QR code images)
   don't need an entry.
 
+## Running tests
+
+Tests need the dedicated test Postgres (port 5433) and Redis (port 6380) from the
+instance compose stack. Use `scripts/instance.sh`, which wraps
+`scripts/docker-compose-instance.yml`. Don't point tests at the dev `postgres`/`redis`
+services (5432/6379), and feel free to stop/start or recreate the test services as often as needed.
+
+```sh
+scripts/instance.sh up -d postgres-test redis-test
+export REDIS_PASSWORD=password                       # redis-test requires a password
+swift run swiftarr migrate --env testing --yes       # first run against an empty test database
+swift test --filter PhotostreamControllerTests       # or omit --filter; CI skips SettingsTests
+scripts/instance.sh stop postgres-test redis-test    # when finished
+```
+
+- A failing test triggers `autoRevert`, which drops the schema; re-run the `migrate`
+  step before the next run.
+- Use `scripts/instance.sh rm -sfv postgres-test redis-test` to stop the test services and discard their volumes.
+
 ## Setup & docs
 
 For build, test, and environment setup, see [docs/Swiftarr/](docs/Swiftarr/) — notably
