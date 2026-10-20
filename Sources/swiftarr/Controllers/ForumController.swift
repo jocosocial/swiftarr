@@ -1875,6 +1875,7 @@ extension ForumController {
 		async throws
 	{
 		let postID = post.id ?? 0
+		let forumID = post.$forum.id
 		try await withThrowingTaskGroup(of: Void.self) { group in
 			// Load the forum and category for this post, if we don't have it already. Usually these values are already loaded in.
 			if post.$forum.value == nil {
@@ -1926,20 +1927,20 @@ extension ForumController {
 				}
 				let infoStr = "\(authorText) wrote a forum post that @mentioned you."
 				group.addTask {
-					try await addNotifications(users: addUUIDs, type: .forumMention(postID), info: infoStr, on: req)
+					try await addNotifications(users: addUUIDs, type: .forumMention(postID, forumID), info: infoStr, on: req)
 				}
 				if adds.map({ $0.lowercased() }).contains("twitarrteam") {
 					let ttMembers = req.userCache.allUsersWithAccessLevel(.twitarrteam)
 					let infoStr = "\(authorText) wrote a forum post that @mentioned twitarrteam."
 					group.addTask {
-						try await addNotifications(users: ttMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .twitarrTeamForumMention(postID), info: infoStr, on: req)
+						try await addNotifications(users: ttMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .twitarrTeamForumMention(postID, forumID), info: infoStr, on: req)
 					}
 				}
 				if adds.map({ $0.lowercased()}).contains("moderator") {
 					let modMembers = req.userCache.allUsersWithAccessLevel(.moderator)
 					let infoStr = "\(authorText) wrote a forum post that @mentioned moderator."
 					group.addTask {
-						try await addNotifications(users: modMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .moderatorForumMention(postID), info: infoStr, on: req)
+						try await addNotifications(users: modMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .moderatorForumMention(postID, forumID), info: infoStr, on: req)
 					}
 				}
 			}
@@ -1967,7 +1968,7 @@ extension ForumController {
 						let validUserIDs = req.userCache.getUsers(userIDs).compactMap(canUserAccessCategory)
 						try await addNotifications(
 							users: validUserIDs,
-							type: .alertwordPost(word, postID),
+							type: .alertwordPost(word, postID, forumID),
 							info: infoStr,
 							creatorID: post.$author.id,
 							on: req

@@ -66,15 +66,17 @@ enum NotificationType {
 	case alertwordTwarrt(String, Int)
 	/// A new forum post that contains a word that a user was alerting on. Associated value is a tuple. First is the alert word that matched.
 	/// Second is the post ID. Could also happen if an existing post was edited, and the edit adds the alert word to the text.
-	case alertwordPost(String, Int)
+	/// The optional UUID is the ID of the forum containing the post; it's sent to socket clients as `secondaryContentID`.
+	case alertwordPost(String, Int, UUID? = nil)
 	/// A new or edited twarrt that now @mentions a user. Associated value is the twarrt ID.
 	case twarrtMention(Int)
 	/// A new or edited forum post that now @mentions a user. Associated value is the post ID.
-	case forumMention(Int)
+	/// The optional UUID is the ID of the forum containing the post; it's sent to socket clients as `secondaryContentID`.
+	case forumMention(Int, UUID? = nil)
 	/// A new or edited forum post that now @mentions @moderator. Associated value is the post ID.
-	case moderatorForumMention(Int)
+	case moderatorForumMention(Int, UUID? = nil)
 	/// A new or edited forum post that now @mentions @twitarrteam. Associated value is the post ID.
-	case twitarrTeamForumMention(Int)
+	case twitarrTeamForumMention(Int, UUID? = nil)
 
 // Micro Karaoke
 	/// A Micro Karaoke song the user contributed to is ready for viewing. Associated value is song ID
@@ -96,7 +98,7 @@ enum NotificationType {
 		case .personalEventStarting: return "personalEventStarting"
 
 		case .alertwordTwarrt(let str, _): return "alertwordTweet-\(str)"
-		case .alertwordPost(let str, _): return "alertwordPost-\(str)"
+		case .alertwordPost(let str, _, _): return "alertwordPost-\(str)"
 		case .twarrtMention: return "twarrtMention"
 		case .forumMention: return "forumMention"
 		case .moderatorForumMention: return "moderatorForumMention"
@@ -169,13 +171,24 @@ enum NotificationType {
 		case .personalEventStarting(let id): return String(id)
 
 		case .alertwordTwarrt(_, let id): return String(id)
-		case .alertwordPost(_, let id): return String(id)
+		case .alertwordPost(_, let id, _): return String(id)
 		case .twarrtMention(let id): return String(id)
-		case .forumMention(let id): return String(id)
-		case .moderatorForumMention(let id): return String(id)
-		case .twitarrTeamForumMention(let id): return String(id)
+		case .forumMention(let id, _): return String(id)
+		case .moderatorForumMention(let id, _): return String(id)
+		case .twitarrTeamForumMention(let id, _): return String(id)
 		
 		case .microKaraokeSongReady(let songID): return String(songID)
+		}
+	}
+
+	/// Returns the ID of a related object (the forum containing the post, for forum mention types), if known.
+	/// Sent to socket clients as `secondaryContentID`.
+	func secondaryObjectID() -> String? {
+		switch self {
+		case .forumMention(_, let forumID), .moderatorForumMention(_, let forumID),
+			.twitarrTeamForumMention(_, let forumID), .alertwordPost(_, _, let forumID):
+			return forumID?.uuidString
+		default: return nil
 		}
 	}
 
