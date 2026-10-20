@@ -54,6 +54,7 @@ struct EventController: APIRouteCollection {
 	/// - ?type=[official, shadow]	Only returns events matching the selected type.
 	/// - ?search=STRING			Returns events whose title or description contain the given string.
 	/// - ?location=STRING			Returns events whose room name contains the given string.
+	/// - ?ageRating=ENUM			Returns events with the given age rating: allAges, teensAndOlder, adultsOnly, kidsOnly, or unrated (events with no rating).
 	/// - ?following=TRUE			Returns events the user is following, aka favorited.
 	/// - ?dayplanner=TRUE			Returns events that should appear in the user's day planner. Currently this includes events
 	/// 								the user's following and events they signed up to photograph.
@@ -81,6 +82,7 @@ struct EventController: APIRouteCollection {
 			var type: String?
 			var search: String?
 			var location: String?
+			var ageRating: String?
 			var following: Bool?
 			var dayplanner: Bool?
 			var needsPhotographer: Bool?
@@ -101,6 +103,17 @@ struct EventController: APIRouteCollection {
 		if var location = options.location {
 			location = location.escapedForSQLWildcards()
 			query.filter(\.$location ~~ location)
+		}
+		if let ageRating = options.ageRating {
+			if ageRating == "unrated" {
+				query.filter(\.$ageRating == .null)
+			}
+			else if let rating = AgeRating(rawValue: ageRating) {
+				query.filter(\.$ageRating == rating)
+			}
+			else {
+				throw Abort(.badRequest, reason: "Invalid ageRating value: \(ageRating)")
+			}
 		}
 		if let eventType = options.type {
 			if eventType == "shadow" {

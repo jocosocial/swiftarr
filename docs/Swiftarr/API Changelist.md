@@ -322,3 +322,8 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Sep 26, 2026
 
 - `GET /api/v3/fez/owner` now supports `?onlynew`, `?matchID`, and `?foruser`, matching `GET /api/v3/fez/joined`.
+
+## Oct 20, 2026
+
+- `EventData` gains an optional `ageRating` field (`allAges`/`teensAndOlder`/`adultsOnly`/`kidsOnly`), null when the event has no known rating.
+- `GET /api/v3/events` now supports `?ageRating=` to filter on it, including `?ageRating=unrated` for events with no rating.

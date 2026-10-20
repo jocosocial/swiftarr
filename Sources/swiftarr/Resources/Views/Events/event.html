@@ -11,6 +11,7 @@
 		data-needsphotographer=#if(event.shutternautData && event.shutternautData.needsPhotographer == true):"true"#else:"false"#endif
 		data-photographercount=#countOrZero(event.shutternautData.photographers)
 		data-eventcategory="#(event.eventType)"
+		data-agerating="#(event.ageRating)"
 		data-cruiseday="#cruiseDayIndex(event.startTime)"
 		data-starttime="#(event.startTime)"
 		data-endtime="#(event.endTime)">
@@ -34,6 +35,16 @@
 			<div class="col-12">
 				#(event.description)
 			</div>
+			#if(event.ageRating):
+				<div class="col-12 mt-1">
+					<b>Age Rating:</b>
+					#if(event.ageRating == "allAges"):All Ages
+					#elseif(event.ageRating == "teensAndOlder"):Teens and Older
+					#elseif(event.ageRating == "adultsOnly"):Adults Only
+					#elseif(event.ageRating == "kidsOnly"):Specifically for Kids
+					#endif
+				</div>
+			#endif
 			<div class="col-12 ms-4">
 				#if(count(event.performers) > 0):
 					<b>With:</b>

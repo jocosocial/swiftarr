@@ -73,6 +73,23 @@
 						</ul>
 					</div>
 				</div>
+    			<div class="col col-auto">
+					<div class="dropdown">
+						<button class="btn btn-outline-primary dropdown-toggle btn-sm" type="button" id="ageRatingMenu" data-bs-toggle="dropdown" data-selected="all" aria-expanded="false">
+							All Ages Ratings
+						</button>
+						<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="ageRatingMenu" id="ageRatingMenuItems">
+							<li><button class="dropdown-item active" type="button" data-action="filterEventType" data-selection="all">All Ages Ratings</button></li>
+							<li><hr class="dropdown-divider"></li>
+							<li><h6 class="dropdown-header">Only show:</h6></li>
+							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="allAges">All Ages</button></li>
+							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="teensAndOlder">Teens and Older</button></li>
+							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="adultsOnly">Adults Only</button></li>
+							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="kidsOnly">Specifically for Kids</button></li>
+							<li><button class="dropdown-item" type="button" data-action="filterEventType" data-selection="unrated">Unrated</button></li>
+						</ul>
+					</div>
+				</div>
 				<div class="col btn-group btn-group-sm col-auto" role="group" aria-label="Event Filters">
 					<button class="btn btn-outline-primary #if(!trunk.userIsLoggedIn):d-none#endif" type="button" data-bs-toggle="button" data-action="eventFiltersChanged" id="eventFollowingFilter">Following</button>
 				</div>
