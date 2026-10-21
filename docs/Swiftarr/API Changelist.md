@@ -326,6 +326,7 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Oct 20, 2026
 
 - `SocketNotificationData` gains an optional `secondaryContentID` field.
+- Added three new `ModeratorActionType` values logged by the account-manager registration-code endpoints: `regCodeSearched` (`GET /api/v3/admin/regcodes/find/:search_string`), `regCodeViewed` (`GET /api/v3/admin/regcodes/findbyuser/:userID`), and `accountUnlocked` (`POST /api/v3/admin/regcodes/unlock/:userID`). The moderator action log (`ModeratorActionLogData.actionType`) can now return these values.
 
 ## Oct 21, 2026
 
