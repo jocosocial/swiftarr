@@ -329,19 +329,18 @@ struct AdminController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Registration code search parameter is malformed.")
 		}
 		let regCode = RegistrationCode.normalized(decoded)
-		guard let foundRecord = try await RegistrationCode.query(on: req.db).filter(\.$code == regCode).first() else {
+		guard let foundRecord = try await RegistrationCode.query(on: req.db).filter(\.$code == regCode).with(\.$user).first() else {
 			throw Abort(.badRequest, reason: "\(regCode) is not found in the registration code table.")
 		}
-		guard let parentUserID = foundRecord.$user.id else {
+		guard let parentUser = foundRecord.user else {
 			// This is the case where the reg code is valid, exists in the table, but hasn't been used to create a user account.
 			return []
 		}
-		if let parentUser = try await User.find(parentUserID, on: req.db) {
-			await parentUser.logIfModeratorAction(.regCodeSearched, user: cacheUser, on: req)
-		}
-		let subAccountIDs = try await User.query(on: req.db).filter(\.$parent.$id == parentUserID).all()
+		await parentUser.logIfModeratorAction(.regCodeSearched, user: cacheUser, on: req)
+
+		let subAccountIDs = try await User.query(on: req.db).filter(\.$parent.$id == parentUser.id).all()
 			.map { try $0.requireID() }
-		return req.userCache.getHeaders([parentUserID] + subAccountIDs)
+		return req.userCache.getHeaders([parentUser.id!] + subAccountIDs)
 	}
 
 	/// `GET /api/v3/admin/regcodes/findbyuser/:userID`
