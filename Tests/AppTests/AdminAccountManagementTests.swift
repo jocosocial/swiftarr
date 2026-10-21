@@ -417,4 +417,35 @@ class AdminAccountManagementTests: XCTestCase, SwiftarrBaseTest {
 			XCTAssertEqual(actionCount, 1, "searching for a user by reg code should log one ModeratorAction")
 		}
 	}
+
+	func testFind_UnusedCodeReturnsEmptyArray() async throws {
+		try await withApp { app in
+			let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(5).lowercased()
+			let code = "t\(suffix)"
+			let staff = try await makeUser(app, username: "acctmgr-\(suffix)", accessLevel: .verified)
+			try await UserRole(user: staff.requireID(), role: .accountmanager).create(on: app.db)
+			let record = RegistrationCode(code: code)
+			try await record.save(on: app.db)
+			let staffToken = try await makeToken(app, for: staff)
+			try await bootCache(app)
+
+			try await app.test(
+				.GET,
+				"/api/v3/admin/regcodes/find/\(code)",
+				headers: bearer(staffToken),
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok)
+					let headers = try res.content.decode([UserHeader].self)
+					XCTAssertTrue(headers.isEmpty, "an unused reg code should return an empty array")
+				}
+			)
+
+			let actionCount = try await ModeratorAction.query(on: app.db)
+				.filter(\.$contentType == .userProfile)
+				.filter(\.$actionType == .regCodeSearched)
+				.filter(\.$actor.$id == staff.requireID())
+				.count()
+			XCTAssertEqual(actionCount, 0, "searching for an unused reg code has no target user, so nothing is logged")
+		}
+	}
 }
