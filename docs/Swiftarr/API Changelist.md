@@ -326,3 +326,8 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Oct 20, 2026
 
 - `SocketNotificationData` gains an optional `secondaryContentID` field.
+
+## Oct 21, 2026
+
+- The site's Create Account form (`/createAccount`) now requires the user to check a terms-of-use agreement box before submitting. Submissions without it are rejected with a field error.
+- `UserCreateData` gains an optional `agreeToTerms` boolean. `POST /api/v3/user/create` now requires it to be `true`; requests omitting it (or sending `false`) are rejected with a 400. `POST /api/v3/user/add` is unaffected and does not require it. Clients that create accounts must be updated to send the new field.
