@@ -340,7 +340,7 @@ struct AdminController: APIRouteCollection {
 
 		let subAccountIDs = try await User.query(on: req.db).filter(\.$parent.$id == parentUser.id).all()
 			.map { try $0.requireID() }
-		return req.userCache.getHeaders([parentUser.id!] + subAccountIDs)
+		return req.userCache.getHeaders([try parentUser.requireID()] + subAccountIDs)
 	}
 
 	/// `GET /api/v3/admin/regcodes/findbyuser/:userID`
