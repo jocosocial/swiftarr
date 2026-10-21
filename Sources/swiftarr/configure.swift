@@ -534,6 +534,7 @@ struct SwiftarrConfigurator {
 		app.leaf.tags["urlEncode"] = URLEncodeTag()
 		app.leaf.tags["countOrZero"] = CountZeroTag()
 		app.leaf.tags["regCode"] = RegCodeTag()
+		app.leaf.tags["moderatorActionName"] = ModeratorActionNameTag()
 	}
 
 	func configureQueues(_ app: Application) throws {

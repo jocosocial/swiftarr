@@ -1,3 +1,4 @@
+import Fluent
 import Testing
 import XCTVapor
 
@@ -311,6 +312,140 @@ class AdminAccountManagementTests: XCTestCase, SwiftarrBaseTest {
 					XCTAssertEqual(headers.first?.userID, try target.requireID())
 				}
 			)
+		}
+	}
+
+	func testFindByUser_LogsRegCodeViewed() async throws {
+		try await withApp { app in
+			let suffix = UUID().uuidString.prefix(8).lowercased()
+			let staff = try await makeUser(app, username: "acctmgr-\(suffix)", accessLevel: .verified)
+			try await UserRole(user: staff.requireID(), role: .accountmanager).create(on: app.db)
+			let target = try await makeUser(
+				app,
+				username: "logview-\(suffix)",
+				accessLevel: .verified,
+				verification: "abc123"
+			)
+			let staffToken = try await makeToken(app, for: staff)
+			try await bootCache(app)
+
+			try await app.test(
+				.GET,
+				"/api/v3/admin/regcodes/findbyuser/\(try target.requireID())",
+				headers: bearer(staffToken),
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok)
+				}
+			)
+
+			let actionCount = try await ModeratorAction.query(on: app.db)
+				.filter(\.$contentType == .userProfile)
+				.filter(\.$actionType == .regCodeViewed)
+				.filter(\.$actor.$id == staff.requireID())
+				.filter(\.$target.$id == target.requireID())
+				.count()
+			XCTAssertEqual(actionCount, 1, "viewing a user's registration code should log one ModeratorAction")
+		}
+	}
+
+	func testUnlock_LogsAccountUnlocked() async throws {
+		try await withApp { app in
+			let suffix = UUID().uuidString.prefix(8).lowercased()
+			let staff = try await makeUser(app, username: "acctmgr-\(suffix)", accessLevel: .verified)
+			try await UserRole(user: staff.requireID(), role: .accountmanager).create(on: app.db)
+			let target = try await makeUser(
+				app,
+				username: "logunlock-\(suffix)",
+				accessLevel: .verified,
+				verification: "*abc123"
+			)
+			let staffToken = try await makeToken(app, for: staff)
+			try await bootCache(app)
+
+			try await app.test(
+				.POST,
+				"/api/v3/admin/regcodes/unlock/\(try target.requireID())",
+				headers: bearer(staffToken),
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok)
+				}
+			)
+
+			let actionCount = try await ModeratorAction.query(on: app.db)
+				.filter(\.$contentType == .userProfile)
+				.filter(\.$actionType == .accountUnlocked)
+				.filter(\.$actor.$id == staff.requireID())
+				.filter(\.$target.$id == target.requireID())
+				.count()
+			XCTAssertEqual(actionCount, 1, "unlocking an account should log one ModeratorAction")
+		}
+	}
+
+	func testFindByCode_LogsRegCodeSearched() async throws {
+		try await withApp { app in
+			let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(5).lowercased()
+			let code = "t\(suffix)"
+			let staff = try await makeUser(app, username: "acctmgr-\(suffix)", accessLevel: .verified)
+			try await UserRole(user: staff.requireID(), role: .accountmanager).create(on: app.db)
+			let target = try await makeUser(
+				app,
+				username: "logfind-\(suffix)",
+				accessLevel: .verified,
+				verification: code
+			)
+			let record = RegistrationCode(code: code)
+			record.$user.id = try target.requireID()
+			try await record.save(on: app.db)
+			let staffToken = try await makeToken(app, for: staff)
+			try await bootCache(app)
+
+			try await app.test(
+				.GET,
+				"/api/v3/admin/regcodes/find/\(code)",
+				headers: bearer(staffToken),
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok)
+				}
+			)
+
+			let actionCount = try await ModeratorAction.query(on: app.db)
+				.filter(\.$contentType == .userProfile)
+				.filter(\.$actionType == .regCodeSearched)
+				.filter(\.$actor.$id == staff.requireID())
+				.filter(\.$target.$id == target.requireID())
+				.count()
+			XCTAssertEqual(actionCount, 1, "searching for a user by reg code should log one ModeratorAction")
+		}
+	}
+
+	func testFind_UnusedCodeReturnsEmptyArray() async throws {
+		try await withApp { app in
+			let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(5).lowercased()
+			let code = "t\(suffix)"
+			let staff = try await makeUser(app, username: "acctmgr-\(suffix)", accessLevel: .verified)
+			try await UserRole(user: staff.requireID(), role: .accountmanager).create(on: app.db)
+			let record = RegistrationCode(code: code)
+			try await record.save(on: app.db)
+			let staffToken = try await makeToken(app, for: staff)
+			try await bootCache(app)
+
+			try await app.test(
+				.GET,
+				"/api/v3/admin/regcodes/find/\(code)",
+				headers: bearer(staffToken),
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok)
+					let headers = try res.content.decode([UserHeader].self)
+					XCTAssertTrue(headers.isEmpty, "an unused reg code should return an empty array")
+				}
+			)
+
+			let actionCount = try await ModeratorAction.query(on: app.db)
+				.filter(\.$contentType == .userProfile)
+				.filter(\.$actionType == .regCodeSearched)
+				.filter(\.$actor.$id == staff.requireID())
+				.count()
+			XCTAssertEqual(actionCount, 0, "searching for an unused reg code has no target user, so nothing is logged")
 		}
 	}
 }
