@@ -361,6 +361,8 @@ public struct EventData: Content {
 	var location: String
 	/// The event category.
 	var eventType: String
+	/// The age appropriateness rating of the event, if known. NULL if the event has no rating.
+	var ageRating: AgeRating?
 	/// The last time data for this event was modified. Used for change management.
 	var lastUpdateTime: Date
 	/// The event's associated `Forum`.
@@ -392,6 +394,7 @@ extension EventData {
 		self.timeZoneID = timeZoneChanges.tzAtTime(self.startTime).identifier
 		location = event.location
 		eventType = event.eventType.label
+		ageRating = event.ageRating
 		lastUpdateTime = event.updatedAt ?? Date()
 		forum = event.$forum.id
 		self.isFavorite = isFavorite
