@@ -86,12 +86,33 @@
 									autocomplete="new-password" aria-describedby="confirm-password-label">
 						</div>
 					</div>
+					<div class="row mb-3 mx-2">
+						<div class="col">
+							<div class="form-check">
+								<input type="checkbox" class="form-check-input #if(error.fieldErrors.agreeToTerms):is-invalid#endif" id="agreeToTerms" name="agreeToTerms" value="true" aria-describedby="agreeToTerms-feedback">
+								<label class="form-check-label" for="agreeToTerms">I have read and agree to the Twit-arr Guidelines, the JoCo Cruise Code of Conduct, and the Twit-arr Code of Conduct.</label>
+							</div>
+							<div class="invalid-feedback" id="agreeToTerms-feedback">
+								#(error.fieldErrors.agreeToTerms)
+							</div>
+						</div>
+					</div>
 					#if(error):
 						<div class="alert alert-danger mt-3" role="alert">
 							<b>Error:</b> #(error.reason)
 						</div>
 					#endif
-					<button type="submit" class="btn btn-primary">Create Account<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+					<button type="submit" class="btn btn-primary" id="createAccountSubmit" disabled>Create Account<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+					<script>
+						(function() {
+							var agreeCheckbox = document.getElementById("agreeToTerms");
+							var submitButton = document.getElementById("createAccountSubmit");
+							function updateSubmitButton() {
+								submitButton.disabled = !agreeCheckbox.checked;
+							}
+							agreeCheckbox.addEventListener("change", updateSubmitButton);
+						})();
+					</script>
 				</form>
 		
 				<div class="row mt-4">

@@ -2566,6 +2566,9 @@ public struct UserCreateData: Content {
 	/// Verification code, emailed to all cruisegoers by THO before embarkation. On success, user will be created with .verified access level, consuming this code.
 	/// Required for creating 'parent' accounts; must be nil when used to create a sub-account with `POST /api/v3/user/add`.
 	var verification: String?
+	/// Confirmation that the user has read and agreed to the terms of use.
+	/// `POST /api/v3/user/create` requires this to be `true`; `POST /api/v3/user/add` does not use it, as the parent account has already agreed.
+	var agreeToTerms: Bool?
 }
 
 extension UserCreateData: RCFValidatable {
