@@ -111,4 +111,5 @@ jobs:
         # it fails against a migrated database because its expectations are stale
         # (testEmbarkationStartDate expects 2024-03-09, master produces 2025-03-02). Everything
         # else in the suite passes with the services above.
-        run: swift test --enable-test-discovery --skip SettingsTests
+        # Test discovery is the default on Swift 5.4+ (no LinuxMain.swift / entry point needed).
+        run: swift test --skip SettingsTests
