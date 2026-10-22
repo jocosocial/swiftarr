@@ -98,5 +98,5 @@ By registering for and using Twitarr, you agree to the following:
 
 You also confirm that:
 
-- I am using the registration code that I was personally issued.
-- I am 18 years of age or older.
+- You are using the registration code that you were personally issued.
+- You are 18 years of age or older.
