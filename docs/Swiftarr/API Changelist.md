@@ -329,3 +329,7 @@ additive; the existing count fields are unchanged and are now derived from these
 - `GET /api/v3/events` now supports `?ageRating=` to filter on it, including `?ageRating=unrated` for events with no rating.
 - `SocketNotificationData` gains an optional `secondaryContentID` field.
 - Added three new `ModeratorActionType` values logged by the account-manager registration-code endpoints: `regCodeSearched` (`GET /api/v3/admin/regcodes/find/:search_string`), `regCodeViewed` (`GET /api/v3/admin/regcodes/findbyuser/:userID`), and `accountUnlocked` (`POST /api/v3/admin/regcodes/unlock/:userID`). The moderator action log (`ModeratorActionLogData.actionType`) can now return these values.
+
+## Oct 21, 2026
+
+- `UserCreateData` gains an optional `agreeToTerms` boolean. `POST /api/v3/user/create` now requires it to be `true`; requests omitting it (or sending `false`) are rejected with a 400. `POST /api/v3/user/add` is unaffected and does not require it. Clients that create accounts must be updated to send the new field.
