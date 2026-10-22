@@ -88,3 +88,15 @@ Can I report a comment for moderation?
 How will I know if I have been banned from the app?
 
 - If you are repeatedly in breach of our moderation rules you may incur sanctions as outlined above. When a banned User attempts to log in, there is a message displayed indicating that they are banned.
+
+### Twitarr Terms
+
+By registering for and using Twitarr, you agree to the following:
+
+- You grant JoCo Cruise a permanent non-exclusive license to the content of public posts made on the Twitarr platform, which may be shared in whole or in part, including in screenshot form and including any publicly posted images, to promote the JoCo Cruise.
+- Twitarr is provided as-is by volunteers. Posts here are written by other guests and may not be reviewed before they appear. You use the platform at your own risk, and neither JoCo Cruise nor the Twitarr OSS Collective is liable for what other guests post or do here.
+
+You also confirm that:
+
+- You are using the registration code that you were personally issued.
+- You are 18 years of age or older.
