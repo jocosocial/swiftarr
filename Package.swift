@@ -20,8 +20,12 @@ let package = Package(
 		.package(url: "https://github.com/vapor/leaf.git", from: "4.3.0"),
 		// Prometheus is a monitoring package
 		.package(url: "https://github.com/swift-server/swift-prometheus.git", from: "2.0.0"),
-		// Ink is a Markdown parser that can output HTML
-		.package(url: "https://github.com/johnsundell/ink.git", from: "0.6.0"),
+		// leaf-markdown is a Markdown parser that can output HTML.
+		// We use a fork (jocosocial/leaf-markdown) of the upstream vapor-community package
+		// that makes MarkdownTag.markdownToHTML public so FormatPostTextTag can render
+		// markdown strings directly.
+		// Upstream: https://github.com/vapor-community/leaf-markdown
+		.package(url: "https://github.com/jocosocial/leaf-markdown.git", .upToNextMajor(from: "4.0.0")),
 		// Zip compress/decompress
 		.package(url: "https://github.com/weichsel/ZIPFoundation.git", .upToNextMajor(from: "0.9.0")),
 		// Excel file parser. I forked this repo from /CoreOffice to fix a few bugs.
@@ -48,7 +52,7 @@ let package = Package(
                 .product(name: "Vapor", package: "vapor"),
 				.product(name: "QueuesRedisDriver", package: "queues-redis-driver"),
 				.product(name: "Prometheus", package: "swift-prometheus"),
-				.product(name: "Ink", package: "ink"),
+				.product(name: "LeafMarkdown", package: "leaf-markdown"),
 				.product(name: "CoreXLSX", package: "CoreXLSX"),
 				.product(name: "SwiftSoup", package: "SwiftSoup"),
 				"CvipsShim",

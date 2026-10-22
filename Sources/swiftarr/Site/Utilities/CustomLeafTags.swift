@@ -6,8 +6,8 @@
 //
 
 import Foundation
-import Ink
 import Leaf
+import LeafMarkdown
 import Vapor
 
 /// This tag should output-sanitize all string values in self, replacing existing values.
@@ -83,26 +83,6 @@ struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 	}
 }
 
-/// Renders arbitrary Markdown text
-///
-/// Usage: #markdownTextTag(String) -> String
-struct MarkdownTextTag: UnsafeUnescapedLeafTag {
-	func render(_ ctx: LeafContext) throws -> LeafData {
-		try ctx.requireParameterCount(1)
-		guard var string = ctx.parameters[0].string else {
-			return LeafData.string("")
-		}
-
-		// Sanitize any HTML entities in the source string. Although Markdown allows HTML tags to be used in a .md document,
-		// we don't want to allow that as it's a security hole.
-		string = string.htmlEscaped()
-
-		let parser = MarkdownParser()
-		let html = "<div class=\"InkMarkdown\">\(parser.html(from: string))</div>"
-		return LeafData.string(html)
-	}
-}
-
 /// Runs the element sanitizer on the given string, converts Jocomoji (specific string tags with the form :tag:)
 /// into inline images, and then converts substrings of the forum "@username"  and "#hashtag" into links.
 ///
@@ -121,6 +101,18 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		try ctx.requireParameterCount(1)
 		guard var string = ctx.parameters[0].string else {
 			return LeafData.string("")
+		}
+
+		// Posts starting with the <Markdown> marker are rendered as Markdown via leaf-markdown's
+		// cmark parser. cmark runs in safe mode, so any user-supplied raw HTML is neutralized
+		// rather than passed through, and the tagfilter extension strips unknown tags.
+		// Before parsing we rewrite the forum's inline syntax into markdown-native equivalents
+		// (jocomoji to image syntax, mentions/hashtags to link syntax) since safe mode discards
+		// the raw <img>/<a> HTML the plain-text path would inject. Bare URLs are auto-linked by
+		// the autolink extension; use markdown link syntax for custom link text.
+		if string.hasPrefix("<Markdown>") {
+			let cleaned = Self.markdownPostText(string)
+			return try LeafData.string(MarkdownTag.markdownToHTML(cleaned, options: []))
 		}
 
 		// Sanitize, then add jocomoji.
@@ -176,19 +168,6 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		string = string.replacingOccurrences(of: "\r\n", with: "\n")
 		string = string.replacingOccurrences(of: "\r", with: "\n")
 
-		if string.hasPrefix("&lt;Markdown&gt;") {
-			string.removeFirst("&lt;Markdown&gt;".lengthOfBytes(using: .utf8))
-			let parser = MarkdownParser()
-			//			parser.addModifier(Modifier(target: .headings, closure: { html, markdown in
-			//				if html.hasPrefix("<h") {
-			//					return "<h5>\(html.dropFirst(4).dropLast(5))</h5>"
-			//				}
-			//				return html
-			//			}))
-			let html = parser.html(from: string)
-			return LeafData.string(html)
-		}
-
 		// Also convert newlines to HTML breaks. Do this before link conversion due to a dumb bug with the regex parser
 		// where \r\n sequences that appear before the regex match have their reported match length reduced.
 		//
@@ -215,6 +194,51 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		processUrlMatches(string: &string, matches: matches)
 
 		return LeafData.string(string)
+	}
+
+	/// Rewrites a `<Markdown>`-wrapped post into clean markdown before handing it to cmark.
+	/// cmark runs in safe mode (raw HTML is discarded), so the forum's inline syntax has to be
+	/// expressed in markdown-native form: jocomoji become image syntax, mentions and hashtags
+	/// become link syntax. Bare URLs are auto-linked by cmark's autolink extension.
+	static func markdownPostText(_ input: String) -> String {
+		var markdown = input
+		// Drop the wrapper tags; they're our internal marker, not part of the post body.
+		markdown = markdown.replacingOccurrences(of: "</Markdown>", with: "")
+		markdown = markdown.replacingOccurrences(of: "<Markdown>", with: "")
+		// Jocomoji: :tag: -> ![joco](/img/emoji/small/tag.png)
+		for emojiTag in AddJocomojiTag.jocomoji {
+			markdown = markdown.replacingOccurrences(
+				of: ":\(emojiTag):",
+				with: "![joco](/img/emoji/small/\(emojiTag).png)"
+			)
+		}
+		// Mentions: @username -> [@username](/username/username). The regex keeps the @ in the
+		// match so we can link it; strip it only for the URL.
+		let mentionPattern = "(?<!\\S)(@[A-Za-z0-9]+(?:[-.+_][A-Za-z0-9]+)*)"
+		let mentionRegex = try! NSRegularExpression(pattern: mentionPattern, options: [])
+		let fullRange = NSRange(markdown.startIndex..<markdown.endIndex, in: markdown)
+		let mentionMatches = mentionRegex.matches(in: markdown, options: [], range: fullRange)
+		var mentionText = markdown
+		for match in mentionMatches.reversed() {
+			guard let range = Range(match.range(at: 0), in: mentionText) else { continue }
+			let mention = String(mentionText[range])
+			let username = String(mention.dropFirst())
+			mentionText.replaceSubrange(range, with: "[\(mention)](/username/\(username))")
+		}
+		markdown = mentionText
+		// Hashtags: #tag -> [#tag](/forumpost/search?hashtag=tag)
+		let hashtagPattern = "(?<!\\S)(#[A-Za-z0-9]+)(?!\\S)"
+		let hashtagRegex = try! NSRegularExpression(pattern: hashtagPattern, options: [])
+		let hashtagMatches = hashtagRegex.matches(in: markdown, options: [], range: fullRange)
+		var hashtagText = markdown
+		for match in hashtagMatches.reversed() {
+			guard let range = Range(match.range(at: 0), in: hashtagText) else { continue }
+			let hashtag = String(hashtagText[range])
+			let tag = String(hashtag.dropFirst())
+			hashtagText.replaceSubrange(range, with: "[\(hashtag)](/forumpost/search?hashtag=\(tag))")
+		}
+		markdown = hashtagText
+		return markdown
 	}
 
 	/// Process a set of regex matches and substitute appropriate content in a return HTML string.
