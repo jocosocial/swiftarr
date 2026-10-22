@@ -241,9 +241,12 @@ final class PhotostreamControllerTests: XCTestCase, SwiftarrBaseTest {
 		startingMinutesFromNow start: Double,
 		endingMinutesFromNow end: Double
 	) async throws -> Event {
+		// Sample the clock once so the event's duration is exactly (end - start) minutes. Two Date() calls would
+		// add a few microseconds, pushing a 6 hour event just over the controller's "longer than 6 hours" cutoff.
+		let now = Date()
 		let event = Event(
-			startTime: Date().addingTimeInterval(start * 60),
-			endTime: Date().addingTimeInterval(end * 60),
+			startTime: now.addingTimeInterval(start * 60),
+			endTime: now.addingTimeInterval(end * 60),
 			title: title,
 			description: "fixture",
 			location: "Deck 5",
