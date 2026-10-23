@@ -15,13 +15,14 @@ export DEBIAN_FRONTEND=noninteractive
 # libicu tends to rev pretty aggressively with different base images!
 apt-get -qq update
 apt-get install -y \
-  curl libatomic1 libicu74 libxml2 gnupg2 \
-  libcurl4 libz-dev libbsd0 tzdata \
-  libvips42
+  curl libatomic1 libicu78 libxml2-16 gnupg2 \
+  libcurl4t64 zlib1g libbsd0 tzdata \
+  libvips42t64 ca-certificates
 
 # Postgres client. Make sure to keep the repo in sync with whatever base image you're using.
-curl -sS https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add
-echo 'deb http://apt.postgresql.org/pub/repos/apt/ noble-pgdg main' > /etc/apt/sources.list.d/pgdg.list
+mkdir -p /etc/apt/keyrings
+curl -sS https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /etc/apt/keyrings/pgdg.gpg
+echo 'deb [signed-by=/etc/apt/keyrings/pgdg.gpg] http://apt.postgresql.org/pub/repos/apt/ resolute-pgdg main' > /etc/apt/sources.list.d/pgdg.list
 apt-get -qq update
 apt-get install -y postgresql-client-18
 

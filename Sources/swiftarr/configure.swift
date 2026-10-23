@@ -115,7 +115,7 @@ struct SwiftarrConfigurator {
 	func configureBundle(_ app: Application) throws {
 		var resourcesURL: URL
 		if operatingSystemPlatform() == "Linux" {
-			resourcesURL = Bundle.main.bundleURL.appendingPathComponent("swiftarr_swiftarr.resources")
+			resourcesURL = Bundle.main.bundleURL.appendingPathComponent("swiftarr_swiftarr.bundle")
 		}
 		else if let xcodeLinkedLocation = Bundle.main.resourceURL?.appendingPathComponent("swiftarr_swiftarr.bundle"),
 			let bundle = Bundle.init(url: xcodeLinkedLocation), let loc = bundle.resourceURL,
