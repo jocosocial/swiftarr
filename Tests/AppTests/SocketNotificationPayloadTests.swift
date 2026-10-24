@@ -131,4 +131,18 @@ class SocketNotificationPayloadTests: XCTestCase {
 	func testNotificationTypeData_DatabaseKey_UnknownKeyDecodesToNil() {
 		XCTAssertNil(SocketNotificationData.NotificationTypeData(databaseKey: "notARealCase"))
 	}
+
+	// MARK: - NotificationLogData(_:) (Notification log read path)
+
+	// A row written under a case that's since been renamed/removed must not take down the whole log fetch--
+	// see `AlertController.notificationLogHandler(_:)`, which drops rows this returns nil for instead of
+	// propagating a throw.
+	func testNotificationLogData_UnrecognizedTypeKey_ReturnsNil() throws {
+		let entry = NotificationLogEntry()
+		entry.id = UUID()
+		entry.typeKey = "notARealCaseAnymore"
+		entry.info = "whatever"
+		entry.contentID = "0"
+		XCTAssertNil(try NotificationLogData(entry))
+	}
 }

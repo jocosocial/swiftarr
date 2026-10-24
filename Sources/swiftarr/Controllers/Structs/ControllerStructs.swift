@@ -2861,9 +2861,12 @@ public struct NotificationLogData: Content {
 }
 
 extension NotificationLogData {
-	init(_ entry: NotificationLogEntry) throws {
+	/// Returns nil if `entry.typeKey` doesn't match any known `NotificationTypeData` case (e.g. the case was
+	/// renamed after the row was written). The caller should skip the row rather than fail the whole log --
+	/// one stale row must not take down every future fetch of a user's notification history.
+	init?(_ entry: NotificationLogEntry) throws {
 		guard let decodedType = SocketNotificationData.NotificationTypeData(databaseKey: entry.typeKey) else {
-			throw Abort(.internalServerError, reason: "Unrecognized notification type \"\(entry.typeKey)\" in notification log.")
+			return nil
 		}
 		id = try entry.requireID()
 		type = decodedType

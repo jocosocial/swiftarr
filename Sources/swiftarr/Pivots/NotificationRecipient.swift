@@ -39,7 +39,9 @@ struct CreateNotificationRecipientSchema: AsyncMigration {
 			.id()
 			.field("notification", .uuid, .required, .references("notification", "id", onDelete: .cascade))
 			.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
-			.unique(on: "notification", "user")
+			// `user` leads so the index serves the one read pattern this table has (GET /notification/log
+			// filters by user, never by notification alone); it still enforces the same uniqueness either way.
+			.unique(on: "user", "notification")
 			.create()
 	}
 

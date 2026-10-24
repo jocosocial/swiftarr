@@ -201,4 +201,40 @@ class NotificationLogTests: XCTestCase, SwiftarrBaseTest {
 			)
 		}
 	}
+
+	// A row written under a `NotificationTypeData` case that's since been renamed/removed has a `typeKey`
+	// that no longer decodes. The endpoint must drop that one row and return everything else with a 200,
+	// not fail the whole page--a stale row would otherwise permanently 500 every future fetch of this user's
+	// notification history.
+	func testUnrecognizedNotificationTypeIsSkippedNotFatal() async throws {
+		try await withApp { app in
+			let suffix = UUID().uuidString.prefix(8).lowercased()
+			let recipient = try await makeUser(app, username: "stale-\(suffix)")
+			let recipientID = try recipient.requireID()
+
+			let staleEntry = NotificationLogEntry()
+			staleEntry.typeKey = "notARealCaseAnymore"
+			staleEntry.info = "stale"
+			staleEntry.contentID = "0"
+			try await staleEntry.save(on: app.db)
+			try await NotificationRecipient(notificationID: try staleEntry.requireID(), userID: recipientID).save(on: app.db)
+
+			try await fireNotification(app, type: .twarrtMention(9), info: "still works", recipients: [recipientID])
+
+			let token = try await makeToken(app, for: recipient)
+			try await bootCache(app)
+			try await app.test(
+				.GET,
+				"/api/v3/notification/log",
+				headers: bearer(token),
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok)
+					let data = try res.content.decode(Paginated<NotificationLogData>.self)
+					XCTAssertEqual(data.paginator.total, 2)
+					XCTAssertEqual(data.items.count, 1)
+					XCTAssertEqual(data.items.first?.contentID, "9")
+				}
+			)
+		}
+	}
 }

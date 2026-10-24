@@ -156,14 +156,22 @@ struct AlertController: APIRouteCollection {
 			var limit: Int?
 		}
 		let options = try req.query.decode(QueryOptions.self)
-		let pagination = Pagination(start: options.start, limit: options.limit, maxPageSize: 200)
+		let pagination = Pagination(start: options.start, limit: options.limit, maxPageSize: Settings.shared.maximumTwarrts)
 		let query = NotificationLogEntry.query(on: req.db)
 			.join(NotificationRecipient.self, on: \NotificationLogEntry.$id == \NotificationRecipient.$notification.$id)
 			.filter(NotificationRecipient.self, \.$user.$id == user.userID)
 			.sort(\NotificationLogEntry.$createdAt, .descending)
 		let total = try await query.copy().count()
 		let entries = try await query.range(pagination.range).all()
-		let items = try entries.map { try NotificationLogData($0) }
+		// A row whose typeKey doesn't decode (e.g. the case was renamed after it was written) is dropped rather
+		// than failing the whole page--one stale row must not permanently lock a user out of their own history.
+		let items = try entries.compactMap { entry -> NotificationLogData? in
+			guard let item = try NotificationLogData(entry) else {
+				req.logger.warning("Dropping notification log entry \(entry.id?.uuidString ?? "?") with unrecognized type \"\(entry.typeKey)\"")
+				return nil
+			}
+			return item
+		}
 		return Paginated(items: items, paginator: Paginator(total: total, start: pagination.start, limit: pagination.limit))
 	}
 
