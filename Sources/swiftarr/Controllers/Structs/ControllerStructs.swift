@@ -2840,6 +2840,40 @@ extension UserNotificationData {
 	}
 }
 
+/// A single entry from a user's history of received notifications.
+///
+/// Returned by: `GET /api/v3/notification/log`
+/// See `AlertController.notificationLogHandler(_:)`.
+public struct NotificationLogData: Content {
+	/// Matches the `notificationID` sent in the live `SocketNotificationData` push for this event, so clients
+	/// can de-dupe a notification they already saw live against this log.
+	var id: UUID
+	/// The type of event that happened. See `SocketNotificationData.NotificationTypeData` for values.
+	var type: SocketNotificationData.NotificationTypeData
+	/// A string describing what happened, suitable for adding to a notification alert.
+	var info: String
+	/// An ID of an Announcement, Fez, Twarrt, ForumPost, or Event.
+	var contentID: String
+	/// An ID of a related parent object, when one exists. See `SocketNotificationData.secondaryContentID`.
+	var secondaryContentID: String?
+	/// When the notification was sent.
+	var createdAt: Date
+}
+
+extension NotificationLogData {
+	init(_ entry: NotificationLogEntry) throws {
+		guard let decodedType = SocketNotificationData.NotificationTypeData(databaseKey: entry.typeKey) else {
+			throw Abort(.internalServerError, reason: "Unrecognized notification type \"\(entry.typeKey)\" in notification log.")
+		}
+		id = try entry.requireID()
+		type = decodedType
+		info = entry.info
+		contentID = entry.contentID
+		secondaryContentID = entry.secondaryContentID
+		createdAt = entry.createdAt ?? Date()
+	}
+}
+
 /// Used to change a user's password. Even when already logged in, users need to provide their current password to set a new password.
 ///
 /// Required by: `POST /api/v3/user/password`

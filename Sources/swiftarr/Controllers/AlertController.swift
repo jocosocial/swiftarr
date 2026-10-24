@@ -35,6 +35,7 @@ struct AlertController: APIRouteCollection {
 		// endpoints available only when logged in
 		let tokenAuthGroup = alertRoutes.tokenRoutes()
 		tokenAuthGroup.webSocket("socket", onUpgrade: createNotificationSocket)  // shouldUpgrade: (Request) -> Headers
+		tokenAuthGroup.get("log", use: notificationLogHandler)
 
 		// endpoints available only when logged in as TwitarrTeam or above
 		let ttAuthGroup = alertRoutes.tokenRoutes(minAccess: .twitarrteam)
@@ -135,6 +136,35 @@ struct AlertController: APIRouteCollection {
 		result.alertWords = try await getNewAlertWordCounts(hash: userHash)
 		result.moderatorData = try await modData
 		return result
+	}
+
+	/// `GET /api/v3/notification/log`
+	///
+	/// Returns the logged-in user's history of pushed notifications, most recent first. Lets a client recover
+	/// a notification it missed (e.g. a push the user swiped away before reading).
+	///
+	/// **URL Query Parameters:**
+	/// - `start=INT` - Index into the user's notification history to start from. Default is 0.
+	/// - `limit=INT` - Max number of entries to return. Default is 50.
+	///
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `Paginated<NotificationLogData>`
+	func notificationLogHandler(_ req: Request) async throws -> Paginated<NotificationLogData> {
+		let user = try req.auth.require(UserCacheData.self)
+		struct QueryOptions: Content {
+			var start: Int?
+			var limit: Int?
+		}
+		let options = try req.query.decode(QueryOptions.self)
+		let pagination = Pagination(start: options.start, limit: options.limit, maxPageSize: 200)
+		let query = NotificationLogEntry.query(on: req.db)
+			.join(NotificationRecipient.self, on: \NotificationLogEntry.$id == \NotificationRecipient.$notification.$id)
+			.filter(NotificationRecipient.self, \.$user.$id == user.userID)
+			.sort(\NotificationLogEntry.$createdAt, .descending)
+		let total = try await query.copy().count()
+		let entries = try await query.range(pagination.range).all()
+		let items = try entries.map { try NotificationLogData($0) }
+		return Paginated(items: items, paginator: Paginator(total: total, start: pagination.start, limit: pagination.limit))
 	}
 
 	// Pulls an array of active announcement IDs from Redis, from a key that expires every minute. If the key is expired,

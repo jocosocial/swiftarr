@@ -333,3 +333,9 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Oct 21, 2026
 
 - `UserCreateData` gains an optional `agreeToTerms` boolean. `POST /api/v3/user/create` now requires it to be `true`; requests omitting it (or sending `false`) are rejected with a 400. `POST /api/v3/user/add` is unaffected and does not require it. Clients that create accounts must be updated to send the new field.
+
+## Oct 24, 2026
+
+- Added a server-side Notification Log, so clients can recover a notification they missed (e.g. a push swiped away before being read).
+  - `SocketNotificationData` gains an optional `notificationID` field. It's the same value for every recipient of a given notification event, and matches the `id` of the corresponding entry in the new log, letting clients de-dupe a live push against a later log fetch.
+  - New endpoint `GET /api/v3/notification/log` returns the logged-in user's notification history, paginated (`Paginated<NotificationLogData>`), most recent first.
