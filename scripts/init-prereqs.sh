@@ -13,11 +13,13 @@ export DEBIAN_FRONTEND=noninteractive
 
 # Basic prereqs.
 # libicu tends to rev pretty aggressively with different base images!
+# libheif ships its HEIC (libde265) and AVIF (dav1d) decoders as separate plugin packages as of Ubuntu 26.04.
 apt-get -qq update
 apt-get install -y \
   curl libatomic1 libicu78 libxml2-16 gnupg2 \
   libcurl4t64 zlib1g libbsd0 tzdata \
-  libvips42t64 ca-certificates
+  libvips42t64 ca-certificates \
+  libheif-plugin-libde265 libheif-plugin-dav1d
 
 # Postgres client. Make sure to keep the repo in sync with whatever base image you're using.
 mkdir -p /etc/apt/keyrings
