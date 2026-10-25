@@ -335,7 +335,9 @@
 							#if(!trunk.preregistrationMode):
 								<li class="list-group-item"><a href="/blocks">Manage Muted and Blocked Users</a></li>
 								<li class="list-group-item"><a href="/alertwords">Manage Alert and Mute Keywords</a></li>
-								<li class="list-group-item"><a href="/notifications">View Notification Log</a></li>
+								#if(trunk.showNotificationsNav):
+									<li class="list-group-item"><a href="/notifications">View Notification Log</a></li>
+								#endif
 								<li class="list-group-item"><a href="/createAltAccount">Create an Alt Account</a></li>
 								<li class="list-group-item"><a href="/resetPassword">Change your Password</a></li>
 							#endif

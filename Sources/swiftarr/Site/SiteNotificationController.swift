@@ -59,7 +59,7 @@ struct SiteNotificationController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
 		// Routes for non-shareable content. If you're not logged in we failscreen.
-		let privateRoutes = getPrivateRoutes(app)
+		let privateRoutes = getPrivateRoutes(app, feature: .notifications)
 		privateRoutes.get("notifications", use: notificationLogPageHandler)
 			.destination("your notification log")
 	}
