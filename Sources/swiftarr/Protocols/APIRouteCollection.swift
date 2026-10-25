@@ -248,7 +248,7 @@ extension APIRouteCollection {
 						try await req.redis.incrementAlertwordTwarrtInUserHash(word: alertword, userID: userID)
 					}
 				}
-			case .alertwordPost(let alertword, let postID):
+			case .alertwordPost(let alertword, let postID, _):
 				for userID in users {
 					group.addTask {
 						// Treat alertword notifications for the creator as read by incrementing both the
@@ -267,7 +267,7 @@ extension APIRouteCollection {
 				for userID in users {
 					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
-			case .forumMention(_), .twitarrTeamForumMention(_), .moderatorForumMention(_):
+			case .forumMention, .twitarrTeamForumMention, .moderatorForumMention:
 				for userID in users {
 					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
@@ -446,7 +446,7 @@ extension APIRouteCollection {
 						)
 					}
 				}
-			case .forumMention(_), .twitarrTeamForumMention(_), .moderatorForumMention(_):
+			case .forumMention, .twitarrTeamForumMention, .moderatorForumMention:
 				for userID in users {
 					group.addTask {
 						try await req.redis.incrementIntInUserHash(
@@ -464,7 +464,7 @@ extension APIRouteCollection {
 						incAmount: 0 - subtractCount
 					)
 				}
-			case .alertwordPost(let word, _):
+			case .alertwordPost(let word, _, _):
 				for userID in users {
 					try await req.redis.incrementAlertwordPostInUserHash(
 						word: word,

@@ -45,6 +45,12 @@ enum ModeratorActionType: String, Codable {
 	case tempQuarantine
 	/// The mod cleared a temporary quarantine on the user.
 	case tempQuarantineCleared
+	/// An account manager searched for a user by their registration code.
+	case regCodeSearched
+	/// An account manager viewed a user's registration code.
+	case regCodeViewed
+	/// An account manager re-enabled one-time registration-code password recovery (unlocked the account).
+	case accountUnlocked
 
 	static func setFromModerationStatus(_ status: ContentModerationStatus) -> Self {
 		switch status {
@@ -64,6 +70,34 @@ enum ModeratorActionType: String, Codable {
 		case .quarantined: return .accessLevelQuarantined
 		case .verified: return .accessLevelVerified
 		default: return nil
+		}
+	}
+	
+	/// A human-readable name for this action, e.g. for display in the moderator log.
+	func visibleName() -> String {
+		switch self {
+		case .post: return "Posted"
+		case .edit: return "Edited"
+		case .delete: return "Deleted"
+		case .move: return "Moved"
+		case .quarantine: return "Quarantined"
+		case .markReviewed: return "Marked Reviewed"
+		case .lock: return "Locked"
+		case .unlock: return "Unlocked"
+		case .pin: return "Pinned"
+		case .unpin: return "Unpinned"
+		case .accessLevelUnverified: return "Set Access Level to Unverified"
+		case .accessLevelBanned: return "Set Access Level to Banned"
+		case .accessLevelQuarantined: return "Set Access Level to Quarantined"
+		case .accessLevelVerified: return "Set Access Level to Verified"
+		case .accessLevelModerator: return "Promoted to Moderator"
+		case .accessLevelTwitarrTeam: return "Promoted to TwitarrTeam"
+		case .accessLevelTHO: return "Promoted to THO"
+		case .tempQuarantine: return "Temporarily Quarantined"
+		case .tempQuarantineCleared: return "Cleared Temporary Quarantine"
+		case .regCodeSearched: return "Searched by Registration Code"
+		case .regCodeViewed: return "Viewed Registration Code"
+		case .accountUnlocked: return "Unlocked Account"
 		}
 	}
 }

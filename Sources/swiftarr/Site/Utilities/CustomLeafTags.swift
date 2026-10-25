@@ -762,6 +762,22 @@ struct CountZeroTag: LeafTag {
 	}
 }
 
+/// Renders the human-readable name of a ModeratorActionType, e.g. "regCodeViewed" → "Viewed Registration Code".
+/// Unknown values are rendered as-is so old log rows never disappear from the moderator log.
+///
+/// Usage: #moderatorActionName(String) -> String
+struct ModeratorActionNameTag: LeafTag {
+	func render(_ ctx: LeafContext) throws -> LeafData {
+		guard ctx.parameters.count == 1, let value = ctx.parameters[0].string else {
+			throw "Leaf: ModeratorActionNameTag tag unable to get string value."
+		}
+		guard let actionType = ModeratorActionType(rawValue: value) else {
+			return LeafData.string(value)
+		}
+		return LeafData.string(actionType.visibleName())
+	}
+}
+
 /// Renders a registration code as bold monospace text in THO-style groups, e.g. "abcabc" → "ABC ABC".
 ///
 /// Usage: #regCode(String)

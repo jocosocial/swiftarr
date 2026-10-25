@@ -36,6 +36,9 @@ final class Event: Model, Searchable, @unchecked Sendable {
 	/// The type of event. (sched.com "CATEGORIES")
 	@Field(key: "eventType") var eventType: EventType
 	
+	/// The age appropriateness of the event, if known.
+	@OptionalField(key: "ageRating") var ageRating: AgeRating?
+
 	/// The Shutternaut Manager can set this flag to indicate to Shutternauts that this event ought to be photographed.
 	/// Shutternauts can filter for this and self-assign to cover the event.
 	@Field(key: "needsPhotographer") var needsPhotographer: Bool
@@ -144,5 +147,18 @@ struct UpdateEventSchema_NeedsPhotographer: AsyncMigration {
 
 	func revert(on database: Database) async throws {
 		try await database.schema("event").deleteField("needsPhotographer").update()
+	}
+}
+
+/// Migration to add the optional 'ageRating' to Event records.
+struct UpdateEventSchema_AgeRating: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("event")
+			.field("ageRating", .string)
+			.update()
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema("event").deleteField("ageRating").update()
 	}
 }

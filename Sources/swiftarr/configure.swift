@@ -63,6 +63,7 @@ struct SwiftarrConfigurator {
 
 		// Set up all the settings that we don't need Redis to acquire.
 		try configureBundle(app)
+		try configureEnvironment(app)
 		try configureBasicSettings(app)
 
 		// Remember: Stored Settings are not available during configuration--only 'basic' settings.
@@ -112,50 +113,47 @@ struct SwiftarrConfigurator {
 	// the bundle with all the resources files in it will be in yet another different place. I *think* this code
 	// will handle all the cases, finding the bundle dir correctly. We also check that we can find our resource files
 	// on launch.
+	//
+	// Nowadays the bundle is named `swiftarr_swiftarr.bundle` on every platform. Before Swift 6.4, SwiftPM's `native`
+	// build system named it `swiftarr_swiftarr.resources` on Linux; 6.4 made `swiftbuild` the default build system,
+	// which uses `.bundle` everywhere. There is deliberately no fallback to the old Linux name: anything mounting
+	// files at the old path (such as a container volume) needs to be updated.
 	func configureBundle(_ app: Application) throws {
-		var resourcesURL: URL
-		if operatingSystemPlatform() == "Linux" {
-			resourcesURL = Bundle.main.bundleURL.appendingPathComponent("swiftarr_swiftarr.resources")
+		// Places the bundle may live: next to the executable's resources (Xcode and `swift build`), in the framework
+		// containing our code, or next to the executable itself (Linux, where the bundle is a flat directory).
+		let bundleName = "swiftarr_swiftarr.bundle"
+		let searchRoots = [Bundle.main.resourceURL, Bundle(for: Settings.self).resourceURL, Bundle.main.bundleURL]
+		let bundles = searchRoots.compactMap { $0?.appendingPathComponent(bundleName) }.compactMap { Bundle(url: $0) }
+
+		// Xcode bundles keep files in a `Contents/Resources`-style subdirectory (`resourceURL`); `swift build` and Linux
+		// bundles keep them in the bundle directory itself. Take whichever one actually has our seeds.
+		let seedsLocation = bundles.lazy
+			.flatMap { [$0.resourceURL, $0.bundleURL] }
+			.compactMap { $0 }
+			.first { FileManager.default.fileExists(atPath: $0.appendingPathComponent("seeds").path) }
+		let frameworkResources = Bundle(for: Settings.self)
+		let resourcesURL: URL
+		if let seedsLocation = seedsLocation {
+			resourcesURL = seedsLocation
 		}
-		else if let xcodeLinkedLocation = Bundle.main.resourceURL?.appendingPathComponent("swiftarr_swiftarr.bundle"),
-			let bundle = Bundle.init(url: xcodeLinkedLocation), let loc = bundle.resourceURL,
-			FileManager.default.fileExists(atPath: loc.appendingPathComponent("seeds").path)
-		{
-			// Xcode build toolchain uses this case
-			resourcesURL = loc
+		else if let bundleResources = bundles.first?.resourceURL {
+			resourcesURL = bundleResources
 		}
-		else if let cliLinkedLocation = Bundle.main.resourceURL?.appendingPathComponent("swiftarr_swiftarr.bundle"),
-			let bundle = Bundle.init(url: cliLinkedLocation),
-			FileManager.default.fileExists(atPath: bundle.bundleURL.appendingPathComponent("seeds").path)
+		else if frameworkResources.url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css")
+			!= nil
 		{
-			// Command line toolchain (`swift build`) uses this case
-			resourcesURL = bundle.bundleURL
-		}
-		else if let fwLinkedLocation = Bundle(for: Settings.self).resourceURL?
-			.appendingPathComponent("swiftarr_swiftarr.bundle"),
-			let bundle = Bundle.init(url: fwLinkedLocation), let loc = bundle.resourceURL
-		{
-			resourcesURL = loc
-		}
-		else if let bundle = Bundle.init(url: Bundle.main.bundleURL.appendingPathComponent("swiftarr_swiftarr.bundle")),
-			let loc = bundle.resourceURL
-		{
-			resourcesURL = loc
-		}
-		else if Bundle(for: Settings.self)
-			.url(forResource: "swiftarr", withExtension: "css", subdirectory: "Resources/Assets/css") != nil
-		{
-			resourcesURL = Bundle(for: Settings.self).resourceURL ?? Bundle(for: Settings.self).bundleURL
+			resourcesURL = frameworkResources.resourceURL ?? frameworkResources.bundleURL
 		}
 		else {
-			resourcesURL = Bundle.main.bundleURL.appendingPathComponent("swiftarr_swiftarr.bundle")
-			if let swiftarrBundle = Bundle(url: resourcesURL), let swiftarrResourceURL = swiftarrBundle.resourceURL {
-				resourcesURL = swiftarrResourceURL
-			}
+			resourcesURL = Bundle.main.bundleURL.appendingPathComponent(bundleName)
 		}
 		Settings.shared.staticFilesRootPath = resourcesURL
-		configLog.notice("Set static files path to \(Settings.shared.staticFilesRootPath.path).")
+		configLog.notice("Set static files path to \(resourcesURL.path).")
+	}
 
+	// Loads the variables from the environment's .env file in the seeds directory. Must be called after configureBundle,
+	// which locates that directory.
+	func configureEnvironment(_ app: Application) throws {
 		// Load the variables in the .env file into our environment. This calls `setenv` on each key-value pair in the file.
 		// Vapor is setup to load these files automatically,
 		//
@@ -534,6 +532,7 @@ struct SwiftarrConfigurator {
 		app.leaf.tags["urlEncode"] = URLEncodeTag()
 		app.leaf.tags["countOrZero"] = CountZeroTag()
 		app.leaf.tags["regCode"] = RegCodeTag()
+		app.leaf.tags["moderatorActionName"] = ModeratorActionNameTag()
 	}
 
 	func configureQueues(_ app: Application) throws {
@@ -666,6 +665,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(AddFavoriteFieldToFezParticipantSchema(), to: .psql)
 		app.migrations.add(AddVisibilityFieldToFriendlyFezSchema(), to: .psql)
 		app.migrations.add(CreateClientAppSchema(), to: .psql)
+		app.migrations.add(UpdateEventSchema_AgeRating(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 

@@ -699,9 +699,17 @@ if (new URL(document.location).pathname == "/events") {
 			updateDropdownButton(menuElement);
 		}
 	}
+	let ageRating = localStorage.getItem('eventAgeRatingFilterState');
+	if (ageRating) {
+		let menuElement = document.getElementById("ageRatingMenuItems").querySelector(`[data-selection="${ageRating}"]`);
+		if (menuElement) {
+			updateDropdownButton(menuElement);
+		}
+	}
 	for (let listItem of document.querySelectorAll('[data-eventid]')) {
 		let hideEvent = (onlyFollowing && listItem.dataset.eventfavorite == "false") ||
-			(category && category != "all" && category != listItem.dataset.eventcategory)
+			(category && category != "all" && category != listItem.dataset.eventcategory) ||
+			(ageRating && ageRating != "all" && (ageRating == "unrated" ? listItem.dataset.agerating != "" : ageRating != listItem.dataset.agerating))
 		if (hideEvent && listItem.classList.contains("show")) {
 			listItem.classList.remove("show");
 		}
@@ -790,6 +798,7 @@ function eventFilterDropdownTappedAction(event) {
 function filterEvents() {
 	let onlyFollowing = document.getElementById("eventFollowingFilter").classList.contains("active")
 	let category = document.getElementById("eventFilterMenu").dataset.selected;
+	let ageRating = document.getElementById("ageRatingMenu").dataset.selected;
 	let shutternaut = document.getElementById("shutternautMenu")?.dataset.selected || "all";
 	let dayCheckboxes = document.getElementById("cruiseDayButtonGroup").querySelectorAll('input');
 	let selectedDays = [];
@@ -811,6 +820,7 @@ function filterEvents() {
 		}		
 		let hideEvent = (onlyFollowing && listItem.dataset.eventfavorite == "false") ||
 			(category && category != "all" && category != listItem.dataset.eventcategory) ||
+			(ageRating && ageRating != "all" && (ageRating == "unrated" ? listItem.dataset.agerating != "" : ageRating != listItem.dataset.agerating)) ||
 			(selectedDays.length > 0 && !selectedDays.includes(listItem.dataset.cruiseday)) ||
 			shutternautHide;
 		if ((hideEvent && listItem.classList.contains("show")) || (!hideEvent && !listItem.classList.contains("show"))) {
@@ -819,6 +829,7 @@ function filterEvents() {
 	}
 	localStorage.setItem('eventFollowingFilterState', onlyFollowing.toString());
 	localStorage.setItem('eventCategoryFilterState', category);
+	localStorage.setItem('eventAgeRatingFilterState', ageRating);
 }
 
 // MARK: - Fez Handlers

@@ -136,14 +136,18 @@ struct UserController: APIRouteCollection {
 	///   creation, and the user is *encouraged to take a screenshot or write it down before
 	///   proceeding*.
 	///
-	/// - Parameter requestBody: `UserCreateData`
-	/// - Throws: 400 error if the username is an invalid format. 409 errpr if the username is
-	///   not available.
+	/// - Parameter requestBody: `UserCreateData`, including `agreeToTerms` set to `true`.
+	/// - Throws: 400 error if `agreeToTerms` is not `true`, if the username is an invalid format,
+	///   or if the verification code is malformed. 409 error if the username is not available.
 	/// - Returns: `CreatedUserData` containing the newly created user's ID, username, and a
 	///   recovery key string.
 	func createHandler(_ req: Request) async throws -> Response {
 		// see `UserCreateData.validations()`
 		let data = try ValidatingJSONDecoder().decode(UserCreateData.self, fromBodyOf: req)
+		// Consent gate: creating an account requires explicit agreement to the terms of use (issue #610).
+		guard data.agreeToTerms == true else {
+			throw Abort(.badRequest, reason: "You must confirm that you have read and agree to the terms of use before creating an account")
+		}
 		// check for existing username so we can return 409 Conflict status instead
 		// of the default super-unfriendly 500 for unique constraint violation
 		if let _ = try await User.query(on: req.db).filter(\.$username, .custom("ilike"), data.username).first() {

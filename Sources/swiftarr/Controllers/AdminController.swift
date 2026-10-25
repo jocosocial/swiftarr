@@ -403,7 +403,8 @@ struct AdminController: APIRouteCollection {
 	/// - Returns: [] if no user has created an account using this reg code yet. If they have, returns an array containing the UserHeaders of all users associated with
 	/// the registration code. The first item in the array will be the primary account.
 	func userForRegCodeHandler(_ req: Request) async throws -> [UserHeader] {
-		try req.auth.require(UserCacheData.self).guardCanManageAccounts()
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		try cacheUser.guardCanManageAccounts()
 		guard let rawCode = req.parameters.get(searchStringParam.paramString, as: String.self) else {
 			throw Abort(.badRequest, reason: "Missing search parameter")
 		}
@@ -412,16 +413,18 @@ struct AdminController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Registration code search parameter is malformed.")
 		}
 		let regCode = RegistrationCode.normalized(decoded)
-		guard let foundRecord = try await RegistrationCode.query(on: req.db).filter(\.$code == regCode).first() else {
+		guard let foundRecord = try await RegistrationCode.query(on: req.db).filter(\.$code == regCode).with(\.$user).first() else {
 			throw Abort(.badRequest, reason: "\(regCode) is not found in the registration code table.")
 		}
-		guard let parentUserID = foundRecord.$user.id else {
+		guard let parentUser = foundRecord.user else {
 			// This is the case where the reg code is valid, exists in the table, but hasn't been used to create a user account.
 			return []
 		}
-		let subAccountIDs = try await User.query(on: req.db).filter(\.$parent.$id == parentUserID).all()
+		await parentUser.logIfModeratorAction(.regCodeSearched, user: cacheUser, on: req)
+
+		let subAccountIDs = try await User.query(on: req.db).filter(\.$parent.$id == parentUser.id).all()
 			.map { try $0.requireID() }
-		return req.userCache.getHeaders([parentUserID] + subAccountIDs)
+		return req.userCache.getHeaders([try parentUser.requireID()] + subAccountIDs)
 	}
 
 	/// `GET /api/v3/admin/regcodes/findbyuser/:userID`
@@ -432,8 +435,10 @@ struct AdminController: APIRouteCollection {
 	/// - Throws: 400 Bad Request if the userID isn't found in the db or if it's malformed.
 	/// - Returns: [] if no user has created an account using this reg code yet. If they have, returns a one-item array containing the UserHeader of that user.
 	func regCodeForUserHandler(_ req: Request) async throws -> RegistrationCodeUserData {
-		try req.auth.require(UserCacheData.self).guardCanManageAccounts()
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		try cacheUser.guardCanManageAccounts()
 		let user = try await User.findFromParameter(userIDParam, on: req)
+		await user.logIfModeratorAction(.regCodeViewed, user: cacheUser, on: req)
 		return try await registrationCodeUserData(for: user, on: req)
 	}
 
@@ -455,6 +460,7 @@ struct AdminController: APIRouteCollection {
 			account.recoveryAttempts = 0
 			try await account.save(on: req.db)
 		}
+		await user.logIfModeratorAction(.accountUnlocked, user: cacheUser, on: req)
 		let targetUserID = try user.requireID()
 		req.logger.info(
 			"User \(cacheUser.username) (\(cacheUser.userID)) unlocked password recovery for \(user.username) (\(targetUserID))"

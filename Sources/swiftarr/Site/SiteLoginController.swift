@@ -178,12 +178,22 @@ struct SiteLoginController: SiteControllerUtils {
 			var displayname: String?
 			var password: String
 			var passwordConfirm: String
+			var agreeToTerms: String?
 		}
 		do {
 			// Try to capture all the input validation errors into one big error with field markers for each invalid field.
 			// This way we can present all the form input errors at once.
 			let postStruct = try req.content.decode(PostStruct.self)
 			var validationError = ValidationError()
+			if postStruct.agreeToTerms?.lowercased() != "true" {
+				validationError.validationFailures.append(
+					ValidationFailure(
+						path: "",
+						field: "agreeToTerms",
+						errorString: "You must confirm that you have read and agree to the terms of use before creating an account"
+					)
+				)
+			}
 			if postStruct.password != postStruct.passwordConfirm {
 				validationError.validationFailures.append(
 					ValidationFailure(path: "", field: "password", errorString: "Password fields do not match")
@@ -203,7 +213,8 @@ struct SiteLoginController: SiteControllerUtils {
 			let createData = UserCreateData(
 				username: postStruct.username,
 				password: postStruct.password,
-				verification: postStruct.regcode
+				verification: postStruct.regcode,
+				agreeToTerms: true
 			)
 			if let decoderErrors = try ValidatingJSONDecoder()
 				.validate(UserCreateData.self, from: JSONEncoder().encode(createData))

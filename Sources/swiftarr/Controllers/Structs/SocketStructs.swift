@@ -144,6 +144,9 @@ struct SocketNotificationData: Content {
 	var info: String
 	/// An ID of an Announcement, Fez, Twarrt, ForumPost, or Event.
 	var contentID: String
+	/// An ID of a related parent object, when one exists. For `.forumMention`, `.moderatorForumMention`, `.twitarrTeamForumMention`,
+	/// and `.alertwordPost` this is the ID of the Forum containing the post. Nil for all other types.
+	var secondaryContentID: String?
 	/// For .incomingPhoneCall notifications, the caller.
 	var caller: UserHeader?
 	/// For .incomingPhoneCall notification,s the caller's IP addresses. May be nil, in which case the receiver opens a server socket instead.
@@ -187,6 +190,7 @@ extension SocketNotificationData {
 		}
 		self.info = info
 		self.contentID = id
+		self.secondaryContentID = type.secondaryObjectID()
 	}
 
 	// Creates an incoming phone call notification

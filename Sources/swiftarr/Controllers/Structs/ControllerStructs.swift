@@ -361,6 +361,8 @@ public struct EventData: Content {
 	var location: String
 	/// The event category.
 	var eventType: String
+	/// The age appropriateness rating of the event, if known. NULL if the event has no rating.
+	var ageRating: AgeRating?
 	/// The last time data for this event was modified. Used for change management.
 	var lastUpdateTime: Date
 	/// The event's associated `Forum`.
@@ -392,6 +394,7 @@ extension EventData {
 		self.timeZoneID = timeZoneChanges.tzAtTime(self.startTime).identifier
 		location = event.location
 		eventType = event.eventType.label
+		ageRating = event.ageRating
 		lastUpdateTime = event.updatedAt ?? Date()
 		forum = event.$forum.id
 		self.isFavorite = isFavorite
@@ -2563,6 +2566,9 @@ public struct UserCreateData: Content {
 	/// Verification code, emailed to all cruisegoers by THO before embarkation. On success, user will be created with .verified access level, consuming this code.
 	/// Required for creating 'parent' accounts; must be nil when used to create a sub-account with `POST /api/v3/user/add`.
 	var verification: String?
+	/// Confirmation that the user has read and agreed to the terms of use.
+	/// `POST /api/v3/user/create` requires this to be `true`; `POST /api/v3/user/add` does not use it, as the parent account has already agreed.
+	var agreeToTerms: Bool?
 }
 
 extension UserCreateData: RCFValidatable {
