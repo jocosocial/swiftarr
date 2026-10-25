@@ -1,7 +1,7 @@
 # Builder image
 # 
 # This sets up the environment used to build swiftarr.
-FROM docker.io/library/swift:6.3-noble AS builder
+FROM docker.io/library/swift:6.4-resolute AS builder
 
 ARG env
 
@@ -40,7 +40,7 @@ RUN swift build -c release && mv `swift build -c release --show-bin-path` /build
 # This has its own build stage to allow the depedencies from the internet
 # to be installed in a cached image. Otherwise it'd be running the steps
 # every time which we don't want.
-FROM docker.io/library/ubuntu:24.04 AS base
+FROM docker.io/library/ubuntu:26.04 AS base
 
 # Prereqs
 COPY scripts/init-prereqs.sh /
@@ -72,7 +72,7 @@ ENV AUTO_MIGRATE=true
 WORKDIR /app
 COPY --from=builder /build/bin/swiftarr /app
 COPY --from=builder /build/lib/* /usr/lib/
-COPY --from=builder /build/bin/swiftarr_swiftarr.resources /app/swiftarr_swiftarr.resources
+COPY --from=builder /build/bin/swiftarr_swiftarr.bundle /app/swiftarr_swiftarr.bundle
 # @TODO tests???
 
 # Healthcheck & Network 
