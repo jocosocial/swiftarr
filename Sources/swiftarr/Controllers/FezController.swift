@@ -1577,17 +1577,7 @@ extension FezController {
 	///   - req: The Request for userCache access
 	/// - Returns: The MailInbox if a privileged mailbox user is a participant, nil otherwise
 	func getPrivilegedMailboxForFez(fez: FriendlyFez, on req: Request) -> MailInbox? {
-		// Check if TwitarrTeam is a participant
-		if let ttUser = req.userCache.getUser(username: PrivilegedUser.TwitarrTeam.rawValue),
-		   fez.participantArray.contains(ttUser.userID) {
-			return .twitarrTeamSeamail
-		}
-		// Check if moderator is a participant
-		if let modUser = req.userCache.getUser(username: PrivilegedUser.moderator.rawValue),
-		   fez.participantArray.contains(modUser.userID) {
-			return .moderatorSeamail
-		}
-		return nil
+		return PrivilegedMailbox.forChat(participantArray: fez.participantArray, on: req)?.inbox
 	}
 
 	func userCanViewMemberData(user: UserCacheData, fez: FriendlyFez) -> Bool {
@@ -1665,24 +1655,16 @@ extension FezController {
 	// Seamail to @moderator and @TwitarrTeam may be read by any user with the respective access levels.
 	// Instead of designing a new entity for these group inboxes, they're just users that can't log in.
 	func getEffectiveUser(user: UserCacheData, req: Request) throws -> UserCacheData {
-		guard let effectiveUserParam = req.query[String.self, at: "foruser"] else {
+		guard let effectiveUserParam = req.query[String.self, at: "foruser"],
+			let mailbox = PrivilegedMailbox.matching(queryParam: effectiveUserParam),
+			let phantom = mailbox.phantomUser(on: req)
+		else {
 			return user
 		}
-		var effectiveUser = user
-		if effectiveUserParam.lowercased() == PrivilegedUser.moderator.queryParam, let modUser = req.userCache.getUser(username: PrivilegedUser.moderator.rawValue) {
-			guard user.accessLevel.hasAccess(.moderator) else {
-				throw Abort(.forbidden, reason: "Only moderators can access moderator seamail.")
-			}
-			effectiveUser = modUser
+		guard mailbox.isSatisfied(by: user) else {
+			throw Abort(.forbidden, reason: mailbox.accessDeniedReason)
 		}
-		if effectiveUserParam.lowercased() == PrivilegedUser.TwitarrTeam.queryParam, let ttUser = req.userCache.getUser(username: PrivilegedUser.TwitarrTeam.rawValue)
-		{
-			guard user.accessLevel.hasAccess(.twitarrteam) else {
-				throw Abort(.forbidden, reason: "Only TwitarrTeam members can access TwitarrTeam seamail.")
-			}
-			effectiveUser = ttUser
-		}
-		return effectiveUser
+		return phantom
 	}
 
 	// This version of getEffectiveUser checks the user against the fez's membership, and also checks whether
@@ -1690,20 +1672,15 @@ extension FezController {
 	//
 	// Returns `user` unless: @moderator or @TwitarrTeam is a member of the fez and the user has mod (or TT) access.
 	func getEffectiveUser(user: UserCacheData, req: Request, fez: FriendlyFez) -> UserCacheData {
-		// If either of these 'special' users are fez members and the user has high enough access, we can see the
-		// members-only values of the fez as the 'special' user.
-		if user.accessLevel >= .twitarrteam, let ttUser = req.userCache.getUser(username: PrivilegedUser.TwitarrTeam.rawValue),
-			fez.participantArray.contains(ttUser.userID)
-		{
-			return ttUser
+		// If one of the privileged mailbox phantoms is a fez member and the user has high enough access, we can
+		// see the members-only values of the fez as the 'special' user.
+		guard let mailbox = PrivilegedMailbox.forChat(participantArray: fez.participantArray, satisfiedBy: user, on: req),
+			let phantom = mailbox.phantomUser(on: req)
+		else {
+			// User is or is not a member of the fez. But they are themself and not anyone special.
+			return user
 		}
-		if user.accessLevel >= .moderator, let modUser = req.userCache.getUser(username: PrivilegedUser.moderator.rawValue),
-			fez.participantArray.contains(modUser.userID)
-		{
-			return modUser
-		}
-		// User is or is not a member of the fez. But they are themself and not anyone special.
-		return user
+		return phantom
 	}
 
 	// Sets addedTo = true for the specified users and sends them .addedToChat notifications.

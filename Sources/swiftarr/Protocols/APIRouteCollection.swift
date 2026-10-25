@@ -186,14 +186,14 @@ extension APIRouteCollection {
 	// `PrivilegedUser`) used as a single shared addressee/author identity for a privileged mailbox thread. Nobody can
 	// ever hold an open notification socket under a phantom account's UUID, and a single shared unread count
 	// wouldn't let each mod/TT member track their own read state independently. So for `.addedToChat` and
-	// `.chatUnreadMsg`, `bookkeepUserAddedToChat`/`bookkeepNewChatMessage` detect the phantom account in `users` and
-	// expand it to every real user currently holding that access level (`req.userCache.allUsersWithAccessLevel`),
-	// returning that expanded list as `stateChangeUsers`. Each real team member then gets their own Redis unread
-	// count under `.moderatorSeamail`/`.twitarrTeamSeamail` (see `MailInbox`), and — since `stateChangeUsers` is also
-	// what socket forwarding uses below — their own live socket push, exactly as if they'd each been mentioned
-	// individually (mirroring how forum `@moderator`/`@TwitarrTeam` mentions expand to real members before ever
-	// calling this function; see `ForumController.processForumMentions`). For every other notification type,
-	// `stateChangeUsers` is left equal to `users`, so this has no effect outside the privileged-mailbox case.
+	// `.chatUnreadMsg`, `bookkeepUserAddedToChat`/`bookkeepNewChatMessage` detect a phantom account in `users` and
+	// expand it to every real user who satisfies that mailbox's `PrivilegedMailboxRequirement` (see
+	// `PrivilegedMailbox`), returning that expanded list as `stateChangeUsers`. Each real team member then gets their
+	// own Redis unread count under that mailbox's `MailInbox`, and — since `stateChangeUsers` is also what socket
+	// forwarding uses below — their own live socket push, exactly as if they'd each been mentioned individually
+	// (mirroring how forum `@moderator`/`@TwitarrTeam` mentions expand to real members before ever calling this
+	// function; see `ForumController.processForumMentions`). For every other notification type, `stateChangeUsers`
+	// is left equal to `users`, so this has no effect outside the privileged-mailbox case.
 	func addNotifications(users: [UUID], type: NotificationType, info: String, creatorID: UUID? = nil, on req: Request)
 		async throws
 	{
@@ -319,23 +319,15 @@ extension APIRouteCollection {
 		group: inout ThrowingTaskGroup<Void, Error>
 	) -> [UUID] {
 		var updateCountsUsers = users
-		// For seamail msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
-		// update counts list. This is so all team members have individual read counts.
-		if let mod = req.userCache.getUser(username: "moderator"), users.contains(mod.userID) {
-			let modList = req.userCache.allUsersWithAccessLevel(.moderator).map { $0.userID }
-			updateCountsUsers.append(contentsOf: modList)
-			for modUserID in modList {
+		// For seamail msgs with a privileged mailbox phantom in the memberlist, add all of that mailbox's
+		// real members to the update counts list. This is so all team members have individual read counts.
+		for mailbox in PrivilegedMailbox.all {
+			guard let phantom = mailbox.phantomUser(on: req), users.contains(phantom.userID) else { continue }
+			let memberIDs = mailbox.members(on: req).map { $0.userID }
+			updateCountsUsers.append(contentsOf: memberIDs)
+			for memberID in memberIDs {
 				group.addTask {
-					try await req.redis.userAddedToChat(chatID: msgID, userID: modUserID, inbox: .moderatorSeamail)
-				}
-			}
-		}
-		if let ttUser = req.userCache.getUser(username: "TwitarrTeam"), users.contains(ttUser.userID) {
-			let ttList = req.userCache.allUsersWithAccessLevel(.twitarrteam).map { $0.userID }
-			updateCountsUsers.append(contentsOf: ttList)
-			for ttUserID in ttList {
-				group.addTask {
-					try await req.redis.userAddedToChat(chatID: msgID, userID: ttUserID, inbox: .twitarrTeamSeamail)
+					try await req.redis.userAddedToChat(chatID: msgID, userID: memberID, inbox: mailbox.inbox)
 				}
 			}
 		}
@@ -356,28 +348,18 @@ extension APIRouteCollection {
 		creatorID: UUID? = nil
 	) -> [UUID] {
 		var updateCountsUsers = users
-		// For seamail msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
-		// update counts list. This is so all team members have individual read counts.
+		// For seamail msgs with a privileged mailbox phantom in the memberlist, add all of that mailbox's
+		// real members to the update counts list. This is so all team members have individual read counts.
 		//
 		// To avoid generating notifications for the user who created the new chat message,
 		// pass their ID in via the creatorID to omit them from generating the messages.
-		if let mod = req.userCache.getUser(username: "moderator"), users.contains(mod.userID) {
-			let modList = req.userCache.allUsersWithAccessLevel(.moderator).filter({ $0.userID != creatorID })
-				.map { $0.userID }
-			updateCountsUsers.append(contentsOf: modList)
-			for modUserID in modList {
+		for mailbox in PrivilegedMailbox.all {
+			guard let phantom = mailbox.phantomUser(on: req), users.contains(phantom.userID) else { continue }
+			let memberIDs = mailbox.members(on: req).filter({ $0.userID != creatorID }).map { $0.userID }
+			updateCountsUsers.append(contentsOf: memberIDs)
+			for memberID in memberIDs {
 				group.addTask {
-					try await req.redis.newUnreadMessage(chatID: msgID, userID: modUserID, inbox: .moderatorSeamail)
-				}
-			}
-		}
-		if let ttUser = req.userCache.getUser(username: "TwitarrTeam"), users.contains(ttUser.userID) {
-			let ttList = req.userCache.allUsersWithAccessLevel(.twitarrteam).filter({ $0.userID != creatorID })
-				.map { $0.userID }
-			updateCountsUsers.append(contentsOf: ttList)
-			for ttUserID in ttList {
-				group.addTask {
-					try await req.redis.newUnreadMessage(chatID: msgID, userID: ttUserID, inbox: .twitarrTeamSeamail)
+					try await req.redis.newUnreadMessage(chatID: msgID, userID: memberID, inbox: mailbox.inbox)
 				}
 			}
 		}
@@ -402,28 +384,16 @@ extension APIRouteCollection {
 				group.addTask { try await req.redis.resetActiveAnnouncementIDs() }
 
 			case .addedToChat(let msgID, _), .chatUnreadMsg(let msgID, _):
-				// For chat msgs with "moderator" or "TwitarrTeam" in the memberlist, add all team members to the
-				// notify list. This is so all team members have individual read counts.
-				if let mod = req.userCache.getUser(username: "moderator"), users.contains(mod.userID) {
-					let modList = req.userCache.allUsersWithAccessLevel(.moderator).map { $0.userID }
-					for modUserID in modList {
+				// For chat msgs with a privileged mailbox phantom in the memberlist, add all of that mailbox's
+				// real members to the notify list. This is so all team members have individual read counts.
+				for mailbox in PrivilegedMailbox.all {
+					guard let phantom = mailbox.phantomUser(on: req), users.contains(phantom.userID) else { continue }
+					for memberID in mailbox.members(on: req).map({ $0.userID }) {
 						group.addTask {
 							try await req.redis.deletedUnreadMessage(
 								msgID: msgID,
-								userID: modUserID,
-								inbox: .moderatorSeamail
-							)
-						}
-					}
-				}
-				if let ttUser = req.userCache.getUser(username: "TwitarrTeam"), users.contains(ttUser.userID) {
-					let ttList = req.userCache.allUsersWithAccessLevel(.twitarrteam).map { $0.userID }
-					for ttUserID in ttList {
-						group.addTask {
-							try await req.redis.deletedUnreadMessage(
-								msgID: msgID,
-								userID: ttUserID,
-								inbox: .twitarrTeamSeamail
+								userID: memberID,
+								inbox: mailbox.inbox
 							)
 						}
 					}
@@ -512,12 +482,9 @@ extension APIRouteCollection {
 		case .addedToChat, .chatUnreadMsg:
 			try await req.redis.markChatRead(type: type, userID: user.userID)
 			// It's possible this is a mod viewing mail to @moderator, not their own. We can't tell from here.
-			// But, we can just clear the modmail hash for this thread ID.
-			if user.accessLevel.hasAccess(.moderator) {
-				try await req.redis.markChatRead(type: type, in: .moderatorSeamail, userID: user.userID)
-			}
-			if user.accessLevel.hasAccess(.twitarrteam) {
-				try await req.redis.markChatRead(type: type, in: .twitarrTeamSeamail, userID: user.userID)
+			// But, we can just clear the privileged mailbox hash(es) this user has access to for this thread ID.
+			for mailbox in PrivilegedMailbox.all where mailbox.isSatisfied(by: user) {
+				try await req.redis.markChatRead(type: type, in: mailbox.inbox, userID: user.userID)
 			}
 
 		case .twarrtMention, .forumMention, .alertwordTwarrt, .alertwordPost:
