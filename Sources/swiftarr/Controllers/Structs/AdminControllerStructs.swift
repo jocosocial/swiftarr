@@ -100,7 +100,35 @@ public struct DailyThemeUploadData: Content {
 	/// An optional image that relates to the theme.
 	var image: ImageUploadData?
 	/// Day of cruise, counted from `Settings.shared.cruiseStartDate`. 0 is embarkation day. Values could be negative (e.g. Day -1 is "Anticipation Day")
-	var cruiseDay: Int32
+	var cruiseDay: Int
+}
+
+/// A daily theme as derived from the schedule. Not yet stored in the database.
+public struct DailyThemeProposedData: Content {
+	var title: String
+	var info: String
+	/// Day of cruise, counted from `Settings.shared.cruiseStartDate`. 0 is embarkation day.
+	var cruiseDay: Int
+}
+
+/// A daily theme whose title or info would change when loaded from the schedule.
+public struct DailyThemeModifiedData: Content {
+	/// The theme as it currently exists in the database.
+	var existing: DailyThemeData
+	/// The values that would be applied from the schedule. The existing image is kept.
+	var proposed: DailyThemeProposedData
+}
+
+/// Shows the differences between the current `DailyTheme`s and the theme days found in the `Event` schedule.
+///
+/// Returned by: `GET /api/v3/admin/dailytheme/schedule/verify`
+public struct DailyThemeUpdateDifferenceData: Content {
+	/// Themes in the schedule with no matching `DailyTheme` for that day.
+	var createdThemes: [DailyThemeProposedData] = []
+	/// Themes whose title or info differ between the database and the schedule.
+	var modifiedThemes: [DailyThemeModifiedData] = []
+	/// `DailyTheme`s for days with no theme event in the schedule.
+	var deletedThemes: [DailyThemeData] = []
 }
 
 /// Used to update the `Event` database.
@@ -390,7 +418,7 @@ struct DailyThemeSaveRestoreData: Content, Sendable {
 	let title: String
 	let info: String
 	let image: String?
-	let cruiseDay: Int32
+	let cruiseDay: Int
 }
 
 extension DailyThemeSaveRestoreData {

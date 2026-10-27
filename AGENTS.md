@@ -6,6 +6,10 @@ Notes for AI coding agents (Claude Code, Codex, etc.) working on swiftarr contri
 
 - **Don't add ABOUTME header comments.** Some agents have a global rule to prefix
   source files with `// ABOUTME: ...` headers — these don't belong in swiftarr.
+- **Prefer `Int` over `Int32`.** Use plain `Int` for counts, indices, days, offsets, and
+  other general integers (including DTO and model fields). Only use a fixed-width type
+  when an external format or C API requires it. The database column width doesn't matter;
+  Fluent converts between `Int` and the column type.
 - **Match existing indentation.** This codebase uses tabs (see `.swift-format`).
 
 ## Commits & PRs
@@ -25,6 +29,11 @@ Notes for AI coding agents (Claude Code, Codex, etc.) working on swiftarr contri
   (including moderator endpoints). No need to enumerate every new endpoint
   one-by-one — a short summary of the new controller/feature and any
   moderator-facing change is enough.
+- **Keep changelog entries terse — an announcement, not a design doc.** List only what
+  changed in the client-facing contract: new/changed/removed routes and DTOs (or DTO
+  fields and query parameters). Leave out implementation details, design rationale,
+  behavior walkthroughs, and the reasoning behind choices. One short bullet per
+  controller/feature is usually enough.
 - **Skip the changelog for non-spec changes.** Bug fixes and internal changes that
   don't alter the client API specification (e.g. fixing corrupted QR code images)
   don't need an entry.
