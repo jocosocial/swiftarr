@@ -18,6 +18,15 @@
 						#formatFezText(fezPost.text)
 					</div>
 				</div>
+				#if(fezPost.reactions):
+					<div class="row mt-1" aria-label="Post reactions">
+						<div class="col">
+							#for(reaction in fezPost.reactions):
+								<span class="badge bg-secondary me-1">#addJocomoji(reaction.reaction) #(count(reaction.users))</span>
+							#endfor
+						</div>
+					</div>
+				#endif
 				#if(fezPost.image):
 					<div class="row align-items-center justify-content-start flex-nowrap gx-1">	
 						<div class="col col-auto flex-grow-0 flex-shrink-1">
