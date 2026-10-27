@@ -199,6 +199,23 @@ duration-select:focus {
 }
 
 /* Body background — themed */
+.navbar-awning {
+  position: relative;
+  isolation: isolate;
+}
+.navbar-awning::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: url('/img/header-waves.png');
+  background-repeat: repeat-x;
+  pointer-events: none;
+}
+[data-bs-theme="dark"] .navbar-awning::before {
+  filter: brightness(1.55);
+}
+
 body {
   background-image: url('/img/background.png');
   background-size: 100%;
