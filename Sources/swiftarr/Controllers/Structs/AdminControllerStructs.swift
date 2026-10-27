@@ -402,6 +402,68 @@ extension DailyThemeSaveRestoreData {
 	}
 }
 
+/// Describes a client app that users may want to download. Includes the links to get it on each platform it's available on.
+///
+/// Returned by: `GET /api/v3/admin/clients`, `GET /api/v3/admin/clients/:client_app_id`
+public struct ClientAppData: Content, Sendable {
+	var clientAppID: UUID
+	var name: String
+	var description: String
+	/// Filename of the app's icon. Get it from `/api/v3/image/full/ID` or `/api/v3/image/thumb/ID`. May be nil.
+	var image: String?
+	var developer: String
+	/// Clients should sort apps by this field.
+	var sortName: String
+	/// One entry for each platform the app is available on. A `url` that begins with "/" refers to this server.
+	var links: [ClientAppLink]
+	/// The platforms the app is available on, derived from `links`.
+	var platforms: [ClientAppPlatform]
+	/// If this app is one of the known Swiftarr clients, which one. Not intended to be shown to users.
+	var swiftarrClient: SwiftarrClientApp?
+}
+
+extension ClientAppData {
+	init(_ app: ClientApp) throws {
+		clientAppID = try app.requireID()
+		name = app.name
+		description = app.appDescription
+		image = app.image
+		developer = app.developer
+		sortName = app.sortName
+		links = app.links
+		platforms = app.platforms
+		swiftarrClient = app.swiftarrClient
+	}
+}
+
+/// For TwitarrTeam to create or edit client apps.
+///
+/// Required by: `POST /api/v3/admin/clients/create`, `POST /api/v3/admin/clients/:client_app_id/update`
+public struct ClientAppUploadData: Content, Sendable {
+	var name: String
+	var description: String
+	var developer: String
+	/// If nil or empty, `name` is used.
+	var sortName: String?
+	/// An optional icon. On edit, passing nil removes an existing image; pass the existing filename to keep it.
+	var image: ImageUploadData?
+	/// At least one link is required, and each platform may appear only once.
+	var links: [ClientAppLink]
+	var swiftarrClient: SwiftarrClientApp?
+}
+
+extension ClientAppUploadData: RCFValidatable {
+	func runValidations(using decoder: ValidatingDecoder) throws {
+		let tester = try decoder.validator(keyedBy: CodingKeys.self)
+		tester.validate(!name.trimmingCharacters(in: .whitespaces).isEmpty, forKey: .name, or: "Name cannot be empty")
+		tester.validate(!links.isEmpty, forKey: .links, or: "At least one link is required")
+		tester.validate(Set(links.map { $0.platform }).count == links.count, forKey: .links,
+				or: "Each platform may only have one link")
+		tester.validate(links.allSatisfy { !$0.url.trimmingCharacters(in: .whitespaces).isEmpty }, forKey: .links,
+				or: "Link URLs cannot be empty")
+	}
+}
+
 /// Used during bulk export/import to save and restore a `Hunt` and its child `Puzzle`s as a single unit.
 struct HuntSaveRestoreData: Content, Sendable {
 	let title: String
