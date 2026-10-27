@@ -36,13 +36,11 @@
 .dayplanner-scroll-shadow-left {
 	left: 55px;
 	background: linear-gradient(to right, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.18) 45%, rgba(0, 0, 0, 0));
-	box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2), 6px 0 12px rgba(0, 0, 0, 0.12);
 }
 
 .dayplanner-scroll-shadow-right {
 	right: 0;
 	background: linear-gradient(to left, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.18) 45%, rgba(0, 0, 0, 0));
-	box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2), -6px 0 12px rgba(0, 0, 0, 0.12);
 }
 
 .dayplanner-scroll-frame.can-scroll-left .dayplanner-scroll-shadow-left,
