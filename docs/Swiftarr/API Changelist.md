@@ -342,6 +342,7 @@ additive; the existing count fields are unchanged and are now derived from these
 
 ## Oct 26, 2026
 
+- `CategoryData` gains an optional `defaultSort` field to direct clients to the preferred thread sort for a category. Splashdot sets this to `create` (newest threads first).
 - Added `GET /api/v3/admin/dailytheme/schedule/verify` (returns `DailyThemeUpdateDifferenceData`) and `POST /api/v3/admin/dailytheme/schedule/apply`. Both accept `cruiseDayOffset`; apply also accepts `skipNew`, `skipDiff`, `skipDelete`.
 - Daily theme management endpoints (`/api/v3/admin/dailytheme/*`) now require TwitarrTeam or above (previously THO).
 

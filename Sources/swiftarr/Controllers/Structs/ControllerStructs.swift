@@ -204,6 +204,8 @@ public struct CategoryData: Content {
 	var isRestricted: Bool
 	/// if TRUE, this category is for Event Forums, and is prepopulated with forum threads for each Schedule Event.
 	var isEventCategory: Bool
+	/// The default `sort` query parameter clients should use when requesting threads in this category, if any.
+	var defaultSort: String?
 	/// The threads in the category. Only populated for /categories/ID.
 	var forumThreads: [ForumListData]?
 	/// Pagination of the results. For the `GET /api/v3/categories` endpoint only the `Paginator`s `total` is meaningful.
@@ -219,6 +221,7 @@ extension CategoryData {
 		purpose = cat.purpose
 		isRestricted = restricted
 		isEventCategory = cat.isEventCategory
+		defaultSort = cat.defaultSort
 		self.forumThreads = forumThreads
 		self.paginator = paginator
 	}
