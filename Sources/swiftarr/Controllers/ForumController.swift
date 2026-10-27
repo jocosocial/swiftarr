@@ -71,9 +71,9 @@ struct ForumController: APIRouteCollection {
 		tokenAuthGroup.post("post", postIDParam, "like", use: postLikeHandler)
 		tokenAuthGroup.post("post", postIDParam, "love", use: postLoveHandler)
 		tokenAuthGroup.post("post", postIDParam, "unreact", use: postUnreactHandler)
-		tokenAuthGroup.delete("post", postIDParam, "laugh", use: postUnreactHandler)
-		tokenAuthGroup.delete("post", postIDParam, "like", use: postUnreactHandler)
-		tokenAuthGroup.delete("post", postIDParam, "love", use: postUnreactHandler)
+		tokenAuthGroup.delete("post", postIDParam, "laugh", use: postUnlaughHandler)
+		tokenAuthGroup.delete("post", postIDParam, "like", use: postUnlikeHandler)
+		tokenAuthGroup.delete("post", postIDParam, "love", use: postUnloveHandler)
 		tokenAuthGroup.post("post", postIDParam, "report", use: postReportHandler)
 
 		// Pins
@@ -785,6 +785,7 @@ struct ForumController: APIRouteCollection {
 		if ownReacts {
 			query.join(ForumPostReaction.self, on: \ForumPost.$id == \ForumPostReaction.$post.$id)
 				.filter(ForumPostReaction.self, \.$user.$id == cacheUser.userID)
+			query.unique()
 		}
 		if let categoryStr = req.query[String.self, at: "category"] {
 			guard let categoryID = UUID(categoryStr) else {
@@ -858,7 +859,13 @@ struct ForumController: APIRouteCollection {
 
 		let countQuery = query.copy()
 		let rangeQuery = query.copy()
-		let totalPostsFound = try await countQuery.count()
+		let totalPostsFound: Int
+		if ownReacts {
+			totalPostsFound = Set(try await countQuery.all(\.$id)).count
+		}
+		else {
+			totalPostsFound = try await countQuery.count()
+		}
 		let posts = try await rangeQuery.range(pagination.range).all()
 		// The filter() for mentions will include usernames that are prefixes for other usernames and other false positives.
 		// This filters those out after the query.
@@ -1369,6 +1376,21 @@ struct ForumController: APIRouteCollection {
 		return try await postReactHandler(req, emoji: emoji, replaceLegacyReaction: false)
 	}
 
+	/// Removes the legacy laugh reaction from a forum post.
+	func postUnlaughHandler(_ req: Request) async throws -> PostData {
+		return try await postUnreactHandler(req, emoji: ReactionData.legacyEmoji(for: .laugh))
+	}
+
+	/// Removes the legacy like reaction from a forum post.
+	func postUnlikeHandler(_ req: Request) async throws -> PostData {
+		return try await postUnreactHandler(req, emoji: ReactionData.legacyEmoji(for: .like))
+	}
+
+	/// Removes the legacy love reaction from a forum post.
+	func postUnloveHandler(_ req: Request) async throws -> PostData {
+		return try await postUnreactHandler(req, emoji: ReactionData.legacyEmoji(for: .love))
+	}
+
 	private func postReactHandler(_ req: Request, emoji: String, replaceLegacyReaction: Bool) async throws -> PostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// get post and forum
@@ -1406,17 +1428,15 @@ struct ForumController: APIRouteCollection {
 
 	/// `DELETE /api/v3/forum/post/ID/react/:emoji`
 	///
-	/// Removes the specified emoji reaction from the post.
+	/// Removes the `PostReactionData` reaction from the post. The legacy DELETE routes remove only
+	/// their corresponding LikeType emoji.
 	func postUnreactHandler(_ req: Request) async throws -> PostData {
+		let emoji = try req.content.decode(PostReactionData.self).validatedReaction()
+		return try await postUnreactHandler(req, emoji: emoji)
+	}
+
+	private func postUnreactHandler(_ req: Request, emoji: String) async throws -> PostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let maybeEmoji: String?
-		if req.method == .DELETE {
-			// Legacy DELETE /laugh, /like, and /love routes have no JSON body.
-			maybeEmoji = nil
-		}
-		else {
-			maybeEmoji = try req.content.decode(PostReactionData.self).validatedReaction()
-		}
 		// get post and forum
 		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
 			query.with(\.$forum) { forum in
@@ -1427,25 +1447,12 @@ struct ForumController: APIRouteCollection {
 		guard post.$author.id != cacheUser.userID else {
 			throw Abort(.forbidden, reason: "user cannot react to own post")
 		}
-		if let emoji = maybeEmoji, !emoji.isEmpty {
-			if let postReaction = try await ForumPostReaction.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
-				.filter(\.$post.$id == post.requireID())
-				.filter(\.$emoji == emoji)
-				.first()
-			{
-				try await postReaction.delete(on: req.db)
-			}
-		}
-		else {
-			let legacyEmojis = legacyReactionEmojis()
-			let legacyReactions = try await ForumPostReaction.query(on: req.db)
-				.filter(\.$user.$id == cacheUser.userID)
-				.filter(\.$post.$id == post.requireID())
-				.all()
-				.filter { legacyEmojis.contains($0.emoji) }
-			for reaction in legacyReactions {
-				try await reaction.delete(on: req.db)
-			}
+		if let postReaction = try await ForumPostReaction.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
+			.filter(\.$post.$id == post.requireID())
+			.filter(\.$emoji == emoji)
+			.first()
+		{
+			try await postReaction.delete(on: req.db)
 		}
 		let postDataArray = try await buildPostData([post], userID: cacheUser.userID, on: req)
 		return postDataArray[0]

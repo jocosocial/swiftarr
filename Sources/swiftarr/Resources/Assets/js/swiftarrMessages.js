@@ -14,6 +14,13 @@ function startLiveMessageStream() {
 
 	ws.onmessage = (event) => {
 		let message = JSON.parse(event.data);
+		if (message.reactionUpdate === true) {
+			let reactionContainer = document.querySelector(`[data-postid="${message.postID}"] [data-reaction-container]`);
+			if (reactionContainer && typeof message.html === 'string') {
+				reactionContainer.outerHTML = message.html;
+			}
+			return;
+		}
 		let endDiv = document.getElementById("fez-list-end");
 		endDiv?.insertAdjacentHTML('beforebegin', message.html);
 		if (message.text) {

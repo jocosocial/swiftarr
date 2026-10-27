@@ -990,8 +990,9 @@ struct FezController: APIRouteCollection {
 
 	/// `WS /api/v3/fez/:fezID/socket`
 	///
-	/// Opens a websocket to receive updates on the given fez. At the moment there's only 2 messages that the client may receive:
+	/// Opens a websocket to receive post, reaction, and membership updates for the given fez.
 	/// - `SocketFezPostData` - sent when a post is added to the fez.
+	/// - `SocketFezReactionData` - sent when reactions on a post change.
 	/// - `SocketMemberChangeData` - sent when a member joins/leaves the fez.
 	///
 	/// Note that there's a bunch of other state change that can happen with a fez; I haven't built out code to send socket updates for them.
@@ -1059,17 +1060,32 @@ struct FezController: APIRouteCollection {
 
 	/// Sends the complete reaction state for a post to members currently viewing the chat.
 	func forwardReactionChangeToSockets(_ fez: FriendlyFez, postData: FezPostData, on req: Request) async throws {
-		let payload = SocketFezReactionData(postID: postData.postID, reactions: postData.reactions)
-		let data = try JSONEncoder().encode(payload)
-		guard let dataString = String(data: data, encoding: .utf8) else {
-			return
-		}
 		let sockets = try await req.webSocketStore.getChatSockets(fez.requireID())
 		for userSocket in sockets {
-			guard !userSocket.htmlOutput,
-				let socketOwner = req.userCache.getUser(userSocket.userID),
-				userCanViewMemberData(user: socketOwner, fez: fez)
+			guard let socketOwner = req.userCache.getUser(userSocket.userID),
+				userCanViewMemberData(user: socketOwner, fez: fez),
+				!(socketOwner.getBlocks().contains(postData.author.userID)
+					|| socketOwner.getMutes().contains(postData.author.userID))
 			else { continue }
+			var payload = SocketFezReactionData(postID: postData.postID, reactions: postData.reactions)
+			if userSocket.htmlOutput {
+				struct ReactionFragmentContext: Encodable {
+					var reactions: [ReactionData]
+				}
+				payload.html = try await req.view.render(
+					"Fez/fezPostReactions",
+					ReactionFragmentContext(reactions: postData.reactions)
+				).flatMapThrowing { rendered -> String in
+					guard let data = rendered.data.getData(at: 0, length: rendered.data.readableBytes),
+						let html = String(data: data, encoding: .utf8)
+					else {
+						throw Abort(.internalServerError, reason: "Unable to render reaction fragment")
+					}
+					return html
+				}.get()
+			}
+			let data = try JSONEncoder().encode(payload)
+			guard let dataString = String(data: data, encoding: .utf8) else { continue }
 			try await userSocket.socket.send(dataString)
 		}
 	}

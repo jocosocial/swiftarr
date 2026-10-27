@@ -1,0 +1,7 @@
+<div class="row mt-1" aria-label="Post reactions" data-reaction-container>
+	<div class="col">
+		#for(reaction in reactions):
+			<span class="badge bg-secondary me-1">#addJocomoji(reaction.reaction) #(count(reaction.users))</span>
+		#endfor
+	</div>
+</div>
