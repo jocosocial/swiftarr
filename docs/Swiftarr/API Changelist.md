@@ -339,3 +339,7 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Oct 21, 2026
 
 - `UserCreateData` gains an optional `agreeToTerms` boolean. `POST /api/v3/user/create` now requires it to be `true`; requests omitting it (or sending `false`) are rejected with a 400. `POST /api/v3/user/add` is unaffected and does not require it. Clients that create accounts must be updated to send the new field.
+
+## Oct 26, 2026
+
+- `CategoryData` gains an optional `defaultSort` field to direct clients to the preferred thread sort for a category. Splashdot sets this to `create` (newest threads first).
