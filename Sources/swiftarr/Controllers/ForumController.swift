@@ -783,9 +783,11 @@ struct ForumController: APIRouteCollection {
 			query.filter(PostLikes.self, \.$isFavorite == true)
 		}
 		if ownReacts {
-			query.join(ForumPostReaction.self, on: \ForumPost.$id == \ForumPostReaction.$post.$id)
-				.filter(ForumPostReaction.self, \.$user.$id == cacheUser.userID)
-			query.unique()
+			let reactedPostIDs = try await ForumPostReaction.query(on: req.db)
+				.filter(\.$user.$id == cacheUser.userID)
+				.unique()
+				.all(\.$post.$id)
+			query.filter(\.$id ~~ reactedPostIDs)
 		}
 		if let categoryStr = req.query[String.self, at: "category"] {
 			guard let categoryID = UUID(categoryStr) else {
@@ -859,13 +861,7 @@ struct ForumController: APIRouteCollection {
 
 		let countQuery = query.copy()
 		let rangeQuery = query.copy()
-		let totalPostsFound: Int
-		if ownReacts {
-			totalPostsFound = Set(try await countQuery.all(\.$id)).count
-		}
-		else {
-			totalPostsFound = try await countQuery.count()
-		}
+		let totalPostsFound = try await countQuery.count()
 		let posts = try await rangeQuery.range(pagination.range).all()
 		// The filter() for mentions will include usernames that are prefixes for other usernames and other false positives.
 		// This filters those out after the query.
