@@ -18,10 +18,13 @@ class DailyThemeScheduleTests: XCTestCase, SwiftarrBaseTest {
 		super.tearDown()
 	}
 
-	/// The migrations seed themes and events; start from a clean slate.
-	private func clearSeedData(_ app: Application) async throws {
+	/// The migrations seed themes, and other suites share this database; clear only the theme rows these tests depend on
+	/// and leave unrelated events alone.
+	private func clearThemeData(_ app: Application) async throws {
 		try await DailyTheme.query(on: app.db).delete()
-		try await Event.query(on: app.db).withDeleted().delete(force: true)
+		try await Event.query(on: app.db).withDeleted()
+			.filter(\.$title, .custom("ILIKE"), "\(DailyThemeScheduleSync.titlePrefix)%")
+			.delete(force: true)
 	}
 
 	/// Saves an event starting at 10:00 port time on the given cruise day.
@@ -42,7 +45,7 @@ class DailyThemeScheduleTests: XCTestCase, SwiftarrBaseTest {
 
 	func testComputeFindsCreatedModifiedDeleted() async throws {
 		try await withApp { app in
-			try await clearSeedData(app)
+			try await clearThemeData(app)
 			try await addEvent(app, title: "Theme: Retro Day", info: "Go retro", day: 1)
 			try await addEvent(app, title: "theme: Cosplay Day", info: "Dress up", day: 2)
 			try await addEvent(app, title: "Not a theme", info: "x", day: 3)
@@ -55,12 +58,13 @@ class DailyThemeScheduleTests: XCTestCase, SwiftarrBaseTest {
 			XCTAssertEqual(diff.modifiedThemes.count, 1)
 			XCTAssertEqual(diff.modifiedThemes.first?.proposed.title, "Cosplay Day")
 			XCTAssertEqual(diff.deletedThemes.map { $0.cruiseDay }, [5])
+			try await clearThemeData(app)
 		}
 	}
 
 	func testApplyRespectsSkipFlags() async throws {
 		try await withApp { app in
-			try await clearSeedData(app)
+			try await clearThemeData(app)
 			try await addEvent(app, title: "Theme: Retro Day", info: "Go retro", day: 1)
 			try await addEvent(app, title: "Theme: Cosplay Day", info: "Dress up", day: 2)
 			try await DailyTheme(title: "Cosplay", info: "Old", image: "img.jpg", day: 2).save(on: app.db)
@@ -77,15 +81,17 @@ class DailyThemeScheduleTests: XCTestCase, SwiftarrBaseTest {
 			XCTAssertEqual(themes.map { $0.cruiseDay }, [1, 2])
 			XCTAssertEqual(themes[1].title, "Cosplay Day")
 			XCTAssertEqual(themes[1].image, "img.jpg")
+			try await clearThemeData(app)
 		}
 	}
 
 	func testCruiseDayOffsetShiftsDays() async throws {
 		try await withApp { app in
-			try await clearSeedData(app)
+			try await clearThemeData(app)
 			try await addEvent(app, title: "Theme: Retro Day", info: "Go retro", day: 1)
 			let diff = try await DailyThemeScheduleSync.compute(cruiseDayOffset: 200, on: app.db).differenceData()
 			XCTAssertEqual(diff.createdThemes.map { $0.cruiseDay }, [201])
+			try await clearThemeData(app)
 		}
 	}
 }
