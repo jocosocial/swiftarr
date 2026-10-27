@@ -1287,7 +1287,7 @@ struct ForumController: APIRouteCollection {
 		// return as PostData, with 201 status
 		let response = Response(status: .created)
 		try response.content.encode(
-			PostData(post: forumPost, author: effectiveAuthor.makeHeader(), reactions: [])
+			PostData(post: forumPost, author: effectiveAuthor.makeHeader(), bookmarked: false, reactions: [])
 		)
 		return response
 	}

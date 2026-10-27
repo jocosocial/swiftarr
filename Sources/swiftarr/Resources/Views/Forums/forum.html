@@ -47,6 +47,9 @@
 											#formatPostText(forumPost.text)
 										</div>
 									</div>
+								#if(forumPost.reactions):
+									<div class="row mt-1" aria-label="Post reactions"><div class="col">#for(reaction in forumPost.reactions):<span class="badge bg-secondary me-1">#addJocomoji(reaction.reaction) #(count(reaction.users))</span>#endfor</div></div>
+								#endif
 									#if(forumPost.images):
 										<div class="row">	
 											#for(image in forumPost.images):
@@ -98,6 +101,13 @@
 									</label>
 								</div>								
 								#if(forumPost.author.userID != trunk.userID):
+									<div class="col col-auto">
+										<div class="input-group input-group-sm">
+											<input aria-label="Emoji reaction" class="form-control" data-reaction-input placeholder="Emoji or :custom:" maxlength="64" type="text">
+											<button class="btn btn-outline-primary" data-reaction-action="react" data-reactionpath="/forumpost/#(forumPost.postID)/react" type="button">React</button>
+											<button class="btn btn-outline-primary" data-reaction-action="unreact" data-reactionpath="/forumpost/#(forumPost.postID)/unreact" type="button">Remove</button>
+										</div>
+									</div>
 									<div class="col btn-group btn-group-sm" role="group" data-state="#(forumPost.userLike)" aria-label="Reactions">
 										<input type="checkbox" class="btn-check" autocomplete="off" data-action="laugh" 
 												data-actionpath="/forumpost/#(forumPost.postID)/laugh"
@@ -249,6 +259,9 @@
 											#formatPostText(forumPost.text)
 										</div>
 									</div>
+							#if(forumPost.reactions):
+								<div class="row mt-1" aria-label="Post reactions"><div class="col">#for(reaction in forumPost.reactions):<span class="badge bg-secondary me-1">#addJocomoji(reaction.reaction) #(count(reaction.users))</span>#endfor</div></div>
+							#endif
 									#if(forumPost.images):
 										<div class="row">	
 											#for(image in forumPost.images):
@@ -301,6 +314,13 @@
 									</div>		
 								#endif						
 								#if(forumPost.author.userID != trunk.userID):
+									<div class="col col-auto">
+										<div class="input-group input-group-sm">
+											<input aria-label="Emoji reaction" class="form-control" data-reaction-input placeholder="Emoji or :custom:" maxlength="64" type="text">
+											<button class="btn btn-outline-primary" data-reaction-action="react" data-reactionpath="/forumpost/#(forumPost.postID)/react" type="button">React</button>
+											<button class="btn btn-outline-primary" data-reaction-action="unreact" data-reactionpath="/forumpost/#(forumPost.postID)/unreact" type="button">Remove</button>
+										</div>
+									</div>
 									<div class="col btn-group btn-group-sm" role="group" data-state="#(forumPost.userLike)" aria-label="Reactions">
 										<input type="checkbox" class="btn-check" autocomplete="off" data-action="laugh" 
 												data-actionpath="/forumpost/#(forumPost.postID)/laugh"
