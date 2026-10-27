@@ -25,51 +25,48 @@
     #export("body"):
 	<link href="/css/dayplanner.css" rel="stylesheet">
 	<div class="container-fluid px-0">
-		<table class="dayplanner mb-2" data-daystart="#(dayStart)" data-dayend="#(dayEnd)">
-			<thead>
-				<tr>
-					<th scope="row"></th>
-					<td class="headerSizer"></td>
-					<td class="headerSizer"></td>
-					<td class="headerSizer"></td>
-					<td class="headerSizer"></td>
-					<td class="headerSizer"></td>
-					<td class="headerSizer"></td>
-					<td class="headerSizer"></td>
-					<td class="headerSizer"></td>
-					<td class="headerSizer"></td>
-					<td class="headerSizer"></td>
-					<td class="headerSizer"></td>
-					<td class="headerSizer"></td>
-				</tr>
-				<tr>
-					<td colspan="13" class="currentTimeLine"></td>
-				</tr>
-			</thead>
-			<tbody>
-				#for(row in rows):
-					#if(row.hour != nil):
-						<tr class="hourline" id="dayPlannerRow#(index)">
-							<th scope="row" class="align-top align-text-top align-self-start">#(row.hour)</th>
-					#else:
-						<tr id="dayPlannerRow#(index)">
-							<th scope="row" class="align-top align-text-top align-self-start">#(row.timezone)</th>
-					#endif
-					#for(appt in row.newAppointments):
-						<td rowspan="#(appt.rowCount)" colspan="#(appt.columnCount)" style="height: #(appt.rowCount * 25)px;">
-							#if(appt.link != nil):
-								<div style="padding-top: #(appt.topMargin)px; padding-bottom: #(appt.bottomMargin)px; min-height: 100%; height: #(appt.rowCount * 25)px;">
-									<a class="#(appt.color)" href="#(appt.link)" >
-										#(appt.title)
-									</a>
-								</div>
+		<div class="dayplanner-scroll-frame">
+			<div class="dayplanner-scroll" role="region" aria-label="Day Planner schedule" tabindex="0">
+				<table class="dayplanner mb-2" data-daystart="#(dayStart)" data-dayend="#(dayEnd)" style="min-width: #(plannerMinWidth)px;">
+					<thead>
+						<tr>
+							<th scope="row"></th>
+							#for(column in plannerGridColumns):
+								<td class="headerSizer"></td>
+							#endfor
+						</tr>
+						<tr>
+							<td colspan="#(plannerColumnCount)" class="currentTimeLine"></td>
+						</tr>
+					</thead>
+					<tbody>
+						#for(row in rows):
+							#if(row.hour != nil):
+								<tr class="hourline" id="dayPlannerRow#(index)">
+									<th scope="row" class="align-top align-text-top align-self-start">#(row.hour)</th>
+							#else:
+								<tr id="dayPlannerRow#(index)">
+									<th scope="row" class="align-top align-text-top align-self-start">#(row.timezone)</th>
 							#endif
-						</td>
-					#endfor
-					</tr>
-				#endfor
-			</tbody>
-		</table>
+							#for(appt in row.newAppointments):
+								<td rowspan="#(appt.rowCount)" colspan="#(appt.columnCount)" style="height: #(appt.rowCount * 25)px;">
+									#if(appt.link != nil):
+										<div style="padding-top: #(appt.topMargin)px; padding-bottom: #(appt.bottomMargin)px; min-height: 100%; height: #(appt.rowCount * 25)px;">
+											<a class="#(appt.color)" href="#(appt.link)">
+												#(appt.title)
+											</a>
+										</div>
+									#endif
+								</td>
+							#endfor
+						</tr>
+						#endfor
+					</tbody>
+				</table>
+			</div>
+			<div class="dayplanner-scroll-shadow dayplanner-scroll-shadow-left" aria-hidden="true"></div>
+			<div class="dayplanner-scroll-shadow dayplanner-scroll-shadow-right" aria-hidden="true"></div>
+		</div>
 	</div>
 	<div class="container-fluid">
 		#if(!trunk.preregistrationApplies && !shutternautSharedSchedule):

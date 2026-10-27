@@ -6,6 +6,54 @@
 	background-color: #DDDDDD;
 }
 
+.dayplanner-scroll-frame {
+	position: relative;
+	width: 100%;
+}
+
+.dayplanner-scroll {
+	max-width: 100%;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+.dayplanner-scroll:focus-visible {
+	outline: 2px solid #6463FF;
+	outline-offset: -2px;
+}
+
+.dayplanner-scroll-shadow {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 24px;
+	z-index: 4;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 150ms ease-out;
+}
+
+.dayplanner-scroll-shadow-left {
+	left: 55px;
+	background: linear-gradient(to right, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.18) 45%, rgba(0, 0, 0, 0));
+}
+
+.dayplanner-scroll-shadow-right {
+	right: 0;
+	background: linear-gradient(to left, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0.18) 45%, rgba(0, 0, 0, 0));
+}
+
+.dayplanner-scroll-frame.can-scroll-left .dayplanner-scroll-shadow-left,
+.dayplanner-scroll-frame.can-scroll-right .dayplanner-scroll-shadow-right {
+	opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.dayplanner-scroll-shadow {
+		transition: none;
+	}
+}
+
 .dayplanner {
 	width: 100%;
 	vertical-align: top;
@@ -14,11 +62,20 @@
 }
 
 table.dayplanner th {
+	position: sticky;
+	left: 0;
+	z-index: 2;
 	width: 55px;
+	background-color: #DDDDDD;
 	font-weight: normal;
 	font-size: 14px;
 	padding-top: 0px;
 	padding-left: 2px;
+}
+
+[data-bs-theme="dark"] table.dayplanner th {
+	background-color: var(--bs-tertiary-bg);
+	color: var(--bs-body-color);
 }
 
 table.dayplanner > tbody > tr {
@@ -57,7 +114,9 @@ table.dayplanner .personalEvent {
 	padding-top: 2px;
 	min-height: 100%;
 	max-height: 100%;
-	min-width: 100%;
+	width: 100%;
+	max-width: calc(100vw - 55px);
+	box-sizing: border-box;
 	color: white;
 	font-family: Helvetica, Arial, sans-serif;
 	line-height: 1.3;
@@ -114,6 +173,5 @@ table.dayplanner .blankItem {
 }
 
 table.dayplanner .headerSizer {
-	width: 7%;
 	height: 1px;
 }
