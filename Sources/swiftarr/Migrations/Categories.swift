@@ -148,6 +148,38 @@ struct RenameWhereAndWhen: AsyncMigration {
 	}
 }
 
+struct SetSplashdotDefaultSort: AsyncMigration {
+	/// Sets Splashdot's API-provided default sort to forum creation time.
+	func prepare(on database: Database) async throws {
+		guard let splashdot = try await Category.query(on: database).filter(\.$title == "Splashdot").first() else {
+			return
+		}
+		splashdot.defaultSort = "create"
+		try await splashdot.save(on: database)
+	}
+
+	/// Clears Splashdot's default sort.
+	func revert(on database: Database) async throws {
+		guard let splashdot = try await Category.query(on: database).filter(\.$title == "Splashdot").first() else {
+			return
+		}
+		splashdot.defaultSort = nil
+		try await splashdot.save(on: database)
+	}
+}
+
+struct AddCategoryDefaultSortSchema: AsyncMigration {
+	/// Adds the optional default sort value to forum categories.
+	func prepare(on database: Database) async throws {
+		try await database.schema(Category.schema).field("default_sort", .string).update()
+	}
+
+	/// Removes the category default sort field.
+	func revert(on database: Database) async throws {
+		try await database.schema(Category.schema).deleteField("default_sort").update()
+	}
+}
+
 struct AddFoodDrinkCategory: AsyncMigration {
 	/// Required by `Migration` protocol. Inserts the Food & Drink category.
 	///
