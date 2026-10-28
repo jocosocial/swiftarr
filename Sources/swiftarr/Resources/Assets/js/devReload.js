@@ -4,7 +4,8 @@ let checking = false;
 
 /** Keep polling through rebuilds, including a restart during the initial page load. */
 async function checkDevelopmentRevision() {
-	if (checking || document.hidden) return;
+	// Establish a baseline even in a background tab so edits made before activation are detected.
+	if (checking || (document.hidden && initialRevision !== undefined)) return;
 	checking = true;
 	try {
 		const response = await fetch("/__dev/revision", {cache: "no-store"});

@@ -91,8 +91,7 @@ struct SiteFileController: SiteControllerUtils {
 		}
 
 		// create absolute file path
-		let resourceRoot = DevelopmentResources.root(on: req.application)
-			?? Settings.shared.staticFilesRootPath.appendingPathComponent("Resources")
+		let resourceRoot = DevelopmentResources.siteRoot(on: req.application)
 		let filePath = resourceRoot
 			.appendingPathComponent("Assets/\(basePath)")
 			.appendingPathComponent(path)

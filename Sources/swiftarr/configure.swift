@@ -220,8 +220,7 @@ struct SwiftarrConfigurator {
 		Settings.shared.validImageOutputTypes = [".png", ".jpg", ".jpeg"]
 
 		// Set the app's views dir, which is where all the Leaf template files are.
-		let siteResources = DevelopmentResources.root(on: app)
-			?? Settings.shared.staticFilesRootPath.appendingPathComponent("Resources")
+		let siteResources = DevelopmentResources.siteRoot(on: app)
 		app.directory.viewsDirectory =
 			siteResources.appendingPathComponent("Views").path
 		// Also set the resources dir, although I don't think it's used anywhere.
