@@ -60,6 +60,54 @@ To shut down the Docker containers, `scripts/instance.sh stop`.
 Yes, that's a bunch the first time through and it does take some time. From here on out though, it's just a matter of
 pulling the latest updates from the repository and regenerating the .xcodeproj file.
 
+### Watching local edits
+
+With Node.js 18 or newer installed, run the development watcher from the checkout:
+
+```shell
+node scripts/dev.mjs
+```
+
+The runner builds Swiftarr once, then runs it in development mode using the existing
+development environment configuration and database services. Stop any server already
+using that configuration's port before starting the watcher. Ctrl-C stops the watcher
+and its server.
+
+* Leaf templates, JavaScript, CSS, and other files under
+  `Sources/swiftarr/Resources` are served directly from the checkout. After one second
+  without resource edits, open pages reload automatically without compilation or a
+  server restart. Reloading replaces the page, so save unfinished form input first.
+* Changes elsewhere under `Sources`, including Swift and seed/environment files, or
+  to `Package.swift` / `Package.resolved`, rebuild and restart the server after two
+  seconds without edits. Failed builds wait for the next edit; they do not run an old
+  binary. Edits during a build schedule another build before starting the server.
+* Build outputs and Git metadata are not watched. The runner polls every 500 ms, so
+  file additions, removals, and editor atomic saves are detected on macOS and Linux.
+
+Tune the debounce intervals in milliseconds, or override the server configuration
+through environment variables:
+
+```shell
+SWIFTARR_DEV_DEBOUNCE_MS=3000 SWIFTARR_DEV_RELOAD_MS=1500 node scripts/dev.mjs
+SWIFTARR_IP=127.0.0.1 SWIFTARR_PORT=7848 node scripts/dev.mjs
+```
+
+The runner sets `SWIFTARR_DEV_RESOURCES` to the source Resources directory and
+`SWIFTARR_DEV_RELOAD_FILE` to a temporary revision file. Swiftarr honors these only
+in development mode. Static files use `Cache-Control: no-store`, Leaf caching is
+disabled, and a development-only endpoint supplies browser reload revisions.
+Seed/configuration paths retain their usual bundle locations. Normal runs retain
+their existing resource paths and cache policy.
+
+If the browser previously cached the site's scripts, hard-refresh once after
+switching to this runner. The browser checks for updates once per second while the
+page is visible and reconnects through server rebuilds. Tests for the runner use
+fake build/server processes and do not require databases:
+
+```shell
+node --test scripts/tests/dev*.test.mjs
+```
+
 #### Using Xcode
 
 One of the many Xcode quirks that confuses developers not used to it is that Xcode puts the built app and all the buildfiles
