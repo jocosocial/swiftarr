@@ -511,6 +511,7 @@ struct SwiftarrConfigurator {
 
 		// Custom Leaf tags
 		app.leaf.tags["addJocomoji"] = AddJocomojiTag()
+		app.leaf.tags["reactionHasUser"] = ReactionHasUserTag()
 		app.leaf.tags["formatTwarrtText"] = try FormatPostTextTag(.twarrt)
 		app.leaf.tags["formatPostText"] = try FormatPostTextTag(.forumpost)
 		app.leaf.tags["formatFezText"] = try FormatPostTextTag(.fez)

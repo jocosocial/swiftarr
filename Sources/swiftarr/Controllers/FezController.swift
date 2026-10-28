@@ -1071,10 +1071,16 @@ struct FezController: APIRouteCollection {
 			if userSocket.htmlOutput {
 				struct ReactionFragmentContext: Encodable {
 					var reactions: [ReactionData]
+					var userID: UUID
+					var authorID: UUID
+					var postID: Int
+					var reactionActionPrefix: String
 				}
 				payload.html = try await req.view.render(
 					"Fez/fezPostReactions",
-					ReactionFragmentContext(reactions: postData.reactions)
+					ReactionFragmentContext(reactions: postData.reactions, userID: userSocket.userID,
+						authorID: postData.author.userID, postID: postData.postID,
+						reactionActionPrefix: fez.fezType == .closed ? "/seamail/post" : "/lfg/post")
 				).flatMapThrowing { rendered -> String in
 					guard let data = rendered.data.getData(at: 0, length: rendered.data.readableBytes),
 						let html = String(data: data, encoding: .utf8)

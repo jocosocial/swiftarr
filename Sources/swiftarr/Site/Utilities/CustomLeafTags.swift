@@ -46,6 +46,18 @@ import Vapor
 
 // MARK: - Tags for Styling Posts, Announcements, Daily Themes
 
+/// Tests membership in the user list of a grouped reaction for site chip highlighting.
+struct ReactionHasUserTag: LeafTag {
+	/// Checks whether the current user appears in a reaction's user list.
+	func render(_ ctx: LeafContext) throws -> LeafData {
+		try ctx.requireParameterCount(2)
+		guard let users = ctx.parameters[0].array, let userID = ctx.parameters[1].string else {
+			return .bool(false)
+		}
+		return .bool(users.contains { $0.dictionary?["userID"]?.string == userID })
+	}
+}
+
 /// Runs the element sanitizer on the given string, and then converts Jocomoji (specific string tags with the form :tag:)
 /// into inline images. Generally, use this tag for user text that isn't posts.
 ///

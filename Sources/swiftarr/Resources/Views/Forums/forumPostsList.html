@@ -52,7 +52,7 @@
 											</div>
 										</div>
 										#if(forumPost.reactions):
-											<div class="row mt-1" aria-label="Post reactions"><div class="col">#for(reaction in forumPost.reactions):<span class="badge bg-secondary me-1">#addJocomoji(reaction.reaction) #(count(reaction.users))</span>#endfor</div></div>
+											<div class="row mt-1" aria-label="Post reactions"><div class="col">#for(reaction in forumPost.reactions):<button type="button" class="btn btn-sm btn-outline-primary reaction-chip me-1 #if(reactionHasUser(reaction.users, trunk.userID)):active#endif" aria-pressed="#if(reactionHasUser(reaction.users, trunk.userID)):true#else:false#endif" aria-label="Toggle reaction #(reaction.reaction)" data-reaction-chip data-reaction="#(reaction.reaction)" data-reactpath="/forumpost/#(forumPost.postID)/react" data-unreactpath="/forumpost/#(forumPost.postID)/unreact" #if(trunk.userID == nil || trunk.userID == forumPost.author.userID):disabled#endif><span class="reaction-chip-emoji" aria-hidden="true">#addJocomoji(reaction.reaction)</span> <span class="reaction-chip-count">#(count(reaction.users))</span></button>#endfor#if(countOrZero(forumPost.reactions) > 0):<span class="reaction-controls reaction-inline-controls" data-reaction-controls data-reaction-label="+" data-reactpath="/forumpost/#(forumPost.postID)/react"><button type="button" class="btn btn-sm btn-outline-primary reaction-picker-toggle" data-open-reaction-picker aria-label="Add a reaction" aria-haspopup="dialog" aria-expanded="false" #if(trunk.userID == nil || trunk.userID == forumPost.author.userID):disabled#endif>+</button></span>#endif</div></div>
 										#endif
 										#if(forumPost.images):
 											<div class="row">	
@@ -68,7 +68,7 @@
 									</div>
 								</div>
 								<div class="row mt-1 justify-content-end row-cols-auto collapse" data-label="actionbar">	
-									<div class="col btn-group btn-group-sm" role="group" aria-label="Post actions">
+									<div class="col btn-group" role="group" aria-label="Post actions">
 										<a class="btn btn-outline-primary" href="/forum/containingpost/#(forumPost.postID)">View Thread</a>
 										<input type="checkbox" class="btn-check" autocomplete="off" data-action="favoriteForumPost" 
 												data-actionpath="/forumpost/favorite/#(forumPost.postID)"
@@ -93,52 +93,9 @@
 									</div>								
 									#if(forumPost.author.userID != trunk.userID):
 										<div class="col col-auto">
-											<div class="input-group input-group-sm">
-												<input aria-label="Emoji reaction" class="form-control" data-reaction-input placeholder="Emoji or :custom:" maxlength="64" type="text">
-												<button class="btn btn-outline-primary" data-reaction-action="react" data-reactionpath="/forumpost/#(forumPost.postID)/react" type="button">React</button>
-												<button class="btn btn-outline-primary" data-reaction-action="unreact" data-reactionpath="/forumpost/#(forumPost.postID)/unreact" type="button">Remove</button>
-											</div>
-										</div>
-										<div class="col btn-group btn-group-sm" role="group" data-state="#(forumPost.userLike)" aria-label="Reactions">
-											<input type="checkbox" class="btn-check" autocomplete="off" data-action="laugh" 
-													data-actionpath="/forumpost/#(forumPost.postID)/laugh"
-													data-istoggle="true"
-													data-errordiv="#(forumPost.postID)_reactErrorDisplay"
-													id="#(forumPost.postID)_laugh"
-													#if(forumPost.userLike == "laugh"):checked#endif>
-											<label class="btn btn-outline-primary" for="#(forumPost.postID)_laugh">
-												😆 <span class="laughtext"></span>
-												<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-												<span class="visually-hidden">Loading...</span>
-											</label>
-											<input type="checkbox" class="btn-check" autocomplete="off" data-action="like" 
-													data-actionpath="/forumpost/#(forumPost.postID)/like"
-													data-istoggle="true"
-													data-errordiv="#(forumPost.postID)_reactErrorDisplay"
-													id="#(forumPost.postID)_like"
-													#if(forumPost.userLike == "like"):checked#endif>
-											<label class="btn btn-outline-primary" for="#(forumPost.postID)_like">
-												👍 <span class="liketext"></span>
-												<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-												<span class="visually-hidden">Loading...</span>
-											</label>
-											<input type="checkbox" class="btn-check" autocomplete="off" data-action="love" 
-													data-actionpath="/forumpost/#(forumPost.postID)/love"
-													data-istoggle="true"
-													data-errordiv="#(forumPost.postID)_reactErrorDisplay"
-													id="#(forumPost.postID)_love"
-													#if(forumPost.userLike == "love"):checked#endif>
-											<label class="btn btn-outline-primary" for="#(forumPost.postID)_love">
-												❤️ <span class="lovetext"></span>
-												<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-												<span class="visually-hidden">Loading...</span>
-											</label>
-										</div>
-									#else:
-										<div class="px-0 d-flex align-items-center">
-											😆 <span class="px-1 small text-primary laughtext"></span>
-											👍 <span class="px-1 small text-primary liketext"></span>
-											❤️ <span class="px-1 small text-primary lovetext"></span>
+											<div class="reaction-controls" data-reaction-controls
+												data-reactpath="/forumpost/#(forumPost.postID)/react"
+												data-unreactpath="/forumpost/#(forumPost.postID)/unreact"></div>
 										</div>
 									#endif
 								</div>
