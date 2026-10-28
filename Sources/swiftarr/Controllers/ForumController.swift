@@ -64,8 +64,7 @@ struct ForumController: APIRouteCollection {
 		tokenAuthGroup.post("post", postIDParam, "delete", use: postDeleteHandler)
 		tokenAuthGroup.delete("post", postIDParam, use: postDeleteHandler)
 
-		tokenAuthGroup.post("post", postIDParam, "react", ":emoji", use: postReactHandler)
-		tokenAuthGroup.delete("post", postIDParam, "react", ":emoji", use: postUnreactHandler)
+		tokenAuthGroup.post("post", postIDParam, "react", use: postReactHandler)
 		// Backward-compatible legacy reaction routes for LikeType clients.
 		tokenAuthGroup.post("post", postIDParam, "laugh", use: postLaughHandler)
 		tokenAuthGroup.post("post", postIDParam, "like", use: postLikeHandler)
@@ -720,7 +719,7 @@ struct ForumController: APIRouteCollection {
 			groupedReactions[postReaction.emoji, default: []].append(postReaction.$user.id)
 		}
 		let reactions = groupedReactions.keys.sorted().map { emoji in
-			ReactionData(emoji: emoji, users: req.userCache.getHeaders(groupedReactions[emoji] ?? []))
+			ReactionData(reaction: emoji, users: req.userCache.getHeaders(groupedReactions[emoji] ?? []))
 		}
 		// init return struct. Editors (moderators) see the real text/images of quarantined posts so
 		// that editing one preserves its images instead of wiping them; matches ModerationController.
@@ -1362,13 +1361,11 @@ struct ForumController: APIRouteCollection {
 		return try await postReactHandler(req, emoji: ReactionData.legacyEmoji(for: .love), replaceLegacyReaction: true)
 	}
 
-	/// `POST /api/v3/forum/post/ID/react/:emoji`
+	/// `POST /api/v3/forum/post/ID/react`
 	///
-	/// Adds the specified emoji reaction to the post. This endpoint is idempotent.
+	/// Adds the `PostReactionData` reaction to the post. This endpoint is idempotent.
 	func postReactHandler(_ req: Request) async throws -> PostData {
-		guard let emoji = req.parameters.get("emoji"), !emoji.isEmpty else {
-			throw Abort(.badRequest, reason: "emoji path parameter is required")
-		}
+		let emoji = try req.content.decode(PostReactionData.self).validatedReaction()
 		return try await postReactHandler(req, emoji: emoji, replaceLegacyReaction: false)
 	}
 
@@ -1422,7 +1419,7 @@ struct ForumController: APIRouteCollection {
 		return postDataArray[0]
 	}
 
-	/// `DELETE /api/v3/forum/post/ID/react/:emoji`
+	/// `POST /api/v3/forum/post/ID/unreact`
 	///
 	/// Removes the `PostReactionData` reaction from the post. The legacy DELETE routes remove only
 	/// their corresponding LikeType emoji.
@@ -1885,7 +1882,7 @@ extension ForumController {
 			let author = try req.userCache.getHeader(post.$author.id)
 			let bookmarked = assumeBookmarked ?? userLikeDict[postID]?.isFavorite ?? false
 			let reactions = (postReactionMap[postID] ?? [:]).keys.sorted().map { emoji in
-				ReactionData(emoji: emoji, users: req.userCache.getHeaders(postReactionMap[postID]?[emoji] ?? []))
+				ReactionData(reaction: emoji, users: req.userCache.getHeaders(postReactionMap[postID]?[emoji] ?? []))
 			}
 			let userLike = ReactionData.legacyLikeType(in: reactions, for: userID)
 			let likeCount = ReactionData.legacyLikeCount(in: reactions)

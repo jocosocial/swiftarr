@@ -2157,10 +2157,27 @@ extension PostContentData: RCFValidatable {
 
 /// Used to return grouped reaction metadata.
 public struct ReactionData: Content {
-	/// Unicode emoji (possibly multi-codepoint, e.g. "❤️").
-	var emoji: String
+	/// A Unicode emoji or a custom emoji token such as `:arr:`.
+	var reaction: String
 	/// Users who reacted with this emoji.
 	var users: [UserHeader]
+}
+
+/// Payload for adding or removing a reaction from a forum or chat post.
+public struct PostReactionData: Content {
+	/// A Unicode emoji or a custom emoji token such as `:arr:`.
+	var reaction: String
+}
+
+extension PostReactionData {
+	/// Returns a trimmed reaction identifier after enforcing a small, URL-independent payload.
+	func validatedReaction() throws -> String {
+		let result = reaction.trimmingCharacters(in: .whitespacesAndNewlines)
+		guard !result.isEmpty, result.count <= 64, !result.contains(where: { $0.isWhitespace }) else {
+			throw Abort(.badRequest, reason: "reaction must contain 1 through 64 non-whitespace characters")
+		}
+		return result
+	}
 }
 
 extension ReactionData {
@@ -2182,7 +2199,7 @@ extension ReactionData {
 	}
 
 	static func users(in reactions: [ReactionData], for likeType: LikeType) -> [UserHeader] {
-		return reactions.first(where: { $0.emoji == legacyEmoji(for: likeType) })?.users ?? []
+		return reactions.first(where: { $0.reaction == legacyEmoji(for: likeType) })?.users ?? []
 	}
 
 	static func legacyLikeCount(in reactions: [ReactionData]) -> Int {
@@ -2210,8 +2227,8 @@ extension ReactionData {
 /// * `POST /api/v3/forum/post/ID/image/remove`
 /// * `GET /api/v3/forum/ID/search/STRING`
 /// * `GET /api/v3/forum/post/search/STRING`
-/// * `POST /api/v3/forum/post/ID/react/emoji`
-/// * `DELETE /api/v3/forum/post/ID/react/emoji`
+/// * `POST /api/v3/forum/post/ID/react`
+/// * `POST /api/v3/forum/post/ID/unreact`
 /// * `GET /api/v3/forum/bookmarks`
 /// * `GET /api/v3/forum/likes`
 /// * `GET /api/v3/forum/mentions`

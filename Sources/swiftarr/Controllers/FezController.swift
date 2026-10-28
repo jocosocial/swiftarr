@@ -72,8 +72,8 @@ struct FezController: APIRouteCollection {
 		tokenAuthGroup.post(fezIDParam, "unjoin", use: unjoinHandler)
 		tokenAuthGroup.post("post", fezPostIDParam, "delete", use: postDeleteHandler)
 		tokenAuthGroup.delete("post", fezPostIDParam, use: postDeleteHandler)
-		tokenAuthGroup.post("post", fezPostIDParam, "react", ":emoji", use: fezPostReactHandler)
-		tokenAuthGroup.delete("post", fezPostIDParam, "react", ":emoji", use: fezPostUnreactHandler)
+		tokenAuthGroup.post("post", fezPostIDParam, "react", use: fezPostReactHandler)
+		tokenAuthGroup.post("post", fezPostIDParam, "unreact", use: fezPostUnreactHandler)
 		tokenAuthGroup.post(fezIDParam, "user", userIDParam, "add", use: userAddHandler)
 		tokenAuthGroup.post(fezIDParam, "user", userIDParam, "remove", use: userRemoveHandler)
 		tokenAuthGroup.post(fezIDParam, "update", use: updateHandler)
@@ -619,7 +619,7 @@ struct FezController: APIRouteCollection {
 			pivot.readCount = fez.postCount - pivot.hiddenCount
 			try await pivot.save(on: req.db)
 		}
-		return try FezPostData(post: post, author: effectiveAuthor.makeHeader(), reactions: [])
+		return try FezPostData(post: post, author: effectiveAuthor.makeHeader())
 	}
 
 	/// `POST /api/v3/fez/post/ID/delete`
@@ -675,49 +675,59 @@ struct FezController: APIRouteCollection {
 		return .noContent
 	}
 
-	/// `POST /api/v3/fez/post/ID/react/:emoji`
+	/// `POST /api/v3/fez/post/ID/react`
+	///
+	/// Adds the `PostReactionData` reaction to a chat post. This endpoint is idempotent.
 	func fezPostReactHandler(_ req: Request) async throws -> FezPostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		guard let emoji = req.parameters.get("emoji"), !emoji.isEmpty else {
-			throw Abort(.badRequest, reason: "emoji path parameter is required")
-		}
+		let reactionValue = try req.content.decode(PostReactionData.self).validatedReaction()
 		let post = try await FezPost.findFromParameter(fezPostIDParam, on: req)
 		let fez = try await post.$fez.get(on: req.db)
-		guard fez.participantArray.contains(cacheUser.userID) || cacheUser.accessLevel.hasAccess(.moderator) else {
-			throw Abort(.forbidden, reason: "user is not member of \(fez.fezType.lfgLabel); cannot react")
+		guard userCanViewMemberData(user: cacheUser, fez: fez) else {
+			throw Abort(.forbidden, reason: "user cannot view this \(fez.fezType.lfgLabel)")
+		}
+		guard post.$author.id != cacheUser.userID else {
+			throw Abort(.forbidden, reason: "user cannot react to own post")
 		}
 		if try await FezPostReaction.query(on: req.db)
 			.filter(\.$user.$id == cacheUser.userID)
 			.filter(\.$post.$id == post.requireID())
-			.filter(\.$emoji == emoji)
+			.filter(\.$emoji == reactionValue)
 			.first() == nil
 		{
-			let reaction = try FezPostReaction(cacheUser.userID, post, emoji: emoji)
+			let reaction = try FezPostReaction(cacheUser.userID, post, emoji: reactionValue)
 			try await reaction.save(on: req.db)
 		}
-		return try await buildFezPostData(post, for: cacheUser, on: req)
+		let postData = try await buildFezPostData(post, for: cacheUser, on: req)
+		try await forwardReactionChangeToSockets(fez, postData: postData, on: req)
+		return postData
 	}
 
-	/// `DELETE /api/v3/fez/post/ID/react/:emoji`
+	/// `POST /api/v3/fez/post/ID/unreact`
+	///
+	/// Removes the `PostReactionData` reaction from a chat post. This endpoint is idempotent.
 	func fezPostUnreactHandler(_ req: Request) async throws -> FezPostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		guard let emoji = req.parameters.get("emoji"), !emoji.isEmpty else {
-			throw Abort(.badRequest, reason: "emoji path parameter is required")
-		}
+		let reactionValue = try req.content.decode(PostReactionData.self).validatedReaction()
 		let post = try await FezPost.findFromParameter(fezPostIDParam, on: req)
 		let fez = try await post.$fez.get(on: req.db)
-		guard fez.participantArray.contains(cacheUser.userID) || cacheUser.accessLevel.hasAccess(.moderator) else {
-			throw Abort(.forbidden, reason: "user is not member of \(fez.fezType.lfgLabel); cannot react")
+		guard userCanViewMemberData(user: cacheUser, fez: fez) else {
+			throw Abort(.forbidden, reason: "user cannot view this \(fez.fezType.lfgLabel)")
+		}
+		guard post.$author.id != cacheUser.userID else {
+			throw Abort(.forbidden, reason: "user cannot react to own post")
 		}
 		if let reaction = try await FezPostReaction.query(on: req.db)
 			.filter(\.$user.$id == cacheUser.userID)
 			.filter(\.$post.$id == post.requireID())
-			.filter(\.$emoji == emoji)
+			.filter(\.$emoji == reactionValue)
 			.first()
 		{
 			try await reaction.delete(on: req.db)
 		}
-		return try await buildFezPostData(post, for: cacheUser, on: req)
+		let postData = try await buildFezPostData(post, for: cacheUser, on: req)
+		try await forwardReactionChangeToSockets(fez, postData: postData, on: req)
+		return postData
 	}
 
 	/// `POST /api/v3/fez/post/ID/report`
@@ -1514,14 +1524,22 @@ extension FezController {
 		return fezData
 	}
 
-	// Remember that there can be posts by authors who are not currently participants.
+	/// Builds one chat post response with all current reactions.
 	private func buildFezPostData(_ post: FezPost, for user: UserCacheData, on req: Request) async throws -> FezPostData {
 		let reactions = try await FezPostReaction.query(on: req.db).filter(\.$post.$id == post.requireID()).all()
 		let groupedReactions = Dictionary(grouping: reactions, by: \.emoji)
-		let reactionData = groupedReactions.keys.sorted().map { emoji in
-			ReactionData(emoji: emoji, users: req.userCache.getHeaders(groupedReactions[emoji]?.map(\.$user.id) ?? []))
+		let reactionData = groupedReactions.keys.sorted().map { reaction in
+			ReactionData(
+				reaction: reaction,
+				users: req.userCache.getHeaders(groupedReactions[reaction]?.map(\.$user.id) ?? [])
+			)
 		}
-		return try FezPostData(post: post, author: req.userCache.getHeader(post.$author.id), reactions: reactionData, overrideQuarantine: user.accessLevel.hasAccess(.moderator))
+		return try FezPostData(
+			post: post,
+			author: req.userCache.getHeader(post.$author.id),
+			reactions: reactionData,
+			overrideQuarantine: user.accessLevel.hasAccess(.moderator)
+		)
 	}
 
 	// Remember that there can be posts by authors who are not currently participants.
@@ -1555,18 +1573,17 @@ extension FezController {
 		let allReactions = try await FezPostReaction.query(on: req.db).filter(\.$post.$id ~~ postIDs).all()
 		var postReactionMap = [Int: [String: [UUID]]]()
 		for reaction in allReactions {
-			let postID = reaction.$post.id
-			postReactionMap[postID, default: [:]][reaction.emoji, default: []].append(reaction.$user.id)
+			postReactionMap[reaction.$post.id, default: [:]][reaction.emoji, default: []].append(reaction.$user.id)
 		}
-		let postDatas = try posts.map {
-			let postID = try $0.requireID()
+		let postDatas = try posts.map { post in
+			let postID = try post.requireID()
 			let grouped = postReactionMap[postID] ?? [:]
-			let reactionData = grouped.keys.sorted().map { emoji in
-				ReactionData(emoji: emoji, users: req.userCache.getHeaders(grouped[emoji] ?? []))
+			let reactionData = grouped.keys.sorted().map { reaction in
+				ReactionData(reaction: reaction, users: req.userCache.getHeaders(grouped[reaction] ?? []))
 			}
 			return try FezPostData(
-				post: $0,
-				author: req.userCache.getHeader($0.$author.id),
+				post: post,
+				author: req.userCache.getHeader(post.$author.id),
 				reactions: reactionData,
 				overrideQuarantine: user.accessLevel.hasAccess(.moderator)
 			)
