@@ -1421,14 +1421,17 @@ struct ForumController: APIRouteCollection {
 
 	/// `POST /api/v3/forum/post/ID/unreact`
 	///
-	/// Removes the `PostReactionData` reaction from the post. The legacy DELETE routes remove only
-	/// their corresponding LikeType emoji.
+	/// Removes the `PostReactionData` reaction from the post. A bodyless request removes the user's
+	/// legacy LikeType reaction for compatibility with older clients.
 	func postUnreactHandler(_ req: Request) async throws -> PostData {
-		let emoji = try req.content.decode(PostReactionData.self).validatedReaction()
-		return try await postUnreactHandler(req, emoji: emoji)
+		if (req.body.data?.readableBytes ?? 0) > 0 {
+			let emoji = try req.content.decode(PostReactionData.self).validatedReaction()
+			return try await postUnreactHandler(req, emoji: emoji)
+		}
+		return try await postUnreactHandler(req, emoji: nil)
 	}
 
-	private func postUnreactHandler(_ req: Request, emoji: String) async throws -> PostData {
+	private func postUnreactHandler(_ req: Request, emoji: String?) async throws -> PostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// get post and forum
 		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
@@ -1440,12 +1443,17 @@ struct ForumController: APIRouteCollection {
 		guard post.$author.id != cacheUser.userID else {
 			throw Abort(.forbidden, reason: "user cannot react to own post")
 		}
-		if let postReaction = try await ForumPostReaction.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
+		let postReactions = try await ForumPostReaction.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
 			.filter(\.$post.$id == post.requireID())
-			.filter(\.$emoji == emoji)
-			.first()
-		{
-			try await postReaction.delete(on: req.db)
+			.all()
+		let reactionsToRemove = postReactions.filter { reaction in
+			if let emoji {
+				return reaction.emoji == emoji
+			}
+			return legacyReactionEmojis().contains(reaction.emoji)
+		}
+		for reaction in reactionsToRemove {
+			try await reaction.delete(on: req.db)
 		}
 		let postDataArray = try await buildPostData([post], userID: cacheUser.userID, on: req)
 		return postDataArray[0]
