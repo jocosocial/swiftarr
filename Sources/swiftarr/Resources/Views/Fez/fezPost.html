@@ -21,8 +21,9 @@
 				<div class="row mt-1" aria-label="Post reactions" data-reaction-container>
 					<div class="col">
 						#for(reaction in fezPost.reactions):
-							<span class="badge bg-secondary me-1">#addJocomoji(reaction.reaction) #(count(reaction.users))</span>
+							<button type="button" class="btn btn-sm btn-outline-primary reaction-chip me-1 #if(reactionHasUser(reaction.users, userID)):active#endif" aria-pressed="#if(reactionHasUser(reaction.users, userID)):true#else:false#endif" aria-label="Toggle reaction #(reaction.reaction)" data-reaction-chip data-reaction="#(reaction.reaction)" data-reactpath="#(reactionActionPrefix)/#(fezPost.postID)/react" data-unreactpath="#(reactionActionPrefix)/#(fezPost.postID)/unreact" #if(userID == nil || userID == fezPost.author.userID):disabled#endif><span class="reaction-chip-emoji" aria-hidden="true">#addJocomoji(reaction.reaction)</span> <span class="reaction-chip-count">#(count(reaction.users))</span></button>
 						#endfor
+						#if(countOrZero(fezPost.reactions) > 0):<span class="reaction-controls reaction-inline-controls" data-reaction-controls data-reaction-label="+" data-reactpath="#(reactionActionPrefix)/#(fezPost.postID)/react"><button type="button" class="btn btn-sm btn-outline-primary reaction-picker-toggle" data-open-reaction-picker aria-label="Add a reaction" aria-haspopup="dialog" aria-expanded="false" #if(userID == nil || userID == fezPost.author.userID):disabled#endif>+</button></span>#endif
 					</div>
 				</div>
 				#if(fezPost.image):
@@ -36,20 +37,18 @@
 				#endif
 				#if(fez.fezType != "closed" || userID != fezPost.author.userID):
 					<div class="row mt-1 justify-content-end row-cols-auto collapse" data-label="actionbar">
-						<div class="col col-auto btn-group btn-group-sm" role="group" aria-label="Post actions">
+						<div class="col col-auto d-flex align-items-center flex-wrap gap-2" role="group" aria-label="Post actions">
 							#if(showModButton):
-								<a class="btn btn-outline-primary btn-sm" href="/moderate/fezpost/#(fezPost.postID)">Mod</a>
+								<a class="btn btn-outline-primary" href="/moderate/fezpost/#(fezPost.postID)">Mod</a>
 							#endif
 							#if(userID == fezPost.author.userID):
 								#if(fez.fezType != "closed"):
-									<button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
+									<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="\#deleteModal">Delete</button>
 								#endif
 							#else:
-								<div class="input-group input-group-sm">
-									<input aria-label="Emoji reaction" class="form-control" data-reaction-input placeholder="Emoji or :custom:" maxlength="64" type="text">
-									<button class="btn btn-outline-primary" data-reaction-action="react" data-reactionpath="#(reactionActionPrefix)/#(fezPost.postID)/react" type="button">React</button>
-									<button class="btn btn-outline-primary" data-reaction-action="unreact" data-reactionpath="#(reactionActionPrefix)/#(fezPost.postID)/unreact" type="button">Remove</button>
-								</div>
+								<div class="reaction-controls" data-reaction-controls
+									data-reactpath="#(reactionActionPrefix)/#(fezPost.postID)/react"
+									data-unreactpath="#(reactionActionPrefix)/#(fezPost.postID)/unreact"></div>
 								#if(fez.fezType != "closed"):
 									<a class="btn btn-outline-primary" href="/lfg/post/report/#(fezPost.postID)">Report</a>
 								#endif
