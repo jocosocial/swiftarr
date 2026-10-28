@@ -5,7 +5,7 @@ import Vapor
 /// these files directly from here--there's no need to forward calls through the API. This means if you're an API client, you
 /// shouldn't be using the files served from these endpoints.
 ///
-/// Files dynamically created currently require a restart to pick up.
+/// Normal runs serve bundled files; the development runner can opt into source assets.
 struct SiteFileController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
@@ -19,6 +19,17 @@ struct SiteFileController: SiteControllerUtils {
 		// This replaces FileMiddleware from Sources/swiftarr/configure.swift.
 		app.get("public", "**", use: streamPublicFile)
 		app.get("favicon.ico", use: streamFavicon)
+		if DevelopmentResources.root(on: app) != nil,
+			let revisionFile = Environment.get("SWIFTARR_DEV_RELOAD_FILE") {
+			// The runner owns this file; browsers can read only its opaque revision, never choose a path.
+			app.get("__dev", "revision") { req async throws -> Response in
+				let buffer = try await req.fileio.collectFile(at: revisionFile)
+				let response = Response(status: .ok, body: .init(buffer: buffer))
+				response.headers.replaceOrAdd(name: .contentType, value: "text/plain; charset=utf-8")
+				response.headers.replaceOrAdd(name: .cacheControl, value: "no-store")
+				return response
+			}
+		}
 	}
 
 	// `GET /css/:catchall`
@@ -62,7 +73,7 @@ struct SiteFileController: SiteControllerUtils {
 	}
 
 	// Wraps fileio.streamFile. Sanity-checks the path, builds a file system path to the resource,
-	// and streams the resource file. Adds a cache-control header as all these files are long-lived and shouldn't change.
+	// and streams the resource file. Normal runs cache assets; source development runs disable browser caching.
 	func streamFile(_ req: Request, basePath: String) throws -> Response {
 		// make a copy of the percent-decoded path
 		guard var path = req.parameters.getCatchall().joined(separator: "/").removingPercentEncoding else {
@@ -80,8 +91,10 @@ struct SiteFileController: SiteControllerUtils {
 		}
 
 		// create absolute file path
-		let filePath = Settings.shared.staticFilesRootPath
-			.appendingPathComponent("Resources/Assets/\(basePath)")
+		let resourceRoot = DevelopmentResources.root(on: req.application)
+			?? Settings.shared.staticFilesRootPath.appendingPathComponent("Resources")
+		let filePath = resourceRoot
+			.appendingPathComponent("Assets/\(basePath)")
 			.appendingPathComponent(path)
 
 		// check if file exists and is not a directory
@@ -90,10 +103,15 @@ struct SiteFileController: SiteControllerUtils {
 			throw Abort(.notFound)
 		}
 
-		// stream the file, then add a "Cache-Control" header with a 24 hour freshness time.
+		// Stream the file with a 24 hour cache lifetime, or no storage for live source edits.
 		let response = req.fileio.streamFile(at: filePath.path)
 		if response.status == .ok || response.status == .notModified {
-			response.headers.cacheControl = .init(isPublic: true, maxAge: 3600 * 24)
+			if DevelopmentResources.root(on: req.application) != nil {
+				response.headers.replaceOrAdd(name: .cacheControl, value: "no-store")
+			}
+			else {
+				response.headers.cacheControl = .init(isPublic: true, maxAge: 3600 * 24)
+			}
 		}
 		return response
 	}
