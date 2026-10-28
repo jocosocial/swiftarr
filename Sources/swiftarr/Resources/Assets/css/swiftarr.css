@@ -271,6 +271,37 @@ html[data-theme-pref="dark"]  #themeToggle .theme-icon-dark  { display: inline; 
   object-fit: contain;
 }
 
+.reaction-chip-disabled {
+  position: relative;
+  display: inline-flex;
+}
+
+.reaction-chip-disabled::after {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  z-index: 1080;
+  padding: 6px 9px;
+  border-radius: 4px;
+  background: #212529;
+  color: #fff;
+  content: attr(data-tooltip);
+  font-size: 0.875rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.12s ease-in-out;
+  pointer-events: none;
+}
+
+.reaction-chip-disabled:hover::after,
+.reaction-chip-disabled:focus::after {
+  visibility: visible;
+  opacity: 1;
+}
+
 .reaction-controls {
   display: flex;
   align-items: center;
