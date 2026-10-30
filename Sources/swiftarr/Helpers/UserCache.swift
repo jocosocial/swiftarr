@@ -436,6 +436,16 @@ extension Request {
 			return users
 		}
 
+		// Returns all cached users who hold the given role. Unlike `allUsersWithAccessLevel`, this has no
+		// hierarchy--only users whose `userRoles` literally contains `role` are returned.
+		func allUsersWithRole(_ role: UserRoleType) -> [UserCacheData] {
+			let cacheLock = request.application.locks.lock(for: Application.UserCacheLockKey.self)
+			let users = cacheLock.withLock({
+				Application.userCacheStorage.usersByID.compactMap { $0.value.userRoles.contains(role) ? $0.value : nil }
+			})
+			return users
+		}
+
 		// MARK: updating
 		@discardableResult
 		public func updateUser(_ userUUID: UUID) async throws -> UserCacheData {

@@ -2,16 +2,11 @@ import Fluent
 import Queues
 import Vapor
 
-// Holder for the constant data of privileged users in the application.
-struct PrivilegedUsers {
-	var ttUser: User
-	var modUser: User
-
-	init(ttUser: User, modUser: User) {
-		self.ttUser = ttUser
-		self.modUser = modUser
-	}
-}
+// Holder for the UUIDs of the privileged mailbox phantom accounts, keyed by `PrivilegedMailbox.user`.
+// A mailbox whose phantom account hasn't been seeded on this instance yet (e.g. a newly-added
+// mailbox before its migration has run) is simply absent--`processUser` skips it rather than
+// failing the whole job.
+typealias PrivilegedUserIDs = [PrivilegedUser: UUID]
 
 // Job to run once a night to synchronize notification data between the Postgres database
 // and Redis. In years past we have observed that on a number of occasions data can become
@@ -81,7 +76,7 @@ struct UpdateRedisJobBase: APICollection {
 
 	// Ensure common data inconsistencies for a user are fixed. At this time this does not do
 	// all possible Redis data, just the ones that have been observed to cause issues.
-	func processUser(_ context: QueueContext, user: User, privilegedUsers: PrivilegedUsers) async throws {
+	func processUser(_ context: QueueContext, user: User, privilegedUserIDs: PrivilegedUserIDs) async throws {
 		let userID = try user.requireID()
 		context.logger.debug("\(userID)")
 		// Fez Consistency
@@ -92,56 +87,49 @@ struct UpdateRedisJobBase: APICollection {
 		context.logger.debug("User is part of \(userFezParticipants.count) chats")
 		try await self.processChatParticipants(context, chatParticipants: userFezParticipants, userID: userID)
 
-		// Privileged mailbox read tracking is now per-user, but we find TT/mod fezzes via the
-		// system user's FezParticipants. Build a lookup so we can substitute the actual user's
+		// Privileged mailbox read tracking is now per-user, but we find each mailbox's fezzes via its
+		// phantom account's FezParticipants. Build a lookup so we can substitute the actual user's
 		// readCount where they have their own FezParticipant (from being a direct member or
-		// having previously viewed the fez). Without this, the system user's stale readCount
+		// having previously viewed the fez). Without this, the phantom account's stale readCount
 		// would cause the job to incorrectly mark conversations as unread.
 		let userParticipantsByFez: [UUID: FezParticipant] = Dictionary(
 			uniqueKeysWithValues: userFezParticipants.map { ($0.$fez.id, $0) }
 		)
 
-		// Privileged Users
-		if user.accessLevel.hasAccess(.twitarrteam) {
-			let ttFezParticipants = try await FezParticipant.query(on: context.application.db)
-				.with(\.$fez)
-				.filter(\.$user.$id == privilegedUsers.ttUser.requireID())
-				.all()
-			// Prefer the user's own FezParticipant over the TT system user's when available.
-			let resolvedTTParticipants = ttFezParticipants.map { ttParticipant -> FezParticipant in
-				if let userParticipant = userParticipantsByFez[ttParticipant.$fez.id] {
-					return userParticipant
-				}
-				return ttParticipant
+		// Privileged Mailboxes. Figure out which mailboxes this user can see, then fetch every applicable
+		// phantom account's FezParticipants in one query (rather than one query per mailbox) and partition
+		// the results in memory, so adding more mailboxes (see #517) doesn't add more round trips per user.
+		let userRoles = Set(user.roles.map { $0.role })
+		let applicableMailboxes = PrivilegedMailbox.all.compactMap { mailbox -> (PrivilegedMailbox, UUID)? in
+			guard mailbox.requirement.isSatisfied(accessLevel: user.accessLevel, roles: userRoles),
+				let phantomID = privilegedUserIDs[mailbox.user]
+			else {
+				return nil
 			}
-			context.logger.debug("User is part of \(resolvedTTParticipants.count) TwitarrTeam chats")
-			try await self.processChatParticipants(
-				context,
-				chatParticipants: resolvedTTParticipants,
-				userID: userID,
-				overrideInbox: MailInbox.twitarrTeamSeamail
-			)
+			return (mailbox, phantomID)
 		}
-
-		if user.accessLevel.hasAccess(.moderator) {
-			let modFezParticipants = try await FezParticipant.query(on: context.application.db)
+		if !applicableMailboxes.isEmpty {
+			let allMailboxFezParticipants = try await FezParticipant.query(on: context.application.db)
 				.with(\.$fez)
-				.filter(\.$user.$id == privilegedUsers.modUser.requireID())
+				.filter(\.$user.$id ~~ applicableMailboxes.map { $0.1 })
 				.all()
-			// Prefer the user's own FezParticipant over the moderator system user's when available.
-			let resolvedModParticipants = modFezParticipants.map { modParticipant -> FezParticipant in
-				if let userParticipant = userParticipantsByFez[modParticipant.$fez.id] {
-					return userParticipant
+			let participantsByPhantomID = Dictionary(grouping: allMailboxFezParticipants, by: { $0.$user.id })
+			for (mailbox, phantomID) in applicableMailboxes {
+				// Prefer the user's own FezParticipant over the phantom account's when available.
+				let resolvedParticipants = (participantsByPhantomID[phantomID] ?? []).map { phantomParticipant -> FezParticipant in
+					if let userParticipant = userParticipantsByFez[phantomParticipant.$fez.id] {
+						return userParticipant
+					}
+					return phantomParticipant
 				}
-				return modParticipant
+				context.logger.debug("User is part of \(resolvedParticipants.count) \(mailbox.user.rawValue) chats")
+				try await self.processChatParticipants(
+					context,
+					chatParticipants: resolvedParticipants,
+					userID: userID,
+					overrideInbox: mailbox.inbox
+				)
 			}
-			context.logger.debug("User is part of \(resolvedModParticipants.count) moderator chats")
-			try await self.processChatParticipants(
-				context,
-				chatParticipants: resolvedModParticipants,
-				userID: userID,
-				overrideInbox: MailInbox.moderatorSeamail
-			)
 		}
 		// We don't have separate mailbox information for THO user
 		// End Fez Consistency
@@ -152,32 +140,34 @@ struct UpdateRedisJobBase: APICollection {
 		let _ = try await storeNextJoinedAppointment(userID: userID, on: context.application)
 	}
 
+	// Resolves the UUID of each mailbox's phantom account from `phantomUsers`. A mailbox whose phantom
+	// account isn't present (e.g. it hasn't been seeded on this instance yet) is logged and omitted
+	// rather than failing the whole job--see issue #628.
+	static func resolvePrivilegedUserIDs(from phantomUsers: [User], logger: Logger) throws -> PrivilegedUserIDs {
+		var privilegedUserIDs: PrivilegedUserIDs = [:]
+		for mailbox in PrivilegedMailbox.all {
+			guard let phantom = phantomUsers.first(where: { $0.username == mailbox.user.rawValue }) else {
+				logger.warning(
+					"Could not find \(mailbox.user.rawValue) user when running UpdateRedisJob; skipping that mailbox."
+				)
+				continue
+			}
+			privilegedUserIDs[mailbox.user] = try phantom.requireID()
+		}
+		return privilegedUserIDs
+	}
+
 	// Execute the job
 	public func execute(context: QueueContext) async throws {
 		context.logger.info("Starting UpdateRedisJob")
 		do {
-			let users = try await User.query(on: context.application.db).all()
-			guard
-				let ttUser = try await User.query(on: context.application.db).filter(\.$username == PrivilegedUser.TwitarrTeam.rawValue)
-					.first()
-			else {
-				throw Abort(
-					.internalServerError,
-					reason: "Could not find Twitarrteam user when running UpdateRedisJob."
-				)
-			}
-			guard
-				let modUser = try await User.query(on: context.application.db).filter(\.$username == PrivilegedUser.moderator.rawValue)
-					.first()
-			else {
-				throw Abort(
-					.internalServerError,
-					reason: "Could not find moderator user when running UpdateRedisJob."
-				)
-			}
-			let privilegedUsers = PrivilegedUsers(ttUser: ttUser, modUser: modUser)
+			let users = try await User.query(on: context.application.db).with(\.$roles).all()
+			let phantomUsers = try await User.query(on: context.application.db)
+				.filter(\.$username ~~ PrivilegedMailbox.all.map { $0.user.rawValue })
+				.all()
+			let privilegedUserIDs = try Self.resolvePrivilegedUserIDs(from: phantomUsers, logger: context.logger)
 			for user in users {
-				try await processUser(context, user: user, privilegedUsers: privilegedUsers)
+				try await processUser(context, user: user, privilegedUserIDs: privilegedUserIDs)
 			}
 		}
 		catch {
