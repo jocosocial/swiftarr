@@ -74,11 +74,11 @@ extension Application {
 		// Send a message to all involved users with open websockets.
 		// This logic used to be in APIRouteCollection.swift. But with the introduction of the
 		// UserEventNotificationJob we needed this function in a non-Request context.
-		func forwardToSockets(app: Application, idList: [UUID], type: NotificationType, info: String) -> Void {
+		func forwardToSockets(app: Application, idList: [UUID], type: NotificationType, info: String, notificationID: UUID? = nil) -> Void {
 			let socketeers = getSockets(idList: idList)
 			if socketeers.count > 0 {
 				app.logger.log(level: .info, "Socket: Sending \(type) msg to \(socketeers.count) client.")
-				let msgStruct = SocketNotificationData(type, info: info, id: type.objectID())
+				let msgStruct = SocketNotificationData(type, info: info, id: type.objectID(), notificationID: notificationID)
 				if let jsonData = try? JSONEncoder().encode(msgStruct),
 					let jsonDataStr = String(data: jsonData, encoding: .utf8)
 				{

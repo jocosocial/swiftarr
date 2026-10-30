@@ -606,6 +606,8 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateModeratorActionSchema(), to: .psql)
 		app.migrations.add(CreateAnnouncementSchema(), to: .psql)
 		app.migrations.add(CreateReportSchema(), to: .psql)
+		app.migrations.add(CreateNotificationLogEntrySchema(), to: .psql)
+		app.migrations.add(CreateNotificationRecipientSchema(), to: .psql)
 		app.migrations.add(CreateCategorySchema(), to: .psql)
 		app.migrations.add(CreateForumSchema(), to: .psql)
 		app.migrations.add(CreateForumEditSchema(), to: .psql)
