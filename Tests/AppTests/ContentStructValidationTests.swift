@@ -14,6 +14,19 @@ class ContentStructValidationTests: XCTestCase {
 
 	private let validFirstPost = #"{"text":"hello","images":[],"postAsModerator":false,"postAsTwitarrTeam":false}"#
 
+	// MARK: - PostReactionData
+
+	func testPostReaction_AcceptsUnicodeAndCustomEmoji() throws {
+		XCTAssertEqual(try PostReactionData(reaction: " 👍 ").validatedReaction(), "👍")
+		XCTAssertEqual(try PostReactionData(reaction: ":arr:").validatedReaction(), ":arr:")
+	}
+
+	func testPostReaction_RejectsBlankWhitespaceAndOversizedValues() {
+		XCTAssertThrowsError(try PostReactionData(reaction: " \n ").validatedReaction())
+		XCTAssertThrowsError(try PostReactionData(reaction: "two words").validatedReaction())
+		XCTAssertThrowsError(try PostReactionData(reaction: String(repeating: "a", count: 65)).validatedReaction())
+	}
+
 	// MARK: - ForumCreateData
 
 	func testForumCreate_Valid() throws {

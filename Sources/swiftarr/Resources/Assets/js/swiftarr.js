@@ -63,6 +63,328 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 	}
 }
 
+// Delegate chip clicks so live chat reaction updates work without registering new listeners.
+document.addEventListener("click", async event => {
+	const chip = event.target.closest("[data-reaction-chip]");
+	if (!chip) return;
+	event.stopPropagation();
+	if (chip.disabled) return;
+	const post = chip.closest("[data-postid]");
+	if (post.dataset.reactionPending === "true") return;
+	post.dataset.reactionPending = "true";
+	const buttons = [...post.querySelectorAll("[data-reaction-chip], .reaction-picker-toggle")];
+	const previousStates = buttons.map(button => button.disabled);
+	for (let button of buttons) button.disabled = true;
+	const path = chip.getAttribute("aria-pressed") === "true" ? chip.dataset.unreactpath : chip.dataset.reactpath;
+	try {
+		const response = await fetch(path, {
+			method: "POST",
+			headers: {"Content-Type": "application/json"},
+			body: JSON.stringify({reaction: chip.dataset.reaction}),
+		});
+		if (!response.ok) {
+			const error = await response.json();
+			throw new Error(error.reason);
+		}
+		location.reload();
+	}
+	catch (error) {
+		alert(error.message ?? "Could not update reaction");
+	}
+	finally {
+		delete post.dataset.reactionPending;
+		buttons.forEach((button, index) => button.disabled = previousStates[index]);
+	}
+});
+
+// Reaction choices are selected explicitly from this picker. Inline post text never creates reactions.
+const reactionEmojiGroups = [
+	{
+		name: "Faces",
+		emojis: [
+			["😀", "grinning face"], ["😃", "smiling face"], ["😄", "smiling face with open mouth"],
+			["😁", "beaming face"], ["😆", "laughing face"], ["😅", "grinning face with sweat"],
+			["😂", "face with tears of joy"], ["🤣", "rolling on the floor laughing"], ["🙂", "slightly smiling face"],
+			["🙃", "upside-down face"], ["😉", "winking face"], ["😊", "smiling face with smiling eyes"],
+			["😍", "heart eyes"], ["🥰", "smiling face with hearts"], ["😎", "smiling face with sunglasses"],
+			["🤔", "thinking face"], ["🤗", "hugging face"], ["🥳", "partying face"], ["🤩", "star-struck"],
+			["😴", "sleeping face"], ["😢", "crying face"], ["😭", "loudly crying face"], ["😡", "angry face"],
+			["🤯", "exploding head"], ["🤦", "facepalm"], ["🤷", "shrugging face"], ["🫡", "saluting face"],
+			["🫠", "melting face"],
+		],
+	},
+	{
+		name: "Hands",
+		emojis: [
+			["👍", "thumbs up"], ["👎", "thumbs down"], ["👏", "clapping hands"], ["🙌", "raising hands"],
+			["🙏", "folded hands"], ["👋", "waving hand"], ["🤝", "handshake"], ["💪", "flexed biceps"],
+			["🫶", "heart hands"], ["🤞", "crossed fingers"], ["✌️", "victory hand"], ["🫰", "hand with index finger and thumb crossed"],
+		],
+	},
+	{
+		name: "Hearts",
+		emojis: [
+			["❤️", "red heart"], ["🧡", "orange heart"], ["💛", "yellow heart"], ["💚", "green heart"],
+			["💙", "blue heart"], ["💜", "purple heart"], ["🤎", "brown heart"], ["🖤", "black heart"],
+			["🤍", "white heart"], ["💔", "broken heart"], ["💕", "two hearts"], ["💖", "sparkling heart"],
+			["💘", "heart with arrow"],
+		],
+	},
+	{
+		name: "Celebrations",
+		emojis: [
+			["🎉", "party popper"], ["🎊", "confetti ball"], ["🎂", "birthday cake"], ["🎈", "balloon"],
+			["🎁", "wrapped gift"], ["🍾", "bottle with popping cork"], ["🥂", "clinking glasses"],
+			["🍻", "clinking beer mugs"], ["🍷", "wine glass"], ["🍹", "tropical drink"], ["☕", "hot beverage"],
+			["🍕", "pizza"], ["🍰", "shortcake"],
+		],
+	},
+	{
+		name: "Travel and fun",
+		emojis: [
+			["🚢", "ship"], ["🛳️", "passenger ship"], ["⚓", "anchor"], ["🌊", "water wave"], ["🌴", "palm tree"],
+			["🏖️", "beach with umbrella"], ["☀️", "sun"], ["🌈", "rainbow"], ["🔥", "fire"], ["⭐", "star"],
+			["💯", "hundred points"], ["👀", "eyes"], ["🚀", "rocket"],
+		],
+	},
+];
+const reactionCustomEmojis = [
+	["arr", "arr"], ["back-deck-juice", "back deck juice"], ["buffet", "buffet"],
+	["die-ship", "die ship"], ["die", "die"], ["hottub", "hot tub"], ["joco", "Joco"],
+	["pirate", "pirate"], ["ship-front", "ship front"], ["ship", "ship"],
+	["tropical-drink", "tropical drink"], ["wangwang", "Wang Wang"], ["zombie", "zombie"],
+];
+
+// Build a searchable picker on initial load or when a live chat fragment first needs one.
+function initializeReactionControls(controls) {
+	if (controls.dataset.reactionReady === "true") return;
+	controls.dataset.reactionReady = "true";
+	const disabled = controls.querySelector("[data-open-reaction-picker]")?.disabled ?? false;
+	const picker = document.createElement("div");
+	picker.className = "reaction-control dropdown";
+
+	const menu = document.createElement("div");
+	menu.className = "reaction-picker-menu";
+	menu.setAttribute("role", "dialog");
+	menu.setAttribute("aria-label", "Choose a reaction");
+
+	const search = document.createElement("input");
+	search.type = "search";
+	search.className = "form-control reaction-picker-search";
+	search.placeholder = "Search emoji";
+	search.setAttribute("aria-label", "Search emoji");
+
+	const optionsContainer = document.createElement("div");
+	optionsContainer.className = "reaction-picker-options";
+
+	const noResults = document.createElement("p");
+	noResults.className = "reaction-picker-no-results d-none";
+	noResults.textContent = "No matching emoji.";
+
+	let activeButton;
+	let isSubmitting = false;
+
+	// Submit a choice immediately for the action that opened the picker.
+	async function submitReaction(reaction) {
+		const post = controls.closest("[data-postid]");
+		if (isSubmitting || !activeButton || post.dataset.reactionPending === "true") {
+			return;
+		}
+		const path = activeButton.dataset.reactionpath;
+		isSubmitting = true;
+		post.dataset.reactionPending = "true";
+		closeReactionPicker(picker);
+		const buttons = [...post.querySelectorAll("[data-reaction-chip], .reaction-picker-toggle")];
+		const previousStates = buttons.map(button => button.disabled);
+		for (let button of buttons) {
+			button.disabled = true;
+		}
+		try {
+			const response = await fetch(path, {
+				method: "POST",
+				headers: {"Content-Type": "application/json"},
+				body: JSON.stringify({reaction}),
+			});
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.reason);
+			}
+			location.reload();
+		}
+		catch (error) {
+			alert(error.message ?? "Could not update reaction");
+		}
+		finally {
+			isSubmitting = false;
+			delete post.dataset.reactionPending;
+			buttons.forEach((button, index) => button.disabled = previousStates[index]);
+			activeButton.focus();
+		}
+	}
+
+	function addReactionChoice(value, label, customName = null) {
+		const button = document.createElement("button");
+		button.type = "button";
+		button.className = "reaction-picker-choice";
+		button.setAttribute("aria-label", "Choose " + label);
+		button.title = label;
+		button.dataset.search = (label + " " + value).toLowerCase();
+		if (customName) {
+			button.title = label + " (" + value + ")";
+			button.dataset.search += " twit-arr custom :" + customName + ":";
+			const image = document.createElement("img");
+			image.src = "/img/emoji/small/" + customName + ".png";
+			image.alt = "";
+			button.append(image);
+		}
+		else {
+			button.textContent = value;
+		}
+
+		button.addEventListener("click", event => {
+			event.stopPropagation();
+			submitReaction(value);
+		});
+		return button;
+	}
+
+	function buildPickerOptions() {
+		if (optionsContainer.childElementCount > 0) {
+			return;
+		}
+		for (let group of reactionEmojiGroups) {
+			const section = document.createElement("section");
+			section.className = "reaction-picker-section";
+			const heading = document.createElement("h3");
+			heading.className = "reaction-picker-heading";
+			heading.textContent = group.name;
+			const grid = document.createElement("div");
+			grid.className = "reaction-picker-grid";
+			for (let [emoji, label] of group.emojis) {
+				grid.append(addReactionChoice(emoji, label));
+			}
+			section.append(heading, grid);
+			optionsContainer.append(section);
+		}
+
+		const customSection = document.createElement("section");
+		customSection.className = "reaction-picker-section";
+		const customHeading = document.createElement("h3");
+		customHeading.className = "reaction-picker-heading";
+		customHeading.textContent = "Twit-arr";
+		const customGrid = document.createElement("div");
+		customGrid.className = "reaction-picker-grid";
+		for (let [name, label] of reactionCustomEmojis) {
+			customGrid.append(addReactionChoice(":" + name + ":", label, name));
+		}
+		customSection.append(customHeading, customGrid);
+		// Keep the app's custom emoji visible as soon as either picker trigger is opened.
+		optionsContainer.prepend(customSection);
+	}
+
+	menu.append(search, optionsContainer, noResults);
+	picker.append(menu);
+
+	const reactButton = document.createElement("button");
+	reactButton.type = "button";
+	reactButton.className = "btn btn-outline-primary reaction-action reaction-picker-toggle";
+	reactButton.textContent = controls.dataset.reactionLabel ?? "React";
+	if (controls.dataset.reactionLabel === "+") {
+		const glyph = document.createElement("span");
+		glyph.className = "reaction-add-glyph";
+		glyph.textContent = "+";
+		glyph.setAttribute("aria-hidden", "true");
+		reactButton.replaceChildren(glyph);
+	}
+	reactButton.disabled = disabled;
+	reactButton.setAttribute("aria-label", "Add a reaction");
+	reactButton.dataset.reactionAction = "react";
+	reactButton.dataset.reactionpath = controls.dataset.reactpath;
+	reactButton.setAttribute("aria-expanded", "false");
+	reactButton.setAttribute("aria-haspopup", "dialog");
+	picker.append(reactButton);
+	reactButton.addEventListener("click", event => {
+		event.stopPropagation();
+		if (isSubmitting || controls.closest("[data-postid]").dataset.reactionPending === "true") return;
+		const isOpen = !menu.classList.contains("show");
+		closeReactionPicker(picker);
+		activeButton = reactButton;
+		if (isOpen) {
+			buildPickerOptions();
+			menu.classList.add("show");
+			// Keep the popup inside the viewport even when the + chip is near either edge.
+			menu.style.left = "0px";
+			menu.style.right = "auto";
+			const bounds = menu.getBoundingClientRect();
+			menu.style.left = Math.max(8 - bounds.left, Math.min(0, window.innerWidth - 8 - bounds.right)) + "px";
+			reactButton.setAttribute("aria-expanded", "true");
+			search.dispatchEvent(new Event("input"));
+			search.focus();
+		}
+	});
+
+	controls.replaceChildren(picker);
+
+	search.addEventListener("input", () => {
+		const query = search.value.trim().toLowerCase();
+		let visibleCount = 0;
+		for (let choice of menu.querySelectorAll(".reaction-picker-choice")) {
+			const visible = choice.dataset.search.includes(query);
+			choice.classList.toggle("d-none", !visible);
+			if (visible) {
+				visibleCount += 1;
+			}
+		}
+		for (let section of optionsContainer.querySelectorAll(".reaction-picker-section")) {
+			const visibleChoices = section.querySelectorAll(".reaction-picker-choice:not(.d-none)").length;
+			section.classList.toggle("d-none", visibleChoices === 0);
+		}
+		noResults.classList.toggle("d-none", visibleCount > 0);
+	});
+
+	menu.addEventListener("keydown", event => {
+		if (event.key === "Escape") {
+			event.preventDefault();
+			closeReactionPicker(picker);
+			activeButton?.focus();
+		}
+	});
+}
+
+for (let controls of document.querySelectorAll("[data-reaction-controls]")) {
+	initializeReactionControls(controls);
+}
+
+// WebSocket fragments contain a usable + button before their picker has been initialized.
+document.addEventListener("click", event => {
+	const button = event.target.closest("[data-open-reaction-picker]");
+	if (!button || button.disabled) return;
+	const controls = button.closest("[data-reaction-controls]");
+	if (controls.closest("[data-postid]").dataset.reactionPending === "true") return;
+	initializeReactionControls(controls);
+	controls.querySelector(".reaction-picker-toggle").click();
+});
+
+function closeReactionPicker(picker) {
+	const menu = picker.querySelector(".reaction-picker-menu");
+	menu?.classList.remove("show");
+	for (let button of picker.querySelectorAll(".reaction-picker-toggle")) {
+		button.setAttribute("aria-expanded", "false");
+	}
+	picker.querySelector(".reaction-picker-options")?.replaceChildren();
+	const search = picker.querySelector(".reaction-picker-search");
+	if (search) {
+		search.value = "";
+	}
+	picker.querySelector(".reaction-picker-no-results")?.classList.add("d-none");
+}
+
+document.addEventListener("click", event => {
+	const openPicker = document.querySelector(".reaction-picker-menu.show")?.closest(".reaction-control");
+	if (openPicker && !openPicker.contains(event.target)) {
+		closeReactionPicker(openPicker);
+	}
+}, true);
 // Updates button state for buttons that perform a data-action
 function setActionButtonsState(tappedButton, state, isRadioButton) {
 	if (!tappedButton) { return }
@@ -255,7 +577,11 @@ async function deleteAction() {
 for (let posElement of document.querySelectorAll('.has-action-bar')) {
 	posElement.addEventListener("click", toggleActionBar);
 }
-function toggleActionBar() {
+function toggleActionBar(event) {
+	// Action controls keep the bar open while their clicks can still reach Bootstrap's modal handlers.
+	if (event.target.closest('[data-label="actionbar"], [data-reaction-chip], [data-reaction-controls]')) {
+		return;
+	}
 	let actionBar = event.currentTarget.querySelector('[data-label="actionbar"]');
 	if (actionBar && !actionBar.classList.contains("show")) {
 		var bsCollapse = new bootstrap.Collapse(actionBar, { toggle: false }).show();

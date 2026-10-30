@@ -511,6 +511,7 @@ struct SwiftarrConfigurator {
 
 		// Custom Leaf tags
 		app.leaf.tags["addJocomoji"] = AddJocomojiTag()
+		app.leaf.tags["reactionHasUser"] = ReactionHasUserTag()
 		app.leaf.tags["formatTwarrtText"] = try FormatPostTextTag(.twarrt)
 		app.leaf.tags["formatPostText"] = try FormatPostTextTag(.forumpost)
 		app.leaf.tags["formatFezText"] = try FormatPostTextTag(.fez)
@@ -613,6 +614,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateForumPostEditSchema(), to: .psql)
 		app.migrations.add(CreateForumReadersSchema(), to: .psql)
 		app.migrations.add(CreatePostLikesSchema(), to: .psql)
+		app.migrations.add(CreateForumPostReactionSchema(), to: .psql)
 		app.migrations.add(CreateEventSchema(), to: .psql)
 		app.migrations.add(CreateEventFavoriteSchema(), to: .psql)
 		app.migrations.add(CreateTwarrtSchema(), to: .psql)
@@ -621,6 +623,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateFriendlyFezSchema(), to: .psql)
 		app.migrations.add(CreateFezParticipantSchema(), to: .psql)
 		app.migrations.add(CreateFezPostSchema(), to: .psql)
+		app.migrations.add(CreateFezPostReactionSchema(), to: .psql)
 		app.migrations.add(CreateFriendlyFezEditSchema(), to: .psql)
 		app.migrations.add(CreateQuartermasterItemSchema(), to: .psql)
 		app.migrations.add(CreateQuartermasterItemEditSchema(), to: .psql)
@@ -663,6 +666,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(UpdateUserDiscordHandleMigration(), to: .psql)
 		app.migrations.add(AddPerformerAlternativeNamesMigration(), to: .psql)
 		app.migrations.add(AddFavoriteFieldToFezParticipantSchema(), to: .psql)
+		app.migrations.add(MigratePostLikesToReactions(), to: .psql)
 		app.migrations.add(AddVisibilityFieldToFriendlyFezSchema(), to: .psql)
 		app.migrations.add(CreateClientAppSchema(), to: .psql)
 		app.migrations.add(UpdateEventSchema_AgeRating(), to: .psql)
