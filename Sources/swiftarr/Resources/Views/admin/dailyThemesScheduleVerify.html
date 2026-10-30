@@ -1,0 +1,131 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 my-1">
+			<div class="row">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item"><a href="/admin/dailythemes">Daily Themes</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Load From Schedule</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+
+			<form class="row g-2 align-items-center mb-3" action="/admin/dailythemes/schedule" method="GET">
+				<div class="col col-auto">
+					<label for="cruiseDayOffsetPreview" class="col-form-label">Cruise day offset</label>
+				</div>
+				<div class="col col-auto">
+					<input type="number" class="form-control form-control-sm" id="cruiseDayOffsetPreview" name="cruiseDayOffset" value="#(cruiseDayOffset)">
+				</div>
+				<div class="col col-auto">
+					<button type="submit" class="btn btn-outline-primary btn-sm">Preview</button>
+				</div>
+				<div class="col-12 form-text">Added to each theme's cruise day. Leave at 0 normally; use a large value (e.g. 201) to test with a schedule from outside the cruise week.</div>
+			</form>
+
+			<div class="accordion mb-2" id="themeChanges">
+				<div class="accordion-item">
+					<h2 class="accordion-header" id="createdThemesHeader">
+						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="\#createdThemesCollapse" aria-expanded="false" aria-controls="createdThemesCollapse">
+							#count(diff.createdThemes) New Themes
+						</button>
+					</h2>
+					<div id="createdThemesCollapse" class="accordion-collapse collapse" aria-labelledby="createdThemesHeader">
+						<ul class="container-md mx-0 px-0 list-group">
+							#for(theme in diff.createdThemes):
+								<li class="list-group-item bg-transparent">
+									<div class="container-fluid">
+										<div class="row">
+											<div class="col"><b>#(theme.title)</b></div>
+											<div class="col col-auto">Cruise Day #(theme.cruiseDay)</div>
+										</div>
+										<div class="row"><div class="col">#(theme.info)</div></div>
+									</div>
+								</li>
+							#endfor
+						</ul>
+					</div>
+				</div>
+
+				<div class="accordion-item">
+					<h2 class="accordion-header" id="modifiedThemesHeader">
+						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="\#modifiedThemesCollapse" aria-expanded="false" aria-controls="modifiedThemesCollapse">
+							#count(diff.modifiedThemes) Modified Themes (new values shown)
+						</button>
+					</h2>
+					<div id="modifiedThemesCollapse" class="accordion-collapse collapse" aria-labelledby="modifiedThemesHeader">
+						<ul class="container-md mx-0 px-0 list-group">
+							#for(change in diff.modifiedThemes):
+								<li class="list-group-item bg-transparent">
+									<div class="container-fluid">
+										<div class="row">
+											<div class="col"><b>#(change.proposed.title)</b> <span class="text-secondary">(was: #(change.existing.title))</span></div>
+											<div class="col col-auto">Cruise Day #(change.proposed.cruiseDay)</div>
+										</div>
+										<div class="row"><div class="col">#(change.proposed.info)</div></div>
+										<div class="row"><div class="col text-secondary"><i>Was: #(change.existing.info)</i></div></div>
+									</div>
+								</li>
+							#endfor
+						</ul>
+					</div>
+				</div>
+
+				<div class="accordion-item">
+					<h2 class="accordion-header" id="deletedThemesHeader">
+						<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="\#deletedThemesCollapse" aria-expanded="false" aria-controls="deletedThemesCollapse">
+							#count(diff.deletedThemes) Deleted Themes (not in schedule)
+						</button>
+					</h2>
+					<div id="deletedThemesCollapse" class="accordion-collapse collapse" aria-labelledby="deletedThemesHeader">
+						<ul class="container-md mx-0 px-0 list-group">
+							#for(theme in diff.deletedThemes):
+								<li class="list-group-item bg-transparent">
+									<div class="container-fluid">
+										<div class="row">
+											<div class="col"><b>#(theme.title)</b></div>
+											<div class="col col-auto">Cruise Day #(theme.cruiseDay)</div>
+										</div>
+										<div class="row"><div class="col">#(theme.info)</div></div>
+									</div>
+								</li>
+							#endfor
+						</ul>
+					</div>
+				</div>
+			</div>
+
+			<form class="ajax" action="/admin/dailythemes/schedule" enctype="multipart/form-data" method="POST" data-successurl="/admin/dailythemes" id="messagePostForm">
+				<input type="hidden" name="cruiseDayOffset" value="#(cruiseDayOffset)">
+				<div class="row mb-2">
+					<div class="col">
+						<input type="checkbox" id="skipNew" name="skipNew">
+						<label for="skipNew">Skip new themes</label>
+					</div>
+				</div>
+				<div class="row mb-2">
+					<div class="col">
+						<input type="checkbox" id="skipDiff" name="skipDiff">
+						<label for="skipDiff">Skip modified themes</label>
+					</div>
+				</div>
+				<div class="row mb-2">
+					<div class="col">
+						<input type="checkbox" id="skipDelete" name="skipDelete">
+						<label for="skipDelete">Skip deleted themes</label>
+					</div>
+				</div>
+				<div class="alert alert-danger mt-3 d-none" role="alert">
+				</div>
+				<div class="row mb-2">
+					<div class="col col-auto">
+						<button type="submit" class="btn btn-primary">Apply<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+					</div>
+				</div>
+			</form>
+    	</div>
+	#endexport
+#endextend
