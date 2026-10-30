@@ -61,7 +61,12 @@ let package = Package(
 				.copy("Resources"),
 				.copy("seeds"),
 			],
-            swiftSettings: swiftSettings
+            swiftSettings: swiftSettings,
+			linkerSettings: [
+				// Homebrew builds its dylibs (vips, glib) for the host macOS version, which is newer than our deployment target.
+				// ld warns about this once per dylib; it's harmless for a server we only run on the machine that built it.
+				.unsafeFlags(["-Xlinker", "-w"], .when(platforms: [.macOS]))
+			]
 		),
 		.testTarget(
 			name: "AppTests", 
@@ -69,6 +74,7 @@ let package = Package(
 				.target(name: "swiftarr"),
 				.product(name: "XCTVapor", package: "vapor")
 			],
+			exclude: ["Fixtures"],
 			swiftSettings: swiftSettings
 		)
 	],
