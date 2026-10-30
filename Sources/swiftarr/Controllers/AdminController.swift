@@ -976,7 +976,7 @@ struct AdminController: APIRouteCollection {
 			throw Abort(.internalServerError, reason: "Userfile upload dir not empty after emptying it--this could lead to applying a previously-uploaded userfile and not the one you tried to upload just now.")
 		}
 				
-		FileManager.default.createFile(atPath: destFilePath.path, contents: nil)
+		_ = FileManager.default.createFile(atPath: destFilePath.path, contents: nil)
 		if let fileHandle = FileHandle(forWritingAtPath: destFilePath.path)  {
 			defer {
 				try? fileHandle.close()
