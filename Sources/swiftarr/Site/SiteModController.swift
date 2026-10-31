@@ -44,7 +44,6 @@ struct SiteModController: SiteControllerUtils {
 		modRoutes.get("reports", "closed", use: closedReportsPageHandler).destination("the list of closed user reports")
 		modRoutes.get("moderator", "log", use: moderatorLogPageHandler).destination("the moderator log")
 		modRoutes.get("moderator", "seamail", use: moderatorSeamailPageHandler).destination("seamails to @moderator")
-		modRoutes.get("moderator", "guide", use: moderatorGuidePageHandler).destination("the moderator guide")
 
 		modRoutes.get("moderate", "twarrt", twarrtIDParam, use: moderateTwarrtContentPageHandler)
 			.destination("the moderation page for this twarrt")
@@ -263,20 +262,6 @@ struct SiteModController: SiteControllerUtils {
 	// `/seamail?foruser=moderator` is the mailbox UI.
 	func moderatorSeamailPageHandler(_ req: Request) throws -> Response {
 		req.redirect(to: "/seamail?foruser=\(PrivilegedUser.moderator.queryParam)")
-	}
-
-	/// `GET /moderator/guide`
-	///
-	///
-	func moderatorGuidePageHandler(_ req: Request) async throws -> View {
-		struct GuideContext: Encodable {
-			var trunk: TrunkContext
-			init(_ req: Request) throws {
-				trunk = .init(req, title: "Moderator Guide", tab: .moderator)
-			}
-		}
-		let ctx = try GuideContext(req)
-		return try await req.view.render("moderation/guide", ctx)
 	}
 
 	///	`GET /moderate/twarrt/ID`

@@ -16,6 +16,20 @@ Everyone who wants to use Twit-arr needs to register their account with a code p
 
 People can create multiple accounts linked to one Registration Code. If you set a user's access level to Quarantined (temporarily or permanently), all accounts associated with that user's Registration Code will be affected for the duration of the quarantine.
 
+#### User Access Levels
+
+| Access Level | Description |
+| --- | --- |
+| Unverified | Account created, but no reg code. Limited access. |
+| Banned | Cannot log in. |
+| Quarantined | Can read, but not post. |
+| Verified | Most users. |
+| Client | Special access level for applications to use bulk-access APIs. |
+| Moderator | That's you. |
+| TwitarrTeam | Developers and IT support. |
+| THO (The Home Office) | Designated representatives of The Home Office. Can ban users. |
+| Admin | Server admin. |
+
 ### Content Types
 
 Users can create and manage several types of publicly viewable content, all of which can be reported and moderated:
@@ -31,6 +45,12 @@ Users can create and manage several types of publicly viewable content, all of w
     * **Private Conversations**: Messages between users. Moderators cannot view Closed Seamails at all or Open Seamails unless a report has been made.
 5. **Photostream**
     * **Images**: Images posted to the photo stream.
+6. **Microkaraoke**
+    * **Songs and Snippets**: User-uploaded video clips and short clips.
+7. **Private Events**
+    * **Private Gatherings**: Events created among friends, including the posts within them.
+8. **Quartermaster Items**
+    * **Items**: Listings posted to the Quartermaster.
 
 Users can create, edit, and delete their content. All changes are tracked, allowing moderators to view edit histories. In the case of the photostream, users cannot modify or delete images they share. Users can file reports on the content that others create, but cannot report other users directly. Moderators can delete images only.
 
@@ -197,3 +217,49 @@ On the User Moderation page, you can manage both the user and any associated alt
      * Modify their profile
 
 By using these moderation tools effectively, you can manage user behavior and ensure that the community remains positive and engaged.
+
+## Considerations for Moderators
+
+The task of the moderators is to ensure users are not posting content contrary to the JoCo Cruise Code of Conduct. It's important to clarify any methods that might be used to quell the community in this type of situation. For instance, a Moderator may want to say things like, "I'm working on finding out more information," until they can actually say more. If a Moderator is not sure about something, ask another moderator in the private moderator Seamail. If no response is received, escalate the issue.
+
+### Issue Categories
+
+* Repeated behavior after being asked to stop
+* Possibly mean
+* Actively mean
+* Possibly offensive (hate speech, racism, transphobia, ableism, homophobia, classism, religious discrimination)
+* Actively offensive (hate speech, racism, transphobia, ableism, homophobia, classism, religious discrimination)
+
+### Steps to Address Issues
+
+**If content is considered possibly mean or possibly offensive:**
+
+Alert the private mod group discussion for feedback and seek to clarify the intent with the user via Seamail. Consider adding to the thread to clarify, as well. If the user does not respond, consider locking the content temporarily. Ask the user to edit or delete.
+
+**If content is considered actively mean or actively offensive:**
+
+Lock the content, contact the user via Seamail, alert the private mod group discussion, and take it from there. Edit and/or delete as necessary.
+
+Often a stern but reasonable request to redirect the direction of a thread is enough. If you're worried about where it might be headed, or the overall tone, it's perfectly okay to drop in and say so. It's a good heads-up to posters (who may not have realized they were going too far), a reminder that the mods are active, and means that if you do need to take more definite action, it's not an unpleasant, confusing surprise.
+
+A thread should be locked if it is *actively* going astray and/or if the moderators do not want any more responses to it.
+
+If you do delete or edit anything:
+
+* Always, always mention what you did (unless it's very minor and self-explanatory, such as fixing a broken link). Be sure to contribute as @moderator.
+* If you delete a comment, make sure it deserves it. Deleting anything looks extreme, will feel invasive to the writer, and makes it look like they wrote something awful.
+* If someone asks what happened to a thread or a comment, answer them. You don't have to go into detail, but "we deleted it" (what) "because it was basically spam" (why) will be all most users need, or want, to know. This is basic courtesy, a clear statement of where the line is, and makes sure that accidental forum glitches, or rogue moderators, don't go unnoticed.
+
+### Standard Responses
+
+* Could you please clarify your intention?
+* Please take this conversation to Seamail. Thank you.
+* The Moderation Team appreciates that members continue to keep this discussion within the guidelines of the Code of Conduct.
+* Please let this serve as a warning for content in violation of the Code of Conduct. Please contact the Moderation Team @moderator.
+* This entry has been reported as a possible violation of the Code of Conduct. Please contact the Moderation Team @moderator.
+* This entry has been reported as a violation of the Code of Conduct and has been temporarily locked until further notice. Please contact the Moderation Team @moderator.
+* This entry has been investigated as a violation of the Code of Conduct and has been permanently locked. Thank you for your understanding.
+
+### Code of Conduct
+
+The full Code of Conduct, the moderation rules, how breaches are handled, and the moderation FAQ are maintained on the [Code of Conduct page](/codeOfConduct), which is linked from the Twit-arr Home Page, the Login Page, and every posting form. Moderators should enforce the rules as written there.
