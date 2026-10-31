@@ -1,0 +1,43 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0 mt-2">
+			#extend("ClientApps/clientAppsNavbar")
+			#if(tab == "ios" || tab == "android" || tab == "other"):
+				<div class="alert alert-info" role="alert">
+					Internet access is required to download these apps. You don't need internet access to use them once they're installed.
+				</div>
+			#endif
+			<ul class="list-group">
+				#if(count(apps) == 0):
+					<li class="list-group-item bg-transparent">
+						<span class="text-center"><h6>No client apps are listed for this platform</h6></span>
+					</li>
+				#else:
+					#for(card in apps):
+						<li class="list-group-item">
+							<div class="row">
+								<div class="col col-auto">
+									#if(card.app.image):
+										<img src="/api/v3/image/thumb/#(card.app.image)" width=64 height=64 class="rounded" style="object-fit: contain;" alt="">
+									#else:
+										<img src="/img/jellyfish.png" width=64 height=64 class="rounded" style="object-fit: contain;" alt="">
+									#endif
+								</div>
+								<div class="col">
+									<h5 class="mb-0">#(card.app.name)</h5>
+									<div class="text-muted"><small>by #(card.app.developer)</small></div>
+									<p class="mt-2 mb-2">#(card.app.description)</p>
+									<div class="btn-group btn-group-sm" role="group" aria-label="Get #(card.app.name)">
+										#for(link in card.links):
+											<a class="btn btn-outline-primary" href="#(link.url)" #if(link.url != "/"):target="_blank" rel="noopener"#endif>#(link.buttonTitle)</a>
+										#endfor
+									</div>
+								</div>
+							</div>
+						</li>
+					#endfor
+				#endif
+			</ul>
+		</div>
+    #endexport
+#endextend

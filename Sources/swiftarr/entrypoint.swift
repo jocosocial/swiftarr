@@ -28,7 +28,15 @@ enum Entrypoint {
 			try? await app.asyncShutdown()
 			throw error
 		}
-		try await execute(app: app)
+		do {
+			try await execute(app: app)
+		}
+		catch {
+			// A command that throws (bad arguments, for example) must still shut the app down, or Vapor traps in deinit.
+			// `execute` has already logged the error. Exiting here, rather than rethrowing, avoids a top-level-error crash report.
+			try? await app.asyncShutdown()
+			exit(1)
+		}
 		try await app.asyncShutdown()
 	}
 

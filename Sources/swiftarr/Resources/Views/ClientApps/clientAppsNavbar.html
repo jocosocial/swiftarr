@@ -1,0 +1,22 @@
+<div class="row mb-2">
+	<ul class="nav nav-tabs">
+		<li class="nav-item">
+			<a class="nav-link#if(tab == "all"): active#endif" #if(tab == "all"):aria-current="page"#endif href="/clients"><b>All</b></a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link#if(tab == "web"): active#endif" #if(tab == "web"):aria-current="page"#endif href="/clients?platform=web">Web</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link#if(tab == "ios"): active#endif" #if(tab == "ios"):aria-current="page"#endif href="/clients?platform=ios">iOS</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link#if(tab == "android"): active#endif" #if(tab == "android"):aria-current="page"#endif href="/clients?platform=android">Android</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link#if(tab == "other"): active#endif" #if(tab == "other"):aria-current="page"#endif href="/clients?platform=other">Other</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link#if(tab == "faq"): active#endif" #if(tab == "faq"):aria-current="page"#endif href="/clients/faq">FAQ</a>
+		</li>
+	</ul>
+</div>

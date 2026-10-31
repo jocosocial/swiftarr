@@ -42,6 +42,7 @@ struct SiteAdminController: SiteControllerUtils {
 
 	var dailyThemeParam = PathComponent(":theme_id")
 	var userRoleParam = PathComponent(":user_role")
+	var clientAppParam = PathComponent(":client_app_id")
 
 	func registerRoutes(_ app: Application) throws {
 		// Routes for non-shareable content. If you're not logged in we failscreen.
@@ -61,6 +62,14 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.post("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditPostHandler).setUsedForPreregistration()
 		privateTTRoutes.post("dailytheme", dailyThemeParam, "delete", use: dailyThemeDeletePostHandler).setUsedForPreregistration()
 		privateTTRoutes.delete("dailytheme", dailyThemeParam, use: dailyThemeDeletePostHandler).setUsedForPreregistration()
+
+		privateTTRoutes.get("clients", use: clientAppsViewHandler)
+		privateTTRoutes.get("clients", "create", use: clientAppCreateViewHandler)
+		privateTTRoutes.post("clients", "create", use: clientAppPostHandler)
+		privateTTRoutes.get("clients", clientAppParam, "edit", use: clientAppEditViewHandler)
+		privateTTRoutes.post("clients", clientAppParam, "edit", use: clientAppPostHandler)
+		privateTTRoutes.post("clients", clientAppParam, "delete", use: clientAppDeletePostHandler)
+		privateTTRoutes.delete("clients", clientAppParam, use: clientAppDeletePostHandler)
 
 		privateTTRoutes.get("serversettings", use: settingsViewHandler)
 		privateTTRoutes.post("serversettings", use: settingsPostHandler)
@@ -434,6 +443,123 @@ struct SiteAdminController: SiteControllerUtils {
 			throw "Invalid daily theme ID"
 		}
 		try await apiQuery(req, endpoint: "/admin/dailytheme/\(themeID)", method: .DELETE)
+		return .noContent
+	}
+
+// MARK: - Client Apps
+	// GET /admin/clients
+	// Shows all client apps
+	func clientAppsViewHandler(_ req: Request) async throws -> View {
+		let response = try await apiQuery(req, endpoint: "/admin/clients")
+		let apps = try response.content.decode([ClientAppData].self)
+
+		struct ClientAppsAdminContext: Encodable {
+			var trunk: TrunkContext
+			var apps: [ClientAppData]
+
+			init(_ req: Request, apps: [ClientAppData]) {
+				trunk = .init(req, title: "Client Apps", tab: .admin)
+				self.apps = apps
+			}
+		}
+		return try await req.view.render("admin/clientApps", ClientAppsAdminContext(req, apps: apps))
+	}
+
+	// Leaf context for the Create/Edit Client App form.
+	struct ClientAppEditContext: Encodable {
+		var trunk: TrunkContext
+		var app: ClientAppData?
+		var formAction: String
+		var breadcrumb: String
+		var urlWeb: String
+		var urlIos: String
+		var urlAndroid: String
+		var urlOther: String
+		var clientOptions: [String]
+		var selectedClient: String
+
+		init(_ req: Request, app: ClientAppData?) {
+			trunk = .init(req, title: app == nil ? "Create Client App" : "Edit Client App", tab: .admin)
+			self.app = app
+			formAction = app.map { "/admin/clients/\($0.clientAppID)/edit" } ?? "/admin/clients/create"
+			breadcrumb = app == nil ? "Create Client App" : "Edit Client App"
+			func link(_ platform: ClientAppPlatform) -> String {
+				app?.links.first { $0.platform == platform }?.url ?? ""
+			}
+			urlWeb = link(.web)
+			urlIos = link(.ios)
+			urlAndroid = link(.android)
+			urlOther = link(.other)
+			clientOptions = SwiftarrClientApp.allCases.filter { $0 != .all && $0 != .unknown }.map { $0.rawValue }
+			selectedClient = app?.swiftarrClient?.rawValue ?? ""
+		}
+	}
+
+	// GET /admin/clients/create
+	func clientAppCreateViewHandler(_ req: Request) async throws -> View {
+		return try await req.view.render("admin/clientAppEdit", ClientAppEditContext(req, app: nil))
+	}
+
+	// GET /admin/clients/ID/edit
+	func clientAppEditViewHandler(_ req: Request) async throws -> View {
+		guard let appID = req.parameters.get(clientAppParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw "Invalid client app ID"
+		}
+		let response = try await apiQuery(req, endpoint: "/admin/clients/\(appID)")
+		let app = try response.content.decode(ClientAppData.self)
+		return try await req.view.render("admin/clientAppEdit", ClientAppEditContext(req, app: app))
+	}
+
+	// Form data from the Create/Edit Client App form
+	fileprivate struct ClientAppFormContent: Codable {
+		var name: String
+		var developer: String
+		var sortName: String?
+		var description: String
+		var photo: Data?
+		var serverPhoto: String?
+		var urlWeb: String?
+		var urlIos: String?
+		var urlAndroid: String?
+		var urlOther: String?
+		var swiftarrClient: String?
+	}
+
+	// POST /admin/clients/create
+	// POST /admin/clients/ID/edit
+	func clientAppPostHandler(_ req: Request) async throws -> HTTPStatus {
+		let form = try req.content.decode(ClientAppFormContent.self)
+		var links: [ClientAppLink] = []
+		for (platform, url) in [(ClientAppPlatform.web, form.urlWeb), (.ios, form.urlIos), (.android, form.urlAndroid), (.other, form.urlOther)] {
+			if let url = url?.trimmingCharacters(in: .whitespacesAndNewlines), !url.isEmpty {
+				links.append(ClientAppLink(platform: platform, url: url))
+			}
+		}
+		let postContent = ClientAppUploadData(
+			name: form.name,
+			description: form.description,
+			developer: form.developer,
+			sortName: form.sortName,
+			image: ImageUploadData(form.serverPhoto, form.photo),
+			links: links,
+			swiftarrClient: form.swiftarrClient.flatMap { SwiftarrClientApp(rawValue: $0) }
+		)
+		if let appID = req.parameters.get(clientAppParam.paramString)?.percentEncodeFilePathEntry() {
+			try await apiQuery(req, endpoint: "/admin/clients/\(appID)/update", method: .POST, encodeContent: postContent)
+		}
+		else {
+			try await apiQuery(req, endpoint: "/admin/clients/create", method: .POST, encodeContent: postContent)
+		}
+		return .created
+	}
+
+	// POST /admin/clients/ID/delete
+	// DELETE /admin/clients/ID
+	func clientAppDeletePostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let appID = req.parameters.get(clientAppParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw "Invalid client app ID"
+		}
+		try await apiQuery(req, endpoint: "/admin/clients/\(appID)", method: .DELETE)
 		return .noContent
 	}
 

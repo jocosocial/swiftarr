@@ -1,0 +1,33 @@
+[
+	{
+		"name": "Twitarr Web UI",
+		"description": "The website you're looking at right now. Works in any modern browser, no install needed.",
+		"developer": "Twitarr Team",
+		"icon": "ClientApps/website.png",
+		"links": [
+			{ "platform": "web", "url": "/" }
+		],
+		"swiftarrClient": "swiftarr"
+	},
+	{
+		"name": "Tricordarr",
+		"description": "A native Twitarr client for Android and iOS.",
+		"developer": "Grant Cohoe",
+		"icon": "ClientApps/tricordarr.jpg",
+		"links": [
+			{ "platform": "android", "url": "https://play.google.com/store/apps/details?id=com.tricordarr" },
+			{ "platform": "ios", "url": "https://apps.apple.com/us/app/tricordarr/id6754777522" }
+		],
+		"swiftarrClient": "tricordarr"
+	},
+	{
+		"name": "The Kraken",
+		"description": "A native Twitarr client for iOS.",
+		"developer": "Chall Fry",
+		"icon": "ClientApps/kraken.png",
+		"links": [
+			{ "platform": "ios", "url": "https://apps.apple.com/us/app/the-kraken-a-twitarr-client/id1496322373" }
+		],
+		"swiftarrClient": "kraken"
+	}
+]

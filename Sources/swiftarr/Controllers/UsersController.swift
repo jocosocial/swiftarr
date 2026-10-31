@@ -183,7 +183,7 @@ struct UsersController: APIRouteCollection {
 		var photoExt: String?
 		if includeDetails, let imageName = profiledUser.userImage, !imageName.isEmpty {
 			do {
-				let fileURL = try getImagePath(for: imageName, usage: .userProfile, size: .thumbnail, on: req)
+				let fileURL = try getImagePath(for: imageName, usage: .userProfile, size: .thumbnail)
 				if FileManager.default.fileExists(atPath: fileURL.path) {
 					photoData = try Data(contentsOf: fileURL)
 					photoExt = fileURL.pathExtension

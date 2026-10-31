@@ -1,0 +1,114 @@
+#extend("trunk"):
+    #export("body"):
+    	<div class="container-md ms-0">
+    		<div class="row my-1">
+    			<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item"><a href="/admin/clients">Client Apps</a></li>
+							<li class="breadcrumb-item active" aria-current="page">#(breadcrumb)</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST" data-successurl="/admin/clients">
+				<div class="row mb-2">
+					<div class="col">
+						<label for="name" class="form-label">Name (required)</label>
+						<input type="text" class="form-control" id="name" name="name" value="#(app.name)" required>
+					</div>
+				</div>
+				<div class="row mb-2">
+					<div class="col">
+						<label for="developer" class="form-label">Developer (required)</label>
+						<input type="text" class="form-control" id="developer" name="developer" value="#(app.developer)" required>
+					</div>
+				</div>
+				<div class="row mb-2">
+					<div class="col">
+						<label for="sortName" class="form-label">Sort Name</label>
+						<input type="text" class="form-control" id="sortName" name="sortName" value="#(app.sortName)" aria-describedby="sortNameHelp">
+						<div id="sortNameHelp" class="form-text">Apps are listed in order of this field. Defaults to the name.</div>
+					</div>
+				</div>
+				<div class="row mb-2">
+					<div class="col">
+						<label for="description" class="form-label">Description (required)</label>
+						<textarea class="form-control" id="description" name="description" rows="3" required>#(app.description)</textarea>
+					</div>
+				</div>
+
+				<div class="row mt-3">
+					<div class="col col-12">
+						<label for="urlWeb" class="form-label">Links (at least one required; leave blank where the app isn't available)</label>
+					</div>
+				</div>
+				<div class="row mb-2">
+					<div class="col-sm-8">
+						<div class="input-group mb-1"><span class="input-group-text" style="width: 6rem;">Web</span>
+							<input type="text" class="form-control" id="urlWeb" name="urlWeb" value="#(urlWeb)" placeholder="https://… or / for this server"></div>
+						<div class="input-group mb-1"><span class="input-group-text" style="width: 6rem;">iOS</span>
+							<input type="text" class="form-control" name="urlIos" value="#(urlIos)" placeholder="App Store URL"></div>
+						<div class="input-group mb-1"><span class="input-group-text" style="width: 6rem;">Android</span>
+							<input type="text" class="form-control" name="urlAndroid" value="#(urlAndroid)" placeholder="Google Play URL"></div>
+						<div class="input-group mb-1"><span class="input-group-text" style="width: 6rem;">Other</span>
+							<input type="text" class="form-control" name="urlOther" value="#(urlOther)" placeholder="Download URL"></div>
+					</div>
+				</div>
+
+				<div class="row mb-2">
+					<div class="col-sm-8">
+						<label for="swiftarrClient" class="form-label">Known Client</label>
+						<select class="form-select" id="swiftarrClient" name="swiftarrClient" aria-describedby="swiftarrClientHelp">
+							<option value="">None</option>
+							#for(opt in clientOptions):
+								<option value="#(opt)"#if(opt == selectedClient): selected#endif>#(opt)</option>
+							#endfor
+						</select>
+						<div id="swiftarrClientHelp" class="form-text">Links this entry to a known client. Not shown to users.</div>
+					</div>
+				</div>
+
+				<div class="row mt-3">
+					<div class="col col-12">
+						<label for="photo" class="form-label">Icon</label>
+					</div>
+					<div class="col">
+						<div class="card" style="width: 212px;">
+							<div class="m-1 border img-for-upload-container">
+								<div class="ratio ratio-1x1">
+									<img src="#if(app.image):/api/v3/image/full/#(app.image)#else::data:,#endif" width=200 height=200 class="img-for-upload" alt="">
+								</div>
+							</div>
+							<p class="text-center no-image-marker"><i>no icon selected</i></p>
+							<div class="container-fluid p-1">
+								<div class="row">
+									<div class="col">
+										<label class="btn btn-primary col-12 form-label">
+											<input class="image-upload-input d-none" type="file" accept="image/png, image/jpeg" name="photo">
+											Choose Icon
+										</label>
+										<input type="hidden" class="current-server-photo" name="serverPhoto" value="#(app.image)">
+									</div>
+								</div>
+								<div class="row justify-content-between m-0">
+									<div class="col col-auto p-0 m-0">
+										<button type="button" class="btn btn-primary btn-sm twitarr-image-remove">Remove</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="row mt-4 align-items-center">
+					<div class="col col-auto">
+						<button type="submit" class="btn btn-primary">Submit<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+					</div>
+				</div>
+				<div class="alert alert-danger mt-3 d-none" role="alert"></div>
+			</form>
+		</div>
+    #endexport
+#endextend

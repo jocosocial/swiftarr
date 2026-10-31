@@ -91,6 +91,7 @@ extension APIRouteCollection {
 	var mutewordParam: PathComponent { PathComponent(":mute_word") }
 	var searchStringParam: PathComponent { PathComponent(":search_string") }
 	var dailyThemeIDParam: PathComponent { PathComponent(":daily_theme_id") }
+	var clientAppIDParam: PathComponent { PathComponent(":client_app_id") }
 	var accessLevelParam: PathComponent { PathComponent(":access_level") }
 	var boardgameIDParam: PathComponent { PathComponent(":boardgame_id") }
 	var songIDParam: PathComponent { PathComponent(":karaoke_song+id") }

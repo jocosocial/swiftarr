@@ -17,6 +17,8 @@ enum ImageUsage: String {
 	case photostream
 	/// The image is for a `QuartermasterItem`.
 	case quartermasterItem
+	/// The image is for a `ClientApp`.
+	case clientApp
 }
 
 /// Internally, the Image Handler stores images at multiple sizes upon image upload. The exact sizes stored for each sizeGroup
@@ -34,7 +36,7 @@ enum ImageSizeGroup: String {
 /// Currently, this fn returns paths in the form:
 ///		<WorkingDir>/images/<full/thumb>/<xx>/<filename>.jpg
 /// where "xx" is the first 2 characters of the filename.
-func getImagePath(for image: String, format: String? = nil, usage: ImageUsage, size: ImageSizeGroup, on req: Request) throws -> URL {
+func getImagePath(for image: String, format: String? = nil, usage: ImageUsage, size: ImageSizeGroup) throws -> URL {
 	let baseImagesDirectory = Settings.shared.userImagesRootPath
 	// Determine format extension to use. Caller can force a format with the 'format' parameter.
 	var imageFormat: String = format ?? URL(fileURLWithPath: image).pathExtension
@@ -112,16 +114,123 @@ func thumbnailData(from image: SwiftarrImage, format: String) throws -> Data? {
 ///   - image: The source image to create a thumbnail from
 ///   - thumbPath: The file path where the thumbnail should be saved
 ///   - format: The output format extension ("jpg", "png", etc.)
-///   - req: The incoming `Request`, used for logging
+///   - logger: Used to report a failed resize
 /// - Throws: Errors from export or file write operations
-func createThumbnail(from image: SwiftarrImage, to thumbPath: URL, format: String, on req: Request) throws {
+func createThumbnail(from image: SwiftarrImage, to thumbPath: URL, format: String, logger: Logger) throws {
 	guard let data = try thumbnailData(from: image, format: format) else {
-		req.logger.error("Failed to generate thumbnail: image.resizedTo returned nil for path \(thumbPath.path)")
+		logger.error("Failed to generate thumbnail: image.resizedTo returned nil for path \(thumbPath.path)")
 		return
 	}
 	try data.write(to: thumbPath)
 }
 
+/// Validates, processes and stores one image: full-size and thumbnail versions, in the image store. Returns the stored filename.
+///
+/// This is the single place image processing happens, shared by uploads (`processImage`) and anything that needs to store an image
+/// without a `Request`, such as migrations that seed records with images. The format is detected from the data's contents, not any
+/// filename. PNG/GIF/WebP are kept in their own format when unmodified; everything else (JPEG, HEIC, AVIF, ...) and anything we had
+/// to resize or crop is re-encoded as a JPEG, so the stored bytes always match the stored filename's extension.
+///
+/// This is synchronous and does blocking file and image work, so request handlers should call it from a thread pool.
+func processImageData(_ data: Data, usage: ImageUsage, logger: Logger) throws -> String {
+	guard data.count < Settings.shared.maxImageSize else {
+		let maxMegabytes = Settings.shared.maxImageSize / 1024 * 1024
+		throw Abort(.badRequest, reason: "Image too large. Size limit is \(maxMegabytes)MB.")
+	}
+	var image = try loadImageFromData(data)
+	var imageWasModified = false
+
+	// Disallow images with an aspect ratio > 10:1, as they're too often malicious (even if by 'malicious' it means
+	// "ha ha you have to scroll past this"). Also disallow extremely large widths and heights.
+	let sourceSize = image.size
+	if sourceSize.width > 10000 || sourceSize.height > 10000 {
+		throw ImageError.invalidImage(reason: "Image dimensions too large")
+	}
+	let aspectRatio = Double(sourceSize.width) / Double(sourceSize.height)
+	if aspectRatio < 0.1 || aspectRatio > 10.0 {
+		throw ImageError.invalidImage(reason: "Invalid image aspect ratio. ")
+	}
+
+	// attempt to crop to square if profile image
+	if usage == .userProfile {
+		imageWasModified = true
+		if image.size.height != image.size.width {
+			let size = min(image.size.height, image.size.width)
+			var cropOrigin: Point
+			if image.size.height > image.size.width {
+				cropOrigin = Point(x: 0, y: (image.size.height - size) / 2)
+			} else {
+				cropOrigin = Point(x: (image.size.width - size) / 2, y: 0)
+			}
+			let square = Rectangle(point: cropOrigin, size: Size(width: size, height: size))
+			if let croppedImage = image.cropped(to: square) {
+				image = croppedImage
+			}
+		}
+	}
+
+	// Resize if the image is over our size limit. Iphone 11 Pro Max has a scren size of 1242x2688 pixels.
+	// A 4:3 portrait photo at 1536x2048 would downscale slightly to 1242x1656. 2K should therefore
+	// be a reasonable size limit.
+	if image.size.height > 2048 || image.size.width > 2048 {
+		imageWasModified = true
+		let resizeAmt: Double = 2048.0 / Double(max(image.size.height, image.size.width))
+		if let resizedImage = image.resizedTo(width: Int(Double(image.size.width) * resizeAmt),
+				height: Int(Double(image.size.height) * resizeAmt)) {
+			image = resizedImage
+		}
+	}
+
+	// If animated images are disabled, GIF/WebP must be re-encoded as JPEG
+	let isAnimatable = isAnimatableFormat(data)
+	if isAnimatable && !Settings.shared.allowAnimatedImages {
+		imageWasModified = true
+	}
+
+	// Always re-encode JPEGs — autorot already applied the EXIF orientation to
+	// the in-memory image, but the original bytes still carry the old tag.
+	// Saving original JPEG bytes would cause sideways display in some viewers.
+	// Also re-encode HEIC/AVIF/JXL — these aren't web-native formats and can't
+	// be served directly to browsers or the app.
+	let detectedExt = detectExtension(data)
+	let needsReencode = !["png", "gif", "webp"].contains(detectedExt)
+	if needsReencode {
+		imageWasModified = true
+	}
+
+	// Determine output format. If the image wasn't modified, preserve the original
+	// format (PNG stays PNG, GIF stays GIF, etc). Modified images become JPEG.
+	let outputFormat = imageWasModified ? "jpg" : detectedExt
+
+	// ensure directories exist
+	let name = UUID().uuidString
+	// Thumbnail must use the same extension as the full image because the UI
+	// looks up thumbnails by the stored filename (UUID.ext).
+	let fullPath = try getImagePath(for: name, format: outputFormat, usage: usage, size: .full)
+	let thumbPath = try getImagePath(for: name, format: outputFormat, usage: usage, size: .thumbnail)
+
+	// save full image — preserve original bytes if unmodified, re-encode as JPEG otherwise.
+	// JPEG can't carry alpha; flatten any transparency onto white so transparent regions
+	// don't composite onto JPEG's default black.
+	if imageWasModified {
+		let opaque = image.flattened() ?? image
+		let imageData = try opaque.exportAsJPEG(quality: 90)
+		try imageData.write(to: fullPath)
+	} else {
+		try data.write(to: fullPath)
+	}
+
+	// save thumbnail — animated formats get resized with all frames preserved
+	if isAnimatable && !imageWasModified && Settings.shared.allowAnimatedImages {
+		let isGIF = outputFormat == "gif"
+		let thumbData = try SwiftarrImage.animatedThumbnail(
+			from: data, height: Settings.shared.imageThumbnailSize, isGIF: isGIF)
+		try thumbData.write(to: thumbPath)
+	} else {
+		try createThumbnail(from: image, to: thumbPath, format: outputFormat, logger: logger)
+	}
+	return fullPath.lastPathComponent
+}
 extension APIRouteCollection {
 	/// Takes an an array of `ImageUploadData` as input. Some of the input elements may be new image Data that needs procssing;
 	/// some of the input elements may refer to already-processed images in our image store. Once all the ImageUploadData elements are processed,
@@ -178,104 +287,9 @@ extension APIRouteCollection {
 //				try? data.write(to: p)
 //			}
 
-		guard data.count < Settings.shared.maxImageSize else {
-			let maxMegabytes = Settings.shared.maxImageSize / 1024 * 1024
-			throw Abort(.badRequest, reason: "Image too large. Size limit is \(maxMegabytes)MB.")
-		}
+		let logger = req.logger
 		return try await req.application.threadPool.runIfActive(eventLoop: req.eventLoop) {
-			var image = try loadImageFromData(data)
-			var imageWasModified = false
-
-			// Disallow images with an aspect ratio > 10:1, as they're too often malicious (even if by 'malicious' it means
-			// "ha ha you have to scroll past this"). Also disallow extremely large widths and heights.
-			let sourceSize = image.size
-			if sourceSize.width > 10000 || sourceSize.height > 10000 {
-				throw ImageError.invalidImage(reason: "Image dimensions too large")
-			}
-			let aspectRatio = Double(sourceSize.width) / Double(sourceSize.height)
-			if aspectRatio < 0.1 || aspectRatio > 10.0 {
-				throw ImageError.invalidImage(reason: "Invalid image aspect ratio. ")
-			}
-
-			// attempt to crop to square if profile image
-			if usage == .userProfile {
-				imageWasModified = true
-				if image.size.height != image.size.width {
-					let size = min(image.size.height, image.size.width)
-					var cropOrigin: Point
-					if image.size.height > image.size.width {
-						cropOrigin = Point(x: 0, y: (image.size.height - size) / 2)
-					} else {
-						cropOrigin = Point(x: (image.size.width - size) / 2, y: 0)
-					}
-					let square = Rectangle(point: cropOrigin, size: Size(width: size, height: size))
-					if let croppedImage = image.cropped(to: square) {
-						image = croppedImage
-					}
-				}
-			}
-
-			// Resize if the image is over our size limit. Iphone 11 Pro Max has a scren size of 1242x2688 pixels.
-			// A 4:3 portrait photo at 1536x2048 would downscale slightly to 1242x1656. 2K should therefore
-			// be a reasonable size limit.
-			if image.size.height > 2048 || image.size.width > 2048 {
-				imageWasModified = true
-				let resizeAmt: Double = 2048.0 / Double(max(image.size.height, image.size.width))
-				if let resizedImage = image.resizedTo(width: Int(Double(image.size.width) * resizeAmt),
-						height: Int(Double(image.size.height) * resizeAmt)) {
-					image = resizedImage
-				}
-			}
-
-			// If animated images are disabled, GIF/WebP must be re-encoded as JPEG
-			let isAnimatable = isAnimatableFormat(data)
-			if isAnimatable && !Settings.shared.allowAnimatedImages {
-				imageWasModified = true
-			}
-
-			// Always re-encode JPEGs — autorot already applied the EXIF orientation to
-			// the in-memory image, but the original bytes still carry the old tag.
-			// Saving original JPEG bytes would cause sideways display in some viewers.
-			// Also re-encode HEIC/AVIF/JXL — these aren't web-native formats and can't
-			// be served directly to browsers or the app.
-			let detectedExt = detectExtension(data)
-			let needsReencode = !["png", "gif", "webp"].contains(detectedExt)
-			if needsReencode {
-				imageWasModified = true
-			}
-
-			// Determine output format. If the image wasn't modified, preserve the original
-			// format (PNG stays PNG, GIF stays GIF, etc). Modified images become JPEG.
-			let outputFormat = imageWasModified ? "jpg" : detectedExt
-
-			// ensure directories exist
-			let name = UUID().uuidString
-			// Thumbnail must use the same extension as the full image because the UI
-			// looks up thumbnails by the stored filename (UUID.ext).
-			let fullPath = try getImagePath(for: name, format: outputFormat, usage: usage, size: .full, on: req)
-			let thumbPath = try getImagePath(for: name, format: outputFormat, usage: usage, size: .thumbnail, on: req)
-
-			// save full image — preserve original bytes if unmodified, re-encode as JPEG otherwise.
-			// JPEG can't carry alpha; flatten any transparency onto white so transparent regions
-			// don't composite onto JPEG's default black.
-			if imageWasModified {
-				let opaque = image.flattened() ?? image
-				let imageData = try opaque.exportAsJPEG(quality: 90)
-				try imageData.write(to: fullPath)
-			} else {
-				try data.write(to: fullPath)
-			}
-
-			// save thumbnail — animated formats get resized with all frames preserved
-			if isAnimatable && !imageWasModified && Settings.shared.allowAnimatedImages {
-				let isGIF = outputFormat == "gif"
-				let thumbData = try SwiftarrImage.animatedThumbnail(
-					from: data, height: Settings.shared.imageThumbnailSize, isGIF: isGIF)
-				try thumbData.write(to: thumbPath)
-			} else {
-				try createThumbnail(from: image, to: thumbPath, format: outputFormat, on: req)
-			}
-			return fullPath.lastPathComponent
+			try processImageData(data, usage: usage, logger: logger)
 		}.get()
 	}
 
@@ -283,6 +297,7 @@ extension APIRouteCollection {
 	// as part of the bulk user import process. Now uses shared helper functions with `processImage`.
 	func regenerateThumbnail(for imageSource: URL, on req: Request) async throws {
 		let imageName = imageSource.lastPathComponent
+		let logger = req.logger
 		return try await req.application.threadPool.runIfActive(eventLoop: req.eventLoop) {
 			let data = try Data(contentsOf: imageSource)
 			let image = try loadImageFromData(data)
@@ -297,7 +312,7 @@ extension APIRouteCollection {
 			let thumbPath = destinationDir.appendingPathComponent(imageName)
 
 			let format = URL(fileURLWithPath: imageName).pathExtension.lowercased()
-			try createThumbnail(from: image, to: thumbPath, format: format, on: req)
+			try createThumbnail(from: image, to: thumbPath, format: format, logger: logger)
 		}.get()
 	}
 
@@ -314,12 +329,12 @@ extension APIRouteCollection {
 	func archiveImage(_ image: String, on req: Request) {
 		do {
 			// remove existing full image
-			let fullURL = try getImagePath(for: image, usage: .twarrt , size: .full, on: req)
+			let fullURL = try getImagePath(for: image, usage: .twarrt , size: .full)
 			try FileManager().removeItem(at: fullURL)
 
 			// move thumbnail
-			let thumbnailURL = try getImagePath(for: image, usage: .twarrt , size: .thumbnail, on: req)
-			let archiveURL = try getImagePath(for: image, usage: .twarrt , size: .archive, on: req)
+			let thumbnailURL = try getImagePath(for: image, usage: .twarrt , size: .thumbnail)
+			let archiveURL = try getImagePath(for: image, usage: .twarrt , size: .archive)
 			try FileManager().moveItem(at: thumbnailURL, to: archiveURL)
 
 		} catch let error {
