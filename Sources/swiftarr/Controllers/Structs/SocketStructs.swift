@@ -74,7 +74,7 @@ struct SocketFezMemberChangeData: Content {
 /// Each notification is delivered as a JSON string, containing a type of announcement and a string appropriate for displaying to the user.
 /// The string will be of the form, "User @authorName wrote a forum post that mentioned you."
 struct SocketNotificationData: Content {
-	enum NotificationTypeData: Content {
+	enum NotificationTypeData: Content, CaseIterable, Equatable {
 // Notifies Everyone
 		/// A server-wide announcement has just been added.
 		case announcement
@@ -147,50 +147,80 @@ struct SocketNotificationData: Content {
 	/// An ID of a related parent object, when one exists. For `.forumMention`, `.moderatorForumMention`, `.twitarrTeamForumMention`,
 	/// and `.alertwordPost` this is the ID of the Forum containing the post. Nil for all other types.
 	var secondaryContentID: String?
+	/// Matches the `id` of the `Notification` row this event was logged under (see `GET /api/v3/notification/log`).
+	/// Lets clients de-dupe a live push against a later fetch of the notification log. Nil for phone call signaling
+	/// messages, which aren't logged.
+	var notificationID: UUID?
 	/// For .incomingPhoneCall notifications, the caller.
 	var caller: UserHeader?
 	/// For .incomingPhoneCall notification,s the caller's IP addresses. May be nil, in which case the receiver opens a server socket instead.
 	var callerAddress: PhoneSocketServerAddress?
 }
 
-extension SocketNotificationData {
-	init(_ type: NotificationType, info: String, id: String) {
+extension SocketNotificationData.NotificationTypeData {
+	/// Maps the server-internal `NotificationType` to the socket-facing `NotificationTypeData` case clients see.
+	init(_ type: NotificationType) {
 		switch type {
-		case .announcement: self.type = .announcement
-		
-		case .addedToChat(_, let chatType) where chatType.isSeamailType: self.type = .addedToSeamail
-		case .addedToChat(_, let chatType) where chatType.isLFGType: self.type = .addedToLFG
-		case .addedToChat(_, let chatType) where chatType.isPrivateEventType: self.type = .addedToPrivateEvent
-		case .addedToChat: self.type = .addedToSeamail
-		
-		case .chatUnreadMsg(_, let chatType) where chatType.isSeamailType: self.type = .seamailUnreadMsg
-		case .chatUnreadMsg(_, let chatType) where chatType.isLFGType: self.type = .fezUnreadMsg
-		case .chatUnreadMsg(_, let chatType) where chatType.isPrivateEventType: self.type = .privateEventUnreadMsg
-		case .chatUnreadMsg: self.type = .seamailUnreadMsg
-		
-		case .chatCanceled(_, let chatType) where chatType.isLFGType: self.type = .lfgCanceled
-		case .chatCanceled(_, let chatType) where chatType.isPrivateEventType: self.type = .privateEventCanceled
-		case .chatCanceled: self.type = .lfgCanceled
+		case .announcement: self = .announcement
+
+		case .addedToChat(_, let chatType) where chatType.isSeamailType: self = .addedToSeamail
+		case .addedToChat(_, let chatType) where chatType.isLFGType: self = .addedToLFG
+		case .addedToChat(_, let chatType) where chatType.isPrivateEventType: self = .addedToPrivateEvent
+		case .addedToChat: self = .addedToSeamail
+
+		case .chatUnreadMsg(_, let chatType) where chatType.isSeamailType: self = .seamailUnreadMsg
+		case .chatUnreadMsg(_, let chatType) where chatType.isLFGType: self = .fezUnreadMsg
+		case .chatUnreadMsg(_, let chatType) where chatType.isPrivateEventType: self = .privateEventUnreadMsg
+		case .chatUnreadMsg: self = .seamailUnreadMsg
+
+		case .chatCanceled(_, let chatType) where chatType.isLFGType: self = .lfgCanceled
+		case .chatCanceled(_, let chatType) where chatType.isPrivateEventType: self = .privateEventCanceled
+		case .chatCanceled: self = .lfgCanceled
 
 		// nextFollowedEventTime and nextJoinedLFGTime are not a socket event, so is this OK?
-		case .nextFollowedEventTime: self.type = .followedEventStarting
-		case .followedEventStarting: self.type = .followedEventStarting
-		case .nextJoinedLFGTime: self.type = .joinedLFGStarting
-		case .joinedLFGStarting: self.type = .joinedLFGStarting
-		case .personalEventStarting: self.type = .personalEventStarting
+		case .nextFollowedEventTime: self = .followedEventStarting
+		case .followedEventStarting: self = .followedEventStarting
+		case .nextJoinedLFGTime: self = .joinedLFGStarting
+		case .joinedLFGStarting: self = .joinedLFGStarting
+		case .personalEventStarting: self = .personalEventStarting
 
-		case .alertwordTwarrt: self.type = .alertwordTwarrt
-		case .alertwordPost: self.type = .alertwordPost
-		case .twarrtMention: self.type = .twarrtMention
-		case .forumMention: self.type = .forumMention
-		case .moderatorForumMention: self.type = .moderatorForumMention
-		case .twitarrTeamForumMention: self.type = .twitarrTeamForumMention
-	
-		case .microKaraokeSongReady: self.type = .microKaraokeSongReady
+		case .alertwordTwarrt: self = .alertwordTwarrt
+		case .alertwordPost: self = .alertwordPost
+		case .twarrtMention: self = .twarrtMention
+		case .forumMention: self = .forumMention
+		case .moderatorForumMention: self = .moderatorForumMention
+		case .twitarrTeamForumMention: self = .twitarrTeamForumMention
+
+		case .microKaraokeSongReady: self = .microKaraokeSongReady
 		}
+	}
+
+	/// A stable string key for this case, used only for database storage (see `Notification.type`).
+	///
+	/// This is NOT the wire format: over JSON this enum encodes as `{"caseName": {}}` via Swift's synthesized
+	/// Codable for an associated-value-less enum (see `SocketNotificationPayloadTests`), and existing clients
+	/// depend on that shape, so `NotificationTypeData` must not gain a `RawValue`.
+	var databaseKey: String {
+		String(describing: self)
+	}
+
+	/// Reconstructs a case from its `databaseKey`. Returns nil if the string doesn't match any known case
+	/// (e.g. the case was renamed after the row was written).
+	init?(databaseKey: String) {
+		guard let match = Self.allCases.first(where: { $0.databaseKey == databaseKey }) else {
+			return nil
+		}
+		self = match
+	}
+}
+
+extension SocketNotificationData {
+	init(_ type: NotificationType, info: String, id: String, notificationID: UUID? = nil) {
+		self.type = NotificationTypeData(type)
 		self.info = info
 		self.contentID = id
 		self.secondaryContentID = type.secondaryObjectID()
+		self.notificationID = notificationID
 	}
 
 	// Creates an incoming phone call notification

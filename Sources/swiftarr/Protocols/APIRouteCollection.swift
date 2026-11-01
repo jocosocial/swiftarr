@@ -296,11 +296,19 @@ extension APIRouteCollection {
 				case .alertwordPost: socketUsers = users.filter { $0 != creatorID }
 				default: break
 				}
+				let notificationID = await logNotification(
+					type: type,
+					info: info,
+					recipients: socketUsers,
+					db: req.db,
+					logger: req.logger
+				)
 				await req.application.notificationSockets.forwardToSockets(
 					app: req.application,
 					idList: socketUsers,
 					type: type,
-					info: info
+					info: info,
+					notificationID: notificationID
 				)
 			}
 

@@ -114,11 +114,19 @@ public struct UserEventNotificationJob: AsyncScheduledJob {
 			let favoriteUserIDs = try event.favorites.map { try $0.requireID() }
 			let infoStr = "\(event.title) is starting Soon™ in \(event.location)."
 			context.logger.debug("\"\(infoStr)\" sent to \(favoriteUserIDs.count) users")
+			let notificationID = await logNotification(
+				type: .followedEventStarting(eventID),
+				info: infoStr,
+				recipients: favoriteUserIDs,
+				db: context.application.db,
+				logger: context.logger
+			)
 			await context.application.notificationSockets.forwardToSockets(
 				app: context.application,
 				idList: favoriteUserIDs,
 				type: .followedEventStarting(eventID),
-				info: infoStr
+				info: infoStr,
+				notificationID: notificationID
 			)
 		}
 	}
@@ -148,8 +156,15 @@ public struct UserEventNotificationJob: AsyncScheduledJob {
 			if let location = fez.location {
 				infoStr += " in \(location)."
 			}
+			let notificationID = await logNotification(
+				type: .chatStarting(fezID, type: fez.fezType),
+				info: infoStr,
+				recipients: fez.participantArray,
+				db: context.application.db,
+				logger: context.logger
+			)
 			await context.application.notificationSockets.forwardToSockets(app: context.application, idList: fez.participantArray,
-					type: .chatStarting(fezID, type: fez.fezType), info: infoStr)
+					type: .chatStarting(fezID, type: fez.fezType), info: infoStr, notificationID: notificationID)
 		}
 	}
 
