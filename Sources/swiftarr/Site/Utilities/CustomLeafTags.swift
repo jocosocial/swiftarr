@@ -56,12 +56,18 @@ struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 		"ship", "tropical-drink", "wangwang", "zombie",
 	]
 
+	/// The inline `<img>` tag used to render a jocomoji by name. Shared by the standalone
+	/// `addJocomoji` path and `FormatPostTextTag.rewriteInline` so the markup stays in one place.
+	static func imgTag(for emojiTag: String) -> String {
+		"<img src=\"/img/emoji/small/\(emojiTag).png\" width=18 height=18>"
+	}
+
 	static func process(_ str: String) -> String {
 		var string = str
 		for emojiTag in AddJocomojiTag.jocomoji {
 			string = string.replacingOccurrences(
 				of: ":\(emojiTag):",
-				with: "<img src=\"/img/emoji/small/\(emojiTag).png\" width=18 height=18>"
+				with: AddJocomojiTag.imgTag(for: emojiTag)
 			)
 		}
 		return string
@@ -91,12 +97,6 @@ struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 /// Usage: #formatFezText(String) -> String
 /// Usage: #formatSeamailText(String) -> String
 struct FormatPostTextTag: UnsafeUnescapedLeafTag {
-	static var nameRefStartCharacterSet: CharacterSet {
-		var x = CharacterSet()
-		x.insert("@")
-		return x
-	}
-
 	/// Staff mentions render with `link-danger`. Sourced from `PrivilegedUser` so the
 	/// list of privileged usernames isn't duplicated in this file.
 	static let staffUsernames: Set<String> = Set(PrivilegedUser.allCases.map { $0.queryParam })
@@ -122,55 +122,11 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 			return LeafData.string("<div class=\"markdown-body\">\(styled)</div>")
 		}
 
-		// Sanitize, then add jocomoji.
-		string = AddJocomojiTag.process(string.htmlEscaped())
-
-		// Mentions
-		// This uses most the same code as the getMentionsSet in ContentFilterable. Though the regex is subtly
-		// different to include the @ so we can replace it later on.
-		// https://regexr.com/ is based god.
-		// Which also means it came from YouKnowWhere.
-		let mentionPattern = "(?<!\\S)(@[A-Za-z0-9]+(?:[-.+_][A-Za-z0-9]+)*)"
-		let mentionRegex = try NSRegularExpression(pattern: mentionPattern, options: [])
-		let mentionMatches = mentionRegex.matches(
-			in: string,
-			options: [],
-			range: NSRange(location: 0, length: string.utf16.count)
-		)
-
-		var modifiedText = string
-		for mentionMatch in mentionMatches.reversed() {
-			let range = Range(mentionMatch.range(at: 1), in: modifiedText)!
-			let mention = String(modifiedText[range])
-			let username = String(mention.dropFirst())  // Drop the initial "@"
-			let linkStyle =
-				["admin", "THO", "TwitarrTeam", "moderator"].contains(username) ? "link-danger" : "link-primary"
-			let link = "<a class=\"\(linkStyle)\" href=\"/username/\(username)\">\(mention)</a>"
-			modifiedText.replaceSubrange(range, with: link)
-		}
-		string = modifiedText
-
-		// Hashtags
-		// Tags should:
-		// * Not start in the middle of a word (surrounded by newline, string boundaries, whitespace)
-		// * Begin with a #
-		// * Contain alphanumberic characters with no separators
-		let hashtagPattern = "(?<!\\S)(#[A-Za-z0-9]+)(?!\\S)"
-		let hashtagRegex = try NSRegularExpression(pattern: hashtagPattern, options: [])
-		let hashtagMatches = hashtagRegex.matches(
-			in: string,
-			options: [],
-			range: NSRange(location: 0, length: string.utf16.count)
-		)
-
-		for hashtagMatch in hashtagMatches.reversed() {
-			let range = Range(hashtagMatch.range(at: 1), in: modifiedText)!
-			let mention = String(modifiedText[range])
-			let hashtag = String(mention.dropFirst())  // Drop the initial "#"
-			let link = "<a class=\"link-primary\" href=\"/forumpost/search?hashtag=\(hashtag)\">\(mention)</a>"
-			modifiedText.replaceSubrange(range, with: link)
-		}
-		string = modifiedText
+		// Sanitize first so any user-supplied raw HTML is neutralized (and the <img>/<a> tags we add
+		// next aren't escaped away). Then rewrite the forum's inline syntax (jocomoji, @mentions,
+		// #hashtags) into <img>/<a> HTML. We reuse the same rewriteInline the Markdown path uses, so
+		// both stay in lockstep: same regexes, same link markup, same case-insensitive staff coloring.
+		string = Self.rewriteInline(string.htmlEscaped())
 
 		string = string.replacingOccurrences(of: "\r\n", with: "\n")
 		string = string.replacingOccurrences(of: "\r", with: "\n")
@@ -284,7 +240,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 			while let range = text.range(of: literal, range: searchFrom..<text.endIndex) {
 				rewrites.append(Rewrite(
 					range: NSRange(range, in: text),
-					replacement: "<img src=\"/img/emoji/small/\(emojiTag).png\" width=18 height=18>"
+					replacement: AddJocomojiTag.imgTag(for: emojiTag)
 				))
 				// Use upperBound (not index(after:)) so a match at the very end of the chunk
 				// doesn't call index(after: endIndex), which traps; the next empty search returns nil.
