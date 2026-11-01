@@ -29,7 +29,7 @@ final class DailyTheme: Model, @unchecked Sendable {
 
 	/// Day of cruise, counted from `Settings.shared.cruiseStartDate`. 0 is embarkation day. Values could be negative (e.g. Day -1 is "Anticipation Day")
 	/// Values for this field are uniqued in the database, meaning switching two theme days requires extra steps.
-	@Field(key: "cruise_day") var cruiseDay: Int32
+	@Field(key: "cruise_day") var cruiseDay: Int
 
 	// MARK: Relations
 
@@ -45,7 +45,7 @@ final class DailyTheme: Model, @unchecked Sendable {
 	///   - info: Extra info about the daily theme.
 	///   - image: An image relating to the theme somehow..
 	///   - day: Which day of the cruise this DailyTheme pertains to. Day 0 is embarkation day; days are midnight to midnight in the ship's time zone.
-	init(title: String, info: String, image: String?, day: Int32) {
+	init(title: String, info: String, image: String?, day: Int) {
 		self.title = title
 		self.info = info
 		self.image = image
