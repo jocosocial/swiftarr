@@ -101,7 +101,7 @@ struct UpdateRedisJobBase: APICollection {
 		// the results in memory, so adding more mailboxes (see #517) doesn't add more round trips per user.
 		let userRoles = Set(user.roles.map { $0.role })
 		let applicableMailboxes = PrivilegedMailbox.all.compactMap { mailbox -> (PrivilegedMailbox, UUID)? in
-			guard mailbox.requirement.isSatisfied(accessLevel: user.accessLevel, roles: userRoles),
+			guard mailbox.isSatisfied(accessLevel: user.accessLevel, roles: userRoles),
 				let phantomID = privilegedUserIDs[mailbox.user]
 			else {
 				return nil

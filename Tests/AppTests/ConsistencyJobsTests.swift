@@ -65,8 +65,11 @@ class ConsistencyJobsTests: XCTestCase, SwiftarrBaseTest {
 	// that mailbox's processing rather than crash on the missing dictionary entry.
 	func testProcessUserDoesNotThrowWhenPrivilegedUserIDsIsEmpty() async throws {
 		try await withApp { app in
-			// processUser needs app.redis wired up for the eventLoop it runs on; a request is the
-			// sanctioned way to get the app through Vapor's boot sequence in a test (see withApp).
+			// processUser's Next Event bookkeeping calls addNotifications, which issues its Redis
+			// calls from inside a withThrowingTaskGroup. Those crash ("No redis found for id
+			// default") unless a real request has already gone through the app once--neither
+			// app.asyncBoot() nor app.initializeUserCache(app) is enough on their own (both were
+			// tried; see git history). A throwaway request is the cheapest way to make that happen.
 			try await app.test(.GET, "/api/v3/fez/types") { (_: XCTHTTPResponse) async throws in }
 			let suffix = UUID().uuidString.prefix(8)
 			let user = try await makeUser(app, username: "consistency-\(suffix)", accessLevel: .admin)
