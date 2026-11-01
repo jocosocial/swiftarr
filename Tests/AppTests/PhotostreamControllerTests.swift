@@ -187,6 +187,32 @@ final class PhotostreamControllerTests: XCTestCase, SwiftarrBaseTest {
 		XCTAssertEqual(data.photostreamUploadRateLimit, 0)
 	}
 
+	// MARK: - Cruise week date transposition
+
+	// Regression for a bug that only reproduced on the ~2 days/year a test run happened to land on an
+	// actual DST transition (see testPlacenames_*/testUpload_* below, which all failed on 2026-11-01,
+	// the US fall-back day): `Calendar.date(byAdding:to:)` mishandled a DateComponents that combined a
+	// day offset with hour/minute/second when the addition crossed a DST transition, applying the
+	// pre-transition UTC offset to the whole result. This fixes a historical transition date directly,
+	// so the regression is caught on every run, not just transition days.
+	func testTransposeOntoCruiseWeek_HandlesFallBackDstTransition() {
+		let controller = PhotostreamController()
+		let cal = Settings.shared.getPortCalendar()  // America/New_York by default
+		// US DST ended at 2:00 AM on 2026-11-01. Midnight that day is still EDT (-4); 1:15:08 PM is EST (-5).
+		let cruiseStart = ISO8601DateFormatter().date(from: "2026-11-01T04:00:00Z")!  // midnight EDT
+		let now = ISO8601DateFormatter().date(from: "2026-11-01T18:15:08Z")!  // 1:15:08 PM EST
+		let cruiseStartDayOfWeek = cal.component(.weekday, from: cruiseStart)  // same day: dayOfCruise == 0
+
+		let result = controller.transposeOntoCruiseWeek(
+			now: now,
+			cruiseStart: cruiseStart,
+			cal: cal,
+			cruiseStartDayOfWeek: cruiseStartDayOfWeek
+		)
+
+		XCTAssertEqual(result, now, "transposing 'now' onto its own day must round-trip to 'now', even across a DST transition")
+	}
+
 	// MARK: - Placenames (suggested event list) and upload validation
 
 	private func makeVerifiedUser(_ app: Application) async throws -> (User, HTTPHeaders) {
