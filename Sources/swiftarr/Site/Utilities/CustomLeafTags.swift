@@ -112,7 +112,9 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		// the autolink extension; use markdown link syntax for custom link text.
 		if string.hasPrefix("<Markdown>") {
 			let cleaned = Self.markdownPostText(string)
-			return try LeafData.string(MarkdownTag.markdownToHTML(cleaned, options: []))
+			let html = try MarkdownTag.markdownToHTML(cleaned, options: [])
+			let styled = Self.addMentionLinkClasses(html)
+			return LeafData.string("<div class=\"markdown-body\">\(styled)</div>")
 		}
 
 		// Sanitize, then add jocomoji.
@@ -239,6 +241,42 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		}
 		markdown = hashtagText
 		return markdown
+	}
+
+	/// Post-process cmark HTML to add Bootstrap link color classes to mention and hashtag links.
+	/// Staff mentions get `link-danger`; regular mentions and hashtags get `link-primary`.
+	/// This makes the coloring independent of URL case (unlike CSS href attribute selectors).
+	static func addMentionLinkClasses(_ html: String) -> String {
+		let staffUsernames: Set<String> = ["admin", "tho", "twitarrteam", "moderator"]
+		var result = html
+
+		// Mention links: <a href="/username/...">
+		let mentionPattern = "<a href=\"/username/([^\"]+)\">"
+		let mentionRegex = try! NSRegularExpression(pattern: mentionPattern)
+		let fullRange = NSRange(result.startIndex..<result.endIndex, in: result)
+		let matches = mentionRegex.matches(in: result, options: [], range: fullRange)
+		for match in matches.reversed() {
+			guard let fullMatchRange = Range(match.range(at: 0), in: result),
+			      let usernameRange = Range(match.range(at: 1), in: result) else { continue }
+			let username = String(result[usernameRange])
+			let isStaff = staffUsernames.contains(username.lowercased())
+			let className = isStaff ? "link-danger" : "link-primary"
+			result.replaceSubrange(fullMatchRange, with: "<a class=\"\(className)\" href=\"/username/\(username)\">")
+		}
+
+		// Hashtag links: <a href="/forumpost/search?hashtag=...">
+		let hashtagPattern = "<a href=\"(/forumpost/search\\?hashtag=[^\"]+)\">"
+		let hashtagRegex = try! NSRegularExpression(pattern: hashtagPattern)
+		let hRange = NSRange(result.startIndex..<result.endIndex, in: result)
+		let hMatches = hashtagRegex.matches(in: result, options: [], range: hRange)
+		for match in hMatches.reversed() {
+			guard let fullMatchRange = Range(match.range(at: 0), in: result),
+			      let hrefRange = Range(match.range(at: 1), in: result) else { continue }
+			let href = String(result[hrefRange])
+			result.replaceSubrange(fullMatchRange, with: "<a class=\"link-primary\" href=\"\(href)\">")
+		}
+
+		return result
 	}
 
 	/// Process a set of regex matches and substitute appropriate content in a return HTML string.
@@ -378,6 +416,22 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		let genericUrlRegexStr =
 			"(?i)\\b((?:https?:(?:/{1,3}|[a-z0-9%])|\(escapedCanonicalHostnames)/)(?:[^\\s()<>{}\\[\\]]+|\\([^\\s()]*?\\([^\\s()]+\\)[^\\s()]*?\\)|\\([^\\s]+?\\))+(?:\\([^\\s()]*?\\([^\\s()]+\\)[^\\s()]*?\\)|\\([^\\s]+?\\)|[^\\s`!()\\[\\]{};:'\".,<>?«»“”‘’])|(?:(?<!@)\(escapedCanonicalHostnames)\\b/?(?!@)))"
 		genericUrlRegex = try NSRegularExpression(pattern: genericUrlRegexStr, options: .caseInsensitive)
+	}
+}
+
+/// Wraps `MarkdownTag` (cmark) output in a `<div class="markdown-body">` so that
+/// site CSS can scope mention-link colors and jocomoji sizing to Markdown content.
+///
+/// Usage: #markdownTextTag(String) -> String
+struct MarkdownBodyTag: UnsafeUnescapedLeafTag {
+	func render(_ ctx: LeafContext) throws -> LeafData {
+		try ctx.requireParameterCount(1)
+		guard let markdown = ctx.parameters[0].string else {
+			return LeafData.string("")
+		}
+		let html = try MarkdownTag.markdownToHTML(markdown, options: [])
+		let styled = FormatPostTextTag.addMentionLinkClasses(html)
+		return LeafData.string("<div class=\"markdown-body\">\(styled)</div>")
 	}
 }
 

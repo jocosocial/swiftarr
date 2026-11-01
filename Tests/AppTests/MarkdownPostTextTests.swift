@@ -54,4 +54,48 @@ class MarkdownPostTextTests: XCTestCase {
 		// A colon pair that doesn't match a known jocomoji name is left alone.
 		XCTAssertEqual(render("<Markdown>time is 12:30 and :unknown:</Markdown>"), "time is 12:30 and :unknown:")
 	}
+
+	// MARK: - addMentionLinkClasses tests
+
+	private func addClasses(_ html: String) -> String {
+		FormatPostTextTag.addMentionLinkClasses(html)
+	}
+
+	func testStaffMentionGetsLinkDanger() {
+		let input = "<a href=\"/username/admin\">@admin</a>"
+		XCTAssertEqual(addClasses(input), "<a class=\"link-danger\" href=\"/username/admin\">@admin</a>")
+	}
+
+	func testStaffMentionCaseInsensitive() {
+		// Even if the URL has different casing, it should still be detected as staff.
+		let input = "<a href=\"/username/THO\">@THO</a>"
+		XCTAssertEqual(addClasses(input), "<a class=\"link-danger\" href=\"/username/THO\">@THO</a>")
+
+		let input2 = "<a href=\"/username/TwitarrTeam\">@TwitarrTeam</a>"
+		XCTAssertEqual(addClasses(input2), "<a class=\"link-danger\" href=\"/username/TwitarrTeam\">@TwitarrTeam</a>")
+
+		let input3 = "<a href=\"/username/moderator\">@moderator</a>"
+		XCTAssertEqual(addClasses(input3), "<a class=\"link-danger\" href=\"/username/moderator\">@moderator</a>")
+	}
+
+	func testRegularMentionGetsLinkPrimary() {
+		let input = "<a href=\"/username/challfry\">@challfry</a>"
+		XCTAssertEqual(addClasses(input), "<a class=\"link-primary\" href=\"/username/challfry\">@challfry</a>")
+	}
+
+	func testHashtagGetsLinkPrimary() {
+		let input = "<a href=\"/forumpost/search?hashtag=arr\">#arr</a>"
+		XCTAssertEqual(addClasses(input), "<a class=\"link-primary\" href=\"/forumpost/search?hashtag=arr\">#arr</a>")
+	}
+
+	func testMultipleLinksInOneHTML() {
+		let input = "<p><a href=\"/username/THO\">@THO</a> and <a href=\"/username/challfry\">@challfry</a> and <a href=\"/forumpost/search?hashtag=fun\">#fun</a></p>"
+		let expected = "<p><a class=\"link-danger\" href=\"/username/THO\">@THO</a> and <a class=\"link-primary\" href=\"/username/challfry\">@challfry</a> and <a class=\"link-primary\" href=\"/forumpost/search?hashtag=fun\">#fun</a></p>"
+		XCTAssertEqual(addClasses(input), expected)
+	}
+
+	func testUnrelatedLinksUntouched() {
+		let input = "<a href=\"/forums/12\">Forum</a>"
+		XCTAssertEqual(addClasses(input), input)
+	}
 }
