@@ -53,13 +53,13 @@ struct NotificationLogContext: Encodable {
 	}
 }
 
-/// SiteNotificationController handles the web page showing a user's Notification Log -- a history of
+/// NotificationController handles the web page showing a user's Notification Log -- a history of
 /// notifications that were delivered to them, backed by `GET /api/v3/notification/log`.
-struct SiteNotificationController: SiteControllerUtils {
+struct NotificationController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
 		// Routes for non-shareable content. If you're not logged in we failscreen.
-		let privateRoutes = getPrivateRoutes(app, feature: .notifications)
+		let privateRoutes = getPrivateRoutes(app, feature: .notificationLog)
 		privateRoutes.get("notifications", use: notificationLogPageHandler)
 			.destination("your notification log")
 	}

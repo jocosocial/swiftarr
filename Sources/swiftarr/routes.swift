@@ -51,7 +51,7 @@ public func routes(_ app: Application) throws {
 		SiteForumController(),
 		SiteEventsController(),
 		SiteUserController(),
-		SiteNotificationController(),
+		NotificationController(),
 		SiteBoardgameController(),
 		SiteKaraokeController(),
 		SiteModController(),

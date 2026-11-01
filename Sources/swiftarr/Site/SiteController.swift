@@ -89,7 +89,7 @@ struct TrunkContext: Encodable {
 		// Mirrors the THO/admin bypass in DisabledSiteSectionMiddleware.
 		showQuartermasterNav = !Settings.shared.disabledFeatures.isFeatureDisabled(.quartermaster, inApp: .swiftarr)
 			|| ["THO", "admin"].contains(username)
-		showNotificationsNav = !Settings.shared.disabledFeatures.isFeatureDisabled(.notifications, inApp: .swiftarr)
+		showNotificationsNav = !Settings.shared.disabledFeatures.isFeatureDisabled(.notificationLog, inApp: .swiftarr)
 			|| ["THO", "admin"].contains(username)
 		eventStartingSoon = false
 		if req.route != nil, let alertsStr = req.session.data["alertCounts"],
