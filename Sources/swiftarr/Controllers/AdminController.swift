@@ -46,12 +46,15 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.post("clients", clientAppIDParam, "delete", use: clientAppDeleteHandler)
 		ttAuthGroup.delete("clients", clientAppIDParam, use: clientAppDeleteHandler)
 
+		ttAuthGroup.on(.POST, "dailytheme", "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: addDailyThemeHandler).setUsedForPreregistration()
+		ttAuthGroup.on(.POST, "dailytheme", dailyThemeIDParam, "edit", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: editDailyThemeHandler).setUsedForPreregistration()
+		ttAuthGroup.post("dailytheme", dailyThemeIDParam, "delete", use: deleteDailyThemeHandler).setUsedForPreregistration()
+		ttAuthGroup.delete("dailytheme", dailyThemeIDParam, use: deleteDailyThemeHandler).setUsedForPreregistration()
+		ttAuthGroup.get("dailytheme", "schedule", "verify", use: dailyThemeScheduleVerifyHandler).setUsedForPreregistration()
+		ttAuthGroup.post("dailytheme", "schedule", "apply", use: dailyThemeScheduleApplyHandler).setUsedForPreregistration()
+
 		// endpoints available for THO and Admin only
 		let thoAuthGroup = adminRoutes.tokenRoutes(minAccess: .tho)
-		thoAuthGroup.on(.POST, "dailytheme", "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: addDailyThemeHandler).setUsedForPreregistration()
-		thoAuthGroup.on(.POST, "dailytheme", dailyThemeIDParam, "edit", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: editDailyThemeHandler).setUsedForPreregistration()
-		thoAuthGroup.post("dailytheme", dailyThemeIDParam, "delete", use: deleteDailyThemeHandler).setUsedForPreregistration()
-		thoAuthGroup.delete("dailytheme", dailyThemeIDParam, use: deleteDailyThemeHandler).setUsedForPreregistration()
 
 		// Note that there's several promote method that promote to different access levels, but
 		// only one demote, that returns the user to Verified.
@@ -225,6 +228,41 @@ struct AdminController: APIRouteCollection {
 		let theme = try await DailyTheme.findFromParameter(dailyThemeIDParam, on: req)
 		try await theme.delete(on: req.db)
 		return .noContent
+	}
+
+	/// `GET /api/v3/admin/dailytheme/schedule/verify`
+	///
+	/// Compares the daily themes in the database against the theme days in the schedule (events titled "Theme: ...") and returns what
+	/// would be created, modified, or deleted. Nothing is changed. Themes are matched by cruise day.
+	///
+	/// - Parameter cruiseDayOffset: Optional query parameter. Added to each theme's computed cruise day; useful for testing outside the cruise week. Defaults to 0.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `DailyThemeUpdateDifferenceData`
+	func dailyThemeScheduleVerifyHandler(_ req: Request) async throws -> DailyThemeUpdateDifferenceData {
+		let offset = req.query[Int.self, at: "cruiseDayOffset"] ?? 0
+		return try await DailyThemeScheduleSync.compute(cruiseDayOffset: offset, on: req.db).differenceData()
+	}
+
+	/// `POST /api/v3/admin/dailytheme/schedule/apply`
+	///
+	/// Recomputes the difference from the schedule and applies it to the daily themes. Existing theme images are preserved.
+	///
+	/// - Parameter skipNew: Query parameter, `true` to not create themes. Defaults to false.
+	/// - Parameter skipDiff: Query parameter, `true` to not modify existing themes. Defaults to false.
+	/// - Parameter skipDelete: Query parameter, `true` to not delete themes. Defaults to false.
+	/// - Parameter cruiseDayOffset: Query parameter, added to each theme's computed cruise day. Defaults to 0.
+	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `HTTP 200 OK` if the changes were applied.
+	func dailyThemeScheduleApplyHandler(_ req: Request) async throws -> HTTPStatus {
+		let user = try req.auth.require(UserCacheData.self)
+		try user.guardCanCreateContent(customErrorString: "user cannot modify daily themes")
+		let skipNew = req.query[String.self, at: "skipNew"]?.lowercased() == "true"
+		let skipDiff = req.query[String.self, at: "skipDiff"]?.lowercased() == "true"
+		let skipDelete = req.query[String.self, at: "skipDelete"]?.lowercased() == "true"
+		let offset = req.query[Int.self, at: "cruiseDayOffset"] ?? 0
+		let sync = try await DailyThemeScheduleSync.compute(cruiseDayOffset: offset, on: req.db)
+		try await sync.apply(skipNew: skipNew, skipDiff: skipDiff, skipDelete: skipDelete, on: req.db)
+		return .ok
 	}
 
 	/// `GET /api/v3/admin/serversettings`
