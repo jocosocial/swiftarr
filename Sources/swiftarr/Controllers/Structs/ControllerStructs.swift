@@ -270,7 +270,7 @@ public struct DailyThemeData: Content {
 	/// An image that relates to the theme.
 	var image: String?
 	/// Day of cruise, counted from `Settings.shared.cruiseStartDate`. 0 is embarkation day. Values could be negative (e.g. Day -1 is "Anticipation Day")
-	var cruiseDay: Int32
+	var cruiseDay: Int
 }
 
 extension DailyThemeData {

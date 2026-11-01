@@ -281,21 +281,11 @@ struct PhotostreamController: APIRouteCollection {
 	// in which to upload their pic.
 	func getPlacenameList(_ req: Request, forValidation: Bool) async throws -> PhotostreamLocationData {
 		let user = try req.auth.require(UserCacheData.self)
-		
+
 		// As with event getters, translate the current time-of-week into the same time of the cruise week (for whatever
 		// year our schedule data is for), so that we can test getting event placeenames year-round. During cruise week
 		// this translation should no-op.
-		let cruiseStart = Settings.shared.cruiseStartDate()
-		let cal = Settings.shared.calendarForDate(cruiseStart)
-		let thisWeekday = cal.component(.weekday, from: Date())
-		let dayOfCruise = (7 + thisWeekday - Settings.shared.cruiseStartDayOfWeek) % 7	// 0 for embark day
-		let currentDateComponents = cal.dateComponents(in: cal.timeZone, from: Date())
-// For testing
-//		let dayOfCruise = 1	// 0 for embark day
-//		let currentDateComponents = DateComponents(calendar: cal, timeZone: cal.timeZone, hour: 15, minute: 2, second: 0)
-		let cruiseWeekOffset = DateComponents(calendar: cal, timeZone: cal.timeZone, day: dayOfCruise, hour: currentDateComponents.hour, 
-				minute: currentDateComponents.minute, second: currentDateComponents.second)
-		let effectiveDate = cal.date(byAdding: cruiseWeekOffset, to: cruiseStart, wrappingComponents: false)
+		let effectiveDate = Settings.shared.getDateInCruiseWeek()
 		// Search for current events; if we're validating an upload include the event if it ended in the last 5 mins
 		let currentPortTime = try await TimeZoneChangeSet(req.db).displayTimeToPortTime(effectiveDate)
 		let validationEndTime = forValidation ? currentPortTime - 300.0 : currentPortTime
