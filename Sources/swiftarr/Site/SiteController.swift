@@ -54,8 +54,11 @@ struct TrunkContext: Encodable {
 
 	/// Theme preference: "auto" | "light" | "dark". Read from the swiftarr_theme cookie.
 	var theme: String
+	var developmentLiveReload: Bool
 
 	init(_ req: Request, title: String, tab: Tab) {
+		developmentLiveReload = DevelopmentResources.root(on: req.application) != nil
+			&& Environment.get("SWIFTARR_DEV_RELOAD_FILE") != nil
 		var userAccessLevel: UserAccessLevel = .banned  // Not logged in is equivalent to can't log in, for our purposes here
 		if let user = req.auth.get(UserCacheData.self) {
 			userAccessLevel = UserAccessLevel(rawValue: req.session.data["accessLevel"] ?? "banned") ?? .banned

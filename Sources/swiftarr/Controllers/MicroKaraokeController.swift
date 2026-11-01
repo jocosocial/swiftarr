@@ -37,7 +37,7 @@ struct MicroKaraokeController: APIRouteCollection {
 		// Does this user have an existing offer? If so, return it.
 		if let openOffer = try await MKSnippet.query(on: req.db).filter(\.$mediaURL == nil)
 				.filter(\.$author.$id == cacheUser.userID).with(\.$song).first() {
-			return try makeOfferPacket(from: openOffer, song: openOffer.song) 
+			return try makeOfferPacket(from: openOffer, song: openOffer.song, on: req.application)
 		}
 		
 		// Check that we have enough open slots. If not, generate a new song
@@ -80,7 +80,7 @@ struct MicroKaraokeController: APIRouteCollection {
 				
 				let newOffer = try MKSnippet(song: song, songSnippetIndex: chosenSlot, author: cacheUser)
 				try await newOffer.save(on: req.db)
-				let result = try makeOfferPacket(from: newOffer, song: song)
+				let result = try makeOfferPacket(from: newOffer, song: song, on: req.application)
 				return result
 			}
 		}
@@ -243,8 +243,9 @@ struct MicroKaraokeController: APIRouteCollection {
 	// urlForSongDirectory() gets the `/Assets/microkaraoke` directory, where the STATIC file assets are stored (mostly short sound files)
 	// urlForSongDirectory(songName:) gets the subdir for a specific song,
 	// urlForSongDirectory(songName:, snippetIndex:) gets the subdir for a snippet within a song
-	func urlForSongDirectory(songName: String? = nil, snippetIndex: Int? = nil) -> URL {
-		var mkPath = Settings.shared.staticFilesRootPath.appendingPathComponent("Resources")
+	/// Resolves song files from the same source or bundled resources used by the HTTP file routes.
+	func urlForSongDirectory(on app: Application, songName: String? = nil, snippetIndex: Int? = nil) -> URL {
+		var mkPath = DevelopmentResources.siteRoot(on: app)
 				.appendingPathComponent("Assets")
 				.appendingPathComponent("microkaraoke")
 		if let songName = songName {
@@ -263,8 +264,9 @@ struct MicroKaraokeController: APIRouteCollection {
 		return result
 	}
 	
-	func makeOfferPacket(from snippet: MKSnippet, song: MKSong) throws -> MicroKaraokeOfferPacket {
-		let localSnippetDir = urlForSongDirectory(songName: song.songName, snippetIndex: snippet.songSnippetIndex)
+	/// Reads offer lyrics from the same resource root that serves the corresponding audio files.
+	func makeOfferPacket(from snippet: MKSnippet, song: MKSong, on app: Application) throws -> MicroKaraokeOfferPacket {
+		let localSnippetDir = urlForSongDirectory(on: app, songName: song.songName, snippetIndex: snippet.songSnippetIndex)
 		let lyricsFileURL = localSnippetDir.appendingPathComponent("lyric.txt")
 		let lyrics = try String(contentsOf: lyricsFileURL, encoding: .utf8)
 		var serverSnippetDirURL = Settings.shared.canonicalServerURLComponents
@@ -277,7 +279,7 @@ struct MicroKaraokeController: APIRouteCollection {
 	
 	// Creates a new MKSong model
 	func addSong(_ req: Request, currentSong: MKSong?) async throws {
-		let mkPath = urlForSongDirectory()
+		let mkPath = urlForSongDirectory(on: req.application)
 		var allSongs = try FileManager.default.contentsOfDirectory(at: mkPath, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles])
 		allSongs = allSongs.filter { $0.hasDirectoryPath }
 		// Remove songs from consideration if their songInfo's 'allowAdds' is false
@@ -325,7 +327,7 @@ struct MicroKaraokeController: APIRouteCollection {
 	}
 	
 	func getSongInfo(forSongNamed songName: String, on req: Request) async throws -> SongInfoJSON {
-		let songInfoURL = urlForSongDirectory(songName: songName).appendingPathComponent("songinfo.json")
+		let songInfoURL = urlForSongDirectory(on: req.application, songName: songName).appendingPathComponent("songinfo.json")
 		let buffer = try await req.fileio.collectFile(at: songInfoURL.path)
 		guard let songInfoJSON = buffer.getData(at: 0, length: buffer.readableBytes) else {
 			throw Abort(.badRequest, reason: "Could not read songinfo file.")

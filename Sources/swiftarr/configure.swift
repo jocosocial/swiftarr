@@ -220,10 +220,17 @@ struct SwiftarrConfigurator {
 		Settings.shared.validImageOutputTypes = [".png", ".jpg", ".jpeg"]
 
 		// Set the app's views dir, which is where all the Leaf template files are.
+		let siteResources = DevelopmentResources.siteRoot(on: app)
 		app.directory.viewsDirectory =
-			Settings.shared.staticFilesRootPath.appendingPathComponent("Resources/Views").path
+			siteResources.appendingPathComponent("Views").path
 		// Also set the resources dir, although I don't think it's used anywhere.
-		app.directory.resourcesDirectory = Settings.shared.staticFilesRootPath.appendingPathComponent("Resources").path
+		app.directory.resourcesDirectory = siteResources.path
+		if DevelopmentResources.root(on: app) != nil {
+			guard FileManager.default.fileExists(atPath: siteResources.appendingPathComponent("Views/trunk.html").path),
+				FileManager.default.fileExists(atPath: siteResources.appendingPathComponent("Assets/js/swiftarr.js").path)
+			else { throw "SWIFTARR_DEV_RESOURCES must point to the source Resources directory." }
+			configLog.notice("Serving development site resources from \(siteResources.path)")
+		}
 
 		// This sets the root dir for the "User Images" tree, which is where user uploaded images are stored.
 		// The postgres DB holds filenames that refer to files in this directory tree; ideally the lifetime of the
@@ -491,6 +498,9 @@ struct SwiftarrConfigurator {
 	}
 
 	func configureLeaf(_ app: Application) throws {
+		if DevelopmentResources.root(on: app) != nil {
+			app.leaf.cache.isEnabled = false
+		}
 
 		// Create a custom Leaf source that doesn't have the '.toVisibleFiles' limit and uses '.html' instead of '.leaf' as the
 		// default extension. We need visible files turned off because of Heroku, which builds the app into a dir named ".swift-bin"
