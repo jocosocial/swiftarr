@@ -15,6 +15,8 @@ struct AdminController: APIRouteCollection {
 		
 		// Open routes with no auth requirements
 		adminRoutes.get("timezonechanges", use: timeZoneChangeHandler).setUsedForPreregistration()
+		adminRoutes.get("clients", use: clientAppListHandler).setUsedForPreregistration()
+		adminRoutes.get("clients", clientAppIDParam, use: clientAppGetHandler).setUsedForPreregistration()
 
 		// endpoints available to TwitarrTeam and above, or users with the Account Manager role
 		let accountMgrAuthGroup = adminRoutes.tokenRoutes(minAccess: .verified)
@@ -38,6 +40,11 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.get("rollup", use: serverRollupCounts)
 
 		ttAuthGroup.post("notifications", "reload", use: triggerConsistencyJobHandler)
+
+		ttAuthGroup.on(.POST, "clients", "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: clientAppCreateHandler)
+		ttAuthGroup.on(.POST, "clients", clientAppIDParam, "update", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: clientAppUpdateHandler)
+		ttAuthGroup.post("clients", clientAppIDParam, "delete", use: clientAppDeleteHandler)
+		ttAuthGroup.delete("clients", clientAppIDParam, use: clientAppDeleteHandler)
 
 		// endpoints available for THO and Admin only
 		let thoAuthGroup = adminRoutes.tokenRoutes(minAccess: .tho)
@@ -71,6 +78,83 @@ struct AdminController: APIRouteCollection {
 
 		// Only admin may promote to THO
 		adminAuthGroup.post("tho", "promote", userIDParam, use: makeTHOHandler)
+	}
+
+	// MARK: - Client Apps
+
+	/// `GET /api/v3/admin/clients`
+	///
+	/// Returns the list of suggested client apps, sorted by `sortName`. No auth required.
+	///
+	/// - Parameter platform: Query parameter. `web`, `ios`, `android`, or `other` to only return apps available on that platform.
+	///   `all` or no parameter returns every app.
+	/// - Returns: `[ClientAppData]`
+	func clientAppListHandler(_ req: Request) async throws -> [ClientAppData] {
+		let platform = try ClientAppPlatform.fromAPIString(req.query[String.self, at: "platform"])
+		let apps = try await ClientApp.query(on: req.db).sort(\.$sortName).sort(\.$name).all()
+		return try apps.filter { platform == nil || $0.platforms.contains(platform!) }.map { try ClientAppData($0) }
+	}
+
+	/// `GET /api/v3/admin/clients/:client_app_id`
+	///
+	/// Returns a single client app. No auth required.
+	///
+	/// - Returns: `ClientAppData`
+	func clientAppGetHandler(_ req: Request) async throws -> ClientAppData {
+		return try ClientAppData(try await ClientApp.findFromParameter(clientAppIDParam, on: req))
+	}
+
+	/// `POST /api/v3/admin/clients/create`
+	///
+	/// Creates a new client app. TwitarrTeam and above.
+	///
+	/// - Parameter requestBody: `ClientAppUploadData`
+	/// - Returns: `HTTP 201 Created` with the new `ClientAppData`.
+	func clientAppCreateHandler(_ req: Request) async throws -> Response {
+		let data = try ValidatingJSONDecoder().decode(ClientAppUploadData.self, fromBodyOf: req)
+		let filenames = try await processImages(data.image.map { [$0] } ?? [], usage: .clientApp, maxImages: 1, on: req)
+		let app = ClientApp(name: data.name, description: data.description, image: filenames.first, developer: data.developer,
+				sortName: data.sortName?.isEmpty == false ? data.sortName : nil, links: data.links,
+				swiftarrClient: data.swiftarrClient)
+		try await app.save(on: req.db)
+		let response = Response(status: .created)
+		try response.content.encode(try ClientAppData(app), as: .json)
+		return response
+	}
+
+	/// `POST /api/v3/admin/clients/:client_app_id/update`
+	///
+	/// Edits a client app. Passing nil for the image removes an existing image. TwitarrTeam and above.
+	///
+	/// - Parameter requestBody: `ClientAppUploadData`
+	/// - Returns: `HTTP 201 Created` with the updated `ClientAppData`.
+	func clientAppUpdateHandler(_ req: Request) async throws -> Response {
+		let data = try ValidatingJSONDecoder().decode(ClientAppUploadData.self, fromBodyOf: req)
+		let app = try await ClientApp.findFromParameter(clientAppIDParam, on: req)
+		let filenames = try await processImages(data.image.map { [$0] } ?? [], usage: .clientApp, maxImages: 1, on: req)
+		app.name = data.name
+		app.appDescription = data.description
+		app.image = filenames.first
+		app.developer = data.developer
+		app.sortName = data.sortName?.isEmpty == false ? data.sortName! : data.name
+		app.links = data.links
+		app.swiftarrClient = data.swiftarrClient
+		try await app.save(on: req.db)
+		let response = Response(status: .created)
+		try response.content.encode(try ClientAppData(app), as: .json)
+		return response
+	}
+
+	/// `POST /api/v3/admin/clients/:client_app_id/delete`
+	/// `DELETE /api/v3/admin/clients/:client_app_id`
+	///
+	/// Deletes a client app. TwitarrTeam and above.
+	///
+	/// - Returns: `HTTP 204 No Content`
+	func clientAppDeleteHandler(_ req: Request) async throws -> HTTPStatus {
+		let app = try await ClientApp.findFromParameter(clientAppIDParam, on: req)
+		try await app.delete(on: req.db)
+		return .noContent
 	}
 
 	/// `POST /api/v3/admin/dailytheme/create`

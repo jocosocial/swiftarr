@@ -13,12 +13,15 @@ Finally, the frontend currently doesn't provide an easy way to signal that an op
 
 These routes do not require any authorization header to access. 
 
-Method | Route | Notes
---- | --- | ---
-| GET | /login | You probably don't want to open a web view for users to log in, as you won't get the token (the web pages use session auth) and you can't use session auth for API calls. Intercepting the login URL and fulfilling the request in-app makes sense, however.
-| GET | /createAccount | If you don't want to build native UI for this, you could open a web view, let the user make their account, and then show them a native login screen.
-| GET | /resetPassword | Another seldom-used but important page that could work well as a in-app web view.
-| GET | /codeOfConduct | An easy way to put this info in your app if you don't want a custom view.
+| Method | Route                     | Notes                                                                                                                                                                                                                                                        |
+| ------ | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | /login                    | You probably don't want to open a web view for users to log in, as you won't get the token (the web pages use session auth) and you can't use session auth for API calls. Intercepting the login URL and fulfilling the request in-app makes sense, however. |
+| GET    | /createAccount            | If you don't want to build native UI for this, you could open a web view, let the user make their account, and then show them a native login screen.                                                                                                         |
+| GET    | /resetPassword            | Another seldom-used but important page that could work well as a in-app web view.                                                                                                                                                                            |
+| GET    | /codeOfConduct            | An easy way to put this info in your app if you don't want a custom view.                                                                                                                                                                                    |
+| GET    | /                         | The Today page, the root of the website. This is the link the Twitarr web QR code from THO points at.                                                                                                                                                        |
+| GET    | /clients?platform=android | Lists the suggested client apps available for Android, with download links. The link encoded in the Android QR code from THO.                                                                                                                                |
+| GET    | /clients?platform=ios     | Lists the suggested client apps available for iOS, with download links. The link encoded in the iOS QR code from THO.                                                                                                                                        |
 
 ## Token Access Routes
 

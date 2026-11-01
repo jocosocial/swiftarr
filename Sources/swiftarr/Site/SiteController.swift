@@ -957,15 +957,19 @@ extension SiteControllerUtils {
 		return nil
 	}
 			
-	func displayMarkdownFileContents(_ req: Request, filePath: String, agreeButtonDestination: String? = nil) async throws -> View {
+	/// Fetches a markdown file from the server's static files (e.g. "/public/faq.md") as a String.
+	func fetchMarkdownFile(_ req: Request, filePath: String) async throws -> String {
 		var urlComponents = Settings.shared.apiUrlComponents
 		urlComponents.path = filePath
 		guard let apiURLString = urlComponents.string else {
 			throw Abort(.internalServerError, reason: "Unable to build URL to API endpoint.")
 		}
 		let response = try await req.client.send(.GET, to: URI(string: apiURLString))
-		let decoder = PlaintextDecoder()
-		let document = try response.content.decode(String.self, using: decoder)
+		return try response.content.decode(String.self, using: PlaintextDecoder())
+	}
+
+	func displayMarkdownFileContents(_ req: Request, filePath: String, agreeButtonDestination: String? = nil) async throws -> View {
+		let document = try await fetchMarkdownFile(req, filePath: filePath)
 		let ctx = try MarkdownPageContext(req, content: document, agreeButtonDestination: agreeButtonDestination)
 		return try await req.view.render("showMarkdown", ctx)
 	}

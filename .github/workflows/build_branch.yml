@@ -54,7 +54,7 @@ jobs:
   Test:
     runs-on: ubuntu-24.04
     container:
-      image: swift:6.3-noble
+      image: swift:6.4-resolute
     services:
       postgres:
         image: postgres:15
@@ -88,14 +88,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install image system libraries
-        run: apt-get update && apt-get install -y libgd-dev libvips-dev
+        run: apt-get update && apt-get install -y libgd-dev libvips-dev libheif-plugin-libde265 libheif-plugin-dav1d
       - name: Restore SwiftPM cache
         uses: actions/cache@v4
         with:
           path: .build
-          key: ${{ runner.os }}-swift-${{ hashFiles('Package.resolved') }}
+          key: ${{ runner.os }}-swift-6.4-resolute-${{ hashFiles('Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-swift-
+            ${{ runner.os }}-swift-6.4-resolute-
       - name: Build
         run: swift build
       - name: Migrate the test database
