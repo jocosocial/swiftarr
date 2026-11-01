@@ -12,7 +12,7 @@ import FluentSQL
 /// 	- See Also: [PostDetailData](PostDetailData) the DTO for returning extended data on ForumPosts.
 /// 	- See Also: [PostContentData](PostContentData) the DTO for creating ForumPosts.
 /// 	- See Also: [CreateForumPostSchema](CreateForumPostSchema) the Migration for creating the ForumPost table in the database.
-final class ForumPost: Model, Searchable, @unchecked Sendable {
+final class ForumPost: Model, Searchable, @unchecked Sendable, Debouncable {
 	static let schema = "forumpost"
 
 	// MARK: Properties
@@ -22,7 +22,7 @@ final class ForumPost: Model, Searchable, @unchecked Sendable {
 	@ID(custom: "id") var id: Int?
 
 	/// The text content of the post.
-	@Field(key: "text") var text: String
+	@ContentField(key: "text") var text: String
 
 	/// The filenames of any images for the post.
 	@OptionalField(key: "images") var images: [String]?

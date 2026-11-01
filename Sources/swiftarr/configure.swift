@@ -668,6 +668,8 @@ struct SwiftarrConfigurator {
 		app.migrations.add(AddVisibilityFieldToFriendlyFezSchema(), to: .psql)
 		app.migrations.add(CreateClientAppSchema(), to: .psql)
 		app.migrations.add(UpdateEventSchema_AgeRating(), to: .psql)
+		app.migrations.add(AddDebounceConstraint<FezPost>(), to: .psql)
+		app.migrations.add(AddDebounceConstraint<ForumPost>(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 
