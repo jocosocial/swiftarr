@@ -276,45 +276,16 @@ struct PhotostreamController: APIRouteCollection {
 	
 // MARK: Utilities
 
-	/// Transposes `now`'s wall-clock time onto the same weekday within `cruiseStart`'s calendar week, so
-	/// Photostream event filtering works year-round against whatever year the schedule data is for.
-	///
-	/// `Calendar.date(byAdding:to:)` mishandles a `DateComponents` that combines a day offset with
-	/// hour/minute/second when the addition crosses a DST transition--it keeps the pre-transition UTC
-	/// offset for the whole addition instead of landing in the correct post-transition one. This adds the
-	/// day offset alone (safe), then sets hour/minute/second directly on the result rather than adding
-	/// them, so the DST offset is resolved fresh for the landed day.
-	func transposeOntoCruiseWeek(now: Date, cruiseStart: Date, cal: Calendar, cruiseStartDayOfWeek: Int) -> Date? {
-		let thisWeekday = cal.component(.weekday, from: now)
-		let dayOfCruise = (7 + thisWeekday - cruiseStartDayOfWeek) % 7	// 0 for embark day
-		let currentDateComponents = cal.dateComponents(in: cal.timeZone, from: now)
-		return cal.date(byAdding: .day, value: dayOfCruise, to: cruiseStart).flatMap { dayShifted in
-			var components = cal.dateComponents([.year, .month, .day], from: dayShifted)
-			components.hour = currentDateComponents.hour
-			components.minute = currentDateComponents.minute
-			components.second = currentDateComponents.second
-			components.timeZone = cal.timeZone
-			return cal.date(from: components)
-		}
-	}
-
 	// Gets the list of placenames and current events. If forValidation is TRUE, also returns events that ended within
 	// the last 5 minutes. This gives a user taking a Photostream photo near the end of an event a bit of a grace period
 	// in which to upload their pic.
 	func getPlacenameList(_ req: Request, forValidation: Bool) async throws -> PhotostreamLocationData {
 		let user = try req.auth.require(UserCacheData.self)
-		
+
 		// As with event getters, translate the current time-of-week into the same time of the cruise week (for whatever
 		// year our schedule data is for), so that we can test getting event placeenames year-round. During cruise week
 		// this translation should no-op.
-		let cruiseStart = Settings.shared.cruiseStartDate()
-		let cal = Settings.shared.calendarForDate(cruiseStart)
-		let effectiveDate = transposeOntoCruiseWeek(
-			now: Date(),
-			cruiseStart: cruiseStart,
-			cal: cal,
-			cruiseStartDayOfWeek: Settings.shared.cruiseStartDayOfWeek
-		)
+		let effectiveDate = Settings.shared.getDateInCruiseWeek()
 		// Search for current events; if we're validating an upload include the event if it ended in the last 5 mins
 		let currentPortTime = try await TimeZoneChangeSet(req.db).displayTimeToPortTime(effectiveDate)
 		let validationEndTime = forValidation ? currentPortTime - 300.0 : currentPortTime
