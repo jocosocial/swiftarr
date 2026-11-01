@@ -525,7 +525,7 @@ struct SiteController: SiteControllerUtils {
 		openRoutes.get(use: rootPageHandler).destination("the Today page")
 		openRoutes.get("about", use: aboutTwitarrViewHandler).destination("the About page")
 		openRoutes.get("faq", use: twitarrFAQViewHandler).destination("the FAQ page")
-		openRoutes.get("modguide", use: twitarrModGuideViewHandler).destination("the Moderator Guide")
+		openRoutes.get("moderator", "guide", use: twitarrModGuideViewHandler).destination("the Moderator Guide")
 		openRoutes.get("time", use: timePageHandler).destination("the server Time page")
 		openRoutes.get("map", use: mapPageHandler).destination("the boat map")
 	}
@@ -666,7 +666,7 @@ struct SiteController: SiteControllerUtils {
 		return try await displayMarkdownFileContents(req, filePath: "/public/faq.md", title: "Frequently Asked Questions")
 	}
 
-	/// GET /modguide
+	/// GET /moderator/guide
 	///
 	/// Shows the Moderator Guide, which is a render of a Markdown source file.
 	///
