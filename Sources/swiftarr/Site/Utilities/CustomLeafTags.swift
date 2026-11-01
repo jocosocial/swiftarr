@@ -106,14 +106,15 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		// Posts starting with the <Markdown> marker are rendered as Markdown via leaf-markdown's
 		// cmark parser. cmark runs in safe mode, so any user-supplied raw HTML is neutralized
 		// rather than passed through, and the tagfilter extension strips unknown tags.
-		// Before parsing we rewrite the forum's inline syntax into markdown-native equivalents
-		// (jocomoji to image syntax, mentions/hashtags to link syntax) since safe mode discards
-		// the raw <img>/<a> HTML the plain-text path would inject. Bare URLs are auto-linked by
-		// the autolink extension; use markdown link syntax for custom link text.
+		// After cmark parses, rewrite the forum's inline syntax (jocomoji, mentions, hashtags)
+		// into <img>/<a> HTML, skipping anything inside <code>, <pre>, or <a> so code blocks and
+		// existing links are left untouched. This is safe because cmark has already run, so the
+		// emitted tags are plain data to the browser rather than markdown to be re-parsed.
+		// Bare URLs are auto-linked by cmark's autolink extension.
 		if string.hasPrefix("<Markdown>") {
-			let cleaned = Self.markdownPostText(string)
+			let cleaned = Self.stripMarkdownWrapper(string)
 			let html = try MarkdownTag.markdownToHTML(cleaned, options: [])
-			let styled = Self.addMentionLinkClasses(html)
+			let styled = Self.applyInlineRewrites(html)
 			return LeafData.string("<div class=\"markdown-body\">\(styled)</div>")
 		}
 
@@ -198,49 +199,129 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		return LeafData.string(string)
 	}
 
-	/// Rewrites a `<Markdown>`-wrapped post into clean markdown before handing it to cmark.
-	/// cmark runs in safe mode (raw HTML is discarded), so the forum's inline syntax has to be
-	/// expressed in markdown-native form: jocomoji become image syntax, mentions and hashtags
-	/// become link syntax. Bare URLs are auto-linked by cmark's autolink extension.
-	static func markdownPostText(_ input: String) -> String {
+	/// Strips the `<Markdown>`/`</Markdown>` wrapper tags that mark a post as Markdown.
+	/// They're our internal marker, not part of the post body.
+	static func stripMarkdownWrapper(_ input: String) -> String {
 		var markdown = input
-		// Drop the wrapper tags; they're our internal marker, not part of the post body.
 		markdown = markdown.replacingOccurrences(of: "</Markdown>", with: "")
 		markdown = markdown.replacingOccurrences(of: "<Markdown>", with: "")
-		// Jocomoji: :tag: -> ![joco](/img/emoji/small/tag.png)
-		for emojiTag in AddJocomojiTag.jocomoji {
-			markdown = markdown.replacingOccurrences(
-				of: ":\(emojiTag):",
-				with: "![joco](/img/emoji/small/\(emojiTag).png)"
-			)
-		}
-		// Mentions: @username -> [@username](/username/username). The regex keeps the @ in the
-		// match so we can link it; strip it only for the URL.
-		let mentionPattern = "(?<!\\S)(@[A-Za-z0-9]+(?:[-.+_][A-Za-z0-9]+)*)"
-		let mentionRegex = try! NSRegularExpression(pattern: mentionPattern, options: [])
-		let fullRange = NSRange(markdown.startIndex..<markdown.endIndex, in: markdown)
-		let mentionMatches = mentionRegex.matches(in: markdown, options: [], range: fullRange)
-		var mentionText = markdown
-		for match in mentionMatches.reversed() {
-			guard let range = Range(match.range(at: 0), in: mentionText) else { continue }
-			let mention = String(mentionText[range])
-			let username = String(mention.dropFirst())
-			mentionText.replaceSubrange(range, with: "[\(mention)](/username/\(username))")
-		}
-		markdown = mentionText
-		// Hashtags: #tag -> [#tag](/forumpost/search?hashtag=tag)
-		let hashtagPattern = "(?<!\\S)(#[A-Za-z0-9]+)(?!\\S)"
-		let hashtagRegex = try! NSRegularExpression(pattern: hashtagPattern, options: [])
-		let hashtagMatches = hashtagRegex.matches(in: markdown, options: [], range: fullRange)
-		var hashtagText = markdown
-		for match in hashtagMatches.reversed() {
-			guard let range = Range(match.range(at: 0), in: hashtagText) else { continue }
-			let hashtag = String(hashtagText[range])
-			let tag = String(hashtag.dropFirst())
-			hashtagText.replaceSubrange(range, with: "[\(hashtag)](/forumpost/search?hashtag=\(tag))")
-		}
-		markdown = hashtagText
 		return markdown
+	}
+
+	/// Rewrites the forum's inline syntax (jocomoji, mentions, hashtags) into `<img>`/`<a>` HTML
+	/// in cmark's output, leaving code blocks, preformatted blocks, and existing links untouched.
+	///
+	/// Running this *after* cmark is what lets us skip code: at this point the text between tags
+	/// is plain prose, and `<code>`, `<pre>`, and `<a>` delimit the regions we must not touch.
+	/// The emitted tags are safe to insert because cmark has already run.
+	static func applyInlineRewrites(_ html: String) -> String {
+		let skipTags: Set<String> = ["code", "pre", "a"]
+		let tagRegex = try! NSRegularExpression(pattern: "<[^>]*>")
+		let matches = tagRegex.matches(in: html, options: [], range: NSRange(html.startIndex..<html.endIndex, in: html))
+
+		var result = ""
+		var skipStack: [String] = []
+		var lastEnd = html.startIndex
+
+		for match in matches {
+			guard let tagRange = Range(match.range(at: 0), in: html) else { continue }
+
+			// Text before this tag: rewrite it only if we're not inside a skipped region.
+			let textChunk = String(html[lastEnd..<tagRange.lowerBound])
+			result += skipStack.isEmpty ? Self.rewriteInline(textChunk) : textChunk
+
+			// Track whether this tag opens or closes a region we skip.
+			let tag = String(html[tagRange])
+			var body = tag
+			var closing = false
+			if body.hasPrefix("</") {
+				closing = true
+				body.removeFirst(2)
+			} else {
+				body.removeFirst()
+			}
+			let name = String(body.prefix { !$0.isWhitespace && $0 != ">" }).lowercased()
+			if skipTags.contains(name) {
+				if closing {
+					if let top = skipStack.last, top == name {
+						skipStack.removeLast()
+					}
+				} else {
+					skipStack.append(name)
+				}
+			}
+			result += tag
+			lastEnd = tagRange.upperBound
+		}
+
+		// Trailing text after the last tag.
+		if lastEnd < html.endIndex {
+			let textChunk = String(html[lastEnd...])
+			result += skipStack.isEmpty ? Self.rewriteInline(textChunk) : textChunk
+		}
+		return result
+	}
+
+	/// Applies the jocomoji/mention/hashtag rewrites to a single chunk of prose (text between tags).
+	/// Collects every match first, then substitutes right-to-left so the ranges stay valid.
+	static func rewriteInline(_ text: String) -> String {
+		struct Rewrite {
+			let range: NSRange
+			let replacement: String
+		}
+
+		var rewrites: [Rewrite] = []
+		let fullRange = NSRange(text.startIndex..<text.endIndex, in: text)
+
+		// Jocomoji: :tag: -> <img src="/img/emoji/small/tag.png" ...>
+		for emojiTag in AddJocomojiTag.jocomoji {
+			let literal = ":\(emojiTag):"
+			var searchFrom = text.startIndex
+			while let range = text.range(of: literal, range: searchFrom..<text.endIndex) {
+				rewrites.append(Rewrite(
+					range: NSRange(range, in: text),
+					replacement: "<img src=\"/img/emoji/small/\(emojiTag).png\" width=18 height=18>"
+				))
+				// Use upperBound (not index(after:)) so a match at the very end of the chunk
+				// doesn't call index(after: endIndex), which traps; the next empty search returns nil.
+				searchFrom = range.upperBound
+			}
+		}
+
+		// Mentions: @username -> <a class="..." href="/username/username">@username</a>
+		let staffUsernames: Set<String> = ["admin", "tho", "twitarrteam", "moderator"]
+		let mentionRegex = try! NSRegularExpression(pattern: "(?<!\\S)(@[A-Za-z0-9]+(?:[-.+_][A-Za-z0-9]+)*)")
+		for match in mentionRegex.matches(in: text, options: [], range: fullRange) {
+			guard let range = Range(match.range(at: 0), in: text) else { continue }
+			let mention = String(text[range])
+			let username = String(mention.dropFirst())
+			let className = staffUsernames.contains(username.lowercased()) ? "link-danger" : "link-primary"
+			rewrites.append(Rewrite(
+				range: NSRange(range, in: text),
+				replacement: "<a class=\"\(className)\" href=\"/username/\(username)\">\(mention)</a>"
+			))
+		}
+
+		// Hashtags: #tag -> <a class="link-primary" href="/forumpost/search?hashtag=tag">#tag</a>
+		let hashtagRegex = try! NSRegularExpression(pattern: "(?<!\\S)(#[A-Za-z0-9]+)(?!\\S)")
+		for match in hashtagRegex.matches(in: text, options: [], range: fullRange) {
+			guard let range = Range(match.range(at: 0), in: text) else { continue }
+			let hashtag = String(text[range])
+			let tag = String(hashtag.dropFirst())
+			rewrites.append(Rewrite(
+				range: NSRange(range, in: text),
+				replacement: "<a class=\"link-primary\" href=\"/forumpost/search?hashtag=\(tag)\">\(hashtag)</a>"
+			))
+		}
+
+		rewrites.sort { $0.range.location < $1.range.location }
+		var result = text
+		for rewrite in rewrites.reversed() {
+			if let range = Range(rewrite.range, in: result) {
+				result.replaceSubrange(range, with: rewrite.replacement)
+			}
+		}
+		return result
 	}
 
 	/// Post-process cmark HTML to add Bootstrap link color classes to mention and hashtag links.

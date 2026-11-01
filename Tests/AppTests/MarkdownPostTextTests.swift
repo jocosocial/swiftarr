@@ -3,56 +3,83 @@ import XCTVapor
 
 class MarkdownPostTextTests: XCTestCase {
 
-	private func render(_ input: String) -> String {
-		FormatPostTextTag.markdownPostText(input)
+	// MARK: - stripMarkdownWrapper
+
+	private func strip(_ input: String) -> String {
+		FormatPostTextTag.stripMarkdownWrapper(input)
 	}
 
 	func testStripsWrapperTags() {
-		XCTAssertEqual(render("<Markdown>hello</Markdown>"), "hello")
-		XCTAssertEqual(render("<Markdown>\n\n**bold**\n\n</Markdown>"), "\n\n**bold**\n\n")
+		XCTAssertEqual(strip("<Markdown>hello</Markdown>"), "hello")
+		XCTAssertEqual(strip("<Markdown>\n\n**bold**\n\n</Markdown>"), "\n\n**bold**\n\n")
 	}
 
-	func testJocomojiBecomeMarkdownImages() {
+	// MARK: - applyInlineRewrites
+
+	private func rewrite(_ html: String) -> String {
+		FormatPostTextTag.applyInlineRewrites(html)
+	}
+
+	func testJocomojiBecomeImages() {
 		XCTAssertEqual(
-			render("<Markdown>:arr: and :back-deck-juice:</Markdown>"),
-			"![joco](/img/emoji/small/arr.png) and ![joco](/img/emoji/small/back-deck-juice.png)"
+			rewrite("<p>:arr: and :back-deck-juice:</p>"),
+			"<p><img src=\"/img/emoji/small/arr.png\" width=18 height=18> and <img src=\"/img/emoji/small/back-deck-juice.png\" width=18 height=18></p>"
 		)
 	}
 
-	func testMentionsBecomeMarkdownLinks() {
+	func testMentionsBecomeLinks() {
 		XCTAssertEqual(
-			render("<Markdown>hello @admin and @challfry</Markdown>"),
-			"hello [@admin](/username/admin) and [@challfry](/username/challfry)"
+			rewrite("<p>hello @admin and @challfry</p>"),
+			"<p>hello <a class=\"link-danger\" href=\"/username/admin\">@admin</a> and <a class=\"link-primary\" href=\"/username/challfry\">@challfry</a></p>"
 		)
 	}
 
-	func testHashtagsBecomeMarkdownLinks() {
+	func testHashtagsBecomeLinks() {
 		XCTAssertEqual(
-			render("<Markdown>this is #arr time</Markdown>"),
-			"this is [#arr](/forumpost/search?hashtag=arr) time"
+			rewrite("<p>this is #arr time</p>"),
+			"<p>this is <a class=\"link-primary\" href=\"/forumpost/search?hashtag=arr\">#arr</a> time</p>"
 		)
 	}
 
 	func testMentionNotConvertedInMiddleOfWord() {
 		// The lookbehind requires whitespace or start-of-string before the @.
-		XCTAssertEqual(render("<Markdown>email admin@example.com</Markdown>"), "email admin@example.com")
+		XCTAssertEqual(rewrite("<p>email admin@example.com</p>"), "<p>email admin@example.com</p>")
 	}
 
 	func testHashtagNotConvertedInMiddleOfWord() {
 		// The lookbehind requires whitespace or start-of-string before the #.
-		XCTAssertEqual(render("<Markdown>price is abc#def</Markdown>"), "price is abc#def")
-	}
-
-	func testMarkdownFormattingIsPreserved() {
-		XCTAssertEqual(
-			render("<Markdown>**bold** *italic* `code` [link](/forums/12)</Markdown>"),
-			"**bold** *italic* `code` [link](/forums/12)"
-		)
+		XCTAssertEqual(rewrite("<p>price is abc#def</p>"), "<p>price is abc#def</p>")
 	}
 
 	func testColonsInTextAreNotJocomoji() {
 		// A colon pair that doesn't match a known jocomoji name is left alone.
-		XCTAssertEqual(render("<Markdown>time is 12:30 and :unknown:</Markdown>"), "time is 12:30 and :unknown:")
+		XCTAssertEqual(rewrite("<p>time is 12:30 and :unknown:</p>"), "<p>time is 12:30 and :unknown:</p>")
+	}
+
+	func testExistingLinksArePreserved() {
+		let input = "<p><a href=\"/forums/12\">Forum</a></p>"
+		XCTAssertEqual(rewrite(input), input)
+	}
+
+	// MARK: - code / pre / a regions are skipped
+
+	func testInlineCodeIsSkipped() {
+		let input = "<p>use <code>code :pirate:</code> and @admin</p>"
+		XCTAssertEqual(
+			rewrite(input),
+			"<p>use <code>code :pirate:</code> and <a class=\"link-danger\" href=\"/username/admin\">@admin</a></p>"
+		)
+	}
+
+	func testFencedCodeBlockIsSkipped() {
+		let input = "<pre><code>@admin #tag :pirate:\n</code></pre>"
+		XCTAssertEqual(rewrite(input), input)
+	}
+
+	func testMentionInsideExistingLinkIsSkipped() {
+		// An @mention that is already link text is not re-rewritten.
+		let input = "<p><a href=\"/username/admin\">@admin</a></p>"
+		XCTAssertEqual(rewrite(input), input)
 	}
 
 	// MARK: - addMentionLinkClasses tests
