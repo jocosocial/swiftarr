@@ -97,6 +97,10 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		return x
 	}
 
+	/// Staff mentions render with `link-danger`. Sourced from `PrivilegedUser` so the
+	/// list of privileged usernames isn't duplicated in this file.
+	static let staffUsernames: Set<String> = Set(PrivilegedUser.allCases.map { $0.queryParam })
+
 	func render(_ ctx: LeafContext) throws -> LeafData {
 		try ctx.requireParameterCount(1)
 		guard var string = ctx.parameters[0].string else {
@@ -289,7 +293,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		}
 
 		// Mentions: @username -> <a class="..." href="/username/username">@username</a>
-		let staffUsernames: Set<String> = ["admin", "tho", "twitarrteam", "moderator"]
+		let staffUsernames = Self.staffUsernames
 		let mentionRegex = try! NSRegularExpression(pattern: "(?<!\\S)(@[A-Za-z0-9]+(?:[-.+_][A-Za-z0-9]+)*)")
 		for match in mentionRegex.matches(in: text, options: [], range: fullRange) {
 			guard let range = Range(match.range(at: 0), in: text) else { continue }
@@ -328,7 +332,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 	/// Staff mentions get `link-danger`; regular mentions and hashtags get `link-primary`.
 	/// This makes the coloring independent of URL case (unlike CSS href attribute selectors).
 	static func addMentionLinkClasses(_ html: String) -> String {
-		let staffUsernames: Set<String> = ["admin", "tho", "twitarrteam", "moderator"]
+		let staffUsernames = Self.staffUsernames
 		var result = html
 
 		// Mention links: <a href="/username/...">
