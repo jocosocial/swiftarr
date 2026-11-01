@@ -413,7 +413,7 @@ struct MessagePostFormContent: Codable {
 	let localPhoto8: Data?
 	let serverPhoto8: String?
 	let displayUntil: String?  // Used for announcements
-	let cruiseDay: Int32?  // Used for Daily Themes
+	let cruiseDay: Int?  // Used for Daily Themes
 	let postAs: String?
 	let postAsUser: String?
 }
@@ -554,7 +554,7 @@ struct SiteController: SiteControllerUtils {
 			from: cal.startOfDay(for: Settings.shared.cruiseStartDate()),
 			to: cal.startOfDay(for: Date())
 		)
-		let cruiseDay = Int32(components.day ?? 0)
+		let cruiseDay = components.day ?? 0
 		var backupTheme: DailyThemeData
 		if cruiseDay < 0 {
 			backupTheme = DailyThemeData(
@@ -580,7 +580,7 @@ struct SiteController: SiteControllerUtils {
 		else {
 			backupTheme = DailyThemeData(
 				themeID: UUID(),
-				title: "\(cruiseDay + 1 - Int32(Settings.shared.cruiseLengthInDays)) Days after Boat",
+				title: "\(cruiseDay + 1 - Settings.shared.cruiseLengthInDays) Days after Boat",
 				info: "JoCo Cruise has ended. Hope you're enjoying being back in the real world.",
 				image: nil,
 				cruiseDay: cruiseDay

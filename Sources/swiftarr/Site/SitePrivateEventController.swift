@@ -2,6 +2,19 @@ import FluentSQL
 import LeafKit
 import Vapor
 
+private enum DayPlannerLayoutConstants {
+	static let minimumAppointmentWidth = 160
+	static let timeColumnWidth = 55
+
+	static func gridColumnCount(requiredColumnCount: Int) -> Int {
+		return max(1, requiredColumnCount)
+	}
+
+	static func minimumTableWidth(requiredColumnCount: Int) -> Int {
+		return timeColumnWidth + gridColumnCount(requiredColumnCount: requiredColumnCount) * minimumAppointmentWidth
+	}
+}
+
 // Form data from the Create/Update Private Event form
 struct CreatePrivateEventPostFormContent: Codable {
 	var subject: String
@@ -267,6 +280,9 @@ struct SitePrivateEventController: SiteControllerUtils {
 			let nextDayLink: String?
 			var rows: [TableRow]
 			var shutternautSharedSchedule: Bool
+			var plannerGridColumns: [Int] = []
+			var plannerColumnCount = 1
+			var plannerMinWidth = DayPlannerLayoutConstants.timeColumnWidth
 
 			init(_ req: Request, cruiseDay: Int, events: [EventData], lfgs: FezListData?) {
 				trunk = .init(req, title: "Day Planner", tab: .home)
@@ -284,7 +300,18 @@ struct SitePrivateEventController: SiteControllerUtils {
 				titleText = dateFormatter.string(from: dayStart)
 				shutternautSharedSchedule = req.url.path == "/dayplanner/shutternauts"
 				let avds = generateAVDs(events: events, lfgs: lfgs, dayStart: dayStart, dayEnd: dayEnd)
-				rows = generateTableRows(forCruiseDay: cruiseDay, avds: avds)
+				let maxConcurrentCount = max(avds.map(\.concurrentCount).max() ?? 1, 1)
+				let minimumGridColumnCount = DayPlannerLayoutConstants.gridColumnCount(requiredColumnCount: maxConcurrentCount)
+				let initialLayout = generateTableRows(forCruiseDay: cruiseDay, avds: avds, gridColumnCount: minimumGridColumnCount)
+				let gridColumnCount = DayPlannerLayoutConstants.gridColumnCount(
+					requiredColumnCount: max(minimumGridColumnCount, initialLayout.maxVisibleAppointmentCount)
+				)
+				plannerGridColumns = Array(0..<gridColumnCount)
+				plannerColumnCount = plannerGridColumns.count + 1
+				plannerMinWidth = DayPlannerLayoutConstants.minimumTableWidth(requiredColumnCount: gridColumnCount)
+				rows = gridColumnCount == minimumGridColumnCount
+					? initialLayout.rows
+					: generateTableRows(forCruiseDay: cruiseDay, avds: avds, gridColumnCount: gridColumnCount).rows
 				// for testing the red horizontal rule 'Current Time' indicator
 				if false {
 					dayStart = Calendar.current.startOfDay(for: Date())
@@ -307,14 +334,9 @@ struct SitePrivateEventController: SiteControllerUtils {
 					if groupEndTime <= appt.startTime {
 						// Previous Group complete. Every group member gets the same concurrentCount and will draw with that many columns.
 						for groupedAppt in group {
-							groupedAppt.concurrentCount = columnEndTimes.count
-							switch groupedAppt.concurrentCount {
-								case 0, 1: groupedAppt.columnCount = 12
-								case 2: groupedAppt.columnCount = 6
-								case 3: groupedAppt.columnCount = 4
-								case 4: groupedAppt.columnCount = 3
-								default: groupedAppt.columnCount = 2
-							}
+							let concurrentCount = columnEndTimes.count
+							groupedAppt.concurrentCount = concurrentCount
+							groupedAppt.columnCount = 1
 						}
 						columnEndTimes = []
 						groupEndTime = Date.distantPast
@@ -333,19 +355,18 @@ struct SitePrivateEventController: SiteControllerUtils {
 				}
 				// Close out the last group
 				for groupedAppt in group {
-					groupedAppt.concurrentCount = columnEndTimes.count
-					switch groupedAppt.concurrentCount {
-						case 0, 1: groupedAppt.columnCount = 12
-						case 2: groupedAppt.columnCount = 6
-						case 3: groupedAppt.columnCount = 4
-						case 4: groupedAppt.columnCount = 3
-						default: groupedAppt.columnCount = 2
-					}
+					let concurrentCount = columnEndTimes.count
+					groupedAppt.concurrentCount = concurrentCount
+					groupedAppt.columnCount = 1
 				}
 				return sorted
 			}
 			
-			func generateTableRows(forCruiseDay: Int, avds: [AppointmentVisualData]) -> [TableRow] {
+			func generateTableRows(
+				forCruiseDay: Int,
+				avds: [AppointmentVisualData],
+				gridColumnCount: Int
+			) -> (rows: [TableRow], maxVisibleAppointmentCount: Int) {
 				var cal = Calendar(identifier: .gregorian)
 				cal.timeZone = Settings.shared.portTimeZone
 				var rowTime = cal.date(byAdding: .day, value: forCruiseDay - 1, to: Settings.shared.cruiseStartDate()) ?? Settings.shared.cruiseStartDate()
@@ -353,6 +374,7 @@ struct SitePrivateEventController: SiteControllerUtils {
 				let dateFormatter = DateFormatter()
 				dateFormatter.dateFormat = "h a"
 				var result = [TableRow]()
+				var maxVisibleAppointmentCount = 1
 				// 1 Day 3 Hours, half hour increments 
 				for index in 0..<(27 * 2) {
 					guard let nextRowTime = cal.date(byAdding: .minute, value: 30, to: rowTime) else {
@@ -362,6 +384,11 @@ struct SitePrivateEventController: SiteControllerUtils {
 					row.date = rowTime
 					row.newAppointments = avds.filter {$0.startTime >= rowTime && $0.startTime < nextRowTime }
 					let continuingAppointments = avds.filter { $0.startTime < rowTime && $0.endTime > rowTime }
+					// Short sequential appointments can occupy the same rendered half-hour row without overlapping in time.
+					maxVisibleAppointmentCount = max(
+						maxVisibleAppointmentCount,
+						row.newAppointments.count + continuingAppointments.count
+					)
 					if let modelAppt = row.newAppointments.first ?? continuingAppointments.first {
 						let fillerCellCount = max(0, modelAppt.concurrentCount - row.newAppointments.count - continuingAppointments.count)
 						for _ in 0..<fillerCellCount {
@@ -370,7 +397,7 @@ struct SitePrivateEventController: SiteControllerUtils {
 					}
 					else {
 						// Empty row
-						row.newAppointments.append(.init(cols: 12))
+						row.newAppointments.append(.init(cols: gridColumnCount))
 					}
 					let tz = Settings.shared.timeZoneChanges.tzAtTime(rowTime)
 					if index % 2 == 0 {
@@ -384,7 +411,7 @@ struct SitePrivateEventController: SiteControllerUtils {
 					result.append(row)
 					rowTime = nextRowTime
 				}
-				return result
+				return (result, maxVisibleAppointmentCount)
 			}
 		}
 		let ctx = DayPlannerPageContext(req, cruiseDay: cruiseDay, events: events, lfgs: lfgs)

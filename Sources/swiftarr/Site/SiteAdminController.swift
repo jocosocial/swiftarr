@@ -62,6 +62,8 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.post("dailytheme", dailyThemeParam, "edit", use: dailyThemeEditPostHandler).setUsedForPreregistration()
 		privateTTRoutes.post("dailytheme", dailyThemeParam, "delete", use: dailyThemeDeletePostHandler).setUsedForPreregistration()
 		privateTTRoutes.delete("dailytheme", dailyThemeParam, use: dailyThemeDeletePostHandler).setUsedForPreregistration()
+		privateTTRoutes.get("dailythemes", "schedule", use: dailyThemeScheduleVerifyViewHandler).setUsedForPreregistration()
+		privateTTRoutes.post("dailythemes", "schedule", use: dailyThemeScheduleApplyPostHandler).setUsedForPreregistration()
 
 		privateTTRoutes.get("clients", use: clientAppsViewHandler)
 		privateTTRoutes.get("clients", "create", use: clientAppCreateViewHandler)
@@ -356,6 +358,63 @@ struct SiteAdminController: SiteControllerUtils {
 		}
 		let ctx = try ThemeDataViewContext(req, data: themeData)
 		return try await req.view.render("admin/dailyThemes", ctx)
+	}
+
+	// GET /admin/dailythemes/schedule
+	// Shows the daily theme changes that would result from loading themes from the schedule, for review.
+	func dailyThemeScheduleVerifyViewHandler(_ req: Request) async throws -> View {
+		let offset = req.query[Int.self, at: "cruiseDayOffset"] ?? 0
+		let response = try await apiQuery(req, endpoint: "/admin/dailytheme/schedule/verify?cruiseDayOffset=\(offset)")
+		let differenceData = try response.content.decode(DailyThemeUpdateDifferenceData.self)
+
+		struct DailyThemeScheduleVerifyViewContext: Encodable {
+			var trunk: TrunkContext
+			var diff: DailyThemeUpdateDifferenceData
+			var cruiseDayOffset: Int
+
+			init(_ req: Request, differenceData: DailyThemeUpdateDifferenceData, cruiseDayOffset: Int) {
+				trunk = .init(req, title: "Load Daily Themes from Schedule", tab: .admin)
+				diff = differenceData
+				self.cruiseDayOffset = cruiseDayOffset
+			}
+		}
+		let ctx = DailyThemeScheduleVerifyViewContext(req, differenceData: differenceData, cruiseDayOffset: offset)
+		return try await req.view.render("admin/dailyThemesScheduleVerify", ctx)
+	}
+
+	// POST /admin/dailythemes/schedule
+	// Applies the schedule's daily themes. Each checked box skips that group of changes.
+	func dailyThemeScheduleApplyPostHandler(_ req: Request) async throws -> HTTPStatus {
+		struct DailyThemeScheduleApplyData: Content {
+			var skipNew: String?
+			var skipDiff: String?
+			var skipDelete: String?
+			var cruiseDayOffset: String?
+			init() {}
+		}
+		// With no boxes checked the form body has no fields, which fails to decode; that just means nothing is skipped.
+		let formData = (try? req.content.decode(DailyThemeScheduleApplyData.self)) ?? DailyThemeScheduleApplyData()
+		var query = [URLQueryItem]()
+		if formData.skipNew == "on" {
+			query.append(URLQueryItem(name: "skipNew", value: "true"))
+		}
+		if formData.skipDiff == "on" {
+			query.append(URLQueryItem(name: "skipDiff", value: "true"))
+		}
+		if formData.skipDelete == "on" {
+			query.append(URLQueryItem(name: "skipDelete", value: "true"))
+		}
+		if let offset = formData.cruiseDayOffset.flatMap({ Int($0.trimmingCharacters(in: .whitespaces)) }) {
+			query.append(URLQueryItem(name: "cruiseDayOffset", value: String(offset)))
+		}
+		var components = URLComponents()
+		components.queryItems = query
+		try await apiQuery(
+			req,
+			endpoint: "/admin/dailytheme/schedule/apply?\(components.percentEncodedQuery ?? "")",
+			method: .POST
+		)
+		return .ok
 	}
 
 	// GET /admin/dailytheme/create

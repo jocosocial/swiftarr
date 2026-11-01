@@ -1072,6 +1072,24 @@ window.addEventListener('DOMContentLoaded', function () {
 	}
 })
 
+// Keep the planner's edge shadows in sync with its horizontal scroll position.
+let dayPlannerScrollFrame = document.querySelector(".dayplanner-scroll-frame");
+let dayPlannerScroll = dayPlannerScrollFrame == null ? null : dayPlannerScrollFrame.querySelector(".dayplanner-scroll");
+if (dayPlannerScrollFrame != null && dayPlannerScroll != null) {
+	const updateDayPlannerScrollShadows = function () {
+		let maxScrollLeft = dayPlannerScroll.scrollWidth - dayPlannerScroll.clientWidth;
+		dayPlannerScrollFrame.classList.toggle("can-scroll-left", dayPlannerScroll.scrollLeft > 1);
+		dayPlannerScrollFrame.classList.toggle(
+			"can-scroll-right",
+			maxScrollLeft > 1 && dayPlannerScroll.scrollLeft < maxScrollLeft - 1
+		);
+	};
+	dayPlannerScroll.addEventListener("scroll", updateDayPlannerScrollShadows, { passive: true });
+	window.addEventListener("resize", updateDayPlannerScrollShadows);
+	window.addEventListener("load", updateDayPlannerScrollShadows);
+	updateDayPlannerScrollShadows();
+}
+
 // MARK: - Day Planner 
 let table = document.querySelector('[data-daystart]');
 let dayStart = table == null ? null : new Date(table.getAttribute('data-daystart') * 1000);
