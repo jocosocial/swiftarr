@@ -65,6 +65,12 @@ public struct UserCacheData: Authenticatable, SessionAuthenticatable, Sendable {
 		return mutes ?? []
 	}
 
+	/// True if the server is in preregistration and this user is below `minAccessLevel`, meaning they get the restricted
+	/// preregistration experience. Users at or above `minAccessLevel` are not restricted.
+	var preregistrationApplies: Bool {
+		Settings.shared.enablePreregistration && !accessLevel.hasAccess(Settings.shared.minAccessLevel)
+	}
+
 	/// TwitarrTeam and above, or users granted the Account Manager role, may look up accounts by
 	/// registration code and re-enable one-time password recovery.
 	var canManageAccounts: Bool {

@@ -950,7 +950,14 @@ struct AdminController: APIRouteCollection {
 					performer.with(\.$events)
 				}
 				.all()
-		let userData = users.compactMap { UserSaveRestoreData(user: $0) }
+		// LFGs and Personal/Private Events travel with their owner. Seamail is never exported.
+		let ownedFezzes = try await FriendlyFez.query(on: req.db)
+				.filter(\.$fezType ~~ FezType.preregistrationTypes)
+				.filter(\.$cancelled == false)
+				.sort(\.$createdAt, .ascending)
+				.all()
+		let fezzesByOwner = Dictionary(grouping: ownedFezzes, by: { $0.$owner.id })
+		let userData = users.compactMap { UserSaveRestoreData(user: $0, fezzes: fezzesByOwner[$0.id ?? UUID()] ?? []) }
 		let performers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).with(\.$events).all()
 		let performerData = try performers.map { try PerformerUploadData($0) }
 		let needsPhotographerEvents = try await Event.query(on: req.db).filter(\.$needsPhotographer == true).all().map { $0.uid }
@@ -1083,6 +1090,9 @@ struct AdminController: APIRouteCollection {
 		}
 		for userToImport in importData.users {
 			await importUserFavorites(req, userToImport: userToImport, verifyOnly: verifyOnly, verification: &verification)
+		}
+		for userToImport in importData.users {
+			await importUserFezzes(req, userToImport: userToImport, verifyOnly: verifyOnly, verification: &verification)
 		}
 		for performer in importData.performers {
 			await importPerformer(req, performerData: performer, verifyOnly: verifyOnly, verification: &verification)
@@ -1298,6 +1308,94 @@ struct AdminController: APIRouteCollection {
 		}
 	}
 	
+	// Imports the LFGs and Personal/Private Events a user created. Must be called after the users have been imported.
+	// Fezzes are only attached to a DB user whose registration code matches the file's user, so a username or reg code conflict
+	// can't hand someone else's account these fezzes.
+	// Fezzes keep their exported IDs. Safe to re-run: a fez is skipped if the owner already has one with that ID (or, for older
+	// userfiles without IDs, one with the same type, title and start time). An ID that belongs to another user's fez is an error.
+	// If `verifyOnly` is set, no db changes occur, but `verification` gets filled in with the counts and any import errors.
+	func importUserFezzes(_ req: Request, userToImport: UserSaveRestoreData, verifyOnly: Bool, verification: inout BulkUserUpdateVerificationData) async {
+		guard let fezzesToImport = userToImport.fezzes, !fezzesToImport.isEmpty else {
+			return
+		}
+		let validFezzes = fezzesToImport.filter { $0.fezType.isPreregistrationType }
+		let invalidCount = fezzesToImport.count - validFezzes.count
+		verification.fezCounts.totalRecordsProcessed += fezzesToImport.count
+		if invalidCount > 0 {
+			verification.fezCounts.errorCount += invalidCount
+			verification.otherErrors.append("User \(userToImport.username) has \(invalidCount) chat(s) in the userfile that aren't LFGs or Personal/Private Events, which can't be imported.")
+		}
+		do {
+			let user = try await User.query(on: req.db).filter(\.$username == userToImport.username).first()
+			guard let user = user else {
+				if verifyOnly {
+					// The owner hasn't been created yet (verify doesn't save users), so there's nothing to dedupe against.
+					verification.fezCounts.importedCount += validFezzes.count
+				}
+				else {
+					verification.fezCounts.errorCount += validFezzes.count
+					verification.otherErrors.append("Couldn't import LFGs/events for \(userToImport.username): user was not imported.")
+				}
+				return
+			}
+			guard user.verification == userToImport.verification.lowercased() else {
+				verification.fezCounts.errorCount += validFezzes.count
+				verification.otherErrors.append("Couldn't import LFGs/events for \(userToImport.username): the account in the database has a different registration code.")
+				return
+			}
+			let userID = try user.requireID()
+			for fezData in validFezzes {
+				if let fezID = fezData.id {
+					// Includes deleted fezzes, since their IDs are still taken.
+					if let existing = try await FriendlyFez.query(on: req.db).withDeleted().filter(\.$id == fezID).first() {
+						if existing.$owner.id == userID {
+							verification.fezCounts.duplicateCount += 1
+						}
+						else {
+							verification.fezCounts.errorCount += 1
+							verification.otherErrors.append("Couldn't import \"\(fezData.title)\" for \(userToImport.username): its ID \(fezID) belongs to another user's chat.")
+						}
+						continue
+					}
+				}
+				else {
+					let existing = try await FriendlyFez.query(on: req.db)
+							.filter(\.$owner.$id == userID)
+							.filter(\.$fezType == fezData.fezType)
+							.filter(\.$title == fezData.title)
+							.filter(\.$startTime == fezData.startTime)
+							.first()
+					if existing != nil {
+						verification.fezCounts.duplicateCount += 1
+						continue
+					}
+				}
+				if !verifyOnly {
+					let fez = FriendlyFez(owner: userID, fezType: fezData.fezType, visibility: fezData.visibility, title: fezData.title,
+							info: fezData.info, location: fezData.location, startTime: nil, endTime: nil,
+							minCapacity: fezData.minCapacity, maxCapacity: fezData.maxCapacity)
+					// Keep the exporting server's ID so links to this fez work on both servers.
+					fez.id = fezData.id
+					// The exported times are already port time; set them directly rather than converting again.
+					fez.startTime = fezData.startTime
+					fez.endTime = fezData.endTime
+					fez.participantArray = [userID]
+					try await fez.save(on: req.db)
+					try await fez.$participants.attach(user, on: req.db, {
+						$0.readCount = 0
+						$0.hiddenCount = 0
+					})
+					_ = try await storeNextJoinedAppointment(userID: userID, on: req)
+				}
+				verification.fezCounts.importedCount += 1
+			}
+		}
+		catch {
+			verification.fezCounts.errorCount += 1
+			verification.otherErrors.append("Error importing LFGs/events for \(userToImport.username): \(error.localizedDescription)")
+		}
+	}
+
 	// Imports a single performer into the Performer table. Works with both official and non-official (shadow) performers.
 	// For a shadow performer, you must set the userID of the Twitarr user that 'owns' the performer object.
 	// If `verifyOnly` is set, no db changes occur, but `verification` gets filled in with any import errors.

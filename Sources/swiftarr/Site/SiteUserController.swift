@@ -77,6 +77,7 @@ struct SiteUserController: SiteControllerUtils {
 		// redirect-chained through /login and back.
 		let globalRoutes = getGlobalRoutes(app).grouped(DisabledSiteSectionMiddleware(feature: .users))
 		globalRoutes.get("user", userIDParam, use: userProfilePageHandler).destination("the user profile for this user")
+			.setUsedForPreregistration()
 		globalRoutes.get("user", userIDParam, "vcard", use: userVCardHandler)
 		globalRoutes.get("username", ":username", use: usernameProfilePageHandler)
 			.destination("the user profile for this user")

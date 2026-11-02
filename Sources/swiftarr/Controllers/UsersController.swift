@@ -19,7 +19,7 @@ struct UsersController: APIRouteCollection {
 		tokenAuthGroup.get(userIDParam, use: headerHandler)
 		tokenAuthGroup.get("match", "allnames", searchStringParam, use: matchAllNamesHandler)
 		tokenAuthGroup.get("match", "username", searchStringParam, use: matchUsernameHandler)
-		tokenAuthGroup.get(userIDParam, "profile", use: profileHandler)
+		tokenAuthGroup.get(userIDParam, "profile", use: profileHandler).setUsedForPreregistration()
 		tokenAuthGroup.get(userIDParam, "vcard", use: vcardHandler)
 		tokenAuthGroup.post(userIDParam, "report", use: reportHandler)
 
@@ -120,13 +120,18 @@ struct UsersController: APIRouteCollection {
 	/// Retrieves the specified user's profile, as a `ProfilePublicData` object.
 	///
 	/// - Parameter userID: in URL path. The userID to search for.
-	/// - Throws: 404 error if the profile is not available. A 5xx response should be reported
-	///   as a likely bug, please and thank you.
+	/// During preregistration, users subject to preregistration restrictions may only retrieve their own profile.
+	///
+	/// - Throws: 404 error if the profile is not available. 403 error if a preregistration user requests someone
+	///   else's profile. A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `ProfilePublicData` containing the displayable properties of the specified
 	///   user's profile.
 	func profileHandler(_ req: Request) async throws -> ProfilePublicData {
 		let requester = try req.auth.require(UserCacheData.self)
 		let profiledUser = try await User.findFromParameter(userIDParam, on: req)
+		guard !requester.preregistrationApplies || profiledUser.id == requester.userID else {
+			throw Abort(.forbidden, reason: "Other users' profiles aren't available until we're on the ship.")
+		}
 		// 404 if blocked
 		if requester.getBlocks().contains(try profiledUser.requireID()) {
 			throw Abort(.notFound, reason: "profile is not available")

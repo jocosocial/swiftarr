@@ -349,3 +349,6 @@ additive; the existing count fields are unchanged and are now derived from these
 
 - `SocketNotificationData` gains an optional `notificationID` field.
 - New endpoint `GET /api/v3/notification/log` returns the logged-in user's notification history, paginated (`Paginated<NotificationLogData>`), most recent first.
+- Available during preregistration (owner-only, LFG/`personalEvent`/`privateEvent` types only, no `initialUsers` or `firstPost`): `GET /api/v3/fez/types`, `GET /api/v3/fez/owner`, `GET /api/v3/fez/:fez_ID`, `POST /api/v3/fez/create`, `POST /api/v3/fez/:fez_ID/update`, `POST /api/v3/fez/:fez_ID/cancel`, `POST /api/v3/fez/:fez_ID/delete`, `DELETE /api/v3/fez/:fez_ID`, and `GET /api/v3/users/:user_ID/profile` (own profile only).
+- `POST /api/v3/fez/:fez_ID/update` accepts `fezType: privateEvent` on a `personalEvent` (one-way conversion).
+- Admin: `UserSaveRestoreData` gains optional `fezzes: [FezSaveRestoreData]`; `BulkUserUpdateVerificationData` gains `fezCounts`.

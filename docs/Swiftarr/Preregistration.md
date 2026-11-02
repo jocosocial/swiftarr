@@ -84,6 +84,10 @@ Read about the official guests and performers that will be on-board with us.
 
 If you are hosting a shadow event, see below for more information specifically for you.
 
+### LFGs & Personal Events
+
+Create your own Looking For Group (LFG) events and Personal/Private Events ahead of time. No one else can see or join them until we're all on-board.
+
 ### Favorite Users
 
 Tricordarr only. Add the usernames of your friends to a quick access list. This also enables them to call you on-board using KrakenTalk™, the Twit-arr voice communication protocol.
