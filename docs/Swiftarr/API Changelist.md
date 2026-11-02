@@ -344,3 +344,8 @@ additive; the existing count fields are unchanged and are now derived from these
 
 - Added `GET /api/v3/admin/dailytheme/schedule/verify` (returns `DailyThemeUpdateDifferenceData`) and `POST /api/v3/admin/dailytheme/schedule/apply`. Both accept `cruiseDayOffset`; apply also accepts `skipNew`, `skipDiff`, `skipDelete`.
 - Daily theme management endpoints (`/api/v3/admin/dailytheme/*`) now require TwitarrTeam or above (previously THO).
+
+## Nov 01, 2026
+
+- `SocketNotificationData` gains an optional `notificationID` field.
+- New endpoint `GET /api/v3/notification/log` returns the logged-in user's notification history, paginated (`Paginated<NotificationLogData>`), most recent first.
