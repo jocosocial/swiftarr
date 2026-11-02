@@ -55,28 +55,29 @@ struct FezController: APIRouteCollection {
 
 		// Open access routes
 		let flexAuthGroup = fezRoutes.flexRoutes(feature: .friendlyfez)
-		flexAuthGroup.get("types", use: typesHandler)
+		flexAuthGroup.get("types", use: typesHandler).setUsedForPreregistration()
 
 		// endpoints available only when logged in
 		let tokenAuthGroup = fezRoutes.tokenRoutes(feature: .friendlyfez)
 		tokenAuthGroup.get("open", use: openHandler)
 		tokenAuthGroup.get("joined", use: joinedHandler)
-		tokenAuthGroup.get("owner", use: ownerHandler)
-		tokenAuthGroup.get(fezIDParam, use: fezHandler)
+		tokenAuthGroup.get("owner", use: ownerHandler).setUsedForPreregistration()
+		tokenAuthGroup.get(fezIDParam, use: fezHandler).setUsedForPreregistration()
 		tokenAuthGroup.on(.POST, "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: createHandler)
+			.setUsedForPreregistration()
 		tokenAuthGroup.on(.POST, fezIDParam, "post", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: postAddHandler)
 		tokenAuthGroup.webSocket(fezIDParam, "socket", onUpgrade: createFezSocket)
 		tokenAuthGroup.post(fezIDParam, "markRead", use: fezMarkReadHandler)
-		tokenAuthGroup.post(fezIDParam, "cancel", use: cancelHandler)
+		tokenAuthGroup.post(fezIDParam, "cancel", use: cancelHandler).setUsedForPreregistration()
 		tokenAuthGroup.post(fezIDParam, "join", use: joinHandler)
 		tokenAuthGroup.post(fezIDParam, "unjoin", use: unjoinHandler)
 		tokenAuthGroup.post("post", fezPostIDParam, "delete", use: postDeleteHandler)
 		tokenAuthGroup.delete("post", fezPostIDParam, use: postDeleteHandler)
 		tokenAuthGroup.post(fezIDParam, "user", userIDParam, "add", use: userAddHandler)
 		tokenAuthGroup.post(fezIDParam, "user", userIDParam, "remove", use: userRemoveHandler)
-		tokenAuthGroup.post(fezIDParam, "update", use: updateHandler)
-		tokenAuthGroup.post(fezIDParam, "delete", use: fezDeleteHandler)
-		tokenAuthGroup.delete(fezIDParam, use: fezDeleteHandler)
+		tokenAuthGroup.post(fezIDParam, "update", use: updateHandler).setUsedForPreregistration()
+		tokenAuthGroup.post(fezIDParam, "delete", use: fezDeleteHandler).setUsedForPreregistration()
+		tokenAuthGroup.delete(fezIDParam, use: fezDeleteHandler).setUsedForPreregistration()
 		tokenAuthGroup.post(fezIDParam, "report", use: reportFezHandler)
 		tokenAuthGroup.get("former", use: formerlyJoinedFezHandler)
 		tokenAuthGroup.post("post", fezPostIDParam, "report", use: reportFezPostHandler)
@@ -236,6 +237,10 @@ struct FezController: APIRouteCollection {
 		let query = FriendlyFez.query(on: req.db).filter(\.$owner.$id == user.userID)
 			.join(FezParticipant.self, on: \FezParticipant.$fez.$id == \FriendlyFez.$id)
 			.filter(FezParticipant.self, \.$user.$id == user.userID)
+		// During preregistration restricted users only ever see their own LFGs and Personal/Private Events, never Seamail.
+		if cacheUser.preregistrationApplies {
+			query.filter(\.$fezType ~~ FezType.preregistrationTypes)
+		}
 		if let includeTypes = try urlQuery.getTypes() {
 			query.filter(\.$fezType ~~ includeTypes)
 		}
@@ -345,6 +350,10 @@ struct FezController: APIRouteCollection {
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
 		let effectiveUser = getEffectiveUser(user: cacheUser, req: req, fez: fez)
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
+			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
+		}
+		// During preregistration restricted users can only view their own fezzes.
+		if cacheUser.preregistrationApplies, fez.$owner.id != cacheUser.userID || !fez.fezType.isPreregistrationType {
 			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
 		}
 		if fez.fezType.isPrivateEventType, !userCanViewMemberData(user: cacheUser, fez: fez) {
@@ -751,6 +760,9 @@ struct FezController: APIRouteCollection {
 		guard fez.$owner.id == cacheUser.userID else {
 			throw Abort(.forbidden, reason: "user does not own this \(fez.fezType.lfgLabel)")
 		}
+		guard !cacheUser.preregistrationApplies || fez.fezType.isPreregistrationType else {
+			throw Abort(.forbidden, reason: "Seamail is not available during preregistration.")
+		}
 		fez.cancelled = true
 		try await fez.save(on: req.db)
 		for fezParticipant in fez.participantArray {
@@ -778,6 +790,9 @@ struct FezController: APIRouteCollection {
 	func fezDeleteHandler(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
+		if cacheUser.preregistrationApplies, fez.$owner.id != cacheUser.userID {
+			throw Abort(.forbidden, reason: "User does not own this \(fez.fezType.lfgLabel).")
+		}
 		guard fez.fezType == .personalEvent || cacheUser.accessLevel.canEditOthersContent() else {
 			throw Abort(.forbidden, reason: "User does not have access to delete an \(fez.fezType.lfgLabel).")
 		}
@@ -1258,6 +1273,20 @@ extension FezController {
 		let user = try req.auth.require(UserCacheData.self)
 		try user.guardCanCreateContent(customErrorString: "User cannot create LFGs/Seamails.")
 		// see `FezContentData.validations()`
+		if user.preregistrationApplies {
+			guard data.fezType.isPreregistrationType else {
+				throw Abort(.forbidden, reason: "Seamail is not available during preregistration.")
+			}
+			guard data.firstPost == nil else {
+				throw Abort(.forbidden, reason: "Posts are not available during preregistration.")
+			}
+			guard data.initialUsers.allSatisfy({ $0 == user.userID }) else {
+				throw Abort(.forbidden, reason: "Other users cannot be added during preregistration.")
+			}
+			guard data.createdByModerator != true, data.createdByTwitarrTeam != true else {
+				throw Abort(.forbidden, reason: "Cannot create as a privileged account during preregistration.")
+			}
+		}
 		var creator = user
 		if data.createdByTwitarrTeam == true {
 			guard user.accessLevel >= .twitarrteam else {
@@ -1329,7 +1358,19 @@ extension FezController {
 		// get fez
 		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
 		try cacheUser.guardCanModifyContent(fez, customErrorString: "User cannot modify chat")
-		guard data.fezType == fez.fezType || (fez.fezType.isLFGType && data.fezType.isLFGType) else {
+		if cacheUser.preregistrationApplies {
+			guard fez.$owner.id == cacheUser.userID, fez.fezType.isPreregistrationType else {
+				throw Abort(.forbidden, reason: "User cannot modify this \(fez.fezType.lfgLabel) during preregistration.")
+			}
+		}
+		// A Personal Event can be converted into a Private Event, once, so that others can be invited. Nothing converts back.
+		let isPersonalToPrivate = fez.fezType == .personalEvent && data.fezType == .privateEvent
+		if isPersonalToPrivate {
+			guard fez.$owner.id == cacheUser.userID else {
+				throw Abort(.forbidden, reason: "Only the owner can convert a Personal Event to a Private Event.")
+			}
+		}
+		guard data.fezType == fez.fezType || (fez.fezType.isLFGType && data.fezType.isLFGType) || isPersonalToPrivate else {
 			throw Abort(.forbidden, reason: "Cannot change the type of a \(fez.fezType.lfgLabel) to \(data.fezType.label)")
 		}
 		if data.fezType == .personalEvent && !data.initialUsers.isEmpty {
@@ -1340,7 +1381,7 @@ extension FezController {
 		if fez.fezType.isSeamailType {
 			try guardEditSeamail(fez: fez, data: data)
 		}
-		let visibility = try resolveVisibilityForUpdate(fez: fez, requested: data.visibility, cacheUser: cacheUser)
+		let visibility = try resolveVisibilityForUpdate(fez: fez, newType: data.fezType, requested: data.visibility, cacheUser: cacheUser)
 
 		if data.title != fez.title || data.location != fez.location || data.info != fez.info {
 			let fezEdit = try FriendlyFezEdit(fez: fez, editorID: cacheUser.userID)
@@ -1605,14 +1646,14 @@ extension FezController {
 	/// Resolves and validates the `visibility` to use when updating a fez.
 	///
 	/// Omitting `requested` leaves the fez's current visibility unchanged. Changing visibility is a 400 for
-	/// every fez type other than `.privateEvent` (it's fixed even for moderators), never allows `.public` on
+	/// every resulting fez type (`newType`) other than `.privateEvent` (it's fixed even for moderators), never allows `.public` on
 	/// a `.privateEvent`, and is otherwise owner-only.
-	func resolveVisibilityForUpdate(fez: FriendlyFez, requested: FezVisibility?, cacheUser: UserCacheData) throws -> FezVisibility {
+	func resolveVisibilityForUpdate(fez: FriendlyFez, newType: FezType, requested: FezVisibility?, cacheUser: UserCacheData) throws -> FezVisibility {
 		let newVisibility = requested ?? fez.visibility
 		guard newVisibility != fez.visibility else {
 			return fez.visibility
 		}
-		guard fez.fezType == .privateEvent else {
+		guard newType == .privateEvent else {
 			throw Abort(.badRequest, reason: "Cannot change visibility of a \(fez.fezType.lfgLabel)")
 		}
 		guard newVisibility != .public else {

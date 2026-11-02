@@ -66,7 +66,7 @@
 								</a>
 							</div>
 							<div class="col-auto px-0">
-								<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "lfg"): active#endif" #if(trunk.tab == "lfg"):aria-current="page"#endif href="/lfg">
+								<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "lfg"): active#endif" #if(trunk.tab == "lfg"):aria-current="page"#endif href="#if(trunk.preregistrationApplies):/lfg/owned#else:/lfg#endif">
 									<span class="#if(trunk.alertCounts.newFezMessageCount > 0):border-bottom border-danger#endif">
 										LFG
 									</span>
