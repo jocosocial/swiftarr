@@ -332,6 +332,9 @@
 						<ul class="list-group">
 							<li class="list-group-item"><a href="/profile">View your User Profile</a></li>
 							<li class="list-group-item"><a href="/favorites">View Favorite Users</a></li>
+							#if(contains(trunk.userRoles, "performerselfeditor") || trunk.userIsTwitarrTeam):
+								<li class="list-group-item"><a href="/performer/shadow/self">Manage Shadow Performer Bio</a></li>
+							#endif
 							#if(!trunk.preregistrationMode):
 								<li class="list-group-item"><a href="/blocks">Manage Muted and Blocked Users</a></li>
 								<li class="list-group-item"><a href="/alertwords">Manage Alert and Mute Keywords</a></li>

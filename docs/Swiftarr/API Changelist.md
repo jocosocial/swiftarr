@@ -352,3 +352,8 @@ additive; the existing count fields are unchanged and are now derived from these
 - Available during preregistration (owner-only, LFG/`personalEvent`/`privateEvent` types only, no `initialUsers` or `firstPost`): `GET /api/v3/fez/types`, `GET /api/v3/fez/owner`, `GET /api/v3/fez/:fez_ID`, `POST /api/v3/fez/create`, `POST /api/v3/fez/:fez_ID/update`, `POST /api/v3/fez/:fez_ID/cancel`, `POST /api/v3/fez/:fez_ID/delete`, `DELETE /api/v3/fez/:fez_ID`, and `GET /api/v3/users/:user_ID/profile` (own profile only).
 - `POST /api/v3/fez/:fez_ID/update` accepts `fezType: privateEvent` on a `personalEvent` (one-way conversion).
 - Admin: `UserSaveRestoreData` gains optional `fezzes: [FezSaveRestoreData]`; `BulkUserUpdateVerificationData` gains `fezCounts`.
+
+## Nov 02, 2026
+
+- Added TwitarrTeam endpoints to link a Performer (official or shadow) to any Event by hand: `POST /api/v3/admin/performer/:performer_ID/event/:event_ID`, and to remove a link: `DELETE /api/v3/admin/performer/:performer_ID/event/:event_ID`. Manual links are preserved when the performer spreadsheet is re-applied via `POST /api/v3/admin/performer/link/apply`.
+- Added `POST /api/v3/performer/self`, which lets users with the `performerselfeditor` role, and TwitarrTeam and above, create or update their Shadow Event Performer profile without attaching it to an event. TwitarrTeam can then attach the profile to any event using the new admin link endpoint.
