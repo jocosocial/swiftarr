@@ -98,6 +98,8 @@ struct SitePerformerController: SiteControllerUtils {
 		let privateRoutes = getPrivateRoutes(app, feature: .performers)
 		privateRoutes.get("performer", "shadow", "addtoevent", eventIDParam, use: addEventOrganizer).setUsedForPreregistration()
 		privateRoutes.post("performer", "shadow", "add", eventIDParam, use: postAddEventOrganizer).setUsedForPreregistration()
+		privateRoutes.get("performer", "shadow", "self", use: editSelfPerformer).setUsedForPreregistration()
+		privateRoutes.post("performer", "shadow", "self", use: postEditSelfPerformer).setUsedForPreregistration()
 		privateRoutes.post("performer", "self", "delete", use: selfPerformerDeleteHandler).setUsedForPreregistration()
 
 		let ttRoutes = getPrivateRoutes(app, feature: .performers, minAccess: .twitarrteam)
@@ -106,6 +108,9 @@ struct SitePerformerController: SiteControllerUtils {
 		ttRoutes.get("admin", "performer", "add", use: upsertPerformer)
 		ttRoutes.post("admin", "performer", "add", use: postUpsertPerformer)
 		ttRoutes.post("admin", "performer", performerIDParam, "delete", use: performerDeleteHandler)
+		ttRoutes.get("admin", "performer", "event", eventIDParam, use: eventPerformersPage)
+		ttRoutes.post("admin", "performer", performerIDParam, "event", eventIDParam, "link", use: linkPerformerToEventHandler)
+		ttRoutes.post("admin", "performer", performerIDParam, "event", eventIDParam, "unlink", use: unlinkPerformerFromEventHandler)
 		
 		ttRoutes.get("admin", "performer", "link", use: linkPerformersPage)
 		ttRoutes.post("admin", "performer", "link", "upload", use: postLinkPerformersUpload)
@@ -176,29 +181,52 @@ struct SitePerformerController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "The referenced event is not a Shadow Event; you can't use this form to modify it.")
 		}
 		let performer = try await apiQuery(req, endpoint: "/performer/self").content.decode(PerformerData.self)
-		struct AddOrganizerPageContext: Encodable {
-			var trunk: TrunkContext
-			var performer: PerformerData
-			var event: EventData
-			var formAction: String
-			var deleteAction: String?
-			var alreadyAttached: Bool		// TRUE if this performer is already attached to this event
-			
-			init(_ req: Request, performer: PerformerData, event: EventData) throws {
-				trunk = .init(req, title: "Add/Modify Event Organizer", tab: .events)
-				self.performer = performer
-				self.event = event
+		let ctx = try AddOrganizerPageContext(req, performer: performer, event: event)
+		return try await req.view.render("Performers/addOrganizer", ctx)
+	}
+	
+	// Context for the organizer bio form. `event` is nil when the bio is being created without an event.
+	struct AddOrganizerPageContext: Encodable {
+		var trunk: TrunkContext
+		var performer: PerformerData
+		var event: EventData?
+		var formAction: String
+		var deleteAction: String?
+		var alreadyAttached: Bool		// TRUE if this performer is already attached to this event
+		var successURL: String
+		
+		init(_ req: Request, performer: PerformerData, event: EventData?) throws {
+			trunk = .init(req, title: "Add/Modify Event Organizer", tab: .events)
+			self.performer = performer
+			self.event = event
+			if let event = event {
 				self.formAction = "/performer/shadow/add/\(event.eventID)"
-				if let _ = performer.header.id {
-					self.deleteAction = "/performer/self/delete"
-					alreadyAttached = performer.events.contains { $0.eventID == event.eventID }
-				}
-				else {
-					alreadyAttached = false
-				}
+				self.successURL = "/events"
+			}
+			else {
+				self.formAction = "/performer/shadow/self"
+				self.successURL = "/"
+			}
+			if let _ = performer.header.id {
+				self.deleteAction = "/performer/self/delete"
+				alreadyAttached = event.map { event in performer.events.contains { $0.eventID == event.eventID } } ?? false
+			}
+			else {
+				alreadyAttached = false
 			}
 		}
-		let ctx = try AddOrganizerPageContext(req, performer: performer, event: event)
+	}
+	
+	// `GET /performer/shadow/self`
+	//
+	// Shows the organizer bio form for users with the performerselfeditor role, without attaching the bio to an event. TwitarrTeam
+	// can attach the bio to an event afterwards.
+	func editSelfPerformer(_ req: Request) async throws -> View {
+		guard let cacheUser = req.auth.get(UserCacheData.self), (cacheUser.userRoles.contains(.performerselfeditor) || cacheUser.accessLevel.hasAccess(.twitarrteam)) else {
+			throw Abort(.forbidden, reason: "You need the Shadow Event Performer role or TwitarrTeam access to create a bio without an event.")
+		}
+		let performer = try await apiQuery(req, endpoint: "/performer/self").content.decode(PerformerData.self)
+		let ctx = try AddOrganizerPageContext(req, performer: performer, event: nil)
 		return try await req.view.render("Performers/addOrganizer", ctx)
 	}
 	
@@ -208,6 +236,21 @@ struct SitePerformerController: SiteControllerUtils {
 		guard let eventID = req.parameters.get(eventIDParam.paramString, as: UUID.self) else {
 			throw Abort(.badRequest, reason: "Missing event ID parameter.")
 		}
+		let uploadData = try await shadowPerformerUploadData(from: req)
+		try await apiQuery(req, endpoint: "/performer/forevent/\(eventID)", method: .POST, encodeContent: uploadData)
+		return .ok
+	}
+	
+	// `POST /performer/shadow/self`
+	//
+	func postEditSelfPerformer(_ req: Request) async throws -> HTTPStatus {
+		let uploadData = try await shadowPerformerUploadData(from: req)
+		try await apiQuery(req, endpoint: "/performer/self", method: .POST, encodeContent: uploadData)
+		return .ok
+	}
+	
+	// Builds API upload data for a shadow event organizer's bio from the organizer form.
+	fileprivate func shadowPerformerUploadData(from req: Request) async throws -> PerformerUploadData {
 		let postStruct = try req.content.decode(AddPerformerFormContent.self)
 		var photoData: Data?
 		var serverPhotoName: String? = nil
@@ -225,10 +268,8 @@ struct SitePerformerController: SiteControllerUtils {
 		} else {
 			serverPhotoName = postStruct.serverPhoto
 		}
-		let uploadData = PerformerUploadData(form: postStruct, photo:  ImageUploadData(filename: serverPhotoName, image: photoData), 
+		return PerformerUploadData(form: postStruct, photo:  ImageUploadData(filename: serverPhotoName, image: photoData), 
 				overrideIsOfficial: false)
-		try await apiQuery(req, endpoint: "/performer/forevent/\(eventID)", method: .POST, encodeContent: uploadData)
-		return .ok
 	}
 
 	// `POST /performer/self/delete`
@@ -421,6 +462,62 @@ struct SitePerformerController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Request parameter identifying Performer is missing.")
 		}
 		let response = try await apiQuery(req, endpoint: "/admin/performer/\(performerID)", method: .DELETE)
+		return response.status
+	}
+
+	// `GET /admin/performer/event/:event_ID`
+	//
+	// Shows the performers linked to an event, with controls to link or unlink performers by hand.
+	func eventPerformersPage(_ req: Request) async throws -> View {
+		guard let eventID = req.parameters.get(eventIDParam.paramString, as: UUID.self) else {
+			throw Abort(.badRequest, reason: "Missing event ID parameter.")
+		}
+		let event = try await apiQuery(req, endpoint: "/events/\(eventID)").content.decode(EventData.self)
+		let officialResponse = try await apiQuery(req, endpoint: "/performer/official?start=0&limit=200")
+		let shadowResponse = try await apiQuery(req, endpoint: "/performer/shadow?start=0&limit=200")
+		let officialPerformers = try officialResponse.content.decode(PerformerResponseData.self).performers
+		let shadowPerformers = try shadowResponse.content.decode(PerformerResponseData.self).performers
+		struct EventPerformersContext: Encodable {
+			var trunk: TrunkContext
+			var event: EventData
+			var officialChoices: [PerformerHeaderData]
+			var shadowChoices: [PerformerHeaderData]
+
+			init(_ req: Request, event: EventData, official: [PerformerHeaderData], shadow: [PerformerHeaderData]) {
+				trunk = .init(req, title: "Event Performers", tab: .events)
+				self.event = event
+				let linkedIDs = Set(event.performers.compactMap { $0.id })
+				func available(_ list: [PerformerHeaderData]) -> [PerformerHeaderData] {
+					list.filter { performer in performer.id.map { !linkedIDs.contains($0) } ?? false }
+							.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+				}
+				officialChoices = available(official)
+				shadowChoices = available(shadow)
+			}
+		}
+		let ctx = EventPerformersContext(req, event: event, official: officialPerformers, shadow: shadowPerformers)
+		return try await req.view.render("Performers/eventPerformers", ctx)
+	}
+
+	// `POST /admin/performer/:performer_ID/event/:event_ID/link`
+	//
+	func linkPerformerToEventHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let performerID = req.parameters.get(performerIDParam.paramString, as: UUID.self),
+				let eventID = req.parameters.get(eventIDParam.paramString, as: UUID.self) else {
+			throw Abort(.badRequest, reason: "Request parameters identifying Performer and Event are missing.")
+		}
+		let response = try await apiQuery(req, endpoint: "/admin/performer/\(performerID)/event/\(eventID)", method: .POST)
+		return response.status
+	}
+
+	// `POST /admin/performer/:performer_ID/event/:event_ID/unlink`
+	//
+	func unlinkPerformerFromEventHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let performerID = req.parameters.get(performerIDParam.paramString, as: UUID.self),
+				let eventID = req.parameters.get(eventIDParam.paramString, as: UUID.self) else {
+			throw Abort(.badRequest, reason: "Request parameters identifying Performer and Event are missing.")
+		}
+		let response = try await apiQuery(req, endpoint: "/admin/performer/\(performerID)/event/\(eventID)", method: .DELETE)
 		return response.status
 	}
 
