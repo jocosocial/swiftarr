@@ -16,5 +16,5 @@ photographers share a photo right away from a paired camera.
 
 ### Server Enforcement
 
-The server may start enforcing the capture-time check in the future. Clients should not rely on the server
+The server may start enforcing the capture-time check in the future. Clients must not rely on the server
 accepting photos that fail it.
