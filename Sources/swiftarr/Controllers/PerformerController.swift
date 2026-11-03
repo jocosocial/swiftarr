@@ -29,6 +29,7 @@ struct PerformerController: APIRouteCollection {
 		let tokenAuthGroup = performerRoutes.tokenRoutes(feature: .performers)
 		tokenAuthGroup.get("self", use: getSelfPerformer).setUsedForPreregistration()
 		tokenAuthGroup.post("forevent", eventIDParam, use: addSelfPerformerForEvent).setUsedForPreregistration()
+		tokenAuthGroup.post("self", use: upsertSelfPerformer).setUsedForPreregistration()
 		tokenAuthGroup.post("self", "delete", use: deleteSelfPerformer).setUsedForPreregistration()
 		tokenAuthGroup.delete("self", use: deleteSelfPerformer).setUsedForPreregistration()
 
@@ -42,6 +43,8 @@ struct PerformerController: APIRouteCollection {
 		ttAuthGroup.get("performer", "bulk", "verify", use: bulkPerformerVerifyHandler)
 		ttAuthGroup.post("performer", "bulk", "apply", use: bulkPerformerApplyHandler)
 		ttAuthGroup.delete("performer", performerIDParam, use: deletePerformerHandler).setUsedForPreregistration()
+		ttAuthGroup.post("performer", performerIDParam, "event", eventIDParam, use: linkPerformerToEventHandler)
+		ttAuthGroup.delete("performer", performerIDParam, "event", eventIDParam, use: unlinkPerformerFromEventHandler)
 	}
 	
 // MARK: Getting Performer Data
@@ -179,11 +182,35 @@ struct PerformerController: APIRouteCollection {
 		}
 		let eventCount = try await EventPerformer.query(on: req.db)
 				.join(Performer.self, on: \EventPerformer.$performer.$id == \Performer.$id)
-				.filter(Performer.self, \.$user.$id == cacheUser.userID).count()
+				.filter(Performer.self, \.$user.$id == cacheUser.userID)
+				.filter(\.$manuallyLinked == false).count()
 		guard eventCount <= 5 else {
 			throw Abort(.badRequest, reason: "Twitarr doesn't let a single person be the organizer for more than 5 Shadow Events as an anti-brigading defense. If you're actually the organizer for all these events (not ATTENDING them, ORGANIZING them) let us know.")
 		}
 		let uploadData = try req.content.decode(PerformerUploadData.self)
+		try await saveSelfPerformer(uploadData, eventID: eventID, for: cacheUser, on: req)
+		return .ok
+	}
+	
+	/// `POST /api/v3/performer/self`
+	///
+	/// Creates or updates the current user's Performer profile without attaching it to any event. Only available to users with the `performerselfeditor` role, and to TwitarrTeam and above.
+	/// The profile can later be attached to an event by TwitarrTeam, or by the user via `/api/v3/performer/forevent/:event_ID` for Shadow and Workshop events.
+	///
+	/// - Parameter PerformerUploadData: JSON POST content.
+	/// - Returns: HTTP status.
+	func upsertSelfPerformer(_ req: Request) async throws -> HTTPStatus {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		guard cacheUser.userRoles.contains(.performerselfeditor) || cacheUser.accessLevel.hasAccess(.twitarrteam) else {
+			throw Abort(.forbidden, reason: "Creating a Performer profile without an event requires the Shadow Event Performer role or TwitarrTeam access.")
+		}
+		let uploadData = try req.content.decode(PerformerUploadData.self)
+		try await saveSelfPerformer(uploadData, eventID: nil, for: cacheUser, on: req)
+		return .ok
+	}
+	
+	/// Creates or updates the Performer for the given user, attaching it to the event if one is given. 
+	func saveSelfPerformer(_ uploadData: PerformerUploadData, eventID: UUID?, for cacheUser: UserCacheData, on req: Request) async throws {
 		// This will attempt to look up the callers existing Performer record, even if it is deleted.
 		// If they have none then a blank one is created. This is to ensure that there is only ever
 		// one Performer per User.
@@ -197,6 +224,9 @@ struct PerformerController: APIRouteCollection {
 		let performerForCapture = performer
 		try await req.db.transaction { database in
 			try await performerForCapture.save(on: database)			// Updates or creates
+			guard let eventID = eventID else {
+				return
+			}
 			let attachedEvent = try await EventPerformer.query(on: database).filter(\.$performer.$id == performerForCapture.requireID())
 					.filter(\.$event.$id == eventID).first() 
 			if attachedEvent == nil {
@@ -206,7 +236,6 @@ struct PerformerController: APIRouteCollection {
 				try await newEventPerformer.save(on: database)
 			}
 		}
-		return .ok
 	}
 	
 	/// `POST /api/v3/performer/self/delete`
@@ -329,7 +358,8 @@ struct PerformerController: APIRouteCollection {
 			errors.append("\(noEventPerformerNames.count) performers in the DB don't seem to be performing at any event: \(noEventPerformerNames)")
 		}
 		// We don't check the EventPerformer pivots here because the spreadsheet is always supposed to be definitive and complete for these.
-		// When we execute the update, we'll delete all existing EventPerformer pivots for official performers and then create updated ones.
+		// When we execute the update, we'll delete all existing non-manual EventPerformer pivots for official performers and then create updated ones.
+		// Pivots that TwitarrTeam linked by hand are left alone.
 		// The idea is that, on verify, telling the user that the operation will create 5 more pivots and delete one isn't useful.
 		return EventPerformerValidationData(oldPerformerCount: dbPerformers.count, newPerformerCount: performers.count,
 				missingPerformerCount: missingPerformerNames.count, noEventsPerformerCount: noEventPerformerNames.count, 
@@ -342,7 +372,8 @@ struct PerformerController: APIRouteCollection {
 	/// matches performer names in the spread sheet to Performers in the db, creates EventPerformer pivots linking Events and their Performers.
 	/// 
 	/// This method deletes all existing EventPerformer pivots for official performers before saving the new ones; the assumption is that the Excel spreadsheet is the new 
-	/// definitive (and complete) source for which performers are at which events.
+	/// definitive (and complete) source for which performers are at which events. Pivots that were linked manually (`manuallyLinked == true`) are not deleted,
+	/// and a spreadsheet row that duplicates a manual link is ignored.
 	/// 
 	/// - Returns:HTTP status.
 	func performerLinkApplyHandler(_ req: Request) async throws -> HTTPStatus {
@@ -378,10 +409,72 @@ struct PerformerController: APIRouteCollection {
 		if duplicatePairCount > 0 {
 			req.logger.warning("Performer link spreadsheet contained \(duplicatePairCount) duplicate performer/event pair(s); duplicates were ignored.")
 		}
-		let pivots = try await EventPerformer.query(on: req.db).join(Performer.self, on: \EventPerformer.$performer.$id == \Performer.$id)
+		try await replaceOfficialPerformerPivots(with: builtPerformerPivots, on: req.db)
+		return .ok
+	}
+	
+	/// Replaces the non-manual EventPerformer pivots for official performers with the given pivots. Manually linked pivots are kept, and any
+	/// given pivot that duplicates a manual pivot is skipped to avoid violating the unique(performer, event) constraint.
+	func replaceOfficialPerformerPivots(with newPivots: [EventPerformer], on database: Database) async throws {
+		let officialPivots = try await EventPerformer.query(on: database).join(Performer.self, on: \EventPerformer.$performer.$id == \Performer.$id)
 				.filter(Performer.self, \.$officialPerformer == true).all()
-		try await pivots.delete(on: req.db)
-		try await builtPerformerPivots.create(on: req.db)
+		let manualKeys = Set(officialPivots.filter { $0.manuallyLinked }.map {
+			eventPerformerLookupKey(performerID: $0.$performer.id, eventID: $0.$event.id)
+		})
+		let pivotsToCreate = newPivots.filter {
+			!manualKeys.contains(eventPerformerLookupKey(performerID: $0.$performer.id, eventID: $0.$event.id))
+		}
+		let pivotsToDelete = officialPivots.filter { !$0.manuallyLinked }
+		try await database.transaction { transaction in
+			try await pivotsToDelete.delete(on: transaction)
+			try await pivotsToCreate.create(on: transaction)
+		}
+	}
+	
+	/// `POST /api/v3/admin/performer/:performer_ID/event/:event_ID`
+	///
+	/// Links any Performer (official or shadow) to any Event. The link is marked as manual, so the spreadsheet link import won't remove it.
+	/// If the pair is already linked (for example, by the spreadsheet), the existing link is marked as manual.
+	///
+	/// - Returns: `.created` if a new link was made, `.ok` if the link already existed.
+	func linkPerformerToEventHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let performerID = req.parameters.get(performerIDParam.paramString, as: UUID.self),
+				let eventID = req.parameters.get(eventIDParam.paramString, as: UUID.self) else {
+			throw Abort(.badRequest, reason: "Request parameters identifying Performer and Event are required.")
+		}
+		guard let performer = try await Performer.find(performerID, on: req.db) else {
+			throw Abort(.badRequest, reason: "No Performer found with given ID.")
+		}
+		guard let event = try await Event.find(eventID, on: req.db) else {
+			throw Abort(.badRequest, reason: "No Event found with given ID.")
+		}
+		if let existing = try await EventPerformer.query(on: req.db).filter(\.$performer.$id == performerID)
+				.filter(\.$event.$id == eventID).first() {
+			if !existing.manuallyLinked {
+				existing.manuallyLinked = true
+				try await existing.save(on: req.db)
+			}
+			return .ok
+		}
+		try await EventPerformer(event: event, performer: performer, manuallyLinked: true).save(on: req.db)
+		return .created
+	}
+	
+	/// `DELETE /api/v3/admin/performer/:performer_ID/event/:event_ID`
+	///
+	/// Removes the link between a Performer and an Event, whether it was made manually or by import.
+	///
+	/// - Returns: `.ok` if a link was removed, `.noContent` if there was no such link.
+	func unlinkPerformerFromEventHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let performerID = req.parameters.get(performerIDParam.paramString, as: UUID.self),
+				let eventID = req.parameters.get(eventIDParam.paramString, as: UUID.self) else {
+			throw Abort(.badRequest, reason: "Request parameters identifying Performer and Event are required.")
+		}
+		guard let pivot = try await EventPerformer.query(on: req.db).filter(\.$performer.$id == performerID)
+				.filter(\.$event.$id == eventID).first() else {
+			return .noContent
+		}
+		try await pivot.delete(on: req.db)
 		return .ok
 	}
 

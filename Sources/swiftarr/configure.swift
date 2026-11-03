@@ -664,6 +664,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(UpdateEventFavoriteSchema_Photographer(), to: .psql)
 		app.migrations.add(UpdateUserDiscordHandleMigration(), to: .psql)
 		app.migrations.add(AddPerformerAlternativeNamesMigration(), to: .psql)
+		app.migrations.add(AddEventPerformerManuallyLinkedMigration(), to: .psql)
 		app.migrations.add(AddFavoriteFieldToFezParticipantSchema(), to: .psql)
 		app.migrations.add(AddVisibilityFieldToFriendlyFezSchema(), to: .psql)
 		app.migrations.add(CreateClientAppSchema(), to: .psql)
