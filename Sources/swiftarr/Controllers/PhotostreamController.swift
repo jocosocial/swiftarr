@@ -141,7 +141,10 @@ struct PhotostreamController: APIRouteCollection {
 	/// 
 	/// Adds the given photo to the photostream. To be valid, either the eventID or the placename should be non-nil, and should equal a value recently returned from
 	/// `/api/v3/photostream/placenames`.
-	/// 
+	///
+	/// - Note: The server does not validate when the photo was taken. Clients must enforce the capture-time rules described in
+	///   "Client Conventions" before uploading.
+	///
 	/// - Parameter `PhotostreamUploadData`: In the request body.
 	/// - Returns: 200 OK with the created `PhotostreamImageData` if upload is successful.
 	func photostreamUploadHandler(_ req: Request) async throws -> Response {
