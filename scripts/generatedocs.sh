@@ -26,7 +26,9 @@ if [ "${USE_CACHE}" = true ]; then
 	echo "Using cached Sourcekitten file at ${SOURCEFILE}"
 else
 	echo "Generating new Sourcekitten file at ${SOURCEFILE}"
-	sourcekitten doc --spm > "${SOURCEFILE}"
+	# Name the module explicitly. SourceKitten 0.39+ with the swiftbuild backend (Swift 6.4+) otherwise guesses
+	# and can document a dependency instead of swiftarr, producing nearly empty docs.
+	sourcekitten doc --spm --module-name swiftarr > "${SOURCEFILE}"
 fi
 
 echo "Generating Jazzy docs to ${OUTPUT_DIR}"
