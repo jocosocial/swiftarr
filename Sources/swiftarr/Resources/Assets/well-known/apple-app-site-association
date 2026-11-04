@@ -1,0 +1,76 @@
+{
+	"applinks": {
+		"details": [
+			{
+				"appIDs": ["67V85M2YSV.com.grantcohoe.tricordarr"],
+				"components": [
+					{ "/": "/events/*.ics", "exclude": true },
+					{ "/": "/events/photographerreport/download", "exclude": true },
+					{ "/": "/user/*/vcard", "exclude": true },
+					{ "/": "/about" },
+					{ "/": "/faq" },
+					{ "/": "/codeOfConduct" },
+					{ "/": "/map" },
+					{ "/": "/time" },
+					{ "/": "/hunts" },
+					{ "/": "/forums" },
+					{ "/": "/forums/*" },
+					{ "/": "/seamail" },
+					{ "/": "/seamail/*" },
+					{ "/": "/lfg" },
+					{ "/": "/lfg/*" },
+					{ "/": "/events" },
+					{ "/": "/events/*" },
+					{ "/": "/boardgames" },
+					{ "/": "/boardgames/*" },
+					{ "/": "/karaoke" },
+					{ "/": "/karaoke/*" },
+					{ "/": "/performers" },
+					{ "/": "/performers/*" },
+					{ "/": "/photostream" },
+					{ "/": "/photostream/*" },
+					{ "/": "/profile" },
+					{ "/": "/profile/*" },
+					{ "/": "/eventfeedback" },
+					{ "/": "/eventfeedback/*" },
+					{ "/": "/forum/*" },
+					{ "/": "/forumpost/*" },
+					{ "/": "/performer/*" },
+					{ "/": "/user/*" },
+					{ "/": "/username/*" },
+					{ "/": "/privateevent/*" },
+					{ "/": "/hunt/*" },
+					{ "/": "/puzzle/*" }
+				]
+			},
+			{
+				"appIDs": ["FQD36VNG36.com.challfry-FQD.Kraken"],
+				"components": [
+					{ "/": "/events/*.ics", "exclude": true },
+					{ "/": "/events/photographerreport/download", "exclude": true },
+					{ "/": "/about" },
+					{ "/": "/faq" },
+					{ "/": "/codeOfConduct" },
+					{ "/": "/map" },
+					{ "/": "/time" },
+					{ "/": "/forums" },
+					{ "/": "/forums/*" },
+					{ "/": "/seamail" },
+					{ "/": "/seamail/*" },
+					{ "/": "/lfg" },
+					{ "/": "/lfg/*" },
+					{ "/": "/events" },
+					{ "/": "/events/*" },
+					{ "/": "/boardgames" },
+					{ "/": "/boardgames/*" },
+					{ "/": "/karaoke" },
+					{ "/": "/karaoke/*" },
+					{ "/": "/performers" },
+					{ "/": "/performers/*" },
+					{ "/": "/forum/*" },
+					{ "/": "/performer/*" }
+				]
+			}
+		]
+	}
+}

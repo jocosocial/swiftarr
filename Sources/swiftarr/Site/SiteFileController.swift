@@ -19,6 +19,8 @@ struct SiteFileController: SiteControllerUtils {
 		// This replaces FileMiddleware from Sources/swiftarr/configure.swift.
 		app.get("public", "**", use: streamPublicFile)
 		app.get("favicon.ico", use: streamFavicon)
+		app.get(".well-known", "apple-app-site-association", use: streamAppleAppSiteAssociation)
+		app.get(".well-known", "assetlinks.json", use: streamAssetLinks)
 	}
 
 	// `GET /css/:catchall`
@@ -59,6 +61,23 @@ struct SiteFileController: SiteControllerUtils {
 	// actually in "Sources/swiftarr/Resources/Assets/img"). We also refer to this path using the more modern link header (see trunk.html).
 	func streamFavicon(_ req: Request) throws -> Response {
 		return try streamFile(req, basePath: "img/favicon.ico")
+	}
+
+	// `GET /.well-known/apple-app-site-association`
+	//
+	// Declares which iOS apps may open which of our URLs (Universal Links). This file has no extension so the
+	// Content-Type can't be inferred, and Apple requires it to be application/json.
+	func streamAppleAppSiteAssociation(_ req: Request) throws -> Response {
+		let response = try streamFile(req, basePath: "well-known/apple-app-site-association")
+		response.headers.contentType = .json
+		return response
+	}
+
+	// `GET /.well-known/assetlinks.json`
+	//
+	// Declares which Android apps may open our URLs (App Links).
+	func streamAssetLinks(_ req: Request) throws -> Response {
+		return try streamFile(req, basePath: "well-known/assetlinks.json")
 	}
 
 	// Wraps fileio.streamFile. Sanity-checks the path, builds a file system path to the resource,
