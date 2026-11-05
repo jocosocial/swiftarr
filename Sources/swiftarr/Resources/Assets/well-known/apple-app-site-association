@@ -13,6 +13,8 @@
 					{ "/": "/map" },
 					{ "/": "/time" },
 					{ "/": "/hunts" },
+					{ "/": "/directory" },
+					{ "/": "/favorites" },
 					{ "/": "/forums" },
 					{ "/": "/forums/*" },
 					{ "/": "/seamail" },
