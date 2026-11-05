@@ -1,0 +1,13 @@
+[
+	{
+		"relation": ["delegate_permission/common.handle_all_urls"],
+		"target": {
+			"namespace": "android_app",
+			"package_name": "com.tricordarr",
+			"sha256_cert_fingerprints": [
+				"78:F8:03:B6:FE:88:2E:8E:A1:8B:93:4D:7B:F0:EE:E2:6D:65:07:D0:A6:6C:90:81:9C:5E:7D:DA:56:C4:8B:4D",
+				"40:E6:68:39:A7:F0:96:DC:65:66:5F:6E:D8:F4:6A:7D:60:13:AD:63:4C:7C:AA:33:8C:AA:6B:5B:48:2D:D3:68"
+			]
+		}
+	}
+]
