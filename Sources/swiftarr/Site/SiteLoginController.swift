@@ -430,7 +430,7 @@ struct SiteLoginController: SiteControllerUtils {
 	/// 	* ?boxed=true		Removes the site header navbar; useful for apps that want to show this page but not allow general site nav.
 	func codeOfConductViewHandler(_ req: Request) async throws -> View {
 		return try await displayMarkdownFileContents(req, filePath: "/public/codeofconduct.md", 
-				agreeButtonDestination: req.url.path == "/conductAgree" ? "/createAccount" : nil)
+				agreeButtonDestination: req.url.path == "/conductAgree" ? "/createAccount" : nil, title: "Code of Conduct")
 	}
 
 	/// `GET /createAltAccount`

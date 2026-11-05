@@ -2,6 +2,7 @@ import Fluent
 import FluentPostgresDriver
 import Leaf
 import LeafKit
+import LeafMarkdown
 import Metrics
 import Prometheus
 import Queues
@@ -526,7 +527,7 @@ struct SwiftarrConfigurator {
 		app.leaf.tags["cruiseDayIndex"] = CruiseDayIndexTag()
 		app.leaf.tags["gameRating"] = GameRatingTag()
 		app.leaf.tags["localTime"] = LocalTimeTag()
-		app.leaf.tags["markdownTextTag"] = MarkdownTextTag()
+		app.leaf.tags["markdownTextTag"] = MarkdownBodyTag()
 		app.leaf.tags["dinnerTeamTag"] = DinnerTeamTag()
 		app.leaf.tags["lfgLabel"] = LFGLabelTag()
 		app.leaf.tags["notEmpty"] = NotEmptyTag()

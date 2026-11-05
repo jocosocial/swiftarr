@@ -528,6 +528,7 @@ struct SiteController: SiteControllerUtils {
 		openRoutes.get(use: rootPageHandler).destination("the Today page")
 		openRoutes.get("about", use: aboutTwitarrViewHandler).destination("the About page")
 		openRoutes.get("faq", use: twitarrFAQViewHandler).destination("the FAQ page")
+		openRoutes.get("moderator", "guide", use: twitarrModGuideViewHandler).destination("the Moderator Guide")
 		openRoutes.get("time", use: timePageHandler).destination("the server Time page")
 		openRoutes.get("map", use: mapPageHandler).destination("the boat map")
 	}
@@ -655,7 +656,7 @@ struct SiteController: SiteControllerUtils {
 	/// Query Options:
 	/// 	* ?boxed=true		Removes the site header navbar; useful for apps that want to show this page but not allow general site nav.
 	func aboutTwitarrViewHandler(_ req: Request) async throws -> View {
-		return try await displayMarkdownFileContents(req, filePath: "/public/twitarrhelptext.md")
+		return try await displayMarkdownFileContents(req, filePath: "/public/twitarrhelptext.md", title: "About Twit-arr")
 	}
 	
 	/// GET /faq
@@ -665,7 +666,17 @@ struct SiteController: SiteControllerUtils {
 	/// Query Options:
 	/// 	* ?boxed=true		Removes the site header navbar; useful for apps that want to show this page but not allow general site nav.
 	func twitarrFAQViewHandler(_ req: Request) async throws -> View {
-		return try await displayMarkdownFileContents(req, filePath: "/public/faq.md")
+		return try await displayMarkdownFileContents(req, filePath: "/public/faq.md", title: "Frequently Asked Questions")
+	}
+
+	/// GET /moderator/guide
+	///
+	/// Shows the Moderator Guide, which is a render of a Markdown source file.
+	///
+	/// Query Options:
+	/// 	* ?boxed=true		Removes the site header navbar; useful for apps that want to show this page but not allow general site nav.
+	func twitarrModGuideViewHandler(_ req: Request) async throws -> View {
+		return try await displayMarkdownFileContents(req, filePath: "/public/modguide.md", title: "Moderation Guide")
 	}
 
 	/// GET /time
@@ -971,9 +982,9 @@ extension SiteControllerUtils {
 		return try response.content.decode(String.self, using: PlaintextDecoder())
 	}
 
-	func displayMarkdownFileContents(_ req: Request, filePath: String, agreeButtonDestination: String? = nil) async throws -> View {
+	func displayMarkdownFileContents(_ req: Request, filePath: String, agreeButtonDestination: String? = nil, title: String) async throws -> View {
 		let document = try await fetchMarkdownFile(req, filePath: filePath)
-		let ctx = try MarkdownPageContext(req, content: document, agreeButtonDestination: agreeButtonDestination)
+		let ctx = try MarkdownPageContext(req, content: document, agreeButtonDestination: agreeButtonDestination, title: title)
 		return try await req.view.render("showMarkdown", ctx)
 	}
 }
@@ -984,17 +995,15 @@ struct MarkdownPageContext: Encodable {
 	var hideHeaderBar: Bool = false
 	var agreeButtonDestination: String?
 
-	init(_ req: Request, content: String, agreeButtonDestination: String?) throws {
-		trunk = .init(req, title: "Frequently Asked Questions", tab: .home)
+	init(_ req: Request, content: String, agreeButtonDestination: String?, title: String) throws {
+		trunk = .init(req, title: title, tab: .home)
 		self.markdownContent = content
 		self.agreeButtonDestination = agreeButtonDestination
 		if req.query[Bool.self, at: "boxed"] == true {
 			hideHeaderBar = true
 		}
-		
 	}
 }
-
 
 extension String {
 
