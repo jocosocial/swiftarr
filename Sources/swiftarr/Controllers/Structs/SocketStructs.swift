@@ -23,6 +23,8 @@ struct SocketFezPostData: Content {
 	var author: UserHeader
 	/// The text of this post.
 	var text: String
+	/// Grouped emoji reactions attached to this post.
+	var reactions: [ReactionData]
 	/// When the post was made.
 	var timestamp: Date
 	/// An optional image that may be attached to the post.
@@ -37,6 +39,7 @@ extension SocketFezPostData {
 		self.postID = post.postID
 		self.author = post.author
 		self.text = post.text
+		self.reactions = post.reactions
 		self.timestamp = post.timestamp
 		self.image = post.image
 	}
@@ -45,9 +48,22 @@ extension SocketFezPostData {
 		self.postID = try post.requireID()
 		self.author = author
 		self.text = post.text
+		self.reactions = []
 		self.timestamp = post.createdAt ?? Date()
 		self.image = post.image
 	}
+}
+
+/// Informs chat socket clients that reactions on an existing post changed.
+struct SocketFezReactionData: Content {
+	/// Distinguishes reaction updates from new-post messages, which also include reactions.
+	var reactionUpdate: Bool = true
+	/// The post whose reactions changed.
+	var postID: Int
+	/// The complete, grouped reaction state for that post.
+	var reactions: [ReactionData]
+	/// Rendered reaction badge fragment for website clients.
+	var html: String? = nil
 }
 
 /// Informs Fez WebSocket clients of a change in Fez membership.

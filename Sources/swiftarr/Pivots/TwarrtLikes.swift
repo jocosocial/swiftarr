@@ -1,6 +1,16 @@
 import Fluent
 import Foundation
 
+/// The type of "like" reaction that a user can apply to a `Twarrt`.
+enum LikeType: String, Codable {
+	/// A 😆.
+	case laugh
+	/// A 👍.
+	case like
+	/// A ❤️.
+	case love
+}
+
 /// A `Pivot` holding a sibllings relation between `User` and `Twarrt`.
 
 final class TwarrtLikes: Model, @unchecked Sendable {

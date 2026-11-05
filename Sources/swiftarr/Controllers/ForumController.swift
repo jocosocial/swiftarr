@@ -64,13 +64,15 @@ struct ForumController: APIRouteCollection {
 		tokenAuthGroup.post("post", postIDParam, "delete", use: postDeleteHandler)
 		tokenAuthGroup.delete("post", postIDParam, use: postDeleteHandler)
 
+		tokenAuthGroup.post("post", postIDParam, "react", use: postReactHandler)
+		// Backward-compatible legacy reaction routes for LikeType clients.
 		tokenAuthGroup.post("post", postIDParam, "laugh", use: postLaughHandler)
 		tokenAuthGroup.post("post", postIDParam, "like", use: postLikeHandler)
 		tokenAuthGroup.post("post", postIDParam, "love", use: postLoveHandler)
 		tokenAuthGroup.post("post", postIDParam, "unreact", use: postUnreactHandler)
-		tokenAuthGroup.delete("post", postIDParam, "laugh", use: postUnreactHandler)
-		tokenAuthGroup.delete("post", postIDParam, "like", use: postUnreactHandler)
-		tokenAuthGroup.delete("post", postIDParam, "love", use: postUnreactHandler)
+		tokenAuthGroup.delete("post", postIDParam, "laugh", use: postUnlaughHandler)
+		tokenAuthGroup.delete("post", postIDParam, "like", use: postUnlikeHandler)
+		tokenAuthGroup.delete("post", postIDParam, "love", use: postUnloveHandler)
 		tokenAuthGroup.post("post", postIDParam, "report", use: postReportHandler)
 
 		// Pins
@@ -685,7 +687,7 @@ struct ForumController: APIRouteCollection {
 
 	/// `GET /api/v3/forum/post/ID`
 	///
-	/// Retrieve the specified `ForumPost` with full user `LikeType` data.
+	/// Retrieve the specified `ForumPost` with full reaction data.
 	///
 	/// - Parameter postID: In the URL path.
 	/// - Throws: 404 error if the post is not available.
@@ -703,22 +705,21 @@ struct ForumController: APIRouteCollection {
 		{
 			throw Abort(.notFound, reason: "post is not available")
 		}
-		// get likes data and bookmark state
+		// get bookmark state and grouped reactions
 		let postLikes = try await PostLikes.query(on: req.db).filter(\.$post.$id == post.requireID()).all()
-		var laughUsers = [UUID]()
-		var likeUsers = [UUID]()
-		var loveUsers = [UUID]()
+		let postReactions = try await ForumPostReaction.query(on: req.db).filter(\.$post.$id == post.requireID()).all()
 		var isFavorite = false
 		for postLike in postLikes {
 			if postLike.isFavorite && postLike.$user.id == cacheUser.userID {
 				isFavorite = true
 			}
-			switch postLike.likeType {
-			case .laugh?: laughUsers.append(postLike.$user.id)
-			case .love?: loveUsers.append(postLike.$user.id)
-			case .like?: likeUsers.append(postLike.$user.id)
-			case .none: break
-			}
+		}
+		var groupedReactions = [String: [UUID]]()
+		for postReaction in postReactions {
+			groupedReactions[postReaction.emoji, default: []].append(postReaction.$user.id)
+		}
+		let reactions = groupedReactions.keys.sorted().map { emoji in
+			ReactionData(reaction: emoji, users: req.userCache.getHeaders(groupedReactions[emoji] ?? []))
 		}
 		// init return struct. Editors (moderators) see the real text/images of quarantined posts so
 		// that editing one preserves its images instead of wiping them; matches ModerationController.
@@ -728,9 +729,11 @@ struct ForumController: APIRouteCollection {
 			overrideQuarantine: cacheUser.accessLevel.canEditOthersContent()
 		)
 		postDetailData.isBookmarked = isFavorite
-		postDetailData.laughs = req.userCache.getHeaders(laughUsers)
-		postDetailData.likes = req.userCache.getHeaders(likeUsers)
-		postDetailData.loves = req.userCache.getHeaders(loveUsers)
+		postDetailData.userLike = ReactionData.legacyLikeType(in: reactions, for: cacheUser.userID)
+		postDetailData.laughs = ReactionData.users(in: reactions, for: .laugh)
+		postDetailData.likes = ReactionData.users(in: reactions, for: .like)
+		postDetailData.loves = ReactionData.users(in: reactions, for: .love)
+		postDetailData.reactions = reactions
 		return postDetailData
 	}
 
@@ -773,15 +776,17 @@ struct ForumController: APIRouteCollection {
 
 		let matchBookmarked = req.query[String.self, at: "bookmarked"] == "true"
 		let ownReacts = req.query[String.self, at: "ownreacts"] == "true"
-		if ownReacts || matchBookmarked {
+		if matchBookmarked {
 			query.join(PostLikes.self, on: \ForumPost.$id == \PostLikes.$post.$id)
 				.filter(PostLikes.self, \.$user.$id == cacheUser.userID)
-			if matchBookmarked {
-				query.filter(PostLikes.self, \.$isFavorite == true)
-			}
-			if ownReacts {
-				query.filter(PostLikes.self, \.$likeType != nil)
-			}
+			query.filter(PostLikes.self, \.$isFavorite == true)
+		}
+		if ownReacts {
+			let reactedPostIDs = try await ForumPostReaction.query(on: req.db)
+				.filter(\.$user.$id == cacheUser.userID)
+				.unique()
+				.all(\.$post.$id)
+			query.filter(\.$id ~~ reactedPostIDs)
 		}
 		if let categoryStr = req.query[String.self, at: "category"] {
 			guard let categoryID = UUID(categoryStr) else {
@@ -1112,7 +1117,7 @@ struct ForumController: APIRouteCollection {
 		// If the post @mentions anyone, update their mention counts
 		try await processForumMentions(post: forumPost, editedText: nil, isCreate: true, on: req)
 		let creatorHeader = effectiveAuthor.makeHeader()
-		let postData = try PostData(post: forumPost, author: creatorHeader, bookmarked: false, userLike: nil, likeCount: 0)
+		let postData = try PostData(post: forumPost, author: creatorHeader, bookmarked: false, userLike: nil, likeCount: 0, reactions: [])
 		let forumData = try ForumData(forum: forum, creator: creatorHeader, isFavorite: false, isMuted: false, posts: [postData], 
 				pager: Paginator(total: 1, start: 0, limit: 50))
 		return forumData
@@ -1283,7 +1288,9 @@ struct ForumController: APIRouteCollection {
 		try await processForumMentions(post: forumPost, editedText: nil, isCreate: true, on: req)
 		// return as PostData, with 201 status
 		let response = Response(status: .created)
-		try response.content.encode(PostData(post: forumPost, author: effectiveAuthor.makeHeader()))
+		try response.content.encode(
+			PostData(post: forumPost, author: effectiveAuthor.makeHeader(), bookmarked: false, reactions: [])
+		)
 		return response
 	}
 
@@ -1335,43 +1342,49 @@ struct ForumController: APIRouteCollection {
 		return try await post.fileReport(submitter: cacheUser, submitterMessage: data.message, on: req)
 	}
 
-	/// `POST /api/v3/forum/post/ID/laugh`
-	///
-	/// Add a "laugh" reaction to the specified `ForumPost`. If there is an existing `LikeType`
-	/// reaction by the user, it is replaced.
-	///
-	/// - Parameter postID: in URL path
-	/// - Throws: 403 error if user is the post's creator.
-	/// - Returns: `PostData` containing the updated like info.
+	private func legacyReactionEmojis() -> Set<String> {
+		return Set([ReactionData.legacyEmoji(for: .laugh), ReactionData.legacyEmoji(for: .like), ReactionData.legacyEmoji(for: .love)])
+	}
+
+	/// Legacy `POST /api/v3/forum/post/ID/laugh`
 	func postLaughHandler(_ req: Request) async throws -> PostData {
-		return try await postReactHandler(req, likeType: .laugh)
+		return try await postReactHandler(req, emoji: ReactionData.legacyEmoji(for: .laugh), replaceLegacyReaction: true)
 	}
 
-	/// `POST /api/v3/forum/post/ID/like`
-	///
-	/// Add a "like" reaction to the specified `ForumPost`. If there is an existing `LikeType`
-	/// reaction by the user, it is replaced.
-	///
-	/// - Parameter postID: in URL path
-	/// - Throws: 403 error if user is the post's creator.
-	/// - Returns: `PostData` containing the updated like info.
+	/// Legacy `POST /api/v3/forum/post/ID/like`
 	func postLikeHandler(_ req: Request) async throws -> PostData {
-		return try await postReactHandler(req, likeType: .like)
+		return try await postReactHandler(req, emoji: ReactionData.legacyEmoji(for: .like), replaceLegacyReaction: true)
 	}
 
-	/// `POST /api/v3/forum/post/ID/love`
-	///
-	/// Add a "love" reaction to the specified `ForumPost`. If there is an existing `LikeType`
-	/// reaction by the user, it is replaced.
-	///
-	/// - Parameter postID: in URL path
-	/// - Throws: 403 error if user is the post's creator.
-	/// - Returns: `PostData` containing the updated like info.
+	/// Legacy `POST /api/v3/forum/post/ID/love`
 	func postLoveHandler(_ req: Request) async throws -> PostData {
-		return try await postReactHandler(req, likeType: .love)
+		return try await postReactHandler(req, emoji: ReactionData.legacyEmoji(for: .love), replaceLegacyReaction: true)
 	}
 
-	func postReactHandler(_ req: Request, likeType: LikeType) async throws -> PostData {
+	/// `POST /api/v3/forum/post/ID/react`
+	///
+	/// Adds the `PostReactionData` reaction to the post. This endpoint is idempotent.
+	func postReactHandler(_ req: Request) async throws -> PostData {
+		let emoji = try req.content.decode(PostReactionData.self).validatedReaction()
+		return try await postReactHandler(req, emoji: emoji, replaceLegacyReaction: false)
+	}
+
+	/// Removes the legacy laugh reaction from a forum post.
+	func postUnlaughHandler(_ req: Request) async throws -> PostData {
+		return try await postUnreactHandler(req, emoji: ReactionData.legacyEmoji(for: .laugh))
+	}
+
+	/// Removes the legacy like reaction from a forum post.
+	func postUnlikeHandler(_ req: Request) async throws -> PostData {
+		return try await postUnreactHandler(req, emoji: ReactionData.legacyEmoji(for: .like))
+	}
+
+	/// Removes the legacy love reaction from a forum post.
+	func postUnloveHandler(_ req: Request) async throws -> PostData {
+		return try await postUnreactHandler(req, emoji: ReactionData.legacyEmoji(for: .love))
+	}
+
+	private func postReactHandler(_ req: Request, emoji: String, replaceLegacyReaction: Bool) async throws -> PostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// get post and forum
 		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
@@ -1381,29 +1394,44 @@ struct ForumController: APIRouteCollection {
 		}
 		try guardUserCanAccessCategory(cacheUser, category: post.forum.category)
 		guard post.$author.id != cacheUser.userID else {
-			throw Abort(.forbidden, reason: "user cannot like own post")
+			throw Abort(.forbidden, reason: "user cannot react to own post")
 		}
-		let postLike =
-			try await PostLikes.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
+		if replaceLegacyReaction {
+			let legacyEmojis = legacyReactionEmojis()
+			let oldLegacyReacts = try await ForumPostReaction.query(on: req.db)
+				.filter(\.$user.$id == cacheUser.userID)
+				.filter(\.$post.$id == post.requireID())
+				.all()
+				.filter { legacyEmojis.contains($0.emoji) && $0.emoji != emoji }
+			for reaction in oldLegacyReacts {
+				try await reaction.delete(on: req.db)
+			}
+		}
+		if try await ForumPostReaction.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
 			.filter(\.$post.$id == post.requireID())
-			.first() ?? PostLikes(cacheUser.userID, post)
-		postLike.likeType = likeType
-		try await postLike.save(on: req.db)
+			.filter(\.$emoji == emoji)
+			.first() == nil
+		{
+			let reaction = try ForumPostReaction(cacheUser.userID, post, emoji: emoji)
+			try await reaction.save(on: req.db)
+		}
 		let postDataArray = try await buildPostData([post], userID: cacheUser.userID, on: req)
 		return postDataArray[0]
 	}
 
 	/// `POST /api/v3/forum/post/ID/unreact`
-	/// `DELETE /api/v3/forum/post/ID/like`
-	/// `DELETE /api/v3/forum/post/ID/laugh`
-	/// `DELETE /api/v3/forum/post/ID/love`
 	///
-	/// Remove a `LikeType` reaction from the specified `ForumPost`.
-	///
-	/// - Parameter postID: in URL path
-	/// - Throws: 403 error if user is the post's creator.
-	/// - Returns: `PostData` containing the updated like info.
+	/// Removes the `PostReactionData` reaction from the post. A bodyless request removes the user's
+	/// legacy LikeType reaction for compatibility with older clients.
 	func postUnreactHandler(_ req: Request) async throws -> PostData {
+		if (req.body.data?.readableBytes ?? 0) > 0 {
+			let emoji = try req.content.decode(PostReactionData.self).validatedReaction()
+			return try await postUnreactHandler(req, emoji: emoji)
+		}
+		return try await postUnreactHandler(req, emoji: nil)
+	}
+
+	private func postUnreactHandler(_ req: Request, emoji: String?) async throws -> PostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// get post and forum
 		let post = try await ForumPost.findFromParameter(postIDParam, on: req) { query in
@@ -1413,13 +1441,19 @@ struct ForumController: APIRouteCollection {
 		}
 		try guardUserCanAccessCategory(cacheUser, category: post.forum.category)
 		guard post.$author.id != cacheUser.userID else {
-			throw Abort(.forbidden, reason: "user cannot like own post")
+			throw Abort(.forbidden, reason: "user cannot react to own post")
 		}
-		if let postLike = try await PostLikes.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
-			.filter(\.$post.$id == post.requireID()).first()
-		{
-			postLike.likeType = nil
-			try await postLike.save(on: req.db)
+		let postReactions = try await ForumPostReaction.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
+			.filter(\.$post.$id == post.requireID())
+			.all()
+		let reactionsToRemove = postReactions.filter { reaction in
+			if let emoji {
+				return reaction.emoji == emoji
+			}
+			return legacyReactionEmojis().contains(reaction.emoji)
+		}
+		for reaction in reactionsToRemove {
+			try await reaction.delete(on: req.db)
 		}
 		let postDataArray = try await buildPostData([post], userID: cacheUser.userID, on: req)
 		return postDataArray[0]
@@ -1825,7 +1859,6 @@ extension ForumController {
 		on req: Request,
 		mutewords: [String]? = nil,
 		assumeBookmarked: Bool? = nil,
-		assumeLikeType: LikeType? = nil,
 		matchHashtag: String? = nil
 	) async throws -> [PostData] {
 		// remove muteword posts
@@ -1845,25 +1878,29 @@ extension ForumController {
 		let postIDs = try filteredPosts.map { try $0.requireID() }
 		let userLikes = try await PostLikes.query(on: req.db).filter(\.$post.$id ~~ postIDs)
 			.filter(\.$user.$id == userID).all()
-		let likeCountDict = try await filteredPosts.childCountsPerModel(
-			atPath: \.$likes.$pivots,
-			on: req.db,
-			fluentFilter: { builder in builder.filter(\.$likeType != nil) },
-			sqlFilter: { builder in builder.where("liketype", .isNot, SQLLiteral.null) }
-		)
+		let postReactions = try await ForumPostReaction.query(on: req.db).filter(\.$post.$id ~~ postIDs).all()
 		let userLikeDict = Dictionary(userLikes.map { ($0.$post.id, $0) }, uniquingKeysWith: { (first, _) in first })
+		var postReactionMap = [Int: [String: [UUID]]]()
+		for reaction in postReactions {
+			let postID = reaction.$post.id
+			postReactionMap[postID, default: [:]][reaction.emoji, default: []].append(reaction.$user.id)
+		}
 		let postDataArray = try filteredPosts.map { post -> PostData in
 			let postID = try post.requireID()
 			let author = try req.userCache.getHeader(post.$author.id)
 			let bookmarked = assumeBookmarked ?? userLikeDict[postID]?.isFavorite ?? false
-			let userLike = userLikeDict[postID]?.likeType
-			let likeCount = likeCountDict[postID] ?? 0
+			let reactions = (postReactionMap[postID] ?? [:]).keys.sorted().map { emoji in
+				ReactionData(reaction: emoji, users: req.userCache.getHeaders(postReactionMap[postID]?[emoji] ?? []))
+			}
+			let userLike = ReactionData.legacyLikeType(in: reactions, for: userID)
+			let likeCount = ReactionData.legacyLikeCount(in: reactions)
 			return try PostData(
 				post: post,
 				author: author,
 				bookmarked: bookmarked,
 				userLike: userLike,
-				likeCount: likeCount
+				likeCount: likeCount,
+				reactions: reactions
 			)
 		}
 		return postDataArray

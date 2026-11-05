@@ -1051,10 +1051,12 @@ public struct FezPostData: Content {
 	var timestamp: Date
 	/// The image content of the fez post.
 	var image: String?
+	/// Emoji reactions grouped by emoji.
+	var reactions: [ReactionData]
 }
 
 extension FezPostData {
-	init(post: FezPost, author: UserHeader, overrideQuarantine: Bool = false) throws {
+	init(post: FezPost, author: UserHeader, reactions: [ReactionData] = [], overrideQuarantine: Bool = false) throws {
 		guard author.userID == post.$author.id else {
 			throw Abort(.internalServerError, reason: "Internal server error--Post's author does not match.")
 		}
@@ -1064,6 +1066,7 @@ extension FezPostData {
 			post.moderationStatus.showsContent() || overrideQuarantine ? post.text : "Post is under moderator review."
 		self.timestamp = post.createdAt ?? post.updatedAt ?? Date()
 		self.image = post.moderationStatus.showsContent() || overrideQuarantine ? post.image : nil
+		self.reactions = reactions
 	}
 }
 
@@ -2152,6 +2155,69 @@ extension PostContentData: RCFValidatable {
 	}
 }
 
+/// Used to return grouped reaction metadata.
+public struct ReactionData: Content {
+	/// A Unicode emoji or a custom emoji token such as `:arr:`.
+	var reaction: String
+	/// Users who reacted with this emoji.
+	var users: [UserHeader]
+}
+
+/// Payload for adding or removing a reaction from a forum or chat post.
+public struct PostReactionData: Content {
+	/// A Unicode emoji or a custom emoji token such as `:arr:`.
+	var reaction: String
+}
+
+extension PostReactionData {
+	/// Returns a trimmed reaction identifier after enforcing a small, URL-independent payload.
+	func validatedReaction() throws -> String {
+		let result = reaction.trimmingCharacters(in: .whitespacesAndNewlines)
+		guard !result.isEmpty, result.count <= 64, !result.contains(where: { $0.isWhitespace }) else {
+			throw Abort(.badRequest, reason: "reaction must contain 1 through 64 non-whitespace characters")
+		}
+		return result
+	}
+}
+
+extension ReactionData {
+	static func legacyEmoji(for likeType: LikeType) -> String {
+		switch likeType {
+		case .laugh: return "😆"
+		case .like: return "👍"
+		case .love: return "❤️"
+		}
+	}
+
+	static func legacyLikeType(for emoji: String) -> LikeType? {
+		switch emoji {
+		case "😆": return .laugh
+		case "👍": return .like
+		case "❤️": return .love
+		default: return nil
+		}
+	}
+
+	static func users(in reactions: [ReactionData], for likeType: LikeType) -> [UserHeader] {
+		return reactions.first(where: { $0.reaction == legacyEmoji(for: likeType) })?.users ?? []
+	}
+
+	static func legacyLikeCount(in reactions: [ReactionData]) -> Int {
+		return users(in: reactions, for: .laugh).count
+			+ users(in: reactions, for: .like).count
+			+ users(in: reactions, for: .love).count
+	}
+
+	static func legacyLikeType(in reactions: [ReactionData], for userID: UUID) -> LikeType? {
+		for likeType in [LikeType.like, LikeType.laugh, LikeType.love] {
+			if users(in: reactions, for: likeType).contains(where: { $0.userID == userID }) {
+				return likeType
+			}
+		}
+		return nil
+	}
+}
+
 /// Used to return a `ForumPost`'s data.
 ///
 /// Returned by:
@@ -2161,9 +2227,7 @@ extension PostContentData: RCFValidatable {
 /// * `POST /api/v3/forum/post/ID/image/remove`
 /// * `GET /api/v3/forum/ID/search/STRING`
 /// * `GET /api/v3/forum/post/search/STRING`
-/// * `POST /api/v3/forum/post/ID/laugh`
-/// * `POST /api/v3/forum/post/ID/like`
-/// * `POST /api/v3/forum/post/ID/love`
+/// * `POST /api/v3/forum/post/ID/react`
 /// * `POST /api/v3/forum/post/ID/unreact`
 /// * `GET /api/v3/forum/bookmarks`
 /// * `GET /api/v3/forum/likes`
@@ -2174,8 +2238,7 @@ extension PostContentData: RCFValidatable {
 /// See `ForumController.postCreateHandler(_:data:)`, `ForumController.postUpdateHandler(_:data:)`,
 /// `ForumController.imageHandler(_:data:)`, `ForumController.imageRemoveHandler(_:)`,
 /// `ForumController.forumSearchHandler(_:)`, `ForumController.postSearchHandler(_:)`
-/// `ForumController.postLaughHandler(_:)`, `ForumController.postLikeHandler(_:)`
-/// `ForumController.postLoveHandler(_:)`, `ForumController.postUnreactHandler(_:)`,
+/// `ForumController.postReactHandler(_:)`, `ForumController.postUnreactHandler(_:)`,
 /// `ForumController.bookmarksHandler(_:)`, `ForumCOntroller.likesHandler(_:)`,
 /// `ForumController.mentionsHandler(_:)`, `ForumController.postsHandler(_:)`,
 /// `ForumController.postHashtagHandler(_:)`.
@@ -2192,10 +2255,12 @@ public struct PostData: Content {
 	var images: [String]?
 	/// Whether the current user has bookmarked the post.
 	var isBookmarked: Bool
-	/// The current user's `LikeType` reaction on the post.
+	/// Legacy `LikeType` reaction for backward-compatible clients.
 	var userLike: LikeType?
-	/// The total number of `LikeType` reactions on the post.
+	/// Legacy total like count for backward-compatible clients.
 	var likeCount: Int
+	/// Emoji reactions grouped by emoji.
+	var reactions: [ReactionData]
 	/// Whether the post has been pinned to the forum.
 	var isPinned: Bool?
 }
@@ -2205,8 +2270,9 @@ extension PostData {
 		post: ForumPost,
 		author: UserHeader,
 		bookmarked: Bool,
-		userLike: LikeType?,
-		likeCount: Int,
+		userLike: LikeType? = nil,
+		likeCount: Int = 0,
+		reactions: [ReactionData],
 		overrideQuarantine: Bool = false
 	) throws {
 		postID = try post.requireID()
@@ -2217,6 +2283,7 @@ extension PostData {
 		isBookmarked = bookmarked
 		self.userLike = userLike
 		self.likeCount = likeCount
+		self.reactions = reactions
 		self.isPinned = post.pinned
 	}
 
@@ -2230,6 +2297,7 @@ extension PostData {
 		isBookmarked = false
 		self.userLike = nil
 		self.likeCount = 0
+		self.reactions = []
 	}
 }
 
@@ -2248,7 +2316,7 @@ public struct PostSearchData: Content {
 	var paginator: Paginator
 }
 
-/// Used to return a `ForumPost`'s data with full user `LikeType` info.
+/// Used to return a `ForumPost`'s data with full reaction info.
 ///
 /// Returned by: `GET /api/v3/forum/post/ID`
 ///
@@ -2268,18 +2336,18 @@ public struct PostDetailData: Content {
 	var images: [String]?
 	/// Whether the current user has bookmarked the post.
 	var isBookmarked: Bool
-	/// The current user's `LikeType` reaction on the post.
+	/// Legacy `LikeType` reaction for backward-compatible clients.
 	var userLike: LikeType?
-	/// The users with "laugh" reactions on the post.
+	/// Legacy grouped users for backward-compatible clients.
 	var laughs: [UserHeader]
-	/// The users with "like" reactions on the post.
 	var likes: [UserHeader]
-	/// The users with "love" reactions on the post.
 	var loves: [UserHeader]
+	/// Emoji reactions grouped by emoji.
+	var reactions: [ReactionData]
 }
 
 extension PostDetailData {
-	// Does not fill in isBookmarked, userLike, and reaction arrays.
+	// Does not fill in isBookmarked and reaction arrays.
 	init(post: ForumPost, author: UserHeader, overrideQuarantine: Bool = false) throws {
 		postID = try post.requireID()
 		forumID = post.$forum.id
@@ -2288,10 +2356,11 @@ extension PostDetailData {
 		text = post.isQuarantined && !overrideQuarantine ? "This post is under moderator review." : post.text
 		images = post.isQuarantined && !overrideQuarantine ? nil : post.images
 		isBookmarked = false
-		self.userLike = nil
+		userLike = nil
 		laughs = []
 		likes = []
 		loves = []
+		reactions = []
 	}
 
 }

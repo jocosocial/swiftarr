@@ -121,7 +121,8 @@ class ForumQuarantineVisibilityTests: XCTestCase, SwiftarrBaseTest {
 			userLike: nil,
 			laughs: [],
 			likes: [],
-			loves: []
+			loves: [],
+			reactions: []
 		)
 	}
 

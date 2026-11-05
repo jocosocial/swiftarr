@@ -237,3 +237,190 @@ html[data-theme-pref="dark"]  #themeToggle .theme-icon-dark  { display: inline; 
   border: 1px solid var(--bs-border-color);
   border-radius: 0.25rem;
 }
+
+
+/* Reaction picker */
+.has-action-bar[data-postid] [data-label="actionbar"] .btn {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reaction-chip {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  gap: 0.375rem;
+  min-height: 40px;
+  margin-bottom: 0.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.reaction-chip-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.reaction-chip-emoji img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.reaction-chip-disabled {
+  position: relative;
+  display: inline-flex;
+}
+
+.reaction-chip-disabled::after {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  z-index: 1080;
+  padding: 6px 9px;
+  border-radius: 4px;
+  background: #212529;
+  color: #fff;
+  content: attr(data-tooltip);
+  font-size: 0.875rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.12s ease-in-out;
+  pointer-events: none;
+}
+
+.reaction-chip-disabled:hover::after,
+.reaction-chip-disabled:focus::after {
+  visibility: visible;
+  opacity: 1;
+}
+
+.reaction-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.reaction-inline-controls {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-bottom: 0.25rem;
+}
+
+.reaction-inline-controls .reaction-picker-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  padding: 0;
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.reaction-add-glyph {
+  transform: translateY(-2px);
+}
+
+.reaction-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.reaction-picker-toggle,
+.reaction-action {
+  min-height: 40px;
+}
+
+.reaction-picker-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  z-index: 1080;
+  width: min(22rem, calc(100vw - 2rem));
+  max-height: min(70vh, 26rem);
+  overflow: hidden;
+  padding: 0.75rem;
+  color: var(--bs-body-color);
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.18);
+}
+
+.reaction-picker-menu.show {
+  display: block;
+}
+
+.reaction-picker-search {
+  margin-bottom: 0.5rem;
+}
+
+.reaction-picker-options {
+  max-height: min(54vh, 21rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.reaction-picker-section + .reaction-picker-section {
+  margin-top: 0.5rem;
+}
+
+.reaction-picker-heading {
+  margin: 0.25rem 0;
+  color: var(--bs-secondary-color);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.reaction-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
+  gap: 0.125rem;
+}
+
+.reaction-picker-choice {
+  display: flex;
+  width: 100%;
+  min-width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: inherit;
+  font-size: 2rem;
+  line-height: 1;
+  background: transparent;
+  border: 0;
+  border-radius: 0.375rem;
+}
+
+.reaction-picker-choice:hover,
+.reaction-picker-choice:focus-visible {
+  background: var(--bs-tertiary-bg);
+}
+
+.reaction-picker-choice:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 1px;
+}
+
+.reaction-picker-choice img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.reaction-picker-no-results {
+  margin: 0.5rem 0 0;
+  color: var(--bs-secondary-color);
+}

@@ -284,9 +284,10 @@ struct SiteForumController: SiteControllerUtils {
 		privateRoutes.post("forumpost", postIDParam, "laugh", use: forumPostLaughActionHandler)
 		privateRoutes.post("forumpost", postIDParam, "love", use: forumPostLoveActionHandler)
 		privateRoutes.post("forumpost", postIDParam, "unreact", use: forumPostUnreactActionHandler)
-		privateRoutes.delete("forumpost", postIDParam, "like", use: forumPostUnreactActionHandler)
-		privateRoutes.delete("forumpost", postIDParam, "laugh", use: forumPostUnreactActionHandler)
-		privateRoutes.delete("forumpost", postIDParam, "love", use: forumPostUnreactActionHandler)
+		privateRoutes.post("forumpost", postIDParam, "react", use: forumPostCustomReactActionHandler)
+		privateRoutes.delete("forumpost", postIDParam, "like", use: forumPostUnlikeActionHandler)
+		privateRoutes.delete("forumpost", postIDParam, "laugh", use: forumPostUnlaughActionHandler)
+		privateRoutes.delete("forumpost", postIDParam, "love", use: forumPostUnloveActionHandler)
 
 		privateRoutes.get("forums", categoryIDParam, "createForum", use: forumCreateViewHandler)
 		privateRoutes.on(.POST, "forums", categoryIDParam, "createForum", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: forumCreateForumPostHandler)
@@ -707,7 +708,40 @@ struct SiteForumController: SiteControllerUtils {
 		return try await forumPostPostReactionHandler(req, reactionType: "love")
 	}
 	func forumPostUnreactActionHandler(_ req: Request) async throws -> PostData {
-		return try await forumPostPostReactionHandler(req, reactionType: "unreact")
+		return try await forumPostCustomReactionHandler(req, reactionType: "unreact")
+	}
+	/// Removes the legacy LikeType reaction from a forum post.
+	func forumPostUnlikeActionHandler(_ req: Request) async throws -> PostData {
+		return try await forumPostLegacyUnreactHandler(req, reactionType: "like")
+	}
+	/// Removes the legacy LikeType reaction from a forum post.
+	func forumPostUnlaughActionHandler(_ req: Request) async throws -> PostData {
+		return try await forumPostLegacyUnreactHandler(req, reactionType: "laugh")
+	}
+	/// Removes the legacy LikeType reaction from a forum post.
+	func forumPostUnloveActionHandler(_ req: Request) async throws -> PostData {
+		return try await forumPostLegacyUnreactHandler(req, reactionType: "love")
+	}
+	/// Adds an explicitly selected Unicode or custom emoji reaction to a forum post.
+	func forumPostCustomReactActionHandler(_ req: Request) async throws -> PostData {
+		return try await forumPostCustomReactionHandler(req, reactionType: "react")
+	}
+	/// Forwards a JSON reaction payload from the site UI to the API.
+	func forumPostCustomReactionHandler(_ req: Request, reactionType: String) async throws -> PostData {
+		guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing post_id parameter.")
+		}
+		let reaction = try req.content.decode(PostReactionData.self)
+		let response = try await apiQuery(req, endpoint: "/forum/post/\(postID)/\(reactionType)", method: .POST, encodeContent: reaction)
+		return try response.content.decode(PostData.self)
+	}
+	/// Forwards a legacy LikeType removal to its backwards-compatible API route.
+	func forumPostLegacyUnreactHandler(_ req: Request, reactionType: String) async throws -> PostData {
+		guard let postID = req.parameters.get(postIDParam.paramString)?.percentEncodeFilePathEntry() else {
+			throw Abort(.badRequest, reason: "Missing post_id parameter.")
+		}
+		let response = try await apiQuery(req, endpoint: "/forum/post/\(postID)/\(reactionType)", method: .DELETE)
+		return try response.content.decode(PostData.self)
 	}
 
 	func forumPostPostReactionHandler(_ req: Request, reactionType: String) async throws -> PostData {
