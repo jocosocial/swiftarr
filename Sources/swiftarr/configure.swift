@@ -461,6 +461,7 @@ struct SwiftarrConfigurator {
 		let corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
 		new.use(corsMiddleware, at: .beginning)
 
+		new.use(RobotsTagMiddleware())
 		new.use(SwiftarrErrorMiddleware(environment: app.environment))
 		new.use(SiteNoRouteErrorMiddleware(environment: app.environment))
 		app.middleware = new
