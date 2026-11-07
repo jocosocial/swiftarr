@@ -1268,21 +1268,23 @@ struct ForumController: APIRouteCollection {
 		let filenames = try await self.processImages(newPostData.images, usage: .forumPost, maxImages: Settings.shared.getMaxForumPostImages(for: cacheUser), on: req)
 		// create post
 		let effectiveAuthor = newPostData.effectiveAuthor(actualAuthor: cacheUser, on: req)
-		let forumPost = try ForumPost(
+		var forumPost = try ForumPost(
 			forum: forum,
 			authorID: effectiveAuthor.userID,
 			text: newPostData.text,
 			images: filenames
 		)
-		try await forumPost.save(on: req.db)
-		forum.lastPostTime = Date()
-		forum.lastPostID = forumPost.id
-		try await forum.save(on: req.db)
-		try await forumPost.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
-		// If the post @mentions anyone, update their mention counts
-		try await processForumMentions(post: forumPost, editedText: nil, isCreate: true, on: req)
-		// return as PostData, with 201 status
-		let response = Response(status: .created)
+		let created = try await ForumPost.createOrReturnDebounced(&forumPost, on: req.db)
+		if created {
+			forum.lastPostTime = Date()
+			forum.lastPostID = forumPost.id
+			try await forum.save(on: req.db)
+			try await forumPost.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
+			// If the post @mentions anyone, update their mention counts
+			try await processForumMentions(post: forumPost, editedText: nil, isCreate: true, on: req)
+		}
+		// return as PostData, with 201 status if a new one was created
+		let response = Response(status: created ? .created : .ok)
 		try response.content.encode(PostData(post: forumPost, author: effectiveAuthor.makeHeader()))
 		return response
 	}

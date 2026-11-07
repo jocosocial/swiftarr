@@ -12,7 +12,7 @@ import FluentSQL
 /// 	- See Also: [PostDetailData](PostDetailData) the DTO for returning extended data on ForumPosts.
 /// 	- See Also: [PostContentData](PostContentData) the DTO for creating ForumPosts.
 /// 	- See Also: [CreateForumPostSchema](CreateForumPostSchema) the Migration for creating the ForumPost table in the database.
-final class ForumPost: Model, Searchable, @unchecked Sendable {
+final class ForumPost: Model, Searchable, @unchecked Sendable, Debouncable {
 	static let schema = "forumpost"
 
 	// MARK: Properties
@@ -22,7 +22,7 @@ final class ForumPost: Model, Searchable, @unchecked Sendable {
 	@ID(custom: "id") var id: Int?
 
 	/// The text content of the post.
-	@Field(key: "text") var text: String
+	@ContentField(key: "text") var text: String
 
 	/// The filenames of any images for the post.
 	@OptionalField(key: "images") var images: [String]?
@@ -38,6 +38,10 @@ final class ForumPost: Model, Searchable, @unchecked Sendable {
 
 	/// Timestamp of the model's soft-deletion, set automatically.
 	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
+
+	/// Timestamp until which posts in this forum with the same text by the same user will be dropped.
+	/// Set automatically by a trigger in the Debouncable migration.
+	@Timestamp(key: debounceUntilKey, on: .none) var debounceUntil: Date?
 
 	/// Is the post pinned within the forum.
 	@Field(key: "pinned") var pinned: Bool
