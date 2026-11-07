@@ -39,6 +39,10 @@ final class ForumPost: Model, Searchable, @unchecked Sendable, Debouncable {
 	/// Timestamp of the model's soft-deletion, set automatically.
 	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
 
+	/// Timestamp until which posts in this forum with the same text by the same user will be dropped.
+	/// Set automatically by a trigger in the Debouncable migration.
+	@Timestamp(key: debounceUntilKey, on: .none) var debounceUntil: Date?
+
 	/// Is the post pinned within the forum.
 	@Field(key: "pinned") var pinned: Bool
 
