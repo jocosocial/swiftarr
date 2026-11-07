@@ -1928,13 +1928,14 @@ extension ForumController {
 					try await subtractNotifications(users: subtractUUIDs, type: .forumMention(postID), on: req)
 				}
 				if subtracts.map({ $0.lowercased() }).contains("twitarrteam") {
-					let ttMembers = req.userCache.allUsersWithAccessLevel(.twitarrteam)
+					let ttMembers = req.userCache.allUsersWithAccessLevel(.twitarrteam).filter { canUserAccessCategory($0) != nil }
 					group.addTask {
 						try await subtractNotifications(users: ttMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .twitarrTeamForumMention(postID), on: req)
 					}
 				}
 				if subtracts.map({ $0.lowercased()}).contains("moderator") {
-					let modMembers = req.userCache.allUsersWithAccessLevel(.moderator)
+					// Group mentions only reach members who can see the post's category; plain moderators can't see Community Support's.
+					let modMembers = req.userCache.allUsersWithAccessLevel(.moderator).filter { canUserAccessCategory($0) != nil }
 					group.addTask {
 						try await subtractNotifications(users: modMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .moderatorForumMention(postID), on: req)
 					}
@@ -1951,14 +1952,14 @@ extension ForumController {
 					try await addNotifications(users: addUUIDs, type: .forumMention(postID, forumID), info: infoStr, on: req)
 				}
 				if adds.map({ $0.lowercased() }).contains("twitarrteam") {
-					let ttMembers = req.userCache.allUsersWithAccessLevel(.twitarrteam)
+					let ttMembers = req.userCache.allUsersWithAccessLevel(.twitarrteam).filter { canUserAccessCategory($0) != nil }
 					let infoStr = "\(authorText) wrote a forum post that @mentioned twitarrteam."
 					group.addTask {
 						try await addNotifications(users: ttMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .twitarrTeamForumMention(postID, forumID), info: infoStr, on: req)
 					}
 				}
 				if adds.map({ $0.lowercased()}).contains("moderator") {
-					let modMembers = req.userCache.allUsersWithAccessLevel(.moderator)
+					let modMembers = req.userCache.allUsersWithAccessLevel(.moderator).filter { canUserAccessCategory($0) != nil }
 					let infoStr = "\(authorText) wrote a forum post that @mentioned moderator."
 					group.addTask {
 						try await addNotifications(users: modMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .moderatorForumMention(postID, forumID), info: infoStr, on: req)

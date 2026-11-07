@@ -78,6 +78,14 @@ struct PrivilegedMailbox: Sendable {
 			requirement: .accessLevel(.moderator),
 			accessDeniedReason: "Only moderators can access moderator seamail."
 		),
+		// Last on purpose: a chat containing several phantom accounts resolves to the first row, and Community Support must not
+		// take precedence over the moderator or TwitarrTeam inbox.
+		PrivilegedMailbox(
+			user: .CommunitySupport,
+			inbox: .communitySupportSeamail,
+			requirement: .roleOrAccessLevel(.communitysupport, .twitarrteam),
+			accessDeniedReason: "Only Community Support team members can access Community Support seamail."
+		),
 	]
 
 	/// The cached phantom account for this mailbox, or nil if the seed migration that creates it

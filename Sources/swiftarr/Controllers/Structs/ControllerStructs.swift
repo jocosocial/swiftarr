@@ -3097,6 +3097,7 @@ private func usernameValidations(username: String) -> [String] {
 	var errorStrings: [String] = []
 	if username.count < 2 { errorStrings.append("username has a 2 character minimum") }
 	if username.count > 50 { errorStrings.append("username has a 50 character limit") }
+	if PrivilegedUser.isReservedUsername(username) { errorStrings.append("username is reserved") }
 	if !username.unicodeScalars.allSatisfy({ CharacterSet.validUsernameChars.contains($0) }) {
 		errorStrings.append("username can only contain alphanumeric characters plus \"\(usernameSeparatorString)\"")
 	}

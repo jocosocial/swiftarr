@@ -1146,6 +1146,9 @@ struct AdminController: APIRouteCollection {
 						.filter(\.$username == userToImport.username).first() {
 					return .duplicate
 				}
+				if PrivilegedUser.isReservedUsername(userToImport.username) {
+					return .errorNotImported("Username \"\(userToImport.username)\" is reserved")
+				}
 				if let dbUserNameMatch = try await User.query(on: transaction).filter(\.$username == userToImport.username).first() {
 					return .usernameConflict(dbUserNameMatch.username)
 				}

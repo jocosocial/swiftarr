@@ -226,6 +226,32 @@ class CommunitySupportForumLeakTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
+	// `@moderator` / `@twitarrteam` group mentions must not notify users who can't see the post's category. A plain moderator
+	// would otherwise receive a notification carrying the post and forum IDs of Community Support content.
+	func testGroupMentionsSkipUsersWhoCannotSeeTheCategory() async throws {
+		try await withApp { app in
+			let f = try await makeFixture(app)
+			try await app.test(
+				.POST,
+				"/api/v3/forum/\(f.forumID)/create",
+				headers: bearer(f.memberToken),
+				beforeRequest: { req throws in
+					try req.content.encode(PostContentData(text: "pinging @moderator and @twitarrteam", images: []))
+				},
+				afterResponse: { res async throws in XCTAssertEqual(res.status, .created) }
+			)
+			// The moderator's notification feed must not mention the private post.
+			try await app.test(
+				.GET,
+				"/api/v3/notification/user",
+				headers: bearer(f.moderatorToken),
+				afterResponse: { res async throws in
+					XCTAssertFalse(res.body.string.contains("\(f.forumID)"), "moderator was notified about private content")
+				}
+			)
+		}
+	}
+
 	func testPrivateHashtagsNeverEnterAutocomplete() async throws {
 		try await withApp { app in
 			let f = try await makeFixture(app)

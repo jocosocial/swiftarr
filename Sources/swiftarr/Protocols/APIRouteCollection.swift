@@ -157,6 +157,9 @@ extension APIRouteCollection {
 		guard targetUser.username != "THO" else {
 			throw Abort(.badRequest, reason: "Cannot change name or  access level of @THO account.")
 		}
+		guard targetUser.username != PrivilegedUser.CommunitySupport.rawValue else {
+			throw Abort(.badRequest, reason: "Cannot change name or access level of @CommunitySupport account.")
+		}
 		guard targetUser.username != "admin" else {
 			throw Abort(.badRequest, reason: "Cannot change name or  access level of @admin account.")
 		}

@@ -14,9 +14,19 @@ enum PrivilegedUser: String, CaseIterable, Codable {
 	case admin
 	// THO
 	case THO
+	// Community Support: a shared mailbox for the Community Support team. Like moderator and TwitarrTeam it's a phantom account
+	// nobody logs in as, but membership is by `UserRoleType.communitysupport` (or TwitarrTeam and above) rather than by access level.
+	case CommunitySupport
 }
 
 extension PrivilegedUser {
+	/// Usernames that ordinary users can't register or rename to, case-insensitively. The other privileged names are protected by the
+	/// username uniqueness check, but `CommunitySupport` is created by a migration that may run on a database where somebody has
+	/// already taken the name; validation keeps them from taking it after the fact.
+	static func isReservedUsername(_ username: String) -> Bool {
+		username.lowercased() == PrivilegedUser.CommunitySupport.queryParam
+	}
+
 	// Returns the url query parameter comparison version of the usernames.
 	// Generally we use .lowercased() for url query param comparison.
 	var queryParam: String {
@@ -50,6 +60,9 @@ extension PrivilegedUser {
 			case .admin:
 				return callerAccessLevel.hasAccess(.twitarrteam)
 			case .moderator:
+				return false
+			case .CommunitySupport:
+				// Posting as Community Support is gated on a role, not an access level; see `PostContentData.postAsCommunitySupport`.
 				return false
 			}
 		}
