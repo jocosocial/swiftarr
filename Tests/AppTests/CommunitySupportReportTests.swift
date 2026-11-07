@@ -175,6 +175,23 @@ class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 		XCTAssertTrue(longText.contains("Preferred outcome: p"), "no field should be dropped entirely")
 	}
 
+	func testDisplayTitleIsAboutNameLocationWhen() {
+		var data = makeCreateData()
+		data.subjectName = "Alex"
+		let report = CommunitySupportReport(author: UUID(), data: data)
+		XCTAssertEqual(report.displayTitle(), "Alex - Lido deck - Tuesday evening")
+		// The typed name wins over a linked account's username.
+		XCTAssertEqual(report.displayTitle(subjectUsername: "alexh"), "Alex - Lido deck - Tuesday evening")
+		XCTAssertEqual(report.discussionTitle(), "Alex - Lido deck - Tuesday evening")
+	}
+
+	func testDisplayTitleFallsBackToLinkedAccountThenUnspecified() {
+		let report = CommunitySupportReport(author: UUID(), data: makeCreateData())
+		report.subjectName = "  "
+		XCTAssertEqual(report.displayTitle(subjectUsername: "alexh"), "alexh - Lido deck - Tuesday evening")
+		XCTAssertEqual(report.displayTitle(), "Unspecified - Lido deck - Tuesday evening")
+	}
+
 	func testDiscussionTitleIsAtMost100Characters() {
 		let report = CommunitySupportReport(author: UUID(), data: makeCreateData())
 		report.experienceLocation = String(repeating: "L", count: 200)

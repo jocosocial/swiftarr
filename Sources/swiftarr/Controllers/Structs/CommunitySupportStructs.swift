@@ -180,6 +180,8 @@ public struct CommunitySupportReportListData: Content {
 	var intent: CommunitySupportReportIntent
 	/// Where it happened, in the reporter's words.
 	var experienceLocation: String
+	/// "Name - Location - When", where the name is that of the person the report is about. For showing as the report's heading.
+	var title: String
 	/// The team member who filed it.
 	var author: UserHeader
 	/// True if a discussion thread has been started in the private forum.
@@ -194,6 +196,9 @@ extension CommunitySupportReportListData {
 		self.statusLabel = report.status.label
 		self.intent = report.intent
 		self.experienceLocation = report.experienceLocation
+		self.title = report.displayTitle(
+			subjectUsername: report.$subject.id.flatMap { req.userCache.getUser($0)?.username }
+		)
 		self.author = try req.userCache.getHeader(report.$author.id)
 		self.hasDiscussion = hasDiscussion
 	}
@@ -208,6 +213,8 @@ public struct CommunitySupportReportData: Content {
 	var updatedAt: Date
 	var status: CommunitySupportReportStatus
 	var statusLabel: String
+	/// "Name - Location - When", where the name is that of the person the report is about. For showing as the report's heading.
+	var title: String
 	/// The team member who filed it.
 	var author: UserHeader
 	var memberName: String
@@ -249,6 +256,7 @@ extension CommunitySupportReportData {
 		self.reporterCabin = report.reporterCabin
 		self.subject = try report.$subject.id.map { try req.userCache.getHeader($0) }
 		self.subjectName = report.subjectName
+		self.title = report.displayTitle(subjectUsername: self.subject?.username)
 		self.reporterExperienced = report.reporterExperienced
 		self.reporterWitnessed = report.reporterWitnessed
 		self.intent = report.intent

@@ -109,11 +109,20 @@ extension CommunitySupportReport {
 	/// The longest post text the forum accepts is 2048 characters (see `PostContentData.validations()`). Stay comfortably under it.
 	static let discussionPostCharacterLimit = 2000
 
-	/// The title for the discussion thread started from this report: where it happened and the day it was filed, cut to the
-	/// 100 character forum title limit.
-	func discussionTitle() -> String {
-		let day = createdAt.map { String(ISO8601DateFormatter().string(from: $0).prefix(10)) } ?? ""
-		return String("Report: \(experienceLocation) (\(day))".prefix(100))
+	/// A descriptive title for the report: "Name - Location - When", where the name is that of the person the report is about.
+	/// That's the typed subject name, falling back to the linked account's username, then to "Unspecified" when neither was given.
+	///
+	/// - Parameter subjectUsername: The username of the linked subject account, if there is one. The model only has its ID, so the
+	///   caller looks it up.
+	func displayTitle(subjectUsername: String? = nil) -> String {
+		let candidates = [subjectName, subjectUsername ?? ""].map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+		let name = candidates.first { !$0.isEmpty } ?? "Unspecified"
+		return "\(name) - \(experienceLocation) - \(experienceTime)"
+	}
+
+	/// The title for the discussion thread started from this report: its `displayTitle`, cut to the 100 character forum title limit.
+	func discussionTitle(subjectUsername: String? = nil) -> String {
+		String(displayTitle(subjectUsername: subjectUsername).prefix(100))
 	}
 
 	/// The text of the first post of the discussion thread: a full copy of the report, ending with a link back to it.

@@ -24,7 +24,7 @@
 			<div class="list-group">
 				#for(report in reports.items):
 					<a class="list-group-item list-group-item-action" href="/communitysupport/report/#(report.id)">
-						<b>#(report.experienceLocation)</b> <span class="badge text-bg-secondary">#(report.statusLabel)</span>
+						<b>#(report.title)</b> <span class="badge text-bg-secondary">#(report.statusLabel)</span>
 						#if(report.hasDiscussion):<span class="badge text-bg-info">Discussion</span>#endif<br>
 						<small class="text-muted">Filed #relativeTime(report.createdAt) by @#(report.author.username)</small>
 					</a>

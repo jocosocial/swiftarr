@@ -247,7 +247,9 @@ struct CommunitySupportController: APIRouteCollection {
 		let (forum, _) = try await ForumController()
 			.createForum(
 				in: category,
-				title: report.discussionTitle(),
+				title: report.discussionTitle(
+					subjectUsername: report.$subject.id.flatMap { req.userCache.getUser($0)?.username }
+				),
 				text: report.discussionPostText(),
 				effectiveAuthor: cacheUser,
 				actingUser: cacheUser,
