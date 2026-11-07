@@ -117,6 +117,7 @@ protocol Debouncable : Model {
 
 extension Debouncable {
     static var debounceDuration: String { "2 minutes" }
+    static var debounceUntilKey: FieldKey { "debounce_until" }
     static var trigger: String { "ext_\(self.schema)_trigger_debounce" }
     static var triggerFunction: String { "set_\(self.schema)_debounce_time" }
     static var constraint: String { "ext_\(self.schema)_constraint_debounce" }
@@ -196,7 +197,7 @@ struct AddDebounceConstraint<T: Debouncable> : AsyncMigration {
             let txSql = tx as! SQLDatabase
             
             try await txSql.raw("CREATE EXTENSION IF NOT EXISTS btree_gist;").run()
-            try await txSql.raw("ALTER TABLE \(unsafeRaw: T.schema) ADD COLUMN IF NOT EXISTS debounce_until TIMESTAMPTZ;").run()
+            try await txSql.raw("ALTER TABLE \(unsafeRaw: T.schema) ADD COLUMN IF NOT EXISTS \(unsafeRaw: T.debounceUntilKey.description) TIMESTAMPTZ;").run()
 
             // Trigger to set debounce_until automatically.
             // By doing this instead of a stored generated always column,
@@ -205,7 +206,7 @@ struct AddDebounceConstraint<T: Debouncable> : AsyncMigration {
                 CREATE OR REPLACE FUNCTION \(unsafeRaw: T.triggerFunction)()
                 RETURNS TRIGGER AS $$
                 BEGIN
-                    NEW.debounce_until := NEW.created_at + INTERVAL '\(unsafeRaw: T.debounceDuration)';
+                    NEW.\(unsafeRaw: T.debounceUntilKey.description) := NEW.\(unsafeRaw: T.createdAtColumnKey.description) + INTERVAL '\(unsafeRaw: T.debounceDuration)';
                     RETURN NEW;
                 END;
                 $$ LANGUAGE plpgsql;
@@ -228,8 +229,8 @@ struct AddDebounceConstraint<T: Debouncable> : AsyncMigration {
             try await txSql.raw("""
                 ALTER TABLE \(unsafeRaw: T.schema) ADD CONSTRAINT \(unsafeRaw: T.constraint) EXCLUDE USING gist (
                     \(unsafeRaw: gistFieldsSql),
-                    tstzrange(\(unsafeRaw: T.createdAtColumnKey.description), debounce_until) WITH &&
-                ) WHERE (debounce_until IS NOT NULL);
+                    tstzrange(\(unsafeRaw: T.createdAtColumnKey.description), \(unsafeRaw: T.debounceUntilKey.description)) WITH &&
+                ) WHERE (\(unsafeRaw: T.debounceUntilKey.description) IS NOT NULL);
             """).run()
         }
     }
@@ -239,6 +240,6 @@ struct AddDebounceConstraint<T: Debouncable> : AsyncMigration {
         try await sql.raw("ALTER TABLE \(unsafeRaw: T.schema) DROP CONSTRAINT IF EXISTS \(unsafeRaw: T.constraint);").run()
         try await sql.raw("DROP TRIGGER IF EXISTS \(unsafeRaw: T.trigger) ON \(unsafeRaw: T.schema);").run()
         try await sql.raw("DROP FUNCTION IF EXISTS \(unsafeRaw: T.triggerFunction)();").run()
-        try await sql.raw("ALTER TABLE \(unsafeRaw: T.schema) DROP COLUMN IF EXISTS debounce_until;").run()
+        try await sql.raw("ALTER TABLE \(unsafeRaw: T.schema) DROP COLUMN IF EXISTS \(unsafeRaw: T.debounceUntilKey.description);").run()
     }
 }
