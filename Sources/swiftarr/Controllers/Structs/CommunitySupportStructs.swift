@@ -117,25 +117,6 @@ extension CommunitySupportStatusChangeData: RCFValidatable {
 	}
 }
 
-/// Used to add a comment to a report.
-///
-/// Submitted to: `POST /api/v3/communitysupport/report/:report_id/note`
-public struct CommunitySupportNoteData: Content {
-	var note: String
-}
-
-extension CommunitySupportNoteData: RCFValidatable {
-	func runValidations(using decoder: ValidatingDecoder) throws {
-		let tester = try decoder.validator(keyedBy: CodingKeys.self)
-		tester.validate(
-			!note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-			forKey: .note,
-			or: "note cannot be empty"
-		)
-		tester.validate(note.count <= 5_000, forKey: .note, or: "note has a 5000 character limit")
-	}
-}
-
 /// One entry in the Community Support log.
 ///
 /// Returned by: `GET /api/v3/communitysupport/actionlog`, and inside `CommunitySupportReportData`.

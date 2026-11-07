@@ -33,7 +33,6 @@ struct CommunitySupportController: APIRouteCollection {
 		teamAuthGroup.get("reports", use: reportsHandler)
 		teamAuthGroup.get("report", reportIDParam, use: reportHandler)
 		teamAuthGroup.post("report", reportIDParam, "status", use: statusHandler)
-		teamAuthGroup.post("report", reportIDParam, "note", use: noteHandler)
 		teamAuthGroup.post("report", reportIDParam, "discussion", use: discussionHandler)
 		teamAuthGroup.get("actionlog", use: actionLogHandler)
 
@@ -175,27 +174,6 @@ struct CommunitySupportController: APIRouteCollection {
 			)
 			.save(on: db)
 		}
-		return try await buildReportData(report, on: req)
-	}
-
-	/// `POST /api/v3/communitysupport/report/:report_id/note`
-	///
-	/// Adds a comment to a report.
-	///
-	/// - Parameter requestBody: `CommunitySupportNoteData`
-	/// - Returns: The updated `CommunitySupportReportData`.
-	func noteHandler(_ req: Request) async throws -> CommunitySupportReportData {
-		let cacheUser = try req.auth.require(UserCacheData.self)
-		try guardCanAccess(cacheUser)
-		let data = try ValidatingJSONDecoder().decode(CommunitySupportNoteData.self, fromBodyOf: req)
-		let report = try await CommunitySupportReport.findFromParameter(reportIDParam, on: req)
-		try await CommunitySupportAction(
-			actor: cacheUser.userID,
-			report: try report.requireID(),
-			type: .noteAdded,
-			note: data.note.trimmingCharacters(in: .whitespacesAndNewlines)
-		)
-		.save(on: req.db)
 		return try await buildReportData(report, on: req)
 	}
 

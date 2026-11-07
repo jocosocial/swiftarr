@@ -30,11 +30,6 @@ struct SiteCommunitySupportController: SiteControllerUtils {
 		var note: String?
 	}
 
-	/// Form data posted by the note form.
-	struct NoteFormContent: Codable {
-		var note: String
-	}
-
 	func registerRoutes(_ app: Application) throws {
 		// Role holders, and TwitarrTeam and above. (`minAccess` defaults to `.banned`, and role/level are OR'd, so a role-only group
 		// must pass `minAccess` explicitly or it would admit everybody.)
@@ -49,7 +44,6 @@ struct SiteCommunitySupportController: SiteControllerUtils {
 		teamRoutes.get("reports", use: reports)
 		teamRoutes.get("report", reportIDParam, use: report)
 		teamRoutes.post("report", reportIDParam, "status", use: postStatus)
-		teamRoutes.post("report", reportIDParam, "note", use: postNote)
 		teamRoutes.post("report", reportIDParam, "discussion", use: postDiscussion)
 		teamRoutes.get("log", use: actionLog)
 		teamRoutes.get("seamail") { req -> Response in req.redirect(to: "/seamail?foruser=communitysupport") }
@@ -175,7 +169,7 @@ struct SiteCommunitySupportController: SiteControllerUtils {
 
 	/// `GET /communitysupport/report/:report_id`
 	///
-	/// One report, its timeline, and the status/note/discussion controls.
+	/// One report, its timeline, and the status and discussion controls.
 	func report(_ req: Request) async throws -> View {
 		let id = try reportID(req)
 		let response = try await apiQuery(req, endpoint: "/communitysupport/report/\(id)")
@@ -204,19 +198,6 @@ struct SiteCommunitySupportController: SiteControllerUtils {
 			endpoint: "/communitysupport/report/\(id)/status",
 			method: .POST,
 			encodeContent: CommunitySupportStatusChangeData(status: form.status, note: form.note)
-		)
-		return .ok
-	}
-
-	/// `POST /communitysupport/report/:report_id/note`
-	func postNote(_ req: Request) async throws -> HTTPStatus {
-		let id = try reportID(req)
-		let form = try req.content.decode(NoteFormContent.self)
-		try await apiQuery(
-			req,
-			endpoint: "/communitysupport/report/\(id)/note",
-			method: .POST,
-			encodeContent: CommunitySupportNoteData(note: form.note)
 		)
 		return .ok
 	}

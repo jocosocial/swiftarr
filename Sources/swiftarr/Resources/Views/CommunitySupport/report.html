@@ -77,13 +77,6 @@
 				<div class="alert alert-danger mt-3 d-none" role="alert"></div>
 			</form>
 
-			<h5>Add a comment</h5>
-			<form class="ajax mb-3" action="/communitysupport/report/#(report.id)/note" enctype="multipart/form-data" method="POST" data-successurl="/communitysupport/report/#(report.id)">
-				<textarea class="form-control mb-2" rows="3" maxlength="5000" name="note" required></textarea>
-				<div class="alert alert-danger mt-3 d-none" role="alert"></div>
-				<button type="submit" class="btn btn-outline-primary">Add comment <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
-			</form>
-
 			<h5>Timeline</h5>
 			<ul class="list-group mb-3">
 				#for(action in report.actions):

@@ -2,7 +2,7 @@ import XCTVapor
 
 @testable import swiftarr
 
-// Tests for the Community Support report API: who can file and read reports, validation, the status/note log, and the
+// Tests for the Community Support report API: who can file and read reports, validation, the status log, and the
 // discussion thread that a report can start in the private forum.
 class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 
@@ -252,13 +252,6 @@ class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 			for token in [f.moderatorToken, f.verifiedToken] {
 				try await app.test(
 					.POST,
-					"/api/v3/communitysupport/report/\(report.id)/note",
-					headers: bearer(token),
-					beforeRequest: { req throws in try req.content.encode(CommunitySupportNoteData(note: "hi")) },
-					afterResponse: { res async throws in XCTAssertEqual(res.status, .forbidden) }
-				)
-				try await app.test(
-					.POST,
 					"/api/v3/communitysupport/report/\(report.id)/discussion",
 					headers: bearer(token),
 					afterResponse: { res async throws in XCTAssertEqual(res.status, .forbidden) }
@@ -288,7 +281,7 @@ class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
-	func testStatusChangeAndNoteAppearInTimelineAndLog() async throws {
+	func testStatusChangeWithNoteAppearsInTimelineAndLog() async throws {
 		try await withApp { app in
 			let f = try await makeFixture(app)
 			let report = try await fileReport(app, f)
@@ -309,25 +302,15 @@ class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 				}
 			)
 			try await app.test(
-				.POST,
-				"/api/v3/communitysupport/report/\(report.id)/note",
-				headers: bearer(f.memberToken),
-				beforeRequest: { req throws in try req.content.encode(CommunitySupportNoteData(note: "Reached them."))
-				},
-				afterResponse: { res async throws in XCTAssertEqual(res.status, .ok) }
-			)
-			try await app.test(
 				.GET,
 				"/api/v3/communitysupport/report/\(report.id)",
 				headers: bearer(f.memberToken),
 				afterResponse: { res async throws in
 					let detail = try res.content.decode(CommunitySupportReportData.self)
-					XCTAssertEqual(detail.actions.map { $0.actionType }, [.reportCreated, .statusChanged, .noteAdded])
+					XCTAssertEqual(detail.actions.map { $0.actionType }, [.reportCreated, .statusChanged])
 					XCTAssertEqual(detail.actions[1].oldStatus, .new)
 					XCTAssertEqual(detail.actions[1].newStatus, .inProgress)
 					XCTAssertEqual(detail.actions[1].note, "Calling them back")
-					XCTAssertEqual(detail.actions[2].note, "Reached them.")
-					XCTAssertEqual(detail.actions[2].actionLabel, "Note added")
 				}
 			)
 			try await app.test(
@@ -339,6 +322,20 @@ class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 					XCTAssertTrue(list.items.contains { $0.id == report.id })
 					XCTAssertTrue(list.items.allSatisfy { $0.status == .inProgress })
 				}
+			)
+		}
+	}
+
+	// Discussion happens in the report's forum thread, so reports have no comments of their own.
+	func testReportsHaveNoCommentEndpoint() async throws {
+		try await withApp { app in
+			let f = try await makeFixture(app)
+			let report = try await fileReport(app, f)
+			try await app.test(
+				.POST,
+				"/api/v3/communitysupport/report/\(report.id)/note",
+				headers: bearer(f.memberToken),
+				afterResponse: { res async throws in XCTAssertEqual(res.status, .notFound) }
 			)
 		}
 	}

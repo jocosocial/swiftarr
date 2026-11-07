@@ -45,7 +45,6 @@ enum CommunitySupportReportIntent: String, Codable, CaseIterable, Sendable {
 enum CommunitySupportActionType: String, Codable, CaseIterable, Sendable {
 	case reportCreated
 	case statusChanged
-	case noteAdded
 	case discussionStarted
 	case reportsExported
 
@@ -54,7 +53,6 @@ enum CommunitySupportActionType: String, Codable, CaseIterable, Sendable {
 		switch self {
 		case .reportCreated: return "Report created"
 		case .statusChanged: return "Status changed"
-		case .noteAdded: return "Note added"
 		case .discussionStarted: return "Discussion started"
 		case .reportsExported: return "Reports exported"
 		}

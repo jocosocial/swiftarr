@@ -361,7 +361,7 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Nov 06, 2026
 
 - New role `communitysupport` ("Community Support") and feature flag `communitySupport`.
-- New `/api/v3/communitysupport/*` controller for Community Support reports: `POST /report`, `GET /reports`, `GET /report/:report_id`, `POST /report/:report_id/status`, `POST /report/:report_id/note`, `POST /report/:report_id/discussion`, `GET /actionlog`, and `GET /export` (THO and above). Available to role holders, TwitarrTeam, and above; plain moderators have no access.
+- New `/api/v3/communitysupport/*` controller for Community Support reports: `POST /report`, `GET /reports`, `GET /report/:report_id`, `POST /report/:report_id/status`, `POST /report/:report_id/discussion`, `GET /actionlog`, and `GET /export` (THO and above). Available to role holders, TwitarrTeam, and above; plain moderators have no access.
 - New shared mailbox user `@CommunitySupport` (`?foruser=communitysupport`). `FezContentData` gains `createdByCommunitySupport`; `PostContentData` gains `postAsCommunitySupport`.
 - `UserNotificationData` gains optional `communitySupportData`. New notification type `communitySupportForumMention`, with a matching `SocketNotificationData.NotificationTypeData` case.
 - Forum categories gated on a role now return 404 (was 403) to users without access. The Community Support category is hidden from plain moderators, and its posts can't carry images or be reported.
