@@ -389,6 +389,11 @@ struct MessagePostContext: Encodable {
 		postAsCommunitySupport = mailbox.postAsCommunitySupport
 	}
 
+	/// Removes the photo picker from the form, for places where posts can't carry images (see `CategoryData.allowsImages`).
+	mutating func removePhotoSlots() {
+		photoFilenames = []
+	}
+
 	/// Post-as controls are only available when creating an announcement; edits keep the existing author.
 	func showsPostAsRadios(userIsTHO: Bool, userIsAdmin: Bool) -> Bool {
 		!isEdit

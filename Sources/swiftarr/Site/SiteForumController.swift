@@ -60,6 +60,9 @@ struct ForumPageContext: Encodable {
 			"/forum/\(forum.forumID)?start=\(pageIndex * forum.paginator.limit)&limit=\(forum.paginator.limit)"
 		}
 		self.pinnedPosts = pinnedPosts
+		if !category.allowsImages {
+			post.removePhotoSlots()
+		}
 	}
 }
 
@@ -452,6 +455,9 @@ struct SiteForumController: SiteControllerUtils {
 						paginator: Paginator(total: 0, start: 0, limit: 50)
 					)
 				}
+				if !category.allowsImages {
+					post.removePhotoSlots()
+				}
 			}
 		}
 		let ctx = try ForumCreateContext(req, catID: catID, cat: cats)
@@ -728,6 +734,19 @@ struct SiteForumController: SiteControllerUtils {
 		}
 		let response = try await apiQuery(req, endpoint: "/forum/post/\(postID)")
 		let post = try response.content.decode(PostDetailData.self)
+		// The category decides whether the post can have photos, and the post only knows its forum.
+		let forumResponse = try await apiQuery(
+			req,
+			endpoint: "/forum/\(post.forumID)?limit=1",
+			passThroughQuery: false
+		)
+		let forum = try forumResponse.content.decode(ForumData.self)
+		let catResponse = try await apiQuery(
+			req,
+			endpoint: "/forum/categories?cat=\(forum.categoryID)",
+			passThroughQuery: false
+		)
+		let allowsImages = try catResponse.content.decode([CategoryData].self).first?.allowsImages ?? true
 		struct ForumPostEditPageContext: Encodable {
 			var trunk: TrunkContext
 			var post: MessagePostContext
@@ -742,6 +761,9 @@ struct SiteForumController: SiteControllerUtils {
 			}
 		}
 		var ctx = try ForumPostEditPageContext(req, post: post)
+		if !allowsImages {
+			ctx.post.removePhotoSlots()
+		}
 		if ctx.trunk.userID != post.author.userID {
 			ctx.post.authorName = post.author.username
 		}

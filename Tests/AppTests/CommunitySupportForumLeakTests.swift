@@ -308,6 +308,34 @@ class CommunitySupportForumLeakTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
+	// Clients use this to hide their photo pickers, so the server and the UI agree about where images are allowed.
+	func testCategoryListSaysWhereImagesAreAllowed() async throws {
+		try await withApp { app in
+			let f = try await makeFixture(app)
+			try await app.test(
+				.GET,
+				"/api/v3/forum/categories",
+				headers: bearer(f.memberToken),
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok)
+					let categories = try res.content.decode([CategoryData].self)
+					let restricted = categories.filter { $0.title.hasPrefix("Community Support") }
+					XCTAssertFalse(restricted.isEmpty)
+					XCTAssertTrue(restricted.allSatisfy { !$0.allowsImages })
+					let shutter = categories.filter { $0.title.hasPrefix("Shutter Test") }
+					XCTAssertTrue(
+						shutter.allSatisfy { $0.allowsImages },
+						"role-gated categories moderators can see still take images"
+					)
+					XCTAssertTrue(
+						categories.filter { $0.title == "Off Topic" || $0.title == "General" }
+							.allSatisfy { $0.allowsImages }
+					)
+				}
+			)
+		}
+	}
+
 	func testRoleBypassLevels() {
 		XCTAssertEqual(UserRoleType.communitysupport.categoryBypassLevel, .twitarrteam)
 		XCTAssertEqual(UserRoleType.shutternaut.categoryBypassLevel, .moderator)
