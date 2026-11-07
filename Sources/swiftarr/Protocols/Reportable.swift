@@ -17,9 +17,16 @@ protocol Reportable: Model {
 	/// The database ID of the content. Depending on `reportType`, this could encode either a UUID or an Int. Don't use this for concrete types
 	/// where the actual @id type is available.
 	func reportableContentID() throws -> String
+
+	/// True if the content lives in a forum category that moderators aren't allowed to see (see `Category.isRestrictedBeyondModerators`).
+	/// Actions on such content are not moderation, so they're never recorded in the moderator action log.
+	func isInModeratorRestrictedCategory(on db: Database) async throws -> Bool
 }
 
 extension Reportable {
+
+	/// Only forums and forum posts can live in a restricted category; they override this.
+	func isInModeratorRestrictedCategory(on db: Database) async throws -> Bool { false }
 
 	// TRUE if the content's moderation state is .quarantined or .autoquarantined. If true, the content should be hidden from
 	// users without moderator access level, replaced with something like "This content is under review."
@@ -72,6 +79,9 @@ extension Reportable {
 			guard authorUUID != user.userID else {
 				return
 			}
+			guard try await !isInModeratorRestrictedCategory(on: req.db) else {
+				return
+			}
 			if let modUser = try await User.find(user.userID, on: req.db) {
 				let modAction = try ModeratorAction(content: self, action: action, moderator: modUser)
 				try await modAction.save(on: req.db)
@@ -93,6 +103,9 @@ extension Reportable {
 			return
 		}
 		do {
+			guard try await !isInModeratorRestrictedCategory(on: req.db) else {
+				return
+			}
 			if let moderator = try await User.find(moderatorID, on: req.db) {
 				let modAction = try ModeratorAction(content: self, action: action, moderator: moderator)
 				try await modAction.save(on: req.db)

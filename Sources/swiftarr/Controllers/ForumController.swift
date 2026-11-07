@@ -1091,6 +1091,7 @@ struct ForumController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "users cannot create forums in category")
 		}
 		try guardUserCanAccessCategory(cacheUser, category: category)
+		try guardCategoryAllowsImages(data.firstPost.images, category: category)
 		// process images
 		let imageFilenames = try await self.processImages(data.firstPost.images, usage: .forumPost, maxImages: Settings.shared.getMaxForumPostImages(for: cacheUser), on: req)
 		// create forum
@@ -1164,8 +1165,9 @@ struct ForumController: APIRouteCollection {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let data = try req.content.decode(ReportData.self)
 		let forum = try await Forum.findFromParameter(forumIDParam, on: req) { query in
-			query.categoryAccessFilter(for: cacheUser)
+			query.categoryAccessFilter(for: cacheUser).with(\.$category)
 		}
+		try guardCategoryAllowsReports(forum.category)
 		return try await forum.fileReport(submitter: cacheUser, submitterMessage: data.message, on: req)
 	}
 
@@ -1259,6 +1261,7 @@ struct ForumController: APIRouteCollection {
 			query.with(\.$category)
 		}
 		try guardUserCanAccessCategory(cacheUser, category: forum.category)
+		try guardCategoryAllowsImages(newPostData.images, category: forum.category)
 		try guardUserCanPostInForum(cacheUser, in: forum)
 		// ensure user has access to forum; user cannot retrieve block-owned forum, but prevent end-run
 		guard !cacheUser.getBlocks().contains(forum.$creator.id) else {
@@ -1332,6 +1335,7 @@ struct ForumController: APIRouteCollection {
 			}
 		}
 		try guardUserCanAccessCategory(cacheUser, category: post.forum.category)
+		try guardCategoryAllowsReports(post.forum.category)
 		return try await post.fileReport(submitter: cacheUser, submitterMessage: data.message, on: req)
 	}
 
@@ -1445,6 +1449,7 @@ struct ForumController: APIRouteCollection {
 		}
 		// Ensure use can view items in this category
 		try guardUserCanAccessCategory(cacheUser, category: post.forum.category)
+		try guardCategoryAllowsImages(newPostData.images, category: post.forum.category)
 		// ensure user has write access, the post can be modified by them, and the forum isn't locked.
 		try guardUserCanPostInForum(cacheUser, in: post.forum, editingPost: post)
 		// process images
@@ -1504,6 +1509,7 @@ struct ForumController: APIRouteCollection {
 				forum.with(\.$category)
 			}
 		}
+		try guardUserCanAccessCategory(cacheUser, category: post.forum.category)
 		// Only forum creator and moderators can pin posts within a forum.
 		try cacheUser.guardCanModifyContent(post, customErrorString: "User cannot pin posts in this forum.")
 		// But it becomes moderators only if the forum is locked.
@@ -1533,6 +1539,7 @@ struct ForumController: APIRouteCollection {
 				forum.with(\.$category)
 			}
 		}
+		try guardUserCanAccessCategory(cacheUser, category: post.forum.category)
 		// Only forum creator and moderators can pin posts within a forum.
 		try cacheUser.guardCanModifyContent(post, customErrorString: "User cannot pin posts in this forum.")
 		// But it becomes moderators only if the forum is locked.
@@ -1562,6 +1569,22 @@ extension ForumController {
 		}
 	}
 
+	/// Rejects image attachments for posts in a category that `isRestrictedBeyondModerators`. Image files are served by filename
+	/// with no check of which post owns them, so a private category can't hold any.
+	func guardCategoryAllowsImages(_ images: [ImageUploadData], category: Category) throws {
+		if !images.isEmpty, category.isRestrictedBeyondModerators {
+			throw Abort(.badRequest, reason: "Images can't be attached to posts in this forum category.")
+		}
+	}
+
+	/// Rejects reports on forums and posts in a category that `isRestrictedBeyondModerators`. The moderator report queue is visible to
+	/// moderators, who aren't allowed to see this content.
+	func guardCategoryAllowsReports(_ category: Category) throws {
+		if category.isRestrictedBeyondModerators {
+			throw Abort(.forbidden, reason: "Content in this forum category can't be reported. Contact a TwitarrTeam member instead.")
+		}
+	}
+
 	/// Ensures the given user has appropriate access to create or edit posts in the given forum. If editing a post, you must pass the post in the `editingPost` parameter.
 	func guardUserCanPostInForum(_ user: UserCacheData, in forum: Forum, editingPost: ForumPost? = nil) throws {
 		if let post = editingPost {
@@ -1579,15 +1602,13 @@ extension ForumController {
 	}
 
 	/// Ensures the given user has the required access to view forums and posts in the given category.
+	/// A user who lacks the category's required role gets a 404 rather than a 403, so that probing IDs can't confirm
+	/// that a forum or post exists inside a role-gated category. Role-gated visibility is decided by `UserRoleType.canView`.
 	func guardUserCanAccessCategory(_ user: UserCacheData, category: Category) throws {
 		guard user.accessLevel.hasAccess(category.accessLevelToView) else {
 			throw Abort(.forbidden, reason: "User cannot view this forum category.")
 		}
-		if !user.accessLevel.hasAccess(.moderator), let requiredRole = category.requiredRole {
-			guard user.userRoles.contains(requiredRole) else {
-				throw Abort(.forbidden, reason: "User does not have role to view this forum category.")
-			}
-		}
+		try category.guardRoleAccess(for: user)
 	}
 
 	/// Returns a dictionary mapping ForumIDs to ForumPosts, where each ForumPost is the last post made in its Forum by a user who isn't blocked or muted.
@@ -1890,7 +1911,7 @@ extension ForumController {
 				if !user.accessLevel.hasAccess(accessLevelToView) {
 					return nil
 				}
-				if !user.accessLevel.hasAccess(.moderator), let role = role, !user.userRoles.contains(role) {
+				if let role = role, !role.canView(accessLevel: user.accessLevel, roles: user.userRoles) {
 					return nil
 				}
 				return user.userID
@@ -1977,9 +1998,10 @@ extension ForumController {
 				}
 			}
 
-			// Hashtags
+			// Hashtags. The hashtag autocomplete set is global and served without authentication, so tags from posts in
+			// role-gated categories must never enter it.
 			let hashtags = post.getHashtags()
-			if !hashtags.isEmpty {
+			if !hashtags.isEmpty, role == nil {
 				group.addTask { try await req.redis.addHashtags(hashtags) }
 			}
 			// I believe this line is required to let subtasks propagate thrown errors by rethrowing.
@@ -2038,15 +2060,13 @@ extension QueryBuilder {
 				.filter(Category.self, \.$requiredRole == nil)
 		}
 		self.filter(Category.self, \Category.$accessLevelToView <= user.accessLevel)
-		if user.accessLevel >= .moderator {
-			return self
-		}
-		if user.userRoles.isEmpty {
+		// Roles whose gated categories this user can see: ones they hold, plus ones their access level bypasses (see `UserRoleType.canView`).
+		let visibleRoles = UserRoleType.allCases.filter { $0.canView(accessLevel: user.accessLevel, roles: user.userRoles) }
+		if visibleRoles.isEmpty {
 			return self.filter(Category.self, \.$requiredRole == nil)
 		}
-
 		return self.group(.or) { group in
-			group.filter(Category.self, \.$requiredRole == nil).filter(Category.self, \.$requiredRole ~~ user.userRoles)
+			group.filter(Category.self, \.$requiredRole == nil).filter(Category.self, \.$requiredRole ~~ visibleRoles)
 		}
 	}
 

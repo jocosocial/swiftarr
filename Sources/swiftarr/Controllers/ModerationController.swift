@@ -281,6 +281,13 @@ struct ModerationController: APIRouteCollection {
 		return .ok
 	}
 
+	/// Throws a 404 if the forum lives in a role-gated category that the current user can't see--for example, a plain moderator
+	/// looking at Community Support content. Works for soft-deleted forums and categories.
+	func guardCanModerateForum(_ forumID: UUID, on req: Request) async throws {
+		let user = try req.auth.require(UserCacheData.self)
+		try await Forum.category(forForumID: forumID, on: req.db)?.guardRoleAccess(for: user)
+	}
+
 	/// `GET /api/v3/mod/forumpost/ID`
 	///
 	/// Moderator only. Returns info admins and moderators need to review a forumPost. Works if forumPost has been deleted. Shows
@@ -302,6 +309,7 @@ struct ModerationController: APIRouteCollection {
 		guard let post = try await ForumPost.query(on: req.db).filter(\._$id == postID).withDeleted().first() else {
 			throw Abort(.notFound, reason: "no value found for identifier '\(paramVal)'")
 		}
+		try await guardCanModerateForum(post.$forum.id, on: req)
 		let reports = try await Report.query(on: req.db)
 			.filter(\.$reportType == .forumPost)
 			.filter(\.$reportedID == paramVal)
@@ -339,6 +347,7 @@ struct ModerationController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Request parameter `Moderation_State` is missing.")
 		}
 		let forumPost = try await ForumPost.findFromParameter(postIDParam, on: req)
+		try await guardCanModerateForum(forumPost.$forum.id, on: req)
 		try forumPost.moderationStatus.setFromParameterString(modState)
 		await forumPost.logIfModeratorAction(
 			ModeratorActionType.setFromModerationStatus(forumPost.moderationStatus),
@@ -371,6 +380,7 @@ struct ModerationController: APIRouteCollection {
 		guard let forum = try await Forum.query(on: req.db).filter(\.$id == forumID).withDeleted().first() else {
 			throw Abort(.notFound, reason: "no value found for identifier '\(forumID)'")
 		}
+		try await guardCanModerateForum(forumID, on: req)
 		let reports = try await Report.query(on: req.db)
 			.filter(\.$reportType == .forum)
 			.filter(\.$reportedID == forumIDString)
@@ -399,6 +409,7 @@ struct ModerationController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Request parameter `Moderation_State` is missing.")
 		}
 		let forum = try await Forum.findFromParameter(forumIDParam, on: req)
+		try await guardCanModerateForum(forum.requireID(), on: req)
 		try forum.moderationStatus.setFromParameterString(modState)
 		await forum.logIfModeratorAction(
 			ModeratorActionType.setFromModerationStatus(forum.moderationStatus),
@@ -417,6 +428,9 @@ struct ModerationController: APIRouteCollection {
 		let newCategory = try await Category.findFromParameter(categoryIDParam, on: req)
 		let forum = try await Forum.findFromParameter(forumIDParam, on: req, builder: { $0.with(\.$category) })
 		let oldCategory = forum.category
+		// Role-gated categories that hide from plain moderators can't be moved into or out of by them.
+		try oldCategory.guardRoleAccess(for: user)
+		try newCategory.guardRoleAccess(for: user)
 		guard try oldCategory.requireID() != newCategory.requireID() else {
 			throw Abort(.badRequest, reason: "Cannot move forum--forum is already in the requested category.")
 		}
