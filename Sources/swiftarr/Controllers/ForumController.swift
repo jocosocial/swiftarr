@@ -848,6 +848,9 @@ struct ForumController: APIRouteCollection {
 			if mentionName.lowercased() == "@twitarrteam" && cacheUser.accessLevel.hasAccess(.twitarrteam) {
 				try await markNotificationViewed(user: cacheUser, type: .twitarrTeamForumMention(0), on: req)
 			}
+			if mentionName.lowercased() == "@\(PrivilegedUser.CommunitySupport.queryParam)" && CommunitySupportController.canAccess(cacheUser) {
+				try await markNotificationViewed(user: cacheUser, type: .communitySupportForumMention(0), on: req)
+			}
 		}
 		if let byself = req.query[Bool.self, at: "byself"], byself == true {
 			query.filter(\.$author.$id == cacheUser.userID)
@@ -1975,6 +1978,12 @@ extension ForumController {
 						try await subtractNotifications(users: modMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .moderatorForumMention(postID), on: req)
 					}
 				}
+				if subtracts.map({ $0.lowercased() }).contains(PrivilegedUser.CommunitySupport.queryParam) {
+					let csMembers = communitySupportMembers(on: req).filter { canUserAccessCategory($0) != nil }
+					group.addTask {
+						try await subtractNotifications(users: csMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .communitySupportForumMention(postID), on: req)
+					}
+				}
 			}
 			if !adds.isEmpty {
 				let addUUIDs = req.userCache.getUsers(usernames: adds).compactMap(canUserAccessCategory).filter(userDidntMentionSelf)
@@ -1998,6 +2007,13 @@ extension ForumController {
 					let infoStr = "\(authorText) wrote a forum post that @mentioned moderator."
 					group.addTask {
 						try await addNotifications(users: modMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .moderatorForumMention(postID, forumID), info: infoStr, on: req)
+					}
+				}
+				if adds.map({ $0.lowercased() }).contains(PrivilegedUser.CommunitySupport.queryParam) {
+					let csMembers = communitySupportMembers(on: req).filter { canUserAccessCategory($0) != nil }
+					let infoStr = "\(authorText) wrote a forum post that @mentioned CommunitySupport."
+					group.addTask {
+						try await addNotifications(users: csMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .communitySupportForumMention(postID, forumID), info: infoStr, on: req)
 					}
 				}
 			}
@@ -2043,6 +2059,12 @@ extension ForumController {
 			// I believe this line is required to let subtasks propagate thrown errors by rethrowing.
 			try await group.waitForAll()
 		}
+	}
+
+	/// Everyone an `@CommunitySupport` mention notifies: Community Support role holders, plus TwitarrTeam and above, who can see the team's content.
+	/// This is the same roster as the shared mailbox.
+	func communitySupportMembers(on req: Request) -> [UserCacheData] {
+		PrivilegedMailbox.matching(queryParam: PrivilegedUser.CommunitySupport.queryParam)?.members(on: req) ?? []
 	}
 
 	// Deleting a forum thread means we delete a bunch of posts at once. This fn coalesces the updates to User models

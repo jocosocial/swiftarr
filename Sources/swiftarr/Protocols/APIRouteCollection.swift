@@ -270,7 +270,7 @@ extension APIRouteCollection {
 				for userID in users {
 					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
-			case .forumMention, .twitarrTeamForumMention, .moderatorForumMention:
+			case .forumMention, .twitarrTeamForumMention, .moderatorForumMention, .communitySupportForumMention:
 				for userID in users {
 					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
@@ -427,7 +427,7 @@ extension APIRouteCollection {
 						)
 					}
 				}
-			case .forumMention, .twitarrTeamForumMention, .moderatorForumMention:
+			case .forumMention, .twitarrTeamForumMention, .moderatorForumMention, .communitySupportForumMention:
 				for userID in users {
 					group.addTask {
 						try await req.redis.incrementIntInUserHash(
@@ -507,6 +507,10 @@ extension APIRouteCollection {
 			}
 		case .twitarrTeamForumMention:
 			if user.accessLevel.hasAccess(.twitarrteam) {
+				try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)
+			}
+		case .communitySupportForumMention:
+			if CommunitySupportController.canAccess(user) {
 				try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)
 			}
 		case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting,

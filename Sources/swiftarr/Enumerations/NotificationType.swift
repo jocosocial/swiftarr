@@ -77,6 +77,9 @@ enum NotificationType {
 	case moderatorForumMention(Int, String? = nil)
 	/// A new or edited forum post that now @mentions @twitarrteam. Associated value is the post ID.
 	case twitarrTeamForumMention(Int, String? = nil)
+	/// A new or edited forum post that now @mentions @CommunitySupport. Associated value is the post ID. Only sent to Community Support role holders
+	/// and TwitarrTeam and above--the people who can see the private Community Support forum category.
+	case communitySupportForumMention(Int, String? = nil)
 
 // Micro Karaoke
 	/// A Micro Karaoke song the user contributed to is ready for viewing. Associated value is song ID
@@ -103,6 +106,7 @@ enum NotificationType {
 		case .forumMention: return "forumMention"
 		case .moderatorForumMention: return "moderatorForumMention"
 		case .twitarrTeamForumMention: return "twitarrTeamForumMention"
+		case .communitySupportForumMention: return "communitySupportForumMention"
 		
 		case .microKaraokeSongReady: return "microKaraokeSongReady"
 		}
@@ -134,6 +138,7 @@ enum NotificationType {
 		case .forumMention: return "NotificationHash-\(userID)"
 		case .moderatorForumMention: return "NotificationHash-\(userID)"
 		case .twitarrTeamForumMention: return "NotificationHash-\(userID)"
+		case .communitySupportForumMention: return "NotificationHash-\(userID)"
 
 		case .microKaraokeSongReady: return "NotificationHash-\(userID)"
 		}
@@ -176,6 +181,7 @@ enum NotificationType {
 		case .forumMention(let id, _): return String(id)
 		case .moderatorForumMention(let id, _): return String(id)
 		case .twitarrTeamForumMention(let id, _): return String(id)
+		case .communitySupportForumMention(let id, _): return String(id)
 		
 		case .microKaraokeSongReady(let songID): return String(songID)
 		}
@@ -186,7 +192,7 @@ enum NotificationType {
 	func secondaryObjectID() -> String? {
 		switch self {
 		case .forumMention(_, let forumID), .moderatorForumMention(_, let forumID),
-			.twitarrTeamForumMention(_, let forumID), .alertwordPost(_, _, let forumID):
+			.twitarrTeamForumMention(_, let forumID), .communitySupportForumMention(_, let forumID), .alertwordPost(_, _, let forumID):
 			return forumID
 		default: return nil
 		}

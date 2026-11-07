@@ -93,6 +93,7 @@ struct AlertController: APIRouteCollection {
 		async let privateEventState = try req.redis.getChatUnreadState(userID: user.userID, inbox: .privateEvent)
 		async let actives = try getActiveAnnouncementIDs(on: req)
 		async let modData = try getModeratorNotifications(for: user, on: req)
+		async let communitySupportData = try getCommunitySupportNotifications(for: user, on: req)
 		let finishedSongCount = try await max(0, req.redis.getIntFromUserHash(userHash, field: .microKaraokeSongReady(0)) -
 				req.redis.getIntFromUserHash(userHash, field: .microKaraokeSongReady(0), viewed: true))
 
@@ -135,6 +136,7 @@ struct AlertController: APIRouteCollection {
 		)
 		result.alertWords = try await getNewAlertWordCounts(hash: userHash)
 		result.moderatorData = try await modData
+		result.communitySupportData = try await communitySupportData
 		return result
 	}
 
@@ -253,6 +255,32 @@ struct AlertController: APIRouteCollection {
 			newTTSeamailMessageCount: ttUnreadCount,
 			newModeratorForumMentionCount: moderatorForumMentionCount,
 			newTTForumMentionCount: ttForumMentionCount
+		)
+	}
+
+	/// Returns a CommunitySupportNotificationData structure containing counts of open Community Support reports, seamails to @CommunitySupport
+	/// with unread messages, and unread @CommunitySupport forum mentions. Returns nil unless the user holds the Community Support role or is
+	/// TwitarrTeam or above--this has to be separate from `getModeratorNotifications`, which is hard-gated on moderator access.
+	func getCommunitySupportNotifications(for user: UserCacheData, on req: Request) async throws -> UserNotificationData
+		.CommunitySupportNotificationData?
+	{
+		guard CommunitySupportController.canAccess(user) else {
+			return nil
+		}
+		let userHash = try await req.redis.getUserHash(userID: user.userID)
+		let openReports = CommunitySupportReportStatus.allCases.filter { $0.isOpen }
+		let reportCount = try await CommunitySupportReport.query(on: req.db).filter(\.$status ~~ openReports).count()
+		let seamailHash = try await req.redis.hvals(in: MailInbox.communitySupportSeamail.unreadMailRedisKey(user.userID), as: Int.self).get()
+		let unreadSeamails = seamailHash.reduce(0) { $1 ?? 0 > 0 ? $0 + 1 : $0 }
+		let mentionField = NotificationType.communitySupportForumMention(0)
+		let mentionCount = max(
+			req.redis.getIntFromUserHash(userHash, field: mentionField) - req.redis.getIntFromUserHash(userHash, field: mentionField, viewed: true),
+			0
+		)
+		return UserNotificationData.CommunitySupportNotificationData(
+			openReportCount: reportCount,
+			newSeamailMessageCount: unreadSeamails,
+			newForumMentionCount: mentionCount
 		)
 	}
 

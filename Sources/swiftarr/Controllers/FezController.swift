@@ -356,7 +356,7 @@ struct FezController: APIRouteCollection {
 		if cacheUser.preregistrationApplies, fez.$owner.id != cacheUser.userID || !fez.fezType.isPreregistrationType {
 			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
 		}
-		if fez.fezType.isPrivateEventType, !userCanViewMemberData(user: cacheUser, fez: fez) {
+		if fez.fezType.isPrivateEventType, !userCanViewMemberData(user: cacheUser, fez: fez, on: req) {
 			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
 		}
 
@@ -974,7 +974,7 @@ struct FezController: APIRouteCollection {
 		do {
 			let user = try req.auth.require(UserCacheData.self)
 			let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
-			guard userCanViewMemberData(user: user, fez: fez), let fezID = try? fez.requireID() else {
+			guard userCanViewMemberData(user: user, fez: fez, on: req), let fezID = try? fez.requireID() else {
 				throw Abort(.badRequest, reason: "User can't vew messages in this LFG")
 			}
 			let userSocket = UserSocket(userID: user.userID, socket: ws, fezID: fezID, htmlOutput: false)
@@ -995,7 +995,7 @@ struct FezController: APIRouteCollection {
 		let sockets = try await req.webSocketStore.getChatSockets(fez.requireID())
 		for userSocket in sockets {
 			guard let socketOwner = req.userCache.getUser(userSocket.userID),
-					userCanViewMemberData(user: socketOwner, fez: fez),
+					userCanViewMemberData(user: socketOwner, fez: fez, on: req),
 					!(socketOwner.getBlocks().contains(postAuthor.userID) || socketOwner.getMutes().contains(postAuthor.userID)) else {
 				return
 			}
@@ -1029,7 +1029,7 @@ struct FezController: APIRouteCollection {
 		try await req.webSocketStore.getChatSockets(fez.requireID()).forEach { userSocket in
 			let participantHeader = try req.userCache.getHeader(participantID)
 			guard let socketOwner = req.userCache.getUser(userSocket.userID),
-				userCanViewMemberData(user: socketOwner, fez: fez),
+				userCanViewMemberData(user: socketOwner, fez: fez, on: req),
 				!socketOwner.getBlocks().contains(participantHeader.userID)
 			else {
 				return
@@ -1283,12 +1283,21 @@ extension FezController {
 			guard data.initialUsers.allSatisfy({ $0 == user.userID }) else {
 				throw Abort(.forbidden, reason: "Other users cannot be added during preregistration.")
 			}
-			guard data.createdByModerator != true, data.createdByTwitarrTeam != true else {
+			guard data.createdByModerator != true, data.createdByTwitarrTeam != true, data.createdByCommunitySupport != true else {
 				throw Abort(.forbidden, reason: "Cannot create as a privileged account during preregistration.")
 			}
 		}
 		var creator = user
-		if data.createdByTwitarrTeam == true {
+		if data.createdByCommunitySupport == true {
+			guard CommunitySupportController.canAccess(user) else {
+				throw Abort(.badRequest, reason: "Must be on the Community Support team to post as @CommunitySupport")
+			}
+			guard let csUser = req.userCache.getUser(username: PrivilegedUser.CommunitySupport.rawValue) else {
+				throw Abort(.internalServerError, reason: "Cannot find @CommunitySupport user")
+			}
+			creator = csUser
+		}
+		else if data.createdByTwitarrTeam == true {
 			guard user.accessLevel >= .twitarrteam else {
 				throw Abort(.badRequest, reason: "Must have TwitarrTeam access to post as @TwitarrTeam")
 			}
@@ -1621,8 +1630,16 @@ extension FezController {
 		return PrivilegedMailbox.forChat(participantArray: fez.participantArray, on: req)?.inbox
 	}
 
-	func userCanViewMemberData(user: UserCacheData, fez: FriendlyFez) -> Bool {
-		return user.accessLevel.hasAccess(.moderator) || fez.participantArray.contains(user.userID)
+	/// Whether the user may see a chat's messages and members: they're a participant, or a moderator. The exception is a chat with the Community Support
+	/// mailbox in it: plain moderators can't see those; only that mailbox's members (Community Support role holders, TwitarrTeam and above) can.
+	func userCanViewMemberData(user: UserCacheData, fez: FriendlyFez, on req: Request) -> Bool {
+		if fez.participantArray.contains(user.userID) {
+			return true
+		}
+		if let mailbox = PrivilegedMailbox.forChat(participantArray: fez.participantArray, on: req), mailbox.user == .CommunitySupport {
+			return mailbox.isSatisfied(by: user)
+		}
+		return user.accessLevel.hasAccess(.moderator)
 	}
 
 	/// Resolves and validates the `visibility` to use for a newly-created fez.

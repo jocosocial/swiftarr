@@ -642,6 +642,9 @@ public struct FezContentData: Content {
 	var createdByModerator: Bool?
 	/// If TRUE, the Fez will be created by user @TwitarrTeam instead of the current user. Current user must be a TT member.
 	var createdByTwitarrTeam: Bool?
+	/// If TRUE, the Fez will be created by user @CommunitySupport instead of the current user. Current user must be on the Community Support team
+	/// (hold the Community Support role) or be TwitarrTeam or above.
+	var createdByCommunitySupport: Bool?
 	/// If set, creates the fez's opening post at creation time instead of requiring a separate call.
 	var firstPost: PostContentData?
 }
@@ -660,6 +663,7 @@ extension FezContentData {
 		self.maxCapacity = 0
 		self.createdByModerator = false
 		self.createdByTwitarrTeam = false
+		self.createdByCommunitySupport = false
 		self.firstPost = nil
 	}
 }
@@ -691,9 +695,9 @@ extension FezContentData: RCFValidatable {
 			}
 		}
 		tester.validate(
-			!(createdByModerator == true && createdByTwitarrTeam == true),
+			[createdByModerator, createdByTwitarrTeam, createdByCommunitySupport].filter { $0 == true }.count <= 1,
 			forKey: .createdByModerator,
-			or: "cannot create as both @moderator and @TwitarrTeam"
+			or: "cannot create as more than one of @moderator, @TwitarrTeam, and @CommunitySupport"
 		)
 	}
 }
@@ -2117,10 +2121,13 @@ public struct PostContentData: Content {
 	/// If the poster has moderator privileges and this field is TRUE, this post will be authored by 'TwitarrTeam' instead of the author.
 	/// Set this to FALSE unless the user is a moderator who specifically chooses this option.
 	var postAsTwitarrTeam: Bool = false
+	/// If the poster holds the Community Support role (or is TwitarrTeam or above) and this field is TRUE, this post will be authored by 'CommunitySupport'
+	/// instead of the author. Set this to FALSE unless the user specifically chooses this option.
+	var postAsCommunitySupport: Bool = false
 }
 
 extension PostContentData {
-	/// Decodes a post. `postAsModerator` and `postAsTwitarrTeam` may be omitted from the JSON,
+	/// Decodes a post. `postAsModerator`, `postAsTwitarrTeam`, and `postAsCommunitySupport` may be omitted from the JSON,
 	/// in which case they decode as FALSE, matching their documented default semantics.
 	public init(from decoder: Decoder) throws {
 		let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -2128,6 +2135,7 @@ extension PostContentData {
 		images = try container.decode([ImageUploadData].self, forKey: .images)
 		postAsModerator = try container.decodeIfPresent(Bool.self, forKey: .postAsModerator) ?? false
 		postAsTwitarrTeam = try container.decodeIfPresent(Bool.self, forKey: .postAsTwitarrTeam) ?? false
+		postAsCommunitySupport = try container.decodeIfPresent(Bool.self, forKey: .postAsCommunitySupport) ?? false
 	}
 }
 
@@ -2145,9 +2153,9 @@ extension PostContentData: RCFValidatable {
 		let lines = text.replacingOccurrences(of: "\r\n", with: "\r").components(separatedBy: .newlines).count
 		tester.validate(lines <= 25, forKey: .text, or: "posts are limited to 25 lines of text")
 		tester.validate(
-			!(postAsModerator && postAsTwitarrTeam),
+			[postAsModerator, postAsTwitarrTeam, postAsCommunitySupport].filter { $0 }.count <= 1,
 			forKey: .postAsModerator,
-			or: "cannot post as both @moderator and @TwitarrTeam"
+			or: "cannot post as more than one of @moderator, @TwitarrTeam, and @CommunitySupport"
 		)
 	}
 }
@@ -2766,6 +2774,22 @@ public struct UserNotificationData: Content {
 
 	/// Will be nil for non-moderator accounts.
 	var moderatorData: ModeratorNotificationData?
+
+	/// Notification counts for the Community Support team: its role holders, and TwitarrTeam and above.
+	public struct CommunitySupportNotificationData: Content {
+		/// The number of Community Support reports that are new or in progress.
+		var openReportCount: Int
+
+		/// The number of Seamails to @CommunitySupport (more precisely, ones where @CommunitySupport is a participant) that have new messages.
+		/// Like `ModeratorNotificationData.newModeratorSeamailMessageCount`, this counts the shared mailbox's threads, not the user's own.
+		var newSeamailMessageCount: Int
+
+		/// Number of forum post @mentions the user has not read for @CommunitySupport.
+		var newForumMentionCount: Int
+	}
+
+	/// Will be nil for accounts that aren't on the Community Support team or TwitarrTeam and above.
+	var communitySupportData: CommunitySupportNotificationData?
 }
 
 extension UserNotificationData {

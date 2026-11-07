@@ -288,6 +288,20 @@ struct ModerationController: APIRouteCollection {
 		try await Forum.category(forForumID: forumID, on: req.db)?.guardRoleAccess(for: user)
 	}
 
+	/// Throws a 404 if a plain moderator is looking at a chat that includes the Community Support mailbox. Moderators can't read those chats, so the
+	/// moderation views don't open them either--unless somebody has filed a report on the content, in which case moderators need to see it.
+	func guardCanModerateChat(participants: [UUID], hasReports: Bool, on req: Request) throws {
+		guard !hasReports else {
+			return
+		}
+		let user = try req.auth.require(UserCacheData.self)
+		if let mailbox = PrivilegedMailbox.forChat(participantArray: participants, on: req), mailbox.user == .CommunitySupport,
+			!mailbox.isSatisfied(by: user)
+		{
+			throw Abort(.notFound, reason: "Chat not found.")
+		}
+	}
+
 	/// `GET /api/v3/mod/forumpost/ID`
 	///
 	/// Moderator only. Returns info admins and moderators need to review a forumPost. Works if forumPost has been deleted. Shows
@@ -475,6 +489,7 @@ struct ModerationController: APIRouteCollection {
 			.filter(\.$reportType == .fez)
 			.filter(\.$reportedID == lfgIDString)
 			.sort(\.$createdAt, .descending).all()
+		try guardCanModerateChat(participants: lfg.participantArray, hasReports: !reports.isEmpty, on: req)
 		let edits = try await lfg.$edits.query(on: req.db).sort(\.$createdAt, .ascending).all()
 		let ownerHeader = try req.userCache.getHeader(lfg.$owner.id)
 		let fezData = try FezData(fez: lfg, owner: ownerHeader, overrideQuarantine: true)
@@ -543,6 +558,7 @@ struct ModerationController: APIRouteCollection {
 			.filter(\.$reportType == .fezPost)
 			.filter(\.$reportedID == postIDString)
 			.sort(\.$createdAt, .descending).all()
+		try guardCanModerateChat(participants: lfgPost.fez.participantArray, hasReports: !reports.isEmpty, on: req)
 		let authorHeader = try req.userCache.getHeader(lfgPost.$author.id)
 		let fezPostData = try FezPostData(post: lfgPost, author: authorHeader, overrideQuarantine: true)
 		let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
