@@ -1094,15 +1094,54 @@ struct ForumController: APIRouteCollection {
 		try guardCategoryAllowsImages(data.firstPost.images, category: category)
 		// process images
 		let imageFilenames = try await self.processImages(data.firstPost.images, usage: .forumPost, maxImages: Settings.shared.getMaxForumPostImages(for: cacheUser), on: req)
-		// create forum
 		let effectiveAuthor = data.firstPost.effectiveAuthor(actualAuthor: cacheUser, on: req)
-		let forum = try Forum(title: data.title, category: category, creatorID: effectiveAuthor.userID, isLocked: false)
+		let (forum, forumPost) = try await createForum(
+			in: category,
+			title: data.title,
+			text: data.firstPost.text,
+			images: imageFilenames,
+			effectiveAuthor: effectiveAuthor,
+			actingUser: cacheUser,
+			on: req
+		)
+		let creatorHeader = effectiveAuthor.makeHeader()
+		let postData = try PostData(post: forumPost, author: creatorHeader, bookmarked: false, userLike: nil, likeCount: 0)
+		let forumData = try ForumData(forum: forum, creator: creatorHeader, isFavorite: false, isMuted: false, posts: [postData],
+				pager: Paginator(total: 1, start: 0, limit: 50))
+		return forumData
+	}
+
+	/// Creates a forum thread and its first post, and does the bookkeeping that goes with it: the forum's last-post fields, the category's
+	/// forum count, moderator-action logging, and mention/alertword/hashtag processing. Used by `forumCreateHandler`, and by anything else that
+	/// starts a thread on a user's behalf (such as a Community Support report's discussion thread).
+	///
+	/// This does no permission checking--callers must already have checked that `actingUser` may create content in `category`.
+	///
+	/// - Parameters:
+	///   - category: The category to create the forum in.
+	///   - title: The forum title.
+	///   - text: The text of the first post.
+	///   - images: Filenames of already-processed images for the first post.
+	///   - effectiveAuthor: Who the forum and post appear to be from; usually `actingUser`, unless a moderator is posting as `moderator`/`TwitarrTeam`.
+	///   - actingUser: The user actually making the request. `req` must be authenticated as this user.
+	/// - Returns: The new forum and its first post.
+	func createForum(
+		in category: Category,
+		title: String,
+		text: String,
+		images: [String] = [],
+		effectiveAuthor: UserCacheData,
+		actingUser: UserCacheData,
+		on req: Request
+	) async throws -> (forum: Forum, post: ForumPost) {
+		// create forum
+		let forum = try Forum(title: title, category: category, creatorID: effectiveAuthor.userID, isLocked: false)
 		try await forum.save(on: req.db)
-		try await forum.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
+		try await forum.logIfModeratorAction(.post, moderatorID: actingUser.userID, on: req)
 		// create first post
-		let forumPost = try ForumPost(forum: forum, authorID: effectiveAuthor.userID, text: data.firstPost.text, images: imageFilenames)
+		let forumPost = try ForumPost(forum: forum, authorID: effectiveAuthor.userID, text: text, images: images)
 		try await forumPost.save(on: req.db)
-		try await forumPost.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
+		try await forumPost.logIfModeratorAction(.post, moderatorID: actingUser.userID, on: req)
 		// Update the forum last post at
 		forum.lastPostTime = Date()
 		forum.lastPostID = forumPost.id
@@ -1112,11 +1151,7 @@ struct ForumController: APIRouteCollection {
 		try await category.save(on: req.db)
 		// If the post @mentions anyone, update their mention counts
 		try await processForumMentions(post: forumPost, editedText: nil, isCreate: true, on: req)
-		let creatorHeader = effectiveAuthor.makeHeader()
-		let postData = try PostData(post: forumPost, author: creatorHeader, bookmarked: false, userLike: nil, likeCount: 0)
-		let forumData = try ForumData(forum: forum, creator: creatorHeader, isFavorite: false, isMuted: false, posts: [postData], 
-				pager: Paginator(total: 1, start: 0, limit: 50))
-		return forumData
+		return (forum, forumPost)
 	}
 
 	/// `POST /api/v3/forum/ID/rename/:new_name`

@@ -27,6 +27,14 @@ extension PrivilegedUser {
 		username.lowercased() == PrivilegedUser.CommunitySupport.queryParam
 	}
 
+	/// True if the username belongs to a shared-mailbox phantom account (see `PrivilegedMailbox.all`). Moderator and TwitarrTeam are protected
+	/// from things like being blocked by their access level, but the CommunitySupport account is only `.verified`--code that exempts accounts
+	/// based on `accessLevel >= .moderator` must also check this, or users could block the team's shared mailbox and lose its replies.
+	static func isSharedMailboxAccount(_ username: String) -> Bool {
+		let name = username.lowercased()
+		return PrivilegedMailbox.all.contains { $0.user.queryParam == name }
+	}
+
 	// Returns the url query parameter comparison version of the usernames.
 	// Generally we use .lowercased() for url query param comparison.
 	var queryParam: String {

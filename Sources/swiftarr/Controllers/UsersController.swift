@@ -497,8 +497,8 @@ struct UsersController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Can't find a user with the userID specified in the :userID parameter")
 		}
 		// This guard only applies to *directly* blocking a moderator's Mod account.
-		guard blockee.accessLevel < .moderator else {
-			throw Abort(.badRequest, reason: "Cannot block accounts of moderators, THO, or admins")
+		guard blockee.accessLevel < .moderator, !PrivilegedUser.isSharedMailboxAccount(blockee.username) else {
+			throw Abort(.badRequest, reason: "Cannot block accounts of moderators, THO, admins, or shared team mailboxes")
 		}
 		guard try userIDToBlock != cacheUser.userID && userIDToBlock != parentUser.requireID() else {
 			throw Abort(.badRequest, reason: "You cannot block yourself.")
@@ -830,8 +830,9 @@ struct UsersController: APIRouteCollection {
 		let nonModRequesters = try requesterUsers.compactMap {
 			try $0.accessLevel.hasAccess(.moderator) ? nil : $0.requireID()
 		}
+		// The CommunitySupport mailbox account is only `.verified`, so it needs excluding by identity as well.
 		let nonModBlocked = try blockedUsers.compactMap {
-			try $0.accessLevel.hasAccess(.moderator) ? nil : $0.requireID()
+			try $0.accessLevel.hasAccess(.moderator) || PrivilegedUser.isSharedMailboxAccount($0.username) ? nil : $0.requireID()
 		}
 		try await withThrowingTaskGroup(of: Void.self) { group in
 			nonModRequesters.forEach { ruuid in
