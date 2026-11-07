@@ -1,0 +1,107 @@
+#extend("trunk"):
+	#export("body"):
+		<div class="container-md">
+			<div class="container-fluid bg-transparent mb-3">
+				<nav aria-label="breadcrumb" class="mt-2">
+					<ol class="breadcrumb">
+						<li class="breadcrumb-item"><a href="/communitysupport">Community Support</a></li>
+						<li class="breadcrumb-item active" aria-current="page">New Report</li>
+					</ol>
+				</nav>
+				<div class="alert alert-info" role="alert">
+					Write up what an attendee told you. Only the Community Support team and TwitarrTeam can see reports.
+				</div>
+
+				<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST" data-successurl="#(successURL)" id="reportForm">
+					<div class="mb-3">
+						<label for="memberName" class="form-label">Your name (Community Support member)</label>
+						<input type="text" class="form-control" name="memberName" id="memberName" maxlength="100" required value="#(trunk.username)">
+					</div>
+
+					<div class="mb-3">
+						<label for="reporterName" class="form-label">Name of the reporter (optional)</label>
+						<input type="text" class="form-control" name="reporterName" id="reporterName" maxlength="100">
+					</div>
+
+					<div class="mb-3">
+						<label for="reporterHandle" class="form-label">Reporter's Twitarr username (optional)</label>
+						<input type="text" class="form-control" name="reporterHandle" id="reporterHandle" maxlength="100" placeholder="@username">
+						<div class="form-text">If this matches an account, the report is linked to it.</div>
+					</div>
+
+					<div class="mb-3">
+						<label for="reporterCabin" class="form-label">Cabin number (optional)</label>
+						<input type="text" class="form-control" name="reporterCabin" id="reporterCabin" maxlength="50">
+					</div>
+
+					<div class="mb-3">
+						<label for="subjectHandle" class="form-label">Who is the report about? (optional)</label>
+						<input type="text" class="form-control" name="subjectHandle" id="subjectHandle" maxlength="100" placeholder="Name or @username">
+					</div>
+
+					<div class="mb-3">
+						<div class="form-check">
+							<input class="form-check-input" type="checkbox" name="reporterExperienced" id="reporterExperienced" value="true">
+							<label class="form-check-label" for="reporterExperienced">The reporter experienced this themselves</label>
+						</div>
+						<div class="form-check">
+							<input class="form-check-input" type="checkbox" name="reporterWitnessed" id="reporterWitnessed" value="true">
+							<label class="form-check-label" for="reporterWitnessed">The reporter witnessed this happen to someone else</label>
+						</div>
+					</div>
+
+					<div class="mb-3">
+						<div class="form-label">What does the reporter want?</div>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="intent" id="intentFollowUp" value="followUp" checked>
+							<label class="form-check-label" for="intentFollowUp">Please follow up</label>
+						</div>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="intent" id="intentInfoOnly" value="infoOnly">
+							<label class="form-check-label" for="intentInfoOnly">For information only</label>
+						</div>
+					</div>
+
+					<div class="mb-3">
+						<div class="form-check">
+							<input class="form-check-input" type="checkbox" name="mayContact" id="mayContact" value="true">
+							<label class="form-check-label" for="mayContact">JoCo Cruise may contact the reporter about this</label>
+						</div>
+					</div>
+
+					<div class="mb-3">
+						<label for="experienceTime" class="form-label">Date and time of the experience</label>
+						<input type="text" class="form-control" name="experienceTime" id="experienceTime" maxlength="200" required placeholder="Tuesday night, around 10pm">
+					</div>
+
+					<div class="mb-3">
+						<label for="experienceLocation" class="form-label">Where did this happen?</label>
+						<input type="text" class="form-control" name="experienceLocation" id="experienceLocation" maxlength="200" required>
+					</div>
+
+					<div class="mb-3">
+						<label for="experienceDescription" class="form-label">Describe the experience</label>
+						<textarea class="form-control" rows="6" maxlength="10000" name="experienceDescription" id="experienceDescription" required></textarea>
+					</div>
+
+					<div class="mb-3">
+						<label for="preferredOutcome" class="form-label">Preferred resolution or outcome (optional)</label>
+						<textarea class="form-control" rows="3" maxlength="5000" name="preferredOutcome" id="preferredOutcome"></textarea>
+					</div>
+
+					<div class="mb-3">
+						<label for="livedExperiences" class="form-label">Lived experiences the team should know about (optional)</label>
+						<textarea class="form-control" rows="3" maxlength="5000" name="livedExperiences" id="livedExperiences"></textarea>
+					</div>
+
+					<div class="alert alert-danger mt-3 d-none" role="alert"></div>
+					<div class="row mb-2">
+						<div class="col col-auto ms-auto">
+							<button type="submit" class="btn btn-primary">Submit <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+	#endexport
+#endextend

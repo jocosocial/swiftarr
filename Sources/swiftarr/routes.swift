@@ -62,6 +62,7 @@ public func routes(_ app: Application) throws {
 		SitePrivateEventController(),
 		SiteHuntController(),
 		SiteEventFeedbackController(),
+		SiteCommunitySupportController(),
 	]
 	try siteControllers.forEach { try $0.registerRoutes(app) }
 }

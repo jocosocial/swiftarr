@@ -28,6 +28,10 @@ struct CommunitySupportController: APIRouteCollection {
 		teamAuthGroup.post("report", reportIDParam, "note", use: noteHandler)
 		teamAuthGroup.post("report", reportIDParam, "discussion", use: discussionHandler)
 		teamAuthGroup.get("actionlog", use: actionLogHandler)
+
+		// Bulk export is for THO and above only; not even the team itself, and not TwitarrTeam.
+		let thoAuthGroup = baseRoutes.tokenRoutes(feature: .communitySupport, minAccess: .tho)
+		thoAuthGroup.get("export", use: exportHandler)
 	}
 
 	// MARK: - Access
@@ -247,6 +251,36 @@ struct CommunitySupportController: APIRouteCollection {
 		let actions = try await CommunitySupportAction.query(on: req.db).sort(\.$createdAt, .descending).range(pagination.range).all()
 		let items = try actions.map { try CommunitySupportActionData($0, on: req) }
 		return Paginated(items: items, paginator: Paginator(total: total, start: pagination.start, limit: pagination.limit))
+	}
+
+	/// `GET /api/v3/communitysupport/export`
+	///
+	/// Every Community Support report, oldest first, for a CSV download. THO and above only. Each export is recorded in the action log.
+	/// The returned reports' `actions` arrays are empty; use `GET /report/:report_id` for a report's timeline.
+	///
+	/// - Returns: `[CommunitySupportReportData]`
+	func exportHandler(_ req: Request) async throws -> [CommunitySupportReportData] {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		guard cacheUser.accessLevel.hasAccess(.tho) else {
+			throw Abort(.forbidden, reason: "THO access required.")
+		}
+		let reports = try await CommunitySupportReport.query(on: req.db).sort(\.$createdAt, .ascending).all()
+		let liveForums = try await liveForumIDs(for: reports, on: req.db)
+		let result = try reports.map { report in
+			try CommunitySupportReportData(
+				report,
+				actions: [],
+				forumID: report.$forum.id.flatMap { liveForums.contains($0) ? $0 : nil },
+				on: req
+			)
+		}
+		try await CommunitySupportAction(
+			actor: cacheUser.userID,
+			report: nil,
+			type: .reportsExported,
+			note: "\(result.count) reports"
+		).save(on: req.db)
+		return result
 	}
 
 	// MARK: - Utilities

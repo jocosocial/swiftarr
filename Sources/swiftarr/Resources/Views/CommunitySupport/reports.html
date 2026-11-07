@@ -1,0 +1,39 @@
+#extend("trunk"):
+	#export("body"):
+		<div class="container-md ms-0">
+			<div class="row justify-content-between align-items-center my-1">
+				<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/communitysupport">Community Support</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Reports</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<form class="row g-2 mb-3" method="GET" action="/communitysupport/reports">
+				<div class="col col-auto">
+					<select class="form-select form-select-sm" name="status" onchange="this.form.submit()">
+						<option value="">All statuses</option>
+						#for(choice in statuses):
+							<option value="#(choice.value)"#if(choice.selected): selected#endif>#(choice.label)</option>
+						#endfor
+					</select>
+				</div>
+			</form>
+			<div class="list-group">
+				#for(report in reports.items):
+					<a class="list-group-item list-group-item-action" href="/communitysupport/report/#(report.id)">
+						<b>#(report.experienceLocation)</b> <span class="badge text-bg-secondary">#(report.statusLabel)</span>
+						#if(report.hasDiscussion):<span class="badge text-bg-info">Discussion</span>#endif<br>
+						<small class="text-muted">Filed #relativeTime(report.createdAt) by @#(report.author.username)</small>
+					</a>
+				#endfor
+				#if(reports.items.count == 0):
+					<div class="list-group-item">No reports.</div>
+				#endif
+			</div>
+			#extend("paginator")
+		</div>
+	#endexport
+#endextend

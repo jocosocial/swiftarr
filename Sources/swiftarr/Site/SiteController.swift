@@ -21,6 +21,7 @@ struct TrunkContext: Encodable {
 		case games
 		case karaoke
 		case moderator
+		case communitySupport
 		case admin
 		case time
 		case map
@@ -44,6 +45,7 @@ struct TrunkContext: Encodable {
 	var pageIsForDisabledFeature: SwiftarrFeature?  // Middleware marked this request disabled for normal users but we're showing it to THO/admin
 	var showQuartermasterNav: Bool  // FALSE if the Quartermaster feature is disabled, unless the user is THO/admin (who can still reach the page).
 	var showNotificationsNav: Bool  // FALSE if the Notifications feature is disabled, unless the user is THO/admin (who can still reach the page).
+	var showCommunitySupportNav: Bool  // FALSE if the Community Support feature is disabled, unless the user is THO/admin (who can still reach the pages).
 
 	var username: String
 	var userID: UUID
@@ -91,6 +93,8 @@ struct TrunkContext: Encodable {
 			|| ["THO", "admin"].contains(username)
 		showNotificationsNav = !Settings.shared.disabledFeatures.isFeatureDisabled(.notificationLog, inApp: .swiftarr)
 			|| ["THO", "admin"].contains(username)
+		showCommunitySupportNav = !Settings.shared.disabledFeatures.isFeatureDisabled(.communitySupport, inApp: .swiftarr)
+			|| ["THO", "admin"].contains(username)
 		eventStartingSoon = false
 		if req.route != nil, let alertsStr = req.session.data["alertCounts"],
 			let alertData = alertsStr.data(using: .utf8)
@@ -115,7 +119,7 @@ struct TrunkContext: Encodable {
 
 		self.title = title
 		self.tab = tab
-		self.inTwitarrSubmenu = [.home, .lfg, .games, .karaoke, .moderator, .admin].contains(tab)
+		self.inTwitarrSubmenu = [.home, .lfg, .games, .karaoke, .moderator, .communitySupport, .admin].contains(tab)
 
 		newTweetAlertwords = alertCounts.alertWords.contains { $0.newTwarrtMentionCount > 0 }
 		newForumAlertwords = alertCounts.alertWords.contains { $0.newForumMentionCount > 0 }
