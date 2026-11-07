@@ -28,8 +28,8 @@ class PrivilegedMailboxTests: XCTestCase, SwiftarrBaseTest {
 
 	// MARK: - Pure logic (no app required)
 
-	func testAllIsOrderedTwitarrTeamThenModerator() {
-		XCTAssertEqual(PrivilegedMailbox.all.map { $0.user }, [.TwitarrTeam, .moderator])
+	func testAllIsOrderedTwitarrTeamThenModeratorThenCommunitySupport() {
+		XCTAssertEqual(PrivilegedMailbox.all.map { $0.user }, [.TwitarrTeam, .moderator, .CommunitySupport])
 	}
 
 	func testMatchingQueryParamIsCaseInsensitive() {

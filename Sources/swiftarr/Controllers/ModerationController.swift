@@ -281,6 +281,25 @@ struct ModerationController: APIRouteCollection {
 		return .ok
 	}
 
+	/// Throws a 404 if the forum lives in a role-gated category that the current user can't see--for example, a plain moderator
+	/// looking at Community Support content. Works for soft-deleted forums and categories.
+	func guardCanModerateForum(_ forumID: UUID, on req: Request) async throws {
+		let user = try req.auth.require(UserCacheData.self)
+		try await Forum.category(forForumID: forumID, on: req.db)?.guardRoleAccess(for: user)
+	}
+
+	/// Throws a 404 if a plain moderator is looking at a chat that includes the Community Support mailbox. Moderators can't read those chats, so the
+	/// moderation views don't open them either. There is deliberately no "unless it's been reported" exception: anyone who can file a report could use
+	/// it to unlock the view, and closed Seamail chats (which is what the mailbox uses) can't be reported anyway.
+	func guardCanModerateChat(participants: [UUID], on req: Request) throws {
+		let user = try req.auth.require(UserCacheData.self)
+		if let mailbox = PrivilegedMailbox.forChat(participantArray: participants, on: req), mailbox.user == .CommunitySupport,
+			!mailbox.isSatisfied(by: user)
+		{
+			throw Abort(.notFound, reason: "Chat not found.")
+		}
+	}
+
 	/// `GET /api/v3/mod/forumpost/ID`
 	///
 	/// Moderator only. Returns info admins and moderators need to review a forumPost. Works if forumPost has been deleted. Shows
@@ -302,6 +321,7 @@ struct ModerationController: APIRouteCollection {
 		guard let post = try await ForumPost.query(on: req.db).filter(\._$id == postID).withDeleted().first() else {
 			throw Abort(.notFound, reason: "no value found for identifier '\(paramVal)'")
 		}
+		try await guardCanModerateForum(post.$forum.id, on: req)
 		let reports = try await Report.query(on: req.db)
 			.filter(\.$reportType == .forumPost)
 			.filter(\.$reportedID == paramVal)
@@ -339,6 +359,7 @@ struct ModerationController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Request parameter `Moderation_State` is missing.")
 		}
 		let forumPost = try await ForumPost.findFromParameter(postIDParam, on: req)
+		try await guardCanModerateForum(forumPost.$forum.id, on: req)
 		try forumPost.moderationStatus.setFromParameterString(modState)
 		await forumPost.logIfModeratorAction(
 			ModeratorActionType.setFromModerationStatus(forumPost.moderationStatus),
@@ -371,6 +392,7 @@ struct ModerationController: APIRouteCollection {
 		guard let forum = try await Forum.query(on: req.db).filter(\.$id == forumID).withDeleted().first() else {
 			throw Abort(.notFound, reason: "no value found for identifier '\(forumID)'")
 		}
+		try await guardCanModerateForum(forumID, on: req)
 		let reports = try await Report.query(on: req.db)
 			.filter(\.$reportType == .forum)
 			.filter(\.$reportedID == forumIDString)
@@ -399,6 +421,7 @@ struct ModerationController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Request parameter `Moderation_State` is missing.")
 		}
 		let forum = try await Forum.findFromParameter(forumIDParam, on: req)
+		try await guardCanModerateForum(forum.requireID(), on: req)
 		try forum.moderationStatus.setFromParameterString(modState)
 		await forum.logIfModeratorAction(
 			ModeratorActionType.setFromModerationStatus(forum.moderationStatus),
@@ -417,6 +440,9 @@ struct ModerationController: APIRouteCollection {
 		let newCategory = try await Category.findFromParameter(categoryIDParam, on: req)
 		let forum = try await Forum.findFromParameter(forumIDParam, on: req, builder: { $0.with(\.$category) })
 		let oldCategory = forum.category
+		// Role-gated categories that hide from plain moderators can't be moved into or out of by them.
+		try oldCategory.guardRoleAccess(for: user)
+		try newCategory.guardRoleAccess(for: user)
 		guard try oldCategory.requireID() != newCategory.requireID() else {
 			throw Abort(.badRequest, reason: "Cannot move forum--forum is already in the requested category.")
 		}
@@ -461,6 +487,7 @@ struct ModerationController: APIRouteCollection {
 			.filter(\.$reportType == .fez)
 			.filter(\.$reportedID == lfgIDString)
 			.sort(\.$createdAt, .descending).all()
+		try guardCanModerateChat(participants: lfg.participantArray, on: req)
 		let edits = try await lfg.$edits.query(on: req.db).sort(\.$createdAt, .ascending).all()
 		let ownerHeader = try req.userCache.getHeader(lfg.$owner.id)
 		let fezData = try FezData(fez: lfg, owner: ownerHeader, overrideQuarantine: true)
@@ -529,6 +556,7 @@ struct ModerationController: APIRouteCollection {
 			.filter(\.$reportType == .fezPost)
 			.filter(\.$reportedID == postIDString)
 			.sort(\.$createdAt, .descending).all()
+		try guardCanModerateChat(participants: lfgPost.fez.participantArray, on: req)
 		let authorHeader = try req.userCache.getHeader(lfgPost.$author.id)
 		let fezPostData = try FezPostData(post: lfgPost, author: authorHeader, overrideQuarantine: true)
 		let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }

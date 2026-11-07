@@ -357,3 +357,12 @@ additive; the existing count fields are unchanged and are now derived from these
 
 - Added TwitarrTeam endpoints to link a Performer (official or shadow) to any Event by hand: `POST /api/v3/admin/performer/:performer_ID/event/:event_ID`, and to remove a link: `DELETE /api/v3/admin/performer/:performer_ID/event/:event_ID`. Manual links are preserved when the performer spreadsheet is re-applied via `POST /api/v3/admin/performer/link/apply`.
 - Added `POST /api/v3/performer/self`, which lets users with the `performerselfeditor` role, and TwitarrTeam and above, create or update their Shadow Event Performer profile without attaching it to an event. TwitarrTeam can then attach the profile to any event using the new admin link endpoint.
+
+## Nov 06, 2026
+
+- New role `communitysupport` ("Community Support") and feature flag `communitySupport`.
+- New `/api/v3/communitysupport/*` controller for Community Support reports: `POST /report`, `GET /reports`, `GET /report/:report_id`, `POST /report/:report_id/status`, `POST /report/:report_id/discussion`, `GET /actionlog`, and `GET /export` (THO and above). Available to role holders, TwitarrTeam, and above; plain moderators have no access.
+- New shared mailbox user `@CommunitySupport` (`?foruser=communitysupport`). `FezContentData` gains `createdByCommunitySupport`; `PostContentData` gains `postAsCommunitySupport`.
+- `UserNotificationData` gains optional `communitySupportData`. New notification type `communitySupportForumMention`, with a matching `SocketNotificationData.NotificationTypeData` case.
+- `CategoryData` gains `allowsImages`; when false, clients should hide photo pickers for posts in that category. Also gains `hiddenFromModerators`; when true, clients should not offer moderation actions for that category's threads and posts.
+- Forum categories gated on a role now return 404 (was 403) to users without access. The Community Support category is hidden from plain moderators, and its posts can't carry images or be reported.

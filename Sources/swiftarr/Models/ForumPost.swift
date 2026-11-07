@@ -98,6 +98,10 @@ extension ForumPost: Reportable {
 	var authorUUID: UUID { $author.id }
 
 	var autoQuarantineThreshold: Int { Settings.shared.postAutoQuarantineThreshold }
+
+	func isInModeratorRestrictedCategory(on db: Database) async throws -> Bool {
+		try await Forum.category(forForumID: $forum.id, on: db)?.isRestrictedBeyondModerators ?? false
+	}
 }
 
 struct CreateForumPostSchema: AsyncMigration {

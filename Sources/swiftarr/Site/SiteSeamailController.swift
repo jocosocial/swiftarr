@@ -58,6 +58,8 @@ struct SiteSeamailController: SiteControllerUtils {
 				mailbox = "TwitarrTeam Seamail"
 			case PrivilegedUser.moderator.queryParam:
 				mailbox = "Moderator Seamail"
+			case PrivilegedUser.CommunitySupport.queryParam:
+				mailbox = "Community Support Seamail"
 			default:
 				mailbox = "Seamail"
 			}
@@ -112,6 +114,10 @@ struct SiteSeamailController: SiteControllerUtils {
 
 		var createdByTwitarrTeam: Bool {
 			postAs?.lowercased() == PrivilegedUser.TwitarrTeam.queryParam
+		}
+
+		var createdByCommunitySupport: Bool {
+			postAs?.lowercased() == PrivilegedUser.CommunitySupport.queryParam
 		}
 	}
 
@@ -201,6 +207,7 @@ struct SiteSeamailController: SiteControllerUtils {
 			var creatorUsername: String
 			var moderatorUsername: String
 			var twitarrTeamUsername: String
+			var communitySupportUsername: String
 			var withSubject: String
 
 			init(_ req: Request, withUser: UserHeader?) throws {
@@ -215,7 +222,11 @@ struct SiteSeamailController: SiteControllerUtils {
 				effectiveUser = mailbox.effectiveUser
 				moderatorUsername = PrivilegedUser.moderator.rawValue
 				twitarrTeamUsername = PrivilegedUser.TwitarrTeam.rawValue
-				if mailbox.postAsTwitarrTeam {
+				communitySupportUsername = PrivilegedUser.CommunitySupport.rawValue
+				if mailbox.postAsCommunitySupport {
+					creatorUsername = communitySupportUsername
+				}
+				else if mailbox.postAsTwitarrTeam {
 					creatorUsername = twitarrTeamUsername
 				}
 				else if mailbox.postAsModerator {
@@ -284,7 +295,8 @@ struct SiteSeamailController: SiteControllerUtils {
 			maxCapacity: 0,
 			initialUsers: participants,
 			createdByModerator: formContent.createdByModerator,
-			createdByTwitarrTeam: formContent.createdByTwitarrTeam
+			createdByTwitarrTeam: formContent.createdByTwitarrTeam,
+			createdByCommunitySupport: formContent.createdByCommunitySupport
 		)
 		let createResponse = try await apiQuery(req, endpoint: "/fez/create", method: .POST, encodeContent: fezContent)
 		let fezData = try createResponse.content.decode(FezData.self)
@@ -294,7 +306,8 @@ struct SiteSeamailController: SiteControllerUtils {
 				text: formContent.postText,
 				images: [],
 				postAsModerator: formContent.createdByModerator,
-				postAsTwitarrTeam: formContent.createdByTwitarrTeam
+				postAsTwitarrTeam: formContent.createdByTwitarrTeam,
+				postAsCommunitySupport: formContent.createdByCommunitySupport
 			)
 			let response = try await apiQuery(
 				req,
@@ -596,6 +609,7 @@ struct SiteSeamailController: SiteControllerUtils {
 struct SeamailCreateMailbox {
 	var postAsModerator: Bool
 	var postAsTwitarrTeam: Bool
+	var postAsCommunitySupport: Bool
 	var effectiveUser: String?
 	var formAction: String
 	var postSuccessURL: String
@@ -608,7 +622,11 @@ struct SeamailCreateMailbox {
 		let param = foruser?.lowercased()
 		postAsModerator = param == PrivilegedUser.moderator.queryParam
 		postAsTwitarrTeam = param == PrivilegedUser.TwitarrTeam.queryParam
-		if postAsTwitarrTeam {
+		postAsCommunitySupport = param == PrivilegedUser.CommunitySupport.queryParam
+		if postAsCommunitySupport {
+			effectiveUser = PrivilegedUser.CommunitySupport.queryParam
+		}
+		else if postAsTwitarrTeam {
 			effectiveUser = PrivilegedUser.TwitarrTeam.queryParam
 		}
 		else if postAsModerator {
@@ -641,6 +659,9 @@ private func titleAndTab(for req: Request) -> (String, TrunkContext.Tab) {
 	case "moderator":
 		title = "Moderator Seamail"
 		tab = .moderator
+	case PrivilegedUser.CommunitySupport.queryParam:
+		title = "Community Support Seamail"
+		tab = .communitySupport
 	default:
 		if req.url.path.contains("/privateevent") {
 			title = "Private Events"

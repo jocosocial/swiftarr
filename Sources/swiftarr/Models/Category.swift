@@ -61,6 +61,29 @@ final class Category: Model, @unchecked Sendable {
 	// Used by Fluent
 	init() {}
 
+	/// True if this category is gated on a role whose bypass level is above moderator (see `UserRoleType.categoryBypassLevel`).
+	/// Content in such a category is hidden from plain moderators, so it must stay out of every moderator-facing path: it can't be reported,
+	/// moderators can't view it through `/mod` routes or move forums in or out, and nothing in it is logged as a moderator action.
+	/// It also can't carry images, because image files are served by filename with no per-post access check.
+	var isRestrictedBeyondModerators: Bool {
+		guard let role = requiredRole else { return false }
+		return role.categoryBypassLevel > .moderator
+	}
+
+	/// True for categories that are staff areas: ones only moderators can see, and ones gated on a role that moderators can't see into
+	/// (Community Support). The category list shows these first, so the team's private areas sit together above the public ones.
+	var isStaffCategory: Bool {
+		accessLevelToView >= .moderator || isRestrictedBeyondModerators
+	}
+
+	/// Throws a 404 unless the user may see role-gated content in this category (see `UserRoleType.canView`). It's a 404 rather than a 403 so that probing
+	/// IDs can't confirm that anything exists in a role-gated category. Categories without a `requiredRole` always pass.
+	func guardRoleAccess(for user: UserCacheData) throws {
+		if let requiredRole = requiredRole, !requiredRole.canView(accessLevel: user.accessLevel, roles: user.userRoles) {
+			throw Abort(.notFound, reason: "Forum or post not found.")
+		}
+	}
+
 	/// Initializes a new Category.
 	///
 	/// - Parameters:

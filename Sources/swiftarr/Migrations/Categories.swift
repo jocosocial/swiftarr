@@ -170,6 +170,26 @@ struct AddFoodDrinkCategory: AsyncMigration {
 	}
 }
 
+/// Adds the private Community Support forum category, visible only to holders of the `communitysupport` role and TwitarrTeam and above.
+///
+/// Don't start this category's title with "Event" or "Shadow": `EventParser` picks its event categories by title prefix.
+struct AddCommunitySupportCategory: AsyncMigration {
+	static let title = "Community Support"
+
+	func prepare(on database: Database) async throws {
+		let category = Category(
+			title: Self.title,
+			purpose: "Private discussion for the Community Support team.",
+			requiredRole: .communitysupport
+		)
+		try await category.create(on: database)
+	}
+
+	func revert(on database: Database) async throws {
+		try await Category.query(on: database).filter(\.$title == Self.title).delete()
+	}
+}
+
 struct RemoveCovidCategory: AsyncMigration {
 	/// Required by `Migration` protocol. Removes the Covid category.
 	///

@@ -157,6 +157,9 @@ extension APIRouteCollection {
 		guard targetUser.username != "THO" else {
 			throw Abort(.badRequest, reason: "Cannot change name or  access level of @THO account.")
 		}
+		guard targetUser.username != PrivilegedUser.CommunitySupport.rawValue else {
+			throw Abort(.badRequest, reason: "Cannot change name or access level of @CommunitySupport account.")
+		}
 		guard targetUser.username != "admin" else {
 			throw Abort(.badRequest, reason: "Cannot change name or  access level of @admin account.")
 		}
@@ -267,7 +270,7 @@ extension APIRouteCollection {
 				for userID in users {
 					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
-			case .forumMention, .twitarrTeamForumMention, .moderatorForumMention:
+			case .forumMention, .twitarrTeamForumMention, .moderatorForumMention, .communitySupportForumMention:
 				for userID in users {
 					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
@@ -424,7 +427,7 @@ extension APIRouteCollection {
 						)
 					}
 				}
-			case .forumMention, .twitarrTeamForumMention, .moderatorForumMention:
+			case .forumMention, .twitarrTeamForumMention, .moderatorForumMention, .communitySupportForumMention:
 				for userID in users {
 					group.addTask {
 						try await req.redis.incrementIntInUserHash(
@@ -504,6 +507,10 @@ extension APIRouteCollection {
 			}
 		case .twitarrTeamForumMention:
 			if user.accessLevel.hasAccess(.twitarrteam) {
+				try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)
+			}
+		case .communitySupportForumMention:
+			if CommunitySupportController.canAccess(user) {
 				try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)
 			}
 		case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting,
