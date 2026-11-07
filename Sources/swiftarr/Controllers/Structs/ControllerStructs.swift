@@ -206,6 +206,9 @@ public struct CategoryData: Content {
 	var isEventCategory: Bool
 	/// If FALSE, posts in this category can't have images attached, and the server rejects any that try. Clients should hide their photo UI.
 	var allowsImages: Bool = true
+	/// If TRUE, plain moderators can't see this category's content (it's gated on a role above their access level), and the server answers
+	/// moderation requests about it with 404. Clients should not offer moderation UI for threads and posts in it, even to users who can see them.
+	var hiddenFromModerators: Bool = false
 	/// The threads in the category. Only populated for /categories/ID.
 	var forumThreads: [ForumListData]?
 	/// Pagination of the results. For the `GET /api/v3/categories` endpoint only the `Paginator`s `total` is meaningful.
@@ -222,6 +225,7 @@ extension CategoryData {
 		isRestricted = restricted
 		isEventCategory = cat.isEventCategory
 		allowsImages = !cat.isRestrictedBeyondModerators
+		hiddenFromModerators = cat.isRestrictedBeyondModerators
 		self.forumThreads = forumThreads
 		self.paginator = paginator
 	}

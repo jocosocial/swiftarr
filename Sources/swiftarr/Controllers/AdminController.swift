@@ -621,6 +621,8 @@ struct AdminController: APIRouteCollection {
 		targetUser.accessLevel = .verified
 		try await targetUser.save(on: req.db)
 		try await req.userCache.updateUser(targetUser.requireID())
+		// Moderator/TwitarrTeam access is what let them read the shared mailboxes.
+		try await FezController().removeStaleMailboxPivots(for: targetUser.requireID(), on: req)
 		await targetUser.logIfModeratorAction(.accessLevelVerified, user: moderator, on: req)
 		return .ok
 	}
@@ -768,6 +770,8 @@ struct AdminController: APIRouteCollection {
 		}
 		try await UserRole.query(on: req.db).filter(\.$role == role).filter(\.$user.$id == targetUserID).delete()
 		try await req.userCache.updateUser(targetUserID)
+		// The role may have been what let them read a shared mailbox (Community Support).
+		try await FezController().removeStaleMailboxPivots(for: targetUserID, on: req)
 		return .ok
 	}
 	

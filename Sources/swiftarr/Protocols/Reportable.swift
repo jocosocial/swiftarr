@@ -28,6 +28,22 @@ extension Reportable {
 	/// Only forums and forum posts can live in a restricted category; they override this.
 	func isInModeratorRestrictedCategory(on db: Database) async throws -> Bool { false }
 
+	/// Content in a restricted category (see `Category.isRestrictedBeyondModerators`) never goes in the moderator log, which moderators can read.
+	/// Someone else's content being changed there is recorded in the Community Support action log instead, so those changes aren't unaccountable.
+	/// Creating a post as the shared account (`.post`) isn't a change to anyone's content and isn't logged.
+	func logRestrictedCategoryAction(_ action: ModeratorActionType, actorID: UUID, on db: Database) async throws {
+		guard action != .post else {
+			return
+		}
+		try await CommunitySupportAction(
+			actor: actorID,
+			report: nil,
+			type: .contentModerated,
+			note: "\(action.rawValue): \(reportType.rawValue) \(try reportableContentID())"
+		)
+		.save(on: db)
+	}
+
 	// TRUE if the content's moderation state is .quarantined or .autoquarantined. If true, the content should be hidden from
 	// users without moderator access level, replaced with something like "This content is under review."
 	var isQuarantined: Bool { self.moderationStatus == .quarantined || self.moderationStatus == .autoQuarantined }
@@ -80,6 +96,7 @@ extension Reportable {
 				return
 			}
 			guard try await !isInModeratorRestrictedCategory(on: req.db) else {
+				try await logRestrictedCategoryAction(action, actorID: user.userID, on: req.db)
 				return
 			}
 			if let modUser = try await User.find(user.userID, on: req.db) {
@@ -104,6 +121,7 @@ extension Reportable {
 		}
 		do {
 			guard try await !isInModeratorRestrictedCategory(on: req.db) else {
+				try await logRestrictedCategoryAction(action, actorID: moderatorID, on: req.db)
 				return
 			}
 			if let moderator = try await User.find(moderatorID, on: req.db) {

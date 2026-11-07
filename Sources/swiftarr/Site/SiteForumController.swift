@@ -32,6 +32,9 @@ struct ForumPageContext: Encodable {
 	var category: CategoryData
 	var paginator: PaginatorContext
 	var pinnedPosts: [PostData]
+	/// Whether the page offers links to the moderation pages: the viewer is a moderator, and the forum's category isn't one moderators are kept out of.
+	/// (TwitarrTeam can see Community Support threads, but moderation tools aren't for them: the category is excluded from `/mod`.)
+	var showModLink: Bool
 
 	init(_ req: Request, forum: ForumData, cat: [CategoryData], pinnedPosts: [PostData] = []) throws {
 		trunk = .init(req, title: "\(forum.title) | Forum Thread", tab: .forums)
@@ -60,6 +63,7 @@ struct ForumPageContext: Encodable {
 			"/forum/\(forum.forumID)?start=\(pageIndex * forum.paginator.limit)&limit=\(forum.paginator.limit)"
 		}
 		self.pinnedPosts = pinnedPosts
+		showModLink = trunk.userIsMod && !category.hiddenFromModerators
 		if !category.allowsImages {
 			post.removePhotoSlots()
 		}

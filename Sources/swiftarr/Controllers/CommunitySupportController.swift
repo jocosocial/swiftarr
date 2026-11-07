@@ -70,6 +70,7 @@ struct CommunitySupportController: APIRouteCollection {
 		guard cacheUser.userRoles.contains(.communitysupport) else {
 			throw Abort(.forbidden, reason: "Only Community Support team members can file reports.")
 		}
+		try cacheUser.guardCanCreateContent()
 		// see `CommunitySupportReportCreateData.runValidations(using:)`
 		let data = try ValidatingJSONDecoder().decode(CommunitySupportReportCreateData.self, fromBodyOf: req)
 		try await guardUserExists(data.reporterUserID, on: req)
@@ -154,6 +155,7 @@ struct CommunitySupportController: APIRouteCollection {
 	func statusHandler(_ req: Request) async throws -> CommunitySupportReportData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		try guardCanAccess(cacheUser)
+		try cacheUser.guardCanCreateContent()
 		let data = try ValidatingJSONDecoder().decode(CommunitySupportStatusChangeData.self, fromBodyOf: req)
 		let report = try await CommunitySupportReport.findFromParameter(reportIDParam, on: req)
 		guard report.status != data.status else {
@@ -187,6 +189,7 @@ struct CommunitySupportController: APIRouteCollection {
 	func discussionHandler(_ req: Request) async throws -> CommunitySupportDiscussionData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		try guardCanAccess(cacheUser)
+		try cacheUser.guardCanCreateContent()
 		let reportID =
 			try UUID(uuidString: req.parameters.get(reportIDParam.paramString) ?? "")
 			?? { throw Abort(.badRequest, reason: "Request parameter \(reportIDParam.paramString) is missing.") }()
@@ -222,6 +225,11 @@ struct CommunitySupportController: APIRouteCollection {
 		else {
 			throw Abort(.internalServerError, reason: "The Community Support forum category doesn't exist.")
 		}
+		// `createForum` does no permission checking, so do what `forumCreateHandler` does before calling it.
+		guard cacheUser.accessLevel.hasAccess(category.accessLevelToCreate) else {
+			throw Abort(.forbidden, reason: "users cannot create forums in category")
+		}
+		try ForumController().guardUserCanAccessCategory(cacheUser, category: category)
 		let (forum, _) = try await ForumController()
 			.createForum(
 				in: category,

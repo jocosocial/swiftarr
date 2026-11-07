@@ -25,6 +25,10 @@ struct CreateCommunitySupportUser: AsyncMigration {
 				counter += 1
 				newName = "\(name)-old\(counter)"
 			}
+			// The owner isn't told, and their next login will use the old name in vain, so leave staff a trail to follow up on.
+			database.logger.warning(
+				"CreateCommunitySupportUser: renaming user \(squatter.id?.uuidString ?? "?") from \"\(squatter.username)\" to \"\(newName)\" to free the reserved name."
+			)
 			squatter.username = newName
 			squatter.buildUserSearchString()
 			try await squatter.save(on: database)
