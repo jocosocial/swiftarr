@@ -111,6 +111,10 @@ struct ForumController: APIRouteCollection {
 		}
 		let categories = try await categoryQuery.all()
 		let sortedCats = categories.sorted {
+			// Staff areas (the moderator forums, Community Support) come first, then everything else.
+			if $0.isStaffCategory != $1.isStaffCategory {
+				return $0.isStaffCategory
+			}
 			if $0.accessLevelToView != $1.accessLevelToView {
 				return $0.accessLevelToView > $1.accessLevelToView
 			}

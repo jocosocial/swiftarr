@@ -336,6 +336,33 @@ class CommunitySupportForumLeakTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
+	// The team's private areas sit together at the top of the category list, above the public categories.
+	func testStaffCategoriesListFirst() async throws {
+		try await withApp { app in
+			let f = try await makeFixture(app)
+			try await app.test(
+				.GET,
+				"/api/v3/forum/categories",
+				headers: bearer(f.twitarrTeamToken),
+				afterResponse: { res async throws in
+					let titles = try res.content.decode([CategoryData].self).map { $0.title }
+					let isStaff = { (title: String) in
+						title == "Moderators Only" || title == "Mods Only Dumpster Fire"
+							|| title.hasPrefix("Community Support")
+					}
+					let staffCount = titles.filter(isStaff).count
+					XCTAssertGreaterThanOrEqual(staffCount, 3, "\(titles)")
+					XCTAssertTrue(
+						titles.prefix(staffCount).allSatisfy(isStaff),
+						"staff categories should come first: \(titles)"
+					)
+					// The moderator forums keep their place at the very top of the staff group.
+					XCTAssertEqual(Set(titles.prefix(2)), ["Moderators Only", "Mods Only Dumpster Fire"], "\(titles)")
+				}
+			)
+		}
+	}
+
 	func testRoleBypassLevels() {
 		XCTAssertEqual(UserRoleType.communitysupport.categoryBypassLevel, .twitarrteam)
 		XCTAssertEqual(UserRoleType.shutternaut.categoryBypassLevel, .moderator)

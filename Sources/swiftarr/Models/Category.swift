@@ -70,6 +70,12 @@ final class Category: Model, @unchecked Sendable {
 		return role.categoryBypassLevel > .moderator
 	}
 
+	/// True for categories that are staff areas: ones only moderators can see, and ones gated on a role that moderators can't see into
+	/// (Community Support). The category list shows these first, so the team's private areas sit together above the public ones.
+	var isStaffCategory: Bool {
+		accessLevelToView >= .moderator || isRestrictedBeyondModerators
+	}
+
 	/// Throws a 404 unless the user may see role-gated content in this category (see `UserRoleType.canView`). It's a 404 rather than a 403 so that probing
 	/// IDs can't confirm that anything exists in a role-gated category. Categories without a `requiredRole` always pass.
 	func guardRoleAccess(for user: UserCacheData) throws {
