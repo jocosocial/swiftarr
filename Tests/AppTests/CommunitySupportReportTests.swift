@@ -192,6 +192,16 @@ class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 		XCTAssertEqual(report.displayTitle(), "Unspecified - Lido deck - Tuesday evening")
 	}
 
+	// Post text only linkifies full URLs; a bare path would show as plain text.
+	func testDiscussionPostLinksToReportWithAFullURL() {
+		let report = CommunitySupportReport(author: UUID(), data: makeCreateData())
+		report.id = UUID()
+		let url = report.reportURL
+		XCTAssertTrue(url.hasPrefix("http"), url)
+		XCTAssertTrue(url.hasSuffix("/communitysupport/report/\(report.id!.uuidString)"), url)
+		XCTAssertTrue(report.discussionPostText().contains("Full report: \(url)"))
+	}
+
 	func testDiscussionTitleIsAtMost100Characters() {
 		let report = CommunitySupportReport(author: UUID(), data: makeCreateData())
 		report.experienceLocation = String(repeating: "L", count: 200)

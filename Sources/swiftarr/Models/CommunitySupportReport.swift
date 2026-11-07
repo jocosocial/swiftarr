@@ -125,6 +125,13 @@ extension CommunitySupportReport {
 		String(displayTitle(subjectUsername: subjectUsername).prefix(100))
 	}
 
+	/// The address of this report's page on the site, as a full URL on the server's canonical address.
+	var reportURL: String {
+		var components = Settings.shared.canonicalServerURLComponents
+		components.path = "/communitysupport/report/\(id?.uuidString ?? "")"
+		return components.string ?? components.path
+	}
+
 	/// The text of the first post of the discussion thread: a full copy of the report, ending with a link back to it.
 	///
 	/// Forum posts are limited in length and a report may not fit. When it doesn't, the free-text fields are cut down together
@@ -148,8 +155,10 @@ extension CommunitySupportReport {
 			("Lived experiences", livedExperiences),
 		]
 		.filter { !$0.1.isEmpty }
-		let link = "/communitysupport/report/\(id?.uuidString ?? "")"
-		let truncationNote = "(Long fields were cut short. See the full report: \(link))"
+		// A full URL, not a bare path: post text only turns full URLs into links, and for the server's own hostnames it
+		// then shortens them to a relative link, so the link follows whichever address the reader is browsing from.
+		let link = reportURL
+		let truncationNote = "(Long fields were cut short.)"
 		let footer = "\nFull report: \(link)"
 		// The characters spent on labels, separators, footers, and one "…" per field that might get cut.
 		let overhead = fields.reduce(0) { $0 + $1.label.count + 3 } + footer.count + truncationNote.count + fields.count

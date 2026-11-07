@@ -315,6 +315,8 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 				return "[Boardgames Link]"
 			}
 		case "karaoke": return "[Karaoke Link]"
+		case "communitysupport":
+			return pathComponents.count > 3 && pathComponents[2] == "report" ? "[Community Support Report Link]" : "[Community Support Link]"
 		case "quartermaster":
 			if pathComponents.count > 2 {
 				switch pathComponents[2] {

@@ -60,4 +60,15 @@ class CanonicalLinkTextTests: XCTestCase {
 		XCTAssertNil(FormatPostTextTag.canonicalLinkText(pathComponents: ["/"]))
 		XCTAssertNil(FormatPostTextTag.canonicalLinkText(pathComponents: []))
 	}
+
+	// MARK: - Community Support
+
+	func testCommunitySupportReport() {
+		XCTAssertEqual(
+			linkText(for: "https://twitarr.com/communitysupport/report/568017B0-444E-4FF7-B669-3748C842440E"),
+			"[Community Support Report Link]"
+		)
+		XCTAssertEqual(linkText(for: "https://twitarr.com/communitysupport/reports"), "[Community Support Link]")
+		XCTAssertEqual(linkText(for: "https://twitarr.com/communitysupport"), "[Community Support Link]")
+	}
 }
