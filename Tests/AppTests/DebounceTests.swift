@@ -280,7 +280,7 @@ final class FezPostDebounceTests: SwiftarrBaseTest, DebounceTests {
             // Waiting 2 minutes is impractical, but setting the debounce_until to nil works.
             // We need to reload the forum post since debounce_until is set in a trigger.
             let maybeTriggeredPost = try await FezPost.find(fixture.post.requireID(), on: app.db)
-            let triggeredPost = try XCTUnwrap(maybeTriggeredPost)
+            let triggeredPost = try #require(maybeTriggeredPost)
             triggeredPost.debounceUntil = nil
             try await triggeredPost.save(on: app.db)
             
