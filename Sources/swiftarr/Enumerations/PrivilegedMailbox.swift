@@ -49,11 +49,9 @@ enum PrivilegedMailboxRequirement {
 /// mailbox's *notification bookkeeping*: the chat-unread fan-out, the `?foruser=` access checks, and
 /// the nightly consistency job all key off this table, so adding a new mailbox (see issue #517) means
 /// appending a row here, adding a `MailInbox` case, and seeding its phantom account.
-/// It does NOT cover authoring or UI: `FezController.createChat`'s `createdByModerator`/
-/// `createdByTwitarrTeam` fields, `PostContentData.effectiveAuthor`, `SiteSeamailController`'s
-/// `postAsModerator`/`postAsTwitarrTeam` fields, and `ForumController.processForumMentions` still
-/// hardcode the moderator/TwitarrTeam pair and need their own updates for a new mailbox to be usable
-/// end-to-end.
+/// It does NOT cover authoring or UI: `FezController.createChat`'s `createdBy…` fields, `PostContentData.effectiveAuthor`,
+/// `SiteSeamailController`'s `postAs…` fields, and `ForumController.processForumMentions` are written out per mailbox
+/// (moderator, TwitarrTeam, and CommunitySupport) and need their own updates for a new mailbox to be usable end-to-end.
 struct PrivilegedMailbox: Sendable {
 	let user: PrivilegedUser
 	let inbox: MailInbox

@@ -50,14 +50,23 @@ class CommunitySupportForumLeakTests: XCTestCase, SwiftarrBaseTest {
 
 	private func makeFixture(_ app: Application) async throws -> Fixture {
 		let suffix = UUID().uuidString.prefix(8).lowercased()
-		let member = try await makeUser(app, username: "csmember-\(suffix)", accessLevel: .verified, role: .communitysupport)
+		let member = try await makeUser(
+			app,
+			username: "csmember-\(suffix)",
+			accessLevel: .verified,
+			role: .communitysupport
+		)
 		let memberToken = member.token
 		let ttToken = try await makeUser(app, username: "tt-\(suffix)", accessLevel: .twitarrteam).token
 		let modToken = try await makeUser(app, username: "mod-\(suffix)", accessLevel: .moderator).token
 		let verifiedToken = try await makeUser(app, username: "verified-\(suffix)", accessLevel: .verified).token
 		_ = try await makeUser(app, username: "shutter-\(suffix)", accessLevel: .verified, role: .shutternaut)
 
-		let csCategory = Category(title: "Community Support Test \(suffix)", purpose: "test", requiredRole: .communitysupport)
+		let csCategory = Category(
+			title: "Community Support Test \(suffix)",
+			purpose: "test",
+			requiredRole: .communitysupport
+		)
 		try await csCategory.save(on: app.db)
 		let forum = try Forum(title: "Private \(secretToken) forum", category: csCategory, creatorID: member.id)
 		try await forum.save(on: app.db)
@@ -130,7 +139,12 @@ class CommunitySupportForumLeakTests: XCTestCase, SwiftarrBaseTest {
 					body = body.replacingOccurrences(of: String(query), with: "")
 				}
 				XCTAssertFalse(body.contains(secretToken), "GET \(path) leaked private content", file: file, line: line)
-				XCTAssertFalse(body.contains("Community Support Test"), "GET \(path) leaked the category", file: file, line: line)
+				XCTAssertFalse(
+					body.contains("Community Support Test"),
+					"GET \(path) leaked the category",
+					file: file,
+					line: line
+				)
 			}
 		)
 	}
@@ -246,7 +260,10 @@ class CommunitySupportForumLeakTests: XCTestCase, SwiftarrBaseTest {
 				"/api/v3/notification/user",
 				headers: bearer(f.moderatorToken),
 				afterResponse: { res async throws in
-					XCTAssertFalse(res.body.string.contains("\(f.forumID)"), "moderator was notified about private content")
+					XCTAssertFalse(
+						res.body.string.contains("\(f.forumID)"),
+						"moderator was notified about private content"
+					)
 				}
 			)
 		}

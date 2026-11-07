@@ -162,8 +162,12 @@ struct SiteCommunitySupportController: SiteControllerUtils {
 				self.reports = reports
 				let filter = req.query[String.self, at: "status"]
 				statusFilter = filter
-				statuses = CommunitySupportReportStatus.allCases.map { StatusChoice(value: $0.rawValue, label: $0.label, selected: $0.rawValue == filter) }
-				paginator = .init(reports.paginator) { "/communitysupport/reports?start=\($0)&limit=\(reports.paginator.limit)" }
+				statuses = CommunitySupportReportStatus.allCases.map {
+					StatusChoice(value: $0.rawValue, label: $0.label, selected: $0.rawValue == filter)
+				}
+				paginator = .init(reports.paginator) {
+					"/communitysupport/reports?start=\($0)&limit=\(reports.paginator.limit)"
+				}
 			}
 		}
 		return try await req.view.render("CommunitySupport/reports", PageContext(req, reports: reports))
@@ -249,42 +253,58 @@ struct SiteCommunitySupportController: SiteControllerUtils {
 	///
 	/// A CSV of every report. THO and above only.
 	func downloadReports(_ req: Request) async throws -> Response {
+		// The report fields are free text typed by volunteers, and THO will open this in a spreadsheet. A cell that starts with
+		// `=`, `+`, `-`, `@`, tab, or carriage return can be run as a formula, so those get a leading apostrophe (which spreadsheets
+		// treat as "this is text" and don't display).
+		func neutralized(_ field: String) -> String {
+			if let first = field.unicodeScalars.first, ["=", "+", "-", "@", "\t", "\r"].contains(Character(first)) {
+				return "'" + field
+			}
+			return field
+		}
 		func buildCSVRecord(fields: [String]) -> String {
-			return fields.map { "\"\($0.replacingOccurrences(of: "\"", with: "\"\""))\"" }.joined(separator: ",").appending("\n")
+			return fields.map { "\"\(neutralized($0).replacingOccurrences(of: "\"", with: "\"\""))\"" }
+				.joined(separator: ",").appending("\n")
 		}
 		let response = try await apiQuery(req, endpoint: "/communitysupport/export")
 		let reports = try response.content.decode([CommunitySupportReportData].self)
 		let dateFormatter = DateFormatter()
 		dateFormatter.dateFormat = "MMM d, h:mm a z"
-		let header = "\u{FEFF}" + buildCSVRecord(fields: [
-			"Report ID", "Filed", "Status", "Filed By (Username)", "Member Name", "Reporter Name", "Reporter Account", "Reporter Handle",
-			"Cabin", "Subject Account", "Subject Name", "Experienced", "Witnessed", "Intent", "May Contact", "When", "Where",
-			"Description", "Preferred Outcome", "Lived Experiences", "Discussion Thread",
-		])
+		let header =
+			"\u{FEFF}"
+			+ buildCSVRecord(fields: [
+				"Report ID", "Filed", "Status", "Filed By (Username)", "Member Name", "Reporter Name",
+				"Reporter Account", "Reporter Handle",
+				"Cabin", "Subject Account", "Subject Name", "Experienced", "Witnessed", "Intent", "May Contact", "When",
+				"Where",
+				"Description", "Preferred Outcome", "Lived Experiences", "Discussion Thread",
+			])
 		let csv = reports.reduce(into: header) { str, report in
-			str.append(buildCSVRecord(fields: [
-				report.id.uuidString,
-				dateFormatter.string(from: report.createdAt),
-				report.statusLabel,
-				report.author.username,
-				report.memberName,
-				report.reporterName,
-				report.reporter?.username ?? "",
-				report.reporterHandleText,
-				report.reporterCabin,
-				report.subject?.username ?? "",
-				report.subjectName,
-				report.reporterExperienced ? "yes" : "no",
-				report.reporterWitnessed ? "yes" : "no",
-				report.intent.label,
-				report.mayContact ? "yes" : "no",
-				report.experienceTime,
-				report.experienceLocation,
-				report.experienceDescription,
-				report.preferredOutcome,
-				report.livedExperiences,
-				report.forumID.map { "/forum/\($0.uuidString)" } ?? "",
-			]))
+			str.append(
+				buildCSVRecord(fields: [
+					report.id.uuidString,
+					dateFormatter.string(from: report.createdAt),
+					report.statusLabel,
+					report.author.username,
+					report.memberName,
+					report.reporterName,
+					report.reporter?.username ?? "",
+					report.reporterHandleText,
+					report.reporterCabin,
+					report.subject?.username ?? "",
+					report.subjectName,
+					report.reporterExperienced ? "yes" : "no",
+					report.reporterWitnessed ? "yes" : "no",
+					report.intent.label,
+					report.mayContact ? "yes" : "no",
+					report.experienceTime,
+					report.experienceLocation,
+					report.experienceDescription,
+					report.preferredOutcome,
+					report.livedExperiences,
+					report.forumID.map { "/forum/\($0.uuidString)" } ?? "",
+				])
+			)
 		}
 		guard let data = csv.data(using: .utf8) else {
 			throw Abort(.internalServerError, reason: "Could not convert CSV String into Data.")

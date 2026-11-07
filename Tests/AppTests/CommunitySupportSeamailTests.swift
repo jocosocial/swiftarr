@@ -54,7 +54,11 @@ class CommunitySupportSeamailTests: XCTestCase, SwiftarrBaseTest {
 		return headers
 	}
 
-	private func seamailData(to users: [UUID], createdByCommunitySupport: Bool? = nil, postAsCommunitySupport: Bool = false)
+	private func seamailData(
+		to users: [UUID],
+		createdByCommunitySupport: Bool? = nil,
+		postAsCommunitySupport: Bool = false
+	)
 		-> FezContentData
 	{
 		FezContentData(
@@ -151,7 +155,9 @@ class CommunitySupportSeamailTests: XCTestCase, SwiftarrBaseTest {
 				"/api/v3/fez/create",
 				headers: bearer(f.memberA.token),
 				beforeRequest: { req throws in
-					try req.content.encode(seamailData(to: [f.attendee.id], createdByCommunitySupport: true, postAsCommunitySupport: true))
+					try req.content.encode(
+						seamailData(to: [f.attendee.id], createdByCommunitySupport: true, postAsCommunitySupport: true)
+					)
 				},
 				afterResponse: { res async throws in
 					XCTAssertEqual(res.status, .created)
@@ -174,7 +180,9 @@ class CommunitySupportSeamailTests: XCTestCase, SwiftarrBaseTest {
 			// Seamail chats and messages can't be reported, so there's no report that would justify showing a moderator the chat.
 			let post = try await FezPost.query(on: app.db).filter(\.$fez.$id == fezID).first()
 			let postID = try XCTUnwrap(post?.id)
-			for (token, expected) in [(f.moderator.token, HTTPResponseStatus.notFound), (f.tt.token, .ok), (f.memberA.token, .forbidden)] {
+			for (token, expected) in [
+				(f.moderator.token, HTTPResponseStatus.notFound), (f.tt.token, .ok), (f.memberA.token, .forbidden),
+			] {
 				try await app.test(
 					.GET,
 					"/api/v3/mod/fezpost/\(postID)",
@@ -196,17 +204,29 @@ class CommunitySupportSeamailTests: XCTestCase, SwiftarrBaseTest {
 					.POST,
 					"/api/v3/fez/create",
 					headers: bearer(token),
-					beforeRequest: { req throws in try req.content.encode(seamailData(to: [f.attendee.id], createdByCommunitySupport: true)) },
+					beforeRequest: { req throws in
+						try req.content.encode(seamailData(to: [f.attendee.id], createdByCommunitySupport: true))
+					},
 					afterResponse: { res async throws in XCTAssertEqual(res.status, expected) }
 				)
 			}
 		}
 	}
 
-	func testPostingAsMoreThanOnePrivilegedAccountIsRejected() throws {
-		let json = #"{"text":"hi","images":[],"postAsModerator":true,"postAsCommunitySupport":true}"#
-		let failures = try ValidatingJSONDecoder().validate(PostContentData.self, from: json.data(using: .utf8)!)?.validationFailures
-		XCTAssertNotNil(failures)
+	func testPostingAsCommunitySupportAndAnotherAccountIsRejected() throws {
+		let decoder = ValidatingJSONDecoder()
+		func errors(_ json: String) throws -> [String] {
+			try decoder.validate(PostContentData.self, from: json.data(using: .utf8)!)?.validationFailures
+				.map { $0.errorString } ?? []
+		}
+		XCTAssertEqual(try errors(#"{"text":"hi","images":[],"postAsCommunitySupport":true}"#), [])
+		for other in ["postAsModerator", "postAsTwitarrTeam"] {
+			let errs = try errors(#"{"text":"hi","images":[],"\#(other)":true,"postAsCommunitySupport":true}"#)
+			XCTAssertTrue(
+				errs.contains("cannot post as @CommunitySupport and another account at the same time"),
+				"\(other): \(errs)"
+			)
+		}
 	}
 
 	func testCommunitySupportMentionNotifiesTeamButNotModerators() async throws {
@@ -258,7 +278,10 @@ class CommunitySupportSeamailTests: XCTestCase, SwiftarrBaseTest {
 				"/api/v3/notification/global",
 				headers: bearer(f.memberB.token),
 				afterResponse: { res async throws in
-					XCTAssertEqual(try res.content.decode(UserNotificationData.self).communitySupportData?.newForumMentionCount, 0)
+					XCTAssertEqual(
+						try res.content.decode(UserNotificationData.self).communitySupportData?.newForumMentionCount,
+						0
+					)
 				}
 			)
 		}
@@ -268,10 +291,22 @@ class CommunitySupportSeamailTests: XCTestCase, SwiftarrBaseTest {
 		try await withApp { app in
 			let f = try await makeFixture(app)
 			let data = CommunitySupportReportCreateData(
-				memberName: "Pat", reporterName: nil, reporterUserID: nil, reporterHandleText: nil, reporterCabin: nil,
-				subjectUserID: nil, subjectName: nil, reporterExperienced: true, reporterWitnessed: false, intent: .followUp,
-				mayContact: true, experienceTime: "now", experienceLocation: "here", experienceDescription: "something",
-				preferredOutcome: nil, livedExperiences: nil
+				memberName: "Pat",
+				reporterName: nil,
+				reporterUserID: nil,
+				reporterHandleText: nil,
+				reporterCabin: nil,
+				subjectUserID: nil,
+				subjectName: nil,
+				reporterExperienced: true,
+				reporterWitnessed: false,
+				intent: .followUp,
+				mayContact: true,
+				experienceTime: "now",
+				experienceLocation: "here",
+				experienceDescription: "something",
+				preferredOutcome: nil,
+				livedExperiences: nil
 			)
 			try await app.test(
 				.POST,
@@ -285,7 +320,10 @@ class CommunitySupportSeamailTests: XCTestCase, SwiftarrBaseTest {
 				"/api/v3/notification/global",
 				headers: bearer(f.memberB.token),
 				afterResponse: { res async throws in
-					XCTAssertGreaterThanOrEqual(try res.content.decode(UserNotificationData.self).communitySupportData?.openReportCount ?? 0, 1)
+					XCTAssertGreaterThanOrEqual(
+						try res.content.decode(UserNotificationData.self).communitySupportData?.openReportCount ?? 0,
+						1
+					)
 				}
 			)
 			try await app.test(

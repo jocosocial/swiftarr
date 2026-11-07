@@ -56,10 +56,14 @@ class CommunitySupportMailboxTests: XCTestCase, SwiftarrBaseTest {
 		let decoder = ValidatingJSONDecoder()
 		for name in ["CommunitySupport", "communitysupport"] {
 			let data = #"{"username":"\#(name)"}"#.data(using: .utf8)!
-			let errors = try decoder.validate(UserUsernameData.self, from: data)?.validationFailures.map { $0.errorString } ?? []
+			let errors =
+				try decoder.validate(UserUsernameData.self, from: data)?.validationFailures.map { $0.errorString } ?? []
 			XCTAssertTrue(errors.contains("username is reserved"), "\(name): \(errors)")
 		}
-		let ok = try decoder.validate(UserUsernameData.self, from: #"{"username":"communitysupporter"}"#.data(using: .utf8)!)
+		let ok = try decoder.validate(
+			UserUsernameData.self,
+			from: #"{"username":"communitysupporter"}"#.data(using: .utf8)!
+		)
 		XCTAssertNil(ok)
 	}
 
@@ -69,7 +73,8 @@ class CommunitySupportMailboxTests: XCTestCase, SwiftarrBaseTest {
 		try await withApp { app in
 			let req = makeRequest(app)
 			XCTAssertNotNil(req.userCache.getUser(username: PrivilegedUser.CommunitySupport.rawValue))
-			let category = try await Category.query(on: app.db).all().first { $0.title == AddCommunitySupportCategory.title }
+			let category = try await Category.query(on: app.db).all()
+				.first { $0.title == AddCommunitySupportCategory.title }
 			XCTAssertEqual(category?.requiredRole, .communitysupport)
 		}
 	}
@@ -85,34 +90,53 @@ class CommunitySupportMailboxTests: XCTestCase, SwiftarrBaseTest {
 			}
 			let mailbox = PrivilegedMailbox.forChat(participantArray: [csUser.userID, modUser.userID], on: req)
 			XCTAssertEqual(mailbox?.user, .moderator)
-			XCTAssertEqual(PrivilegedMailbox.forChat(participantArray: [csUser.userID], on: req)?.user, .CommunitySupport)
+			XCTAssertEqual(
+				PrivilegedMailbox.forChat(participantArray: [csUser.userID], on: req)?.user,
+				.CommunitySupport
+			)
 		}
 	}
 
 	func testRosterIsRoleHoldersAndTwitarrTeamOnly() async throws {
 		try await withApp { app in
 			let suffix = UUID().uuidString.prefix(8)
-			let member = try await makeUser(app, username: "csm-\(suffix)", accessLevel: .verified, role: .communitysupport)
+			let member = try await makeUser(
+				app,
+				username: "csm-\(suffix)",
+				accessLevel: .verified,
+				role: .communitysupport
+			)
 			let moderator = try await makeUser(app, username: "csmod-\(suffix)", accessLevel: .moderator)
 			let tt = try await makeUser(app, username: "cstt-\(suffix)", accessLevel: .twitarrteam)
 			try await app.asyncBoot()
 			try await app.initializeUserCache(app)
-			let roster = PrivilegedMailbox.matching(queryParam: "communitysupport")!.members(on: makeRequest(app)).map { $0.userID }
+			let roster = PrivilegedMailbox.matching(queryParam: "communitysupport")!.members(on: makeRequest(app))
+				.map { $0.userID }
 			XCTAssertTrue(roster.contains(member.id))
 			XCTAssertTrue(roster.contains(tt.id))
-			XCTAssertFalse(roster.contains(moderator.id), "plain moderators must not be in the Community Support roster")
+			XCTAssertFalse(
+				roster.contains(moderator.id),
+				"plain moderators must not be in the Community Support roster"
+			)
 		}
 	}
 
 	func testForuserCommunitySupportAccess() async throws {
 		try await withApp { app in
 			let suffix = UUID().uuidString.prefix(8)
-			let member = try await makeUser(app, username: "csm-\(suffix)", accessLevel: .verified, role: .communitysupport)
+			let member = try await makeUser(
+				app,
+				username: "csm-\(suffix)",
+				accessLevel: .verified,
+				role: .communitysupport
+			)
 			let moderator = try await makeUser(app, username: "csmod-\(suffix)", accessLevel: .moderator)
 			let plain = try await makeUser(app, username: "csplain-\(suffix)", accessLevel: .verified)
 			try await app.asyncBoot()
 			try await app.initializeUserCache(app)
-			for (token, expected) in [(member.token, HTTPResponseStatus.ok), (moderator.token, .forbidden), (plain.token, .forbidden)] {
+			for (token, expected) in [
+				(member.token, HTTPResponseStatus.ok), (moderator.token, .forbidden), (plain.token, .forbidden),
+			] {
 				try await app.test(
 					.GET,
 					"/api/v3/fez/owner?foruser=communitysupport",

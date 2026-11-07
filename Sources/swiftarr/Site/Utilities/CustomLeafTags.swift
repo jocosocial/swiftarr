@@ -145,7 +145,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 			let mention = String(modifiedText[range])
 			let username = String(mention.dropFirst())  // Drop the initial "@"
 			let linkStyle =
-				["admin", "THO", "TwitarrTeam", "moderator"].contains(username) ? "link-danger" : "link-primary"
+				["admin", "THO", "TwitarrTeam", "moderator", "CommunitySupport"].contains(username) ? "link-danger" : "link-primary"
 			let link = "<a class=\"\(linkStyle)\" href=\"/username/\(username)\">\(mention)</a>"
 			modifiedText.replaceSubrange(range, with: link)
 		}
@@ -618,7 +618,7 @@ struct UserBylineTag: UnsafeUnescapedLeafTag {
 		let shortStyle = stylingSearch(style: "short", in: &styling)
 		let nolinkStyle = stylingSearch(style: "nolink", in: &styling)
 		let pronounStyle = stylingSearch(style: "pronoun", in: &styling)
-		if ["admin", "THO", "TwitarrTeam", "moderator"].contains(username) {
+		if ["admin", "THO", "TwitarrTeam", "moderator", "CommunitySupport"].contains(username) {
 			styling.append(" text-danger")
 		}
 		if nolinkStyle {

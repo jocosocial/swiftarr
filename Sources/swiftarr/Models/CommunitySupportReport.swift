@@ -137,7 +137,8 @@ extension CommunitySupportReport {
 			("What happened", experienceDescription),
 			("Preferred outcome", preferredOutcome),
 			("Lived experiences", livedExperiences),
-		].filter { !$0.1.isEmpty }
+		]
+		.filter { !$0.1.isEmpty }
 		let link = "/communitysupport/report/\(id?.uuidString ?? "")"
 		let truncationNote = "(Long fields were cut short. See the full report: \(link))"
 		let footer = "\nFull report: \(link)"

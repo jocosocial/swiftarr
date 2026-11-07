@@ -114,7 +114,8 @@ class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 	func testValidationRequiresTheRequiredFields() throws {
 		let decoder = ValidatingJSONDecoder()
 		func errors(_ json: String) throws -> [String] {
-			try decoder.validate(CommunitySupportReportCreateData.self, from: json.data(using: .utf8)!)?.validationFailures.map { $0.errorString } ?? []
+			try decoder.validate(CommunitySupportReportCreateData.self, from: json.data(using: .utf8)!)?
+				.validationFailures.map { $0.errorString } ?? []
 		}
 		let base = """
 			"reporterExperienced":true,"reporterWitnessed":false,"intent":"followUp","mayContact":true
@@ -141,7 +142,9 @@ class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 			{"memberName":"Pat","experienceTime":"now","experienceLocation":"here","experienceDescription":"x",
 			"reporterExperienced":true,"reporterWitnessed":false,"intent":"whatever","mayContact":true}
 			"""#
-		XCTAssertThrowsError(try ValidatingJSONDecoder().validate(CommunitySupportReportCreateData.self, from: json.data(using: .utf8)!))
+		XCTAssertThrowsError(
+			try ValidatingJSONDecoder().validate(CommunitySupportReportCreateData.self, from: json.data(using: .utf8)!)
+		)
 	}
 
 	func testInfoOnlyIntentStartsAsInfoOnlyStatus() {
@@ -201,7 +204,10 @@ class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 		try await withApp { app in
 			let f = try await makeFixture(app)
 			let report = try await fileReport(app, f)
-			let paths = ["/api/v3/communitysupport/reports", "/api/v3/communitysupport/report/\(report.id)", "/api/v3/communitysupport/actionlog"]
+			let paths = [
+				"/api/v3/communitysupport/reports", "/api/v3/communitysupport/report/\(report.id)",
+				"/api/v3/communitysupport/actionlog",
+			]
 			for path in paths {
 				for (token, expected) in [
 					(f.memberToken, HTTPResponseStatus.ok), (f.ttToken, .ok), (f.thoToken, .ok),
@@ -265,7 +271,9 @@ class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 				"/api/v3/communitysupport/report/\(report.id)/status",
 				headers: bearer(f.ttToken),
 				beforeRequest: { req throws in
-					try req.content.encode(CommunitySupportStatusChangeData(status: .inProgress, note: "Calling them back"))
+					try req.content.encode(
+						CommunitySupportStatusChangeData(status: .inProgress, note: "Calling them back")
+					)
 				},
 				afterResponse: { res async throws in
 					XCTAssertEqual(res.status, .ok)
@@ -277,7 +285,8 @@ class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 				.POST,
 				"/api/v3/communitysupport/report/\(report.id)/note",
 				headers: bearer(f.memberToken),
-				beforeRequest: { req throws in try req.content.encode(CommunitySupportNoteData(note: "Reached them.")) },
+				beforeRequest: { req throws in try req.content.encode(CommunitySupportNoteData(note: "Reached them."))
+				},
 				afterResponse: { res async throws in XCTAssertEqual(res.status, .ok) }
 			)
 			try await app.test(
@@ -325,7 +334,9 @@ class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 				.POST,
 				"/api/v3/communitysupport/report/\(report.id)/status",
 				headers: bearer(f.memberToken),
-				beforeRequest: { req throws in try req.content.encode(CommunitySupportStatusChangeData(status: .new, note: nil)) },
+				beforeRequest: { req throws in
+					try req.content.encode(CommunitySupportStatusChangeData(status: .new, note: nil))
+				},
 				afterResponse: { res async throws in XCTAssertEqual(res.status, .badRequest) }
 			)
 			try await app.test(
@@ -354,7 +365,10 @@ class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 			let category = try await forum?.$category.get(on: app.db)
 			XCTAssertEqual(category?.requiredRole, .communitysupport)
 			let post = try await forum?.$posts.query(on: app.db).first()
-			XCTAssertTrue(post?.text.contains("Something happened near the pool.") ?? false, "first post is a copy of the report")
+			XCTAssertTrue(
+				post?.text.contains("Something happened near the pool.") ?? false,
+				"first post is a copy of the report"
+			)
 			XCTAssertTrue(post?.text.contains("/communitysupport/report/\(report.id)") ?? false)
 
 			try await app.test(
@@ -368,7 +382,9 @@ class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 				}
 			)
 			// Role holders and TwitarrTeam can open the thread; a plain moderator can't.
-			for (token, expected) in [(f.memberToken, HTTPResponseStatus.ok), (f.ttToken, .ok), (f.moderatorToken, .notFound)] {
+			for (token, expected) in [
+				(f.memberToken, HTTPResponseStatus.ok), (f.ttToken, .ok), (f.moderatorToken, .notFound),
+			] {
 				try await app.test(
 					.GET,
 					"/api/v3/forum/\(first.forumID)",
@@ -387,7 +403,11 @@ class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 			async let b = startDiscussion(app, token: f.ttToken, reportID: report.id)
 			let (first, second) = try await (a, b)
 			XCTAssertEqual(first.forumID, second.forumID)
-			XCTAssertEqual([first.created, second.created].filter { $0 }.count, 1, "exactly one request should create the thread")
+			XCTAssertEqual(
+				[first.created, second.created].filter { $0 }.count,
+				1,
+				"exactly one request should create the thread"
+			)
 		}
 	}
 
@@ -435,7 +455,9 @@ class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 }
 
 /// Asks for a report's discussion thread. A free function (rather than a test-case method) so tests can call it concurrently with `async let`.
-private func startDiscussion(_ app: Application, token: String, reportID: UUID) async throws -> CommunitySupportDiscussionData {
+private func startDiscussion(_ app: Application, token: String, reportID: UUID) async throws
+	-> CommunitySupportDiscussionData
+{
 	var headers = HTTPHeaders()
 	headers.bearerAuthorization = BearerAuthorization(token: token)
 	var result: CommunitySupportDiscussionData?

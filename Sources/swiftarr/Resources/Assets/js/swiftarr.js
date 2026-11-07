@@ -992,6 +992,9 @@ function syncSeamailCreatorName() {
 	else if (selected === 'twitarrteam') {
 		name = creatorName.dataset.usernameTwitarrteam;
 	}
+	else if (selected === 'communitysupport') {
+		name = creatorName.dataset.usernameCommunitysupport;
+	}
 	creatorName.textContent = '@' + name;
 }
 for (let radio of document.querySelectorAll('input[name="postAs"]')) {

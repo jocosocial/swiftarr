@@ -40,7 +40,11 @@ public struct CommunitySupportReportCreateData: Content {
 extension CommunitySupportReportCreateData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
-		tester.validate(!memberName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, forKey: .memberName, or: "member name is required")
+		tester.validate(
+			!memberName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+			forKey: .memberName,
+			or: "member name is required"
+		)
 		tester.validate(memberName.count <= 100, forKey: .memberName, or: "member name has a 100 character limit")
 		tester.validate(
 			!experienceTime.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
@@ -53,7 +57,11 @@ extension CommunitySupportReportCreateData: RCFValidatable {
 			forKey: .experienceLocation,
 			or: "location is required"
 		)
-		tester.validate(experienceLocation.count <= 200, forKey: .experienceLocation, or: "location has a 200 character limit")
+		tester.validate(
+			experienceLocation.count <= 200,
+			forKey: .experienceLocation,
+			or: "location has a 200 character limit"
+		)
 		tester.validate(
 			!experienceDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
 			forKey: .experienceDescription,
@@ -64,12 +72,32 @@ extension CommunitySupportReportCreateData: RCFValidatable {
 			forKey: .experienceDescription,
 			or: "description has a 10000 character limit"
 		)
-		tester.validate((preferredOutcome ?? "").count <= 5_000, forKey: .preferredOutcome, or: "preferred outcome has a 5000 character limit")
-		tester.validate((livedExperiences ?? "").count <= 5_000, forKey: .livedExperiences, or: "lived experiences has a 5000 character limit")
-		tester.validate((reporterName ?? "").count <= 100, forKey: .reporterName, or: "reporter name has a 100 character limit")
-		tester.validate((reporterHandleText ?? "").count <= 100, forKey: .reporterHandleText, or: "reporter handle has a 100 character limit")
+		tester.validate(
+			(preferredOutcome ?? "").count <= 5_000,
+			forKey: .preferredOutcome,
+			or: "preferred outcome has a 5000 character limit"
+		)
+		tester.validate(
+			(livedExperiences ?? "").count <= 5_000,
+			forKey: .livedExperiences,
+			or: "lived experiences has a 5000 character limit"
+		)
+		tester.validate(
+			(reporterName ?? "").count <= 100,
+			forKey: .reporterName,
+			or: "reporter name has a 100 character limit"
+		)
+		tester.validate(
+			(reporterHandleText ?? "").count <= 100,
+			forKey: .reporterHandleText,
+			or: "reporter handle has a 100 character limit"
+		)
 		tester.validate((reporterCabin ?? "").count <= 50, forKey: .reporterCabin, or: "cabin has a 50 character limit")
-		tester.validate((subjectName ?? "").count <= 100, forKey: .subjectName, or: "subject name has a 100 character limit")
+		tester.validate(
+			(subjectName ?? "").count <= 100,
+			forKey: .subjectName,
+			or: "subject name has a 100 character limit"
+		)
 	}
 }
 
@@ -99,7 +127,11 @@ public struct CommunitySupportNoteData: Content {
 extension CommunitySupportNoteData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
-		tester.validate(!note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, forKey: .note, or: "note cannot be empty")
+		tester.validate(
+			!note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+			forKey: .note,
+			or: "note cannot be empty"
+		)
 		tester.validate(note.count <= 5_000, forKey: .note, or: "note has a 5000 character limit")
 	}
 }

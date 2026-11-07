@@ -17,11 +17,19 @@ struct CommunitySupportController: APIRouteCollection {
 		let baseRoutes = app.grouped("api", "v3", "communitysupport")
 
 		// Filing a report is for the team only; TwitarrTeam can read but not write on the team's behalf.
-		let memberAuthGroup = baseRoutes.tokenRoutes(feature: .communitySupport, minAccess: .admin, allowedRoles: [.communitysupport])
+		let memberAuthGroup = baseRoutes.tokenRoutes(
+			feature: .communitySupport,
+			minAccess: .admin,
+			allowedRoles: [.communitysupport]
+		)
 		memberAuthGroup.post("report", use: createReportHandler)
 
 		// Everything else: role holders, or TwitarrTeam and above.
-		let teamAuthGroup = baseRoutes.tokenRoutes(feature: .communitySupport, minAccess: .twitarrteam, allowedRoles: [.communitysupport])
+		let teamAuthGroup = baseRoutes.tokenRoutes(
+			feature: .communitySupport,
+			minAccess: .twitarrteam,
+			allowedRoles: [.communitysupport]
+		)
 		teamAuthGroup.get("reports", use: reportsHandler)
 		teamAuthGroup.get("report", reportIDParam, use: reportHandler)
 		teamAuthGroup.post("report", reportIDParam, "status", use: statusHandler)
@@ -70,7 +78,12 @@ struct CommunitySupportController: APIRouteCollection {
 		let report = CommunitySupportReport(author: cacheUser.userID, data: data)
 		let action = try await req.db.transaction { db -> CommunitySupportAction in
 			try await report.save(on: db)
-			let action = CommunitySupportAction(actor: cacheUser.userID, report: try report.requireID(), type: .reportCreated, newStatus: report.status)
+			let action = CommunitySupportAction(
+				actor: cacheUser.userID,
+				report: try report.requireID(),
+				type: .reportCreated,
+				newStatus: report.status
+			)
 			try await action.save(on: db)
 			return action
 		}
@@ -108,9 +121,16 @@ struct CommunitySupportController: APIRouteCollection {
 		let reports = try await query.copy().sort(\.$createdAt, .descending).range(pagination.range).all()
 		let liveForums = try await liveForumIDs(for: reports, on: req.db)
 		let items = try reports.map {
-			try CommunitySupportReportListData($0, hasDiscussion: $0.$forum.id.map { liveForums.contains($0) } ?? false, on: req)
+			try CommunitySupportReportListData(
+				$0,
+				hasDiscussion: $0.$forum.id.map { liveForums.contains($0) } ?? false,
+				on: req
+			)
 		}
-		return Paginated(items: items, paginator: Paginator(total: total, start: pagination.start, limit: pagination.limit))
+		return Paginated(
+			items: items,
+			paginator: Paginator(total: total, start: pagination.start, limit: pagination.limit)
+		)
 	}
 
 	/// `GET /api/v3/communitysupport/report/:report_id`
@@ -152,7 +172,8 @@ struct CommunitySupportController: APIRouteCollection {
 				oldStatus: oldStatus,
 				newStatus: data.status,
 				note: note
-			).save(on: db)
+			)
+			.save(on: db)
 		}
 		return try await buildReportData(report, on: req)
 	}
@@ -173,7 +194,8 @@ struct CommunitySupportController: APIRouteCollection {
 			report: try report.requireID(),
 			type: .noteAdded,
 			note: data.note.trimmingCharacters(in: .whitespacesAndNewlines)
-		).save(on: req.db)
+		)
+		.save(on: req.db)
 		return try await buildReportData(report, on: req)
 	}
 
@@ -187,7 +209,8 @@ struct CommunitySupportController: APIRouteCollection {
 	func discussionHandler(_ req: Request) async throws -> CommunitySupportDiscussionData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		try guardCanAccess(cacheUser)
-		let reportID = try UUID(uuidString: req.parameters.get(reportIDParam.paramString) ?? "")
+		let reportID =
+			try UUID(uuidString: req.parameters.get(reportIDParam.paramString) ?? "")
 			?? { throw Abort(.badRequest, reason: "Request parameter \(reportIDParam.paramString) is missing.") }()
 		// Serialize per report, so two people clicking at once get one thread. This is deliberately not a database transaction: starting the thread
 		// takes more connections from the (small) pool, and holding one open across that can deadlock concurrent requests. It's an in-process lock,
@@ -217,21 +240,24 @@ struct CommunitySupportController: APIRouteCollection {
 		if let existingID = report.$forum.id, try await Forum.find(existingID, on: req.db) != nil {
 			return CommunitySupportDiscussionData(forumID: existingID, created: false)
 		}
-		guard let category = try await Category.query(on: req.db).filter(\.$requiredRole == .communitysupport).first() else {
+		guard let category = try await Category.query(on: req.db).filter(\.$requiredRole == .communitysupport).first()
+		else {
 			throw Abort(.internalServerError, reason: "The Community Support forum category doesn't exist.")
 		}
-		let (forum, _) = try await ForumController().createForum(
-			in: category,
-			title: report.discussionTitle(),
-			text: report.discussionPostText(),
-			effectiveAuthor: cacheUser,
-			actingUser: cacheUser,
-			on: req
-		)
+		let (forum, _) = try await ForumController()
+			.createForum(
+				in: category,
+				title: report.discussionTitle(),
+				text: report.discussionPostText(),
+				effectiveAuthor: cacheUser,
+				actingUser: cacheUser,
+				on: req
+			)
 		let forumID = try forum.requireID()
 		report.$forum.id = forumID
 		try await report.save(on: req.db)
-		try await CommunitySupportAction(actor: cacheUser.userID, report: reportID, type: .discussionStarted).save(on: req.db)
+		try await CommunitySupportAction(actor: cacheUser.userID, report: reportID, type: .discussionStarted)
+			.save(on: req.db)
 		return CommunitySupportDiscussionData(forumID: forumID, created: true)
 	}
 
@@ -248,9 +274,13 @@ struct CommunitySupportController: APIRouteCollection {
 		try guardCanAccess(cacheUser)
 		let pagination = Pagination(on: req, maxPageSize: 200)
 		let total = try await CommunitySupportAction.query(on: req.db).count()
-		let actions = try await CommunitySupportAction.query(on: req.db).sort(\.$createdAt, .descending).range(pagination.range).all()
+		let actions = try await CommunitySupportAction.query(on: req.db).sort(\.$createdAt, .descending)
+			.range(pagination.range).all()
 		let items = try actions.map { try CommunitySupportActionData($0, on: req) }
-		return Paginated(items: items, paginator: Paginator(total: total, start: pagination.start, limit: pagination.limit))
+		return Paginated(
+			items: items,
+			paginator: Paginator(total: total, start: pagination.start, limit: pagination.limit)
+		)
 	}
 
 	/// `GET /api/v3/communitysupport/export`
@@ -279,7 +309,8 @@ struct CommunitySupportController: APIRouteCollection {
 			report: nil,
 			type: .reportsExported,
 			note: "\(result.count) reports"
-		).save(on: req.db)
+		)
+		.save(on: req.db)
 		return result
 	}
 

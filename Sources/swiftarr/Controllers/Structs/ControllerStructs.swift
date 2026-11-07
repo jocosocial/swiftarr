@@ -695,9 +695,14 @@ extension FezContentData: RCFValidatable {
 			}
 		}
 		tester.validate(
-			[createdByModerator, createdByTwitarrTeam, createdByCommunitySupport].filter { $0 == true }.count <= 1,
+			!(createdByModerator == true && createdByTwitarrTeam == true),
 			forKey: .createdByModerator,
-			or: "cannot create as more than one of @moderator, @TwitarrTeam, and @CommunitySupport"
+			or: "cannot create as both @moderator and @TwitarrTeam"
+		)
+		tester.validate(
+			!(createdByCommunitySupport == true && (createdByModerator == true || createdByTwitarrTeam == true)),
+			forKey: .createdByCommunitySupport,
+			or: "cannot create as @CommunitySupport and another account at the same time"
 		)
 	}
 }
@@ -2153,9 +2158,14 @@ extension PostContentData: RCFValidatable {
 		let lines = text.replacingOccurrences(of: "\r\n", with: "\r").components(separatedBy: .newlines).count
 		tester.validate(lines <= 25, forKey: .text, or: "posts are limited to 25 lines of text")
 		tester.validate(
-			[postAsModerator, postAsTwitarrTeam, postAsCommunitySupport].filter { $0 }.count <= 1,
+			!(postAsModerator && postAsTwitarrTeam),
 			forKey: .postAsModerator,
-			or: "cannot post as more than one of @moderator, @TwitarrTeam, and @CommunitySupport"
+			or: "cannot post as both @moderator and @TwitarrTeam"
+		)
+		tester.validate(
+			!(postAsCommunitySupport && (postAsModerator || postAsTwitarrTeam)),
+			forKey: .postAsCommunitySupport,
+			or: "cannot post as @CommunitySupport and another account at the same time"
 		)
 	}
 }

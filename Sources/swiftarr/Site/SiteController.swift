@@ -210,6 +210,7 @@ struct MessagePostContext: Encodable {
 	var isEdit: Bool = false
 	var postAsModerator: Bool = false
 	var postAsTwitarrTeam: Bool = false
+	var postAsCommunitySupport: Bool = false
 	var postAsUser: String = "self"
 
 	// Used as an parameter to the initializer
@@ -385,6 +386,7 @@ struct MessagePostContext: Encodable {
 		let mailbox = SeamailCreateMailbox(foruser: foruser)
 		postAsModerator = mailbox.postAsModerator
 		postAsTwitarrTeam = mailbox.postAsTwitarrTeam
+		postAsCommunitySupport = mailbox.postAsCommunitySupport
 	}
 
 	/// Post-as controls are only available when creating an announcement; edits keep the existing author.
@@ -446,7 +448,8 @@ extension MessagePostFormContent {
 			text: postText ?? "",
 			images: images,
 			postAsModerator: postAs?.lowercased() == PrivilegedUser.moderator.queryParam,
-			postAsTwitarrTeam: postAs?.lowercased() == PrivilegedUser.TwitarrTeam.queryParam
+			postAsTwitarrTeam: postAs?.lowercased() == PrivilegedUser.TwitarrTeam.queryParam,
+			postAsCommunitySupport: postAs?.lowercased() == PrivilegedUser.CommunitySupport.queryParam
 		)
 		return postContent
 	}
