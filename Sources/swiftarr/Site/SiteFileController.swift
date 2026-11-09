@@ -21,6 +21,16 @@ struct SiteFileController: SiteControllerUtils {
 		app.get("favicon.ico", use: streamFavicon)
 		app.get(".well-known", "apple-app-site-association", use: streamAppleAppSiteAssociation)
 		app.get(".well-known", "assetlinks.json", use: streamAssetLinks)
+		app.get("robots.txt", use: getRobotsTxt)
+	}
+
+	// `GET /robots.txt`
+	//
+	// Asks all crawlers to stay away from the entire site.
+	func getRobotsTxt(_ req: Request) -> Response {
+		var headers = HTTPHeaders()
+		headers.contentType = .plainText
+		return Response(status: .ok, headers: headers, body: .init(string: "User-agent: *\nDisallow: /\n"))
 	}
 
 	// `GET /css/:catchall`
