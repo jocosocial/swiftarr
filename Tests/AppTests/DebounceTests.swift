@@ -30,7 +30,7 @@ extension DebounceTests {
 	}
 }
 
-@Suite
+@Suite(.serialized)
 final class ForumPostDebounceTests: SwiftarrBaseTest, DebounceTests {
     struct Fixture {
         var category: Category
@@ -210,7 +210,7 @@ final class ForumPostDebounceTests: SwiftarrBaseTest, DebounceTests {
     }
 }
 
-@Suite
+@Suite(.serialized)
 final class FezPostDebounceTests: SwiftarrBaseTest, DebounceTests {
     struct Fixture {
         var fez: FriendlyFez
