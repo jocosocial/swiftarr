@@ -197,6 +197,7 @@ struct AddDebounceConstraint<T: Debouncable> : AsyncMigration {
             let txSql = tx as! SQLDatabase
             
             try await txSql.raw("CREATE EXTENSION IF NOT EXISTS btree_gist;").run()
+            try await txSql.raw("CREATE EXTENSION IF NOT EXISTS pgcrypto;").run()
             try await txSql.raw("ALTER TABLE \(unsafeRaw: T.schema) ADD COLUMN IF NOT EXISTS \(unsafeRaw: T.debounceUntilKey.description) TIMESTAMPTZ;").run()
 
             // Trigger to set debounce_until automatically.
@@ -223,7 +224,7 @@ struct AddDebounceConstraint<T: Debouncable> : AsyncMigration {
             // Build the compound exclusion string dynamically
             let gistFieldsSql = (
                 T.parentFieldKeys.map { "\($0) WITH =" } +
-                T.contentFieldKeys.map { "md5(\($0)) WITH =" }).joined(separator: ", ")
+                T.contentFieldKeys.map { "digest(\($0), 'sha256') WITH =" }).joined(separator: ", ")
             
             // Add constraint.
             try await txSql.raw("""
