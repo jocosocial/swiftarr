@@ -1098,7 +1098,6 @@ struct ForumController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "users cannot create forums in category")
 		}
 		try guardUserCanAccessCategory(cacheUser, category: category)
-		try guardCategoryAllowsImages(data.firstPost.images, category: category)
 		// process images
 		let imageFilenames = try await self.processImages(data.firstPost.images, usage: .forumPost, maxImages: Settings.shared.getMaxForumPostImages(for: cacheUser), on: req)
 		let effectiveAuthor = data.firstPost.effectiveAuthor(actualAuthor: cacheUser, on: req)
@@ -1207,9 +1206,8 @@ struct ForumController: APIRouteCollection {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let data = try req.content.decode(ReportData.self)
 		let forum = try await Forum.findFromParameter(forumIDParam, on: req) { query in
-			query.categoryAccessFilter(for: cacheUser).with(\.$category)
+			query.categoryAccessFilter(for: cacheUser)
 		}
-		try guardCategoryAllowsReports(forum.category)
 		return try await forum.fileReport(submitter: cacheUser, submitterMessage: data.message, on: req)
 	}
 
@@ -1303,7 +1301,6 @@ struct ForumController: APIRouteCollection {
 			query.with(\.$category)
 		}
 		try guardUserCanAccessCategory(cacheUser, category: forum.category)
-		try guardCategoryAllowsImages(newPostData.images, category: forum.category)
 		try guardUserCanPostInForum(cacheUser, in: forum)
 		// ensure user has access to forum; user cannot retrieve block-owned forum, but prevent end-run
 		guard !cacheUser.getBlocks().contains(forum.$creator.id) else {
@@ -1377,7 +1374,6 @@ struct ForumController: APIRouteCollection {
 			}
 		}
 		try guardUserCanAccessCategory(cacheUser, category: post.forum.category)
-		try guardCategoryAllowsReports(post.forum.category)
 		return try await post.fileReport(submitter: cacheUser, submitterMessage: data.message, on: req)
 	}
 
@@ -1491,7 +1487,6 @@ struct ForumController: APIRouteCollection {
 		}
 		// Ensure use can view items in this category
 		try guardUserCanAccessCategory(cacheUser, category: post.forum.category)
-		try guardCategoryAllowsImages(newPostData.images, category: post.forum.category)
 		// ensure user has write access, the post can be modified by them, and the forum isn't locked.
 		try guardUserCanPostInForum(cacheUser, in: post.forum, editingPost: post)
 		// process images
@@ -1611,22 +1606,6 @@ extension ForumController {
 		}
 	}
 
-	/// Rejects image attachments for posts in a category that `isRestrictedBeyondModerators`. Image files are served by filename
-	/// with no check of which post owns them, so a private category can't hold any.
-	func guardCategoryAllowsImages(_ images: [ImageUploadData], category: Category) throws {
-		if !images.isEmpty, category.isRestrictedBeyondModerators {
-			throw Abort(.badRequest, reason: "Images can't be attached to posts in this forum category.")
-		}
-	}
-
-	/// Rejects reports on forums and posts in a category that `isRestrictedBeyondModerators`. The moderator report queue is visible to
-	/// moderators, who aren't allowed to see this content.
-	func guardCategoryAllowsReports(_ category: Category) throws {
-		if category.isRestrictedBeyondModerators {
-			throw Abort(.forbidden, reason: "Content in this forum category can't be reported. Contact a TwitarrTeam member instead.")
-		}
-	}
-
 	/// Ensures the given user has appropriate access to create or edit posts in the given forum. If editing a post, you must pass the post in the `editingPost` parameter.
 	func guardUserCanPostInForum(_ user: UserCacheData, in forum: Forum, editingPost: ForumPost? = nil) throws {
 		if let post = editingPost {
@@ -1644,13 +1623,15 @@ extension ForumController {
 	}
 
 	/// Ensures the given user has the required access to view forums and posts in the given category.
-	/// A user who lacks the category's required role gets a 404 rather than a 403, so that probing IDs can't confirm
-	/// that a forum or post exists inside a role-gated category. Role-gated visibility is decided by `UserRoleType.canView`.
 	func guardUserCanAccessCategory(_ user: UserCacheData, category: Category) throws {
 		guard user.accessLevel.hasAccess(category.accessLevelToView) else {
 			throw Abort(.forbidden, reason: "User cannot view this forum category.")
 		}
-		try category.guardRoleAccess(for: user)
+		if !user.accessLevel.hasAccess(.moderator), let requiredRole = category.requiredRole {
+			guard user.userRoles.contains(requiredRole) else {
+				throw Abort(.forbidden, reason: "User does not have role to view this forum category.")
+			}
+		}
 	}
 
 	/// Returns a dictionary mapping ForumIDs to ForumPosts, where each ForumPost is the last post made in its Forum by a user who isn't blocked or muted.
@@ -1953,7 +1934,7 @@ extension ForumController {
 				if !user.accessLevel.hasAccess(accessLevelToView) {
 					return nil
 				}
-				if let role = role, !role.canView(accessLevel: user.accessLevel, roles: user.userRoles) {
+				if !user.accessLevel.hasAccess(.moderator), let role = role, !user.userRoles.contains(role) {
 					return nil
 				}
 				return user.userID
@@ -1970,20 +1951,19 @@ extension ForumController {
 					try await subtractNotifications(users: subtractUUIDs, type: .forumMention(postID), on: req)
 				}
 				if subtracts.map({ $0.lowercased() }).contains("twitarrteam") {
-					let ttMembers = req.userCache.allUsersWithAccessLevel(.twitarrteam).filter { canUserAccessCategory($0) != nil }
+					let ttMembers = req.userCache.allUsersWithAccessLevel(.twitarrteam)
 					group.addTask {
 						try await subtractNotifications(users: ttMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .twitarrTeamForumMention(postID), on: req)
 					}
 				}
 				if subtracts.map({ $0.lowercased()}).contains("moderator") {
-					// Group mentions only reach members who can see the post's category; plain moderators can't see Community Support's.
-					let modMembers = req.userCache.allUsersWithAccessLevel(.moderator).filter { canUserAccessCategory($0) != nil }
+					let modMembers = req.userCache.allUsersWithAccessLevel(.moderator)
 					group.addTask {
 						try await subtractNotifications(users: modMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .moderatorForumMention(postID), on: req)
 					}
 				}
 				if subtracts.map({ $0.lowercased() }).contains(PrivilegedUser.CommunitySupport.queryParam) {
-					let csMembers = communitySupportMembers(on: req).filter { canUserAccessCategory($0) != nil }
+					let csMembers = communitySupportMembers(on: req)
 					group.addTask {
 						try await subtractNotifications(users: csMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .communitySupportForumMention(postID), on: req)
 					}
@@ -2000,21 +1980,21 @@ extension ForumController {
 					try await addNotifications(users: addUUIDs, type: .forumMention(postID, forumID), info: infoStr, on: req)
 				}
 				if adds.map({ $0.lowercased() }).contains("twitarrteam") {
-					let ttMembers = req.userCache.allUsersWithAccessLevel(.twitarrteam).filter { canUserAccessCategory($0) != nil }
+					let ttMembers = req.userCache.allUsersWithAccessLevel(.twitarrteam)
 					let infoStr = "\(authorText) wrote a forum post that @mentioned twitarrteam."
 					group.addTask {
 						try await addNotifications(users: ttMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .twitarrTeamForumMention(postID, forumID), info: infoStr, on: req)
 					}
 				}
 				if adds.map({ $0.lowercased()}).contains("moderator") {
-					let modMembers = req.userCache.allUsersWithAccessLevel(.moderator).filter { canUserAccessCategory($0) != nil }
+					let modMembers = req.userCache.allUsersWithAccessLevel(.moderator)
 					let infoStr = "\(authorText) wrote a forum post that @mentioned moderator."
 					group.addTask {
 						try await addNotifications(users: modMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .moderatorForumMention(postID, forumID), info: infoStr, on: req)
 					}
 				}
 				if adds.map({ $0.lowercased() }).contains(PrivilegedUser.CommunitySupport.queryParam) {
-					let csMembers = communitySupportMembers(on: req).filter { canUserAccessCategory($0) != nil }
+					let csMembers = communitySupportMembers(on: req)
 					let infoStr = "\(authorText) wrote a forum post that @mentioned CommunitySupport."
 					group.addTask {
 						try await addNotifications(users: csMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .communitySupportForumMention(postID, forumID), info: infoStr, on: req)
@@ -2122,13 +2102,15 @@ extension QueryBuilder {
 				.filter(Category.self, \.$requiredRole == nil)
 		}
 		self.filter(Category.self, \Category.$accessLevelToView <= user.accessLevel)
-		// Roles whose gated categories this user can see: ones they hold, plus ones their access level bypasses (see `UserRoleType.canView`).
-		let visibleRoles = UserRoleType.allCases.filter { $0.canView(accessLevel: user.accessLevel, roles: user.userRoles) }
-		if visibleRoles.isEmpty {
+		if user.accessLevel >= .moderator {
+			return self
+		}
+		if user.userRoles.isEmpty {
 			return self.filter(Category.self, \.$requiredRole == nil)
 		}
+
 		return self.group(.or) { group in
-			group.filter(Category.self, \.$requiredRole == nil).filter(Category.self, \.$requiredRole ~~ visibleRoles)
+			group.filter(Category.self, \.$requiredRole == nil).filter(Category.self, \.$requiredRole ~~ user.userRoles)
 		}
 	}
 

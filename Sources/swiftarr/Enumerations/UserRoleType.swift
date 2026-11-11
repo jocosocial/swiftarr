@@ -33,21 +33,6 @@ enum UserRoleType: String, CaseIterable, Codable {
 	/// and read the shared @CommunitySupport seamail mailbox. TwitarrTeam and above have the same access without needing the role.
 	case communitysupport
 
-	/// The lowest access level that sees role-gated content without holding the role itself. Most roles let any moderator through (see the
-	/// "Moderators and above" note above); Community Support content is more sensitive, so it requires TwitarrTeam.
-	var categoryBypassLevel: UserAccessLevel {
-		switch self {
-		case .communitysupport: return .twitarrteam
-		default: return .moderator
-		}
-	}
-
-	/// Whether a user with the given access level and roles may view content gated on this role: they hold the role, or their access level
-	/// reaches `categoryBypassLevel`. This is the single rule behind category access checks, mention fan-out, and moderation views.
-	func canView(accessLevel: UserAccessLevel, roles: Set<UserRoleType>) -> Bool {
-		roles.contains(self) || accessLevel.hasAccess(categoryBypassLevel)
-	}
-
 	/// `.label` returns consumer-friendly case names.
 	var label: String {
 		switch self {

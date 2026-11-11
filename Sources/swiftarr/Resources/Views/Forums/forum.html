@@ -82,7 +82,7 @@
 								</div>
 								<!-- @TODO factor in isOwner -->
 								<div class="col btn-group btn-group-sm" role="group" aria-label="Post moderator actions">
-									#if(showModLink):
+									#if(trunk.userIsMod):
 										<a class="btn btn-outline-primary" href="/moderate/forumpost/#(forumPost.postID)">Mod</a>
 									#endif
 									<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 
@@ -202,9 +202,7 @@
 					</div>
 					#if(trunk.userIsMod):
 					<div class="btn-group btn-group-sm" role="group" aria-label="Forum ModeratorActions">
-						#if(showModLink):
-							<a class="btn btn-outline-primary btn-sm" href="/moderate/forum/#(forum.forumID)">Mod</a>
-						#endif
+						<a class="btn btn-outline-primary btn-sm" href="/moderate/forum/#(forum.forumID)">Mod</a>
 						<input type="checkbox" class="btn-check" autocomplete="off" data-action="pinForum" 
 								data-actionpath="/forum/pin/#(forum.forumID)"
 								data-istoggle="true"
@@ -286,7 +284,7 @@
 								</div>
 								#if(trunk.userIsMod || forum.creator.userID == trunk.userID):
 									<div class="col btn-group btn-group-sm" role="group" aria-label="Post moderator actions">
-										#if(showModLink):
+										#if(trunk.userIsMod):
 											<a class="btn btn-outline-primary" href="/moderate/forumpost/#(forumPost.postID)">Mod</a>
 										#endif
 										<input type="checkbox" class="btn-check" autocomplete="off" data-action="reload" 

@@ -47,10 +47,6 @@ enum CommunitySupportActionType: String, Codable, CaseIterable, Sendable {
 	case statusChanged
 	case discussionStarted
 	case reportsExported
-	/// Someone other than the author edited, deleted, moved, or changed the moderation state of a post or thread in the private forum category. Those
-	/// actions stay out of the moderator log, which plain moderators can read, so they're recorded here instead.
-	case contentModerated
-
 	/// Consumer-friendly name, suitable for showing directly in a client.
 	var label: String {
 		switch self {
@@ -58,7 +54,6 @@ enum CommunitySupportActionType: String, Codable, CaseIterable, Sendable {
 		case .statusChanged: return "Status changed"
 		case .discussionStarted: return "Discussion started"
 		case .reportsExported: return "Reports exported"
-		case .contentModerated: return "Forum content changed"
 		}
 	}
 }

@@ -3,9 +3,8 @@ import XCTVapor
 
 @testable import swiftarr
 
-// Isolation of Community Support content (#517) from people who lose access to it, and from moderators: access that outlives a revoked role,
-// the moderator bypass on posting to a shared-mailbox chat, content-creation guards on discussion threads, the audit trail for changes to
-// the private forum category, and the `hiddenFromModerators` flag clients use to hide the Mod button.
+// Access to Community Support content (#517) for people who lose it: access that outlives a revoked role, replying to a shared-mailbox chat
+// as a non-participant, and the content-creation guards on discussion threads.
 class CommunitySupportIsolationTests: XCTestCase, SwiftarrBaseTest {
 
 	private struct Fixture {
@@ -189,14 +188,16 @@ class CommunitySupportIsolationTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
-	// MARK: - Moderators can't write into the chat either
+	// MARK: - Replying to the mailbox
 
-	func testOnlyMailboxMembersCanPostToASharedMailboxChat() async throws {
+	func testMailboxMembersWhoAreNotParticipantsCanReplyButOutsidersCannot() async throws {
 		try await withApp { app in
 			let f = try await makeFixture(app)
 			let fezID = try await attendeeWritesToTeam(app, f)
+			let outsider = try await makeUser(app, username: "iout-\(UUID().uuidString.prefix(8))", accessLevel: .verified)
+			try await makeRequest(app).userCache.updateUser(outsider.id)
 			for (token, expected) in [
-				(f.moderator.token, HTTPResponseStatus.forbidden), (f.member.token, .ok), (f.tt.token, .ok),
+				(f.member.token, HTTPResponseStatus.ok), (f.tt.token, .ok), (outsider.token, .forbidden),
 			] {
 				try await app.test(
 					.POST,
@@ -260,74 +261,5 @@ class CommunitySupportIsolationTests: XCTestCase, SwiftarrBaseTest {
 			let threads = try await Forum.query(on: app.db).filter(\.$title == report.discussionTitle()).count()
 			XCTAssertEqual(threads, 0)
 		}
-	}
-
-	// MARK: - Audit trail
-
-	func testChangesToOthersContentInThePrivateCategoryAreLoggedForTheTeamNotTheModerators() async throws {
-		try await withApp { app in
-			let f = try await makeFixture(app)
-			let foundCategory = try await Category.query(on: app.db).filter(\.$requiredRole == .communitysupport).first()
-			let category = try XCTUnwrap(foundCategory)
-			var forumID: UUID?
-			try await app.test(
-				.POST,
-				"/api/v3/forum/categories/\(try category.requireID())/create",
-				headers: bearer(f.member.token),
-				beforeRequest: { req throws in
-					try req.content.encode(
-						ForumCreateData(title: "Private thread", firstPost: PostContentData(text: "first", images: []))
-					)
-				},
-				afterResponse: { res async throws in
-					XCTAssertEqual(res.status, .ok)
-					forumID = try res.content.decode(ForumData.self).forumID
-				}
-			)
-			var postID: Int?
-			try await app.test(
-				.POST,
-				"/api/v3/forum/\(try XCTUnwrap(forumID))/create",
-				headers: bearer(f.member.token),
-				beforeRequest: { req throws in try req.content.encode(PostContentData(text: "second", images: [])) },
-				afterResponse: { res async throws in
-					XCTAssertEqual(res.status, .created)
-					postID = try res.content.decode(PostData.self).postID
-				}
-			)
-			let modActionsBefore = try await ModeratorAction.query(on: app.db).count()
-			try await app.test(
-				.POST,
-				"/api/v3/forum/post/\(try XCTUnwrap(postID))/delete",
-				headers: bearer(f.tt.token),
-				afterResponse: { res async throws in XCTAssertEqual(res.status, .noContent) }
-			)
-			let modActionsAfter = try await ModeratorAction.query(on: app.db).count()
-			XCTAssertEqual(modActionsAfter, modActionsBefore, "nothing reaches the moderator log")
-			// Scoped to this test's actor: the database is shared with other tests and earlier runs.
-			let entries = try await CommunitySupportAction.query(on: app.db)
-				.filter(\.$actionType == .contentModerated).filter(\.$actor.$id == f.tt.id).all()
-			XCTAssertEqual(entries.count, 1)
-			XCTAssertNil(entries.first?.$report.id)
-			XCTAssertEqual(entries.first?.note, "delete: forumPost \(try XCTUnwrap(postID))")
-			// Posting as yourself, or deleting your own post, isn't someone else's content and isn't logged.
-			let own = try await CommunitySupportAction.query(on: app.db).filter(\.$actor.$id == f.member.id).count()
-			XCTAssertEqual(own, 0)
-		}
-	}
-
-	// MARK: - Mod button
-
-	func testCategoryDataFlagsCategoriesHiddenFromModerators() throws {
-		let paginator = Paginator(total: 0, start: 0, limit: 50)
-		let hidden = Category(title: "Hidden", purpose: "", requiredRole: .communitysupport)
-		hidden.id = UUID()
-		let shutternauts = Category(title: "Shutternauts", purpose: "", requiredRole: .shutternaut)
-		shutternauts.id = UUID()
-		let plain = Category(title: "Plain", purpose: "")
-		plain.id = UUID()
-		XCTAssertTrue(try CategoryData(hidden, restricted: false, paginator: paginator).hiddenFromModerators)
-		XCTAssertFalse(try CategoryData(shutternauts, restricted: false, paginator: paginator).hiddenFromModerators)
-		XCTAssertFalse(try CategoryData(plain, restricted: false, paginator: paginator).hiddenFromModerators)
 	}
 }

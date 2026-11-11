@@ -92,19 +92,6 @@ extension Forum: Reportable {
 	var authorUUID: UUID { $creator.id }
 
 	var autoQuarantineThreshold: Int { Settings.shared.forumAutoQuarantineThreshold }
-
-	func isInModeratorRestrictedCategory(on db: Database) async throws -> Bool {
-		try await Forum.category(forForumID: requireID(), on: db)?.isRestrictedBeyondModerators ?? false
-	}
-
-	/// Looks up the category containing the given forum, including when the forum or category has been soft-deleted.
-	/// Returns nil if the forum doesn't exist.
-	static func category(forForumID forumID: UUID, on db: Database) async throws -> Category? {
-		guard let forum = try await Forum.query(on: db).filter(\.$id == forumID).withDeleted().first() else {
-			return nil
-		}
-		return try await Category.query(on: db).filter(\.$id == forum.$category.id).withDeleted().first()
-	}
 }
 
 struct CreateForumSchema: AsyncMigration {

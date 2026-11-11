@@ -3,9 +3,8 @@ import XCTVapor
 
 @testable import swiftarr
 
-// Verifies that a forum category gated on the Community Support role never reaches anyone outside role holders and
-// TwitarrTeam-and-above, through any API path. Plain moderators are deliberately excluded (see
-// `UserRoleType.categoryBypassLevel`), and the Shutternauts category must keep its existing moderator access.
+// Verifies that a forum category gated on the Community Support role never reaches users who hold neither the role nor moderator access,
+// through any API path. Like every role-gated category, moderators and above can read it.
 class CommunitySupportForumLeakTests: XCTestCase, SwiftarrBaseTest {
 
 	/// A phrase that appears only in private content, so any response containing it is a leak.
@@ -120,6 +119,29 @@ class CommunitySupportForumLeakTests: XCTestCase, SwiftarrBaseTest {
 		)
 	}
 
+	/// Asserts that a GET is refused (403 or 404, depending on how far the request gets before the category check).
+	private func expectDenied(
+		_ app: Application,
+		_ path: String,
+		token: String?,
+		file: StaticString = #filePath,
+		line: UInt = #line
+	) async throws {
+		try await app.test(
+			.GET,
+			path,
+			headers: bearer(token),
+			afterResponse: { res async throws in
+				XCTAssertTrue(
+					[.forbidden, .notFound].contains(res.status),
+					"GET \(path) was \(res.status)",
+					file: file,
+					line: line
+				)
+			}
+		)
+	}
+
 	/// Asserts that a GET succeeds (or 404s) and its body never mentions private content.
 	private func expectNoSecret(
 		_ app: Application,
@@ -152,20 +174,22 @@ class CommunitySupportForumLeakTests: XCTestCase, SwiftarrBaseTest {
 	func testOutsidersCannotReadPrivateForumOrPost() async throws {
 		try await withApp { app in
 			let f = try await makeFixture(app)
-			for token in [f.verifiedToken, f.moderatorToken] {
-				// Direct fetches are 404, not 403, so a probing user can't confirm an ID exists.
-				try await expectGET(app, "/api/v3/forum/\(f.forumID)", token: token, status: .notFound)
-				try await expectGET(app, "/api/v3/forum/post/\(f.postID)", token: token, status: .notFound)
-				try await expectGET(app, "/api/v3/forum/post/\(f.postID)/forum", token: token, status: .notFound)
-				try await expectGET(app, "/api/v3/forum/\(f.forumID)/pinnedposts", token: token, status: .notFound)
+			for path in [
+				"/api/v3/forum/\(f.forumID)", "/api/v3/forum/post/\(f.postID)", "/api/v3/forum/post/\(f.postID)/forum",
+				"/api/v3/forum/\(f.forumID)/pinnedposts",
+			] {
+				try await expectDenied(app, path, token: f.verifiedToken)
 			}
+			// Other role-gated categories behave the same way: denied without the role, readable by moderators.
+			try await expectDenied(app, "/api/v3/forum/\(f.shutternautForumID)", token: f.verifiedToken)
+			try await expectGET(app, "/api/v3/forum/\(f.shutternautForumID)", token: f.moderatorToken, status: .ok)
 		}
 	}
 
 	func testOutsidersCannotFindPrivateContentThroughListsOrSearch() async throws {
 		try await withApp { app in
 			let f = try await makeFixture(app)
-			for token in [f.verifiedToken, f.moderatorToken] {
+			for token in [f.verifiedToken] {
 				for path in [
 					"/api/v3/forum/search?search=\(secretToken)",
 					"/api/v3/forum/search?search=\(secretToken)&searchposts=true",
@@ -183,89 +207,13 @@ class CommunitySupportForumLeakTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
-	func testRoleHoldersAndTwitarrTeamCanRead() async throws {
+	func testRoleHoldersTwitarrTeamAndModeratorsCanRead() async throws {
 		try await withApp { app in
 			let f = try await makeFixture(app)
-			for token in [f.memberToken, f.twitarrTeamToken] {
+			for token in [f.memberToken, f.twitarrTeamToken, f.moderatorToken] {
 				try await expectGET(app, "/api/v3/forum/\(f.forumID)", token: token, status: .ok)
 				try await expectGET(app, "/api/v3/forum/post/\(f.postID)", token: token, status: .ok)
 			}
-		}
-	}
-
-	func testPrivateContentCannotBeReported() async throws {
-		try await withApp { app in
-			let f = try await makeFixture(app)
-			// The test database isn't emptied between tests, so compare against the starting count.
-			let startingReportCount = try await Report.query(on: app.db).count()
-			for path in ["/api/v3/forum/\(f.forumID)/report", "/api/v3/forum/post/\(f.postID)/report"] {
-				try await app.test(
-					.POST,
-					path,
-					headers: bearer(f.memberToken),
-					beforeRequest: { req throws in try req.content.encode(ReportData(message: "test")) },
-					afterResponse: { res async throws in
-						XCTAssertEqual(res.status, .forbidden, "POST \(path) by a permitted viewer")
-					}
-				)
-			}
-			// A moderator can't see the content to begin with.
-			try await app.test(
-				.POST,
-				"/api/v3/forum/\(f.forumID)/report",
-				headers: bearer(f.moderatorToken),
-				beforeRequest: { req throws in try req.content.encode(ReportData(message: "test")) },
-				afterResponse: { res async throws in XCTAssertEqual(res.status, .notFound) }
-			)
-			let reportCount = try await Report.query(on: app.db).count()
-			XCTAssertEqual(reportCount, startingReportCount, "no report may be filed against private content")
-		}
-	}
-
-	func testModerationToolsHidePrivateContentFromModerators() async throws {
-		try await withApp { app in
-			let f = try await makeFixture(app)
-			try await expectGET(app, "/api/v3/mod/forum/\(f.forumID)", token: f.moderatorToken, status: .notFound)
-			try await expectGET(app, "/api/v3/mod/forumpost/\(f.postID)", token: f.moderatorToken, status: .notFound)
-			try await expectGET(app, "/api/v3/mod/forum/\(f.forumID)", token: f.twitarrTeamToken, status: .ok)
-			try await expectGET(app, "/api/v3/mod/forumpost/\(f.postID)", token: f.twitarrTeamToken, status: .ok)
-		}
-	}
-
-	func testShutternautForumStaysVisibleToModerators() async throws {
-		try await withApp { app in
-			let f = try await makeFixture(app)
-			try await expectGET(app, "/api/v3/forum/\(f.shutternautForumID)", token: f.moderatorToken, status: .ok)
-			try await expectGET(app, "/api/v3/forum/\(f.shutternautForumID)", token: f.verifiedToken, status: .notFound)
-		}
-	}
-
-	// `@moderator` / `@twitarrteam` group mentions must not notify users who can't see the post's category. A plain moderator
-	// would otherwise receive a notification carrying the post and forum IDs of Community Support content.
-	func testGroupMentionsSkipUsersWhoCannotSeeTheCategory() async throws {
-		try await withApp { app in
-			let f = try await makeFixture(app)
-			try await app.test(
-				.POST,
-				"/api/v3/forum/\(f.forumID)/create",
-				headers: bearer(f.memberToken),
-				beforeRequest: { req throws in
-					try req.content.encode(PostContentData(text: "pinging @moderator and @twitarrteam", images: []))
-				},
-				afterResponse: { res async throws in XCTAssertEqual(res.status, .created) }
-			)
-			// The moderator's notification feed must not mention the private post.
-			try await app.test(
-				.GET,
-				"/api/v3/notification/user",
-				headers: bearer(f.moderatorToken),
-				afterResponse: { res async throws in
-					XCTAssertFalse(
-						res.body.string.contains("\(f.forumID)"),
-						"moderator was notified about private content"
-					)
-				}
-			)
 		}
 	}
 
@@ -287,50 +235,6 @@ class CommunitySupportForumLeakTests: XCTestCase, SwiftarrBaseTest {
 				"/api/v3/notification/hashtags/\(secretTag.prefix(8))",
 				afterResponse: { res async throws in
 					XCTAssertFalse(res.body.string.contains(secretTag), "private hashtag leaked into autocomplete")
-				}
-			)
-		}
-	}
-
-	func testPrivateCategoryRejectsImages() async throws {
-		try await withApp { app in
-			let f = try await makeFixture(app)
-			let image = ImageUploadData("existing-file.jpg", nil)
-			try await app.test(
-				.POST,
-				"/api/v3/forum/\(f.forumID)/create",
-				headers: bearer(f.memberToken),
-				beforeRequest: { req throws in
-					try req.content.encode(PostContentData(text: "has an image", images: [image]))
-				},
-				afterResponse: { res async throws in XCTAssertEqual(res.status, .badRequest) }
-			)
-		}
-	}
-
-	// Clients use this to hide their photo pickers, so the server and the UI agree about where images are allowed.
-	func testCategoryListSaysWhereImagesAreAllowed() async throws {
-		try await withApp { app in
-			let f = try await makeFixture(app)
-			try await app.test(
-				.GET,
-				"/api/v3/forum/categories",
-				headers: bearer(f.memberToken),
-				afterResponse: { res async throws in
-					XCTAssertEqual(res.status, .ok)
-					let categories = try res.content.decode([CategoryData].self)
-					let restricted = categories.filter { $0.title.hasPrefix("Community Support") }
-					XCTAssertFalse(restricted.isEmpty)
-					XCTAssertTrue(restricted.allSatisfy { !$0.allowsImages })
-					let shutter = categories.filter { $0.title.hasPrefix("Shutter Test") }
-					XCTAssertTrue(
-						shutter.allSatisfy { $0.allowsImages },
-						"role-gated categories moderators can see still take images"
-					)
-					XCTAssertTrue(
-						categories.filter { $0.title == "Off Topic" || $0.title == "General" }
-							.allSatisfy { $0.allowsImages }
-					)
 				}
 			)
 		}
@@ -361,14 +265,5 @@ class CommunitySupportForumLeakTests: XCTestCase, SwiftarrBaseTest {
 				}
 			)
 		}
-	}
-
-	func testRoleBypassLevels() {
-		XCTAssertEqual(UserRoleType.communitysupport.categoryBypassLevel, .twitarrteam)
-		XCTAssertEqual(UserRoleType.shutternaut.categoryBypassLevel, .moderator)
-		XCTAssertFalse(UserRoleType.communitysupport.canView(accessLevel: .moderator, roles: []))
-		XCTAssertTrue(UserRoleType.communitysupport.canView(accessLevel: .twitarrteam, roles: []))
-		XCTAssertTrue(UserRoleType.communitysupport.canView(accessLevel: .verified, roles: [.communitysupport]))
-		XCTAssertTrue(UserRoleType.shutternaut.canView(accessLevel: .moderator, roles: []))
 	}
 }

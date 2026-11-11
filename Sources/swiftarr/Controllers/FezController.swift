@@ -563,8 +563,7 @@ struct FezController: APIRouteCollection {
 		guard fez.fezType != .personalEvent else {
 			throw Abort(.badRequest, reason: "Personal Events don't have posts.")
 		}
-		// Same rule as reading the chat's members: participants, the members of a privileged mailbox the chat belongs to, and--for chats that
-		// don't include the Community Support mailbox--moderators. A plain moderator can't write into a Community Support chat.
+		// Same rule as reading the chat's members: participants, moderators, and the members of a shared mailbox the chat is addressed to.
 		guard userCanViewMemberData(user: cacheUser, fez: fez, on: req) else {
 			throw Abort(.forbidden, reason: "user is not member of \(fez.fezType.lfgLabel); cannot post")
 		}
@@ -1435,7 +1434,7 @@ extension FezController {
 		let ownerHeader = try req.userCache.getHeader(fez.$owner.id)
 		var fezData: FezData = try FezData(fez: fez, owner: ownerHeader)
 		let userIsMember = pivot != nil && pivot?.deletedAt == nil
-		if userIsMember || (userCanViewMemberData(user: cacheUser, fez: fez, on: req) && fez.fezType != .closed) {
+		if userIsMember || (cacheUser.accessLevel.hasAccess(.moderator) && fez.fezType != .closed) {
 			let allParticipantHeaders = req.userCache.getHeaders(fez.participantArray)
 
 			// masquerade blocked users
@@ -1661,16 +1660,11 @@ extension FezController {
 		}
 	}
 
-	/// Whether the user may see a chat's messages and members: they're a participant, or a moderator. The exception is a chat with the Community Support
-	/// mailbox in it: plain moderators can't see those; only that mailbox's members (Community Support role holders, TwitarrTeam and above) can.
+	/// Whether the user may see a chat's messages and members: they're a participant or a moderator, or they belong to a shared mailbox the
+	/// chat is addressed to (a Community Support role holder isn't a moderator).
 	func userCanViewMemberData(user: UserCacheData, fez: FriendlyFez, on req: Request) -> Bool {
-		if fez.participantArray.contains(user.userID) {
-			return true
-		}
-		if let mailbox = PrivilegedMailbox.forChat(participantArray: fez.participantArray, on: req), mailbox.user == .CommunitySupport {
-			return mailbox.isSatisfied(by: user)
-		}
-		return user.accessLevel.hasAccess(.moderator)
+		return user.accessLevel.hasAccess(.moderator) || fez.participantArray.contains(user.userID)
+			|| PrivilegedMailbox.forChat(participantArray: fez.participantArray, satisfiedBy: user, on: req) != nil
 	}
 
 	/// Resolves and validates the `visibility` to use for a newly-created fez.

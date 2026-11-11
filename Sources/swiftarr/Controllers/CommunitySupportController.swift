@@ -6,7 +6,7 @@ import Vapor
 ///
 /// Community Support team members (holders of `UserRoleType.communitysupport`) file reports about things attendees tell them. Anyone on the team,
 /// and TwitarrTeam and above, can read the reports, change their status, comment on them, and start or open a discussion thread about one in the
-/// private Community Support forum category. Plain moderators have no access. Everything is recorded in an append-only log.
+/// private Community Support forum category. Plain moderators have no access to the reports. Everything is recorded in an append-only log.
 ///
 /// - Important: `allowedRoles` and `minAccess` are OR'd by `MinUserAccessLevelMiddleware`, and `minAccess` defaults to `.banned`--so a
 ///   role-only route that omits `minAccess` would admit every logged-in user. Every route here sets `minAccess` explicitly.

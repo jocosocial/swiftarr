@@ -145,54 +145,6 @@ class CommunitySupportSeamailTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
-	func testModeratorsCannotOpenTheChatThroughModerationTools() async throws {
-		try await withApp { app in
-			let f = try await makeFixture(app)
-			// A team member starts a chat with the attendee, as Community Support, with the first message from the shared account.
-			var createdID: UUID?
-			try await app.test(
-				.POST,
-				"/api/v3/fez/create",
-				headers: bearer(f.memberA.token),
-				beforeRequest: { req throws in
-					try req.content.encode(
-						seamailData(to: [f.attendee.id], createdByCommunitySupport: true, postAsCommunitySupport: true)
-					)
-				},
-				afterResponse: { res async throws in
-					XCTAssertEqual(res.status, .created)
-					createdID = try res.content.decode(FezData.self).fezID
-				}
-			)
-			let fezID = try XCTUnwrap(createdID)
-			try await app.test(
-				.GET,
-				"/api/v3/mod/fez/\(fezID)",
-				headers: bearer(f.moderator.token),
-				afterResponse: { res async throws in XCTAssertEqual(res.status, .notFound) }
-			)
-			try await app.test(
-				.GET,
-				"/api/v3/mod/fez/\(fezID)",
-				headers: bearer(f.tt.token),
-				afterResponse: { res async throws in XCTAssertEqual(res.status, .ok) }
-			)
-			// Seamail chats and messages can't be reported, so there's no report that would justify showing a moderator the chat.
-			let post = try await FezPost.query(on: app.db).filter(\.$fez.$id == fezID).first()
-			let postID = try XCTUnwrap(post?.id)
-			for (token, expected) in [
-				(f.moderator.token, HTTPResponseStatus.notFound), (f.tt.token, .ok), (f.memberA.token, .forbidden),
-			] {
-				try await app.test(
-					.GET,
-					"/api/v3/mod/fezpost/\(postID)",
-					headers: bearer(token),
-					afterResponse: { res async throws in XCTAssertEqual(res.status, expected) }
-				)
-			}
-		}
-	}
-
 	func testTeamMembersCanCreateAndPostAsCommunitySupport() async throws {
 		try await withApp { app in
 			let f = try await makeFixture(app)

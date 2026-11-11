@@ -405,9 +405,9 @@ class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 					XCTAssertEqual(detail.actions.filter { $0.actionType == .discussionStarted }.count, 1)
 				}
 			)
-			// Role holders and TwitarrTeam can open the thread; a plain moderator can't.
+			// Like any role-gated category, it's open to role holders and to moderators and above.
 			for (token, expected) in [
-				(f.memberToken, HTTPResponseStatus.ok), (f.ttToken, .ok), (f.moderatorToken, .notFound),
+				(f.memberToken, HTTPResponseStatus.ok), (f.ttToken, .ok), (f.moderatorToken, .ok), (f.verifiedToken, .forbidden),
 			] {
 				try await app.test(
 					.GET,
