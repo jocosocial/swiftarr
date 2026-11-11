@@ -138,7 +138,8 @@ struct UserController: APIRouteCollection {
 	///
 	/// - Parameter requestBody: `UserCreateData`, including `agreeToTerms` set to `true`.
 	/// - Throws: 400 error if `agreeToTerms` is not `true`, if the username is an invalid format,
-	///   or if the verification code is malformed. 409 error if the username is not available.
+	///   if the verification code is malformed, or if there is no such registration code. 409 error if the
+	///   username is not available or the registration code has already been used.
 	/// - Returns: `CreatedUserData` containing the newly created user's ID, username, and a
 	///   recovery key string.
 	func createHandler(_ req: Request) async throws -> Response {
@@ -160,12 +161,20 @@ struct UserController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Malformed verification code. Verification code must be 6 alphanumeric letters; spaces optional.")
 		}
 		let normalizedRegCode = RegistrationCode.normalized(submittedCode)
+		// Reject bad or used reg codes before the bcrypt work below, so junk requests stay cheap. This is only a fast
+		// path; the check inside the transaction is the one that guarantees each code goes to one user.
+		guard let regCode = try await RegistrationCode.query(on: req.db).filter(\.$code == normalizedRegCode).first() else {
+			throw Abort(.badRequest, reason: "No match for registration code")
+		}
+		guard regCode.$user.id == nil else {
+			throw Abort(.conflict, reason: "registration code has already been used")
+		}
 
 		// create user
 		let recoveryKey = try UserController.generateRecoveryKey(on: req)
 		let normalizedKey = recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
-		let recoveryHash = try Bcrypt.hash(normalizedKey)
-		let passwordHash = try req.password.hash(data.password)
+		let recoveryHash = try await CryptoHelper.hashRecoveryKey(normalizedKey, on: req)
+		let passwordHash = try await req.password.async.hash(data.password)
 		let user = User(
 			username: data.username,
 			password: passwordHash,
@@ -291,7 +300,7 @@ struct UserController: APIRouteCollection {
 			throw Abort(.conflict, reason: "username '\(data.username)' is not available")
 		}
 		// if user has a parent, sub-account inherits, else this account is parent
-		let passwordHash = try Bcrypt.hash(data.password)
+		let passwordHash = try await req.password.async.hash(data.password)
 		// sub-account inherits .accessLevel, .recoveryKey and .verification
 		let subAccount = User(
 			username: data.username,
@@ -333,11 +342,15 @@ struct UserController: APIRouteCollection {
 	///
 	/// Updates a user's password to the supplied value, encrypted.
 	///
+	/// Changing the password revokes the user's login token, logging them out of every client, device, and web
+	/// session, including the one making this call. The response carries a new token; clients should replace their
+	/// stored token with it.
+	///
 	/// - Parameter requestBody: `UserPasswordData` struct containing the user's desired password.
 	/// - Throws: 400 error if the supplied password is not at least 6 characters. 403 error
 	///   if the user is a `.client`.
-	/// - Returns: 201 Created on success.
-	func passwordHandler(_ req: Request) async throws -> HTTPStatus {
+	/// - Returns: 201 Created on success, with `TokenStringData` containing the user's new token.
+	func passwordHandler(_ req: Request) async throws -> Response {
 		let user = try await req.auth.require(UserCacheData.self).getUser(on: req.db)
 		// clients are hard-coded
 		guard user.accessLevel != .client else {
@@ -345,14 +358,18 @@ struct UserController: APIRouteCollection {
 		}
 		// see `UserPasswordData.validations()`
 		let data = try ValidatingJSONDecoder().decode(UserPasswordData.self, fromBodyOf: req)
-		guard try Bcrypt.verify(data.currentPassword, created: user.password) else {
+		guard try await req.password.async.verify(data.currentPassword, created: user.password) else {
 			throw Abort(.badRequest, reason: "Existing password doesn't match; cannot set new password")
 		}
 		// encrypt, then update user
-		let passwordHash = try Bcrypt.hash(data.newPassword)
+		let passwordHash = try await req.password.async.hash(data.newPassword)
 		user.password = passwordHash
 		try await user.save(on: req.db)
-		return .created
+		// Whoever had the old password may still be logged in; revoke that login and issue a fresh token.
+		let tokenData = try await AuthController.rotateToken(for: user, on: req)
+		let response = Response(status: .created)
+		try response.content.encode(tokenData)
+		return response
 	}
 
 	/// `POST /api/v3/user/username`

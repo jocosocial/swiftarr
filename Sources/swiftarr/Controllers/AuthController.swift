@@ -80,8 +80,8 @@ struct AuthController: APIRouteCollection {
 	/// web front end.
 	///
 	/// Upon successful authentication, the user's password is set to the `newPassword` value in the provided
-	/// `UserRecoveryData`, the user is logged in, and the users' login `TokenStringData` is returned
-	/// (the same struct returned by `/api/v3/login`).
+	/// `UserRecoveryData`, the user's existing login token is revoked (logging them out of every client, device,
+	/// and web session), and a new login `TokenStringData` is returned (the same struct returned by `/api/v3/login`).
 	///
 	/// - Note: The `User.verification` registration code can only be used to recover *once*.
 	///   This limitation is to prevent a possible race condition in which a malicious
@@ -92,23 +92,30 @@ struct AuthController: APIRouteCollection {
 	/// - Note: To prevent brute-force malicious attempts, there is a limit on successive
 	///   failed recovery attempts, currently hard-coded to 5.
 	///
+	/// - Note: An unknown username fails with the same 400 as a wrong recovery key, so this endpoint can't be used
+	///   to discover which usernames exist.
+	///
 	/// - Parameter requestBody: `UserRecoveryData`
 	/// - Throws: 400 error if the recovery fails. 403 error if the maximum number of successive
-	///   failed recovery attempts has been reached. A 5xx response should be reported as a
-	///   likely bug, please and thank you.
-	/// - Returns: `TokenStringData` containing an authentication token (string) that should
+	///   failed recovery attempts has been reached, or if the credentials match a banned user.
+	///   A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Returns: `TokenStringData` containing a new authentication token (string) that should
 	///   be used for all subsequent HTTP requests, until expiry or revocation.
 	func recoveryHandler(_ req: Request) async throws -> TokenStringData {
 		// see `UserRecoveryData.validations()`
 		let data = try ValidatingJSONDecoder().decode(UserRecoveryData.self, fromBodyOf: req)
+		let isRegistrationCode = RegistrationCode.isWellFormed(data.recoveryKey)
+		let noMatch = Abort(.badRequest, reason: "no match for supplied recovery key")
 		// find data.username user
 		guard let user = try await User.query(on: req.db).filter(\.$username, .custom("ilike"), data.username).first()
 		else {
-			throw Abort(.badRequest, reason: "username \"\(data.username)\" not found")
-		}
-		// no login for punks
-		guard user.accessLevel != .banned else {
-			throw Abort(.forbidden, reason: "User is banned, and cannot login.")
+			// Spend the same bcrypt time as the wrong-key path below (password, then recovery key), so an unknown
+			// username can't be told apart from a real one.
+			if !isRegistrationCode {
+				await CryptoHelper.dummyPasswordVerify(data.recoveryKey, on: req)
+				await CryptoHelper.dummyRecoveryKeyVerify(data.recoveryKey, on: req)
+			}
+			throw noMatch
 		}
 		// abort if account is seeing potential brute-force attack
 		guard user.recoveryAttempts < 5 else {
@@ -118,33 +125,31 @@ struct AuthController: APIRouteCollection {
 		// Registration codes are normalized (lowercase, all whitespace stripped) prior to storage.
 		// Recovery keys are hashed after ASCII spaces are removed; passwords are matched as typed.
 		var foundMatch = false
-		if RegistrationCode.isWellFormed(data.recoveryKey) {
+		if isRegistrationCode {
 			// A 6-character alphanumeric key is a registration code, not a password or recovery key.
 			// Spent codes are stored with a '*' prefix on User.verification; do not fall through.
-			if user.verificationUsed {
-				throw Abort(
-					.badRequest,
-					reason: "account must be recovered using the recovery key or an account manager"
-				)
-			}
 			let normalizedKey = RegistrationCode.normalized(data.recoveryKey)
-			if let stored = user.unspentVerification,
-				RegistrationCode.normalized(stored) == normalizedKey
-			{
+			if let stored = user.unspentVerification, RegistrationCode.normalized(stored) == normalizedKey {
+				// Only explain that the code is spent to a caller who submitted the right code.
+				if user.verificationUsed {
+					throw Abort(
+						.badRequest,
+						reason: "account must be recovered using the recovery key or an account manager"
+					)
+				}
 				foundMatch = true
 				user.markVerificationUsed()
 			}
 		}
 		else {
 			// password and recoveryKey require hash verification
-			let verifier = BCryptDigest()
-			if try verifier.verify(data.recoveryKey, created: user.password) {
+			if try await req.password.async.verify(data.recoveryKey, created: user.password) {
 				foundMatch = true
 			}
 			else {
 				// user.recoveryKey is hashed from the 3-word key with ASCII spaces removed
 				let normalizedRecoveryKey = data.recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
-				if try verifier.verify(normalizedRecoveryKey, created: user.recoveryKey) {
+				if try await req.password.async.verify(normalizedRecoveryKey, created: user.recoveryKey) {
 					foundMatch = true
 				}
 			}
@@ -154,30 +159,21 @@ struct AuthController: APIRouteCollection {
 			// track the attempt count
 			user.recoveryAttempts += 1
 			try await user.save(on: req.db)
-			throw Abort(.badRequest, reason: "no match for supplied recovery key")
+			throw noMatch
+		}
+		// no login for punks. Checked after the credentials so ban status is only revealed to the account holder.
+		guard user.accessLevel != .banned else {
+			throw Abort(.forbidden, reason: "User is banned, and cannot login.")
 		}
 
 		// user appears valid, zero out attempt tracking and save new password
 		user.recoveryAttempts = 0
-		user.password = try Bcrypt.hash(data.newPassword)
+		user.password = try await req.password.async.hash(data.newPassword)
 
-		// return existing token if any
-		let existingToken = try await Token.query(on: req.db).filter(\.$user.$id == user.requireID()).first()
-		if let existing = existingToken {
-			try await user.save(on: req.db)
-			return try TokenStringData(user: user, token: existing)
-		}
-		else {
-			// otherwise generate and return new token. The password reset and the token are saved together, so a failure
-			// can't leave the account recovered (and a one-time registration code spent) without the client getting a token.
-			let token = try Token.generate(for: user)
-			try await req.db.transaction { db in
-				try await user.save(on: db)
-				try await token.save(on: db)
-			}
-			try await req.userCache.updateUser(user.requireID())
-			return try TokenStringData(user: user, token: token)
-		}
+		// Whoever had the old password may still be logged in; revoke that login and issue a fresh token. The password reset
+		// and the token are saved together, so a failure can't leave the account recovered (and a one-time registration
+		// code spent) without the client getting a token.
+		return try await AuthController.rotateToken(for: user, on: req)
 	}
 
 	/// `POST /api/v3/auth/username`
@@ -229,19 +225,18 @@ struct AuthController: APIRouteCollection {
 		let orderedUsers = users.sorted { lhs, rhs in
 			lhs.$parent.id == nil && rhs.$parent.id != nil
 		}
-		let verifier = BCryptDigest()
 		var passwordMatch: User?
 		var recoveryKeyMatch: User?
 		for user in orderedUsers {
 			// password is matched as typed
-			if try verifier.verify(data.recoveryKey, created: user.password) {
+			if try await req.password.async.verify(data.recoveryKey, created: user.password) {
 				passwordMatch = user
 				break
 			}
 			// recoveryKey is hashed from the 3-word key with ASCII spaces removed
 			if recoveryKeyMatch == nil {
 				let normalizedRecoveryKey = data.recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
-				if try verifier.verify(normalizedRecoveryKey, created: user.recoveryKey) {
+				if try await req.password.async.verify(normalizedRecoveryKey, created: user.recoveryKey) {
 					recoveryKeyMatch = user
 				}
 			}
@@ -357,5 +352,36 @@ struct AuthController: APIRouteCollection {
 		try await token.delete(on: req.db)
 		try await req.userCache.updateUser(user.userID)
 		return .noContent
+	}
+
+	// MARK: - Utilities
+
+	/// Logs the user out everywhere: closes their sockets, deletes their login token, clears their web session list,
+	/// and refreshes the user cache. Deleting the token also ends every web session, since `UserCacheData.SessionAuth`
+	/// only accepts a session whose stored token matches the user's current one.
+	static func revokeLogins(forUserID userID: UUID, on req: Request) async throws {
+		// Close any open sockets, keep going if we get an error.
+		try? await req.webSocketStore.handleUserLogout(userID)
+		try await Token.query(on: req.db).filter(\.$user.$id == userID).delete()
+		try await req.redis.clearAllSessionMarkers(forUserID: userID)
+		try await req.userCache.updateUser(userID)
+	}
+
+	/// Revokes the user's existing logins (see `revokeLogins(forUserID:on:)`) and returns a newly generated token.
+	/// Use after a password change, so anyone still holding the old login is logged out.
+	/// Also saves the user, in the same transaction as the token swap.
+	static func rotateToken(for user: User, on req: Request) async throws -> TokenStringData {
+		let userID = try user.requireID()
+		let token = try Token.generate(for: user)
+		try await req.db.transaction { db in
+			try await user.save(on: db)
+			try await Token.query(on: db).filter(\.$user.$id == userID).delete()
+			try await token.save(on: db)
+		}
+		// The old token is already gone; close any open sockets (keep going on error) and clear the web sessions.
+		try? await req.webSocketStore.handleUserLogout(userID)
+		try await req.redis.clearAllSessionMarkers(forUserID: userID)
+		try await req.userCache.updateUser(userID)
+		return try TokenStringData(user: user, token: token)
 	}
 }

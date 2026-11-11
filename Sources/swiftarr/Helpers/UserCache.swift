@@ -153,6 +153,8 @@ extension UserCacheData {
 			guard let cacheUser = request.userCache.getUser(username: basic.username), cacheUser.accessLevel != .banned,
 				let user = try await User.query(on: request.db).filter(\.$id == cacheUser.userID).first()
 			else {
+				// Spend the same bcrypt time as a real account so response timing doesn't reveal which usernames exist.
+				await CryptoHelper.dummyPasswordVerify(basic.password, on: request)
 				return
 			}
 			if try await request.password.async.verify(basic.password, created: user.password) {

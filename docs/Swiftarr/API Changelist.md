@@ -369,3 +369,8 @@ additive; the existing count fields are unchanged and are now derived from these
 
 - `scheduleUpdateURL` has been removed from `SettingsAdminData` and `SettingsUpdateData`.
 - `ClientSettingsData` gains `schedBaseUrl`, the base URL of the sched.com site (e.g. `https://jococruise2026.sched.com`).
+
+## Nov 13, 2026
+
+- `POST /api/v3/user/password` now returns `TokenStringData` (still 201). A password change revokes the user's existing token on every device; clients must replace their stored token with the returned one.
+- `POST /api/v3/auth/recovery` now always returns a new token and revokes the old one, instead of returning the existing token. An unknown username now fails with the same 400 as a wrong recovery key.

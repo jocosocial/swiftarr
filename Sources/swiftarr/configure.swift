@@ -483,7 +483,7 @@ struct SwiftarrConfigurator {
 		app.middleware = new
 
 		// Change the default bcrypt cost for user accounts
-		app.passwords.use(.bcrypt(cost: 9))
+		app.passwords.use(.bcrypt(cost: CryptoHelper.bcryptCost))
 	}
 
 	func configureSessions(_ app: Application) throws {

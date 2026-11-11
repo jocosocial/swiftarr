@@ -183,4 +183,56 @@ final class CreateAccountTests: XCTestCase, SwiftarrBaseTest {
 			XCTAssertEqual(spentCode?.user?.id, user?.id, "the registration code must be linked to the new user")
 		}
 	}
+
+	func testUserCreateAPI_UnknownRegistrationCode_IsRejected() async throws {
+		try await withApp { app in
+			let username = uniqueName("apibadcode")
+			let code = "u" + UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(5).lowercased()
+			try await postUserCreate(app, agreeToTerms: true, username: username, verification: code) { res async throws in
+				XCTAssertEqual(res.status, .badRequest)
+			}
+			let user = try await userNamed(username, on: app)
+			XCTAssertNil(user, "an unknown registration code must not create a user")
+		}
+	}
+
+	func testUserCreateAPI_UsedRegistrationCode_IsConflict() async throws {
+		try await withApp { app in
+			let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(5).lowercased()
+			let code = "v\(suffix)"
+			try await RegistrationCode(code: code).save(on: app.db)
+			let first = uniqueName("apiusedcode")
+			try await postUserCreate(app, agreeToTerms: true, username: first, verification: code) { res async throws in
+				XCTAssertEqual(res.status, .created)
+			}
+			let second = uniqueName("apiusedcode")
+			try await postUserCreate(app, agreeToTerms: true, username: second, verification: code) { res async throws in
+				XCTAssertEqual(res.status, .conflict)
+			}
+			let user = try await userNamed(second, on: app)
+			XCTAssertNil(user, "a used registration code must not create a second user")
+		}
+	}
+
+	func testUserCreateAPI_RecoveryKeyHashedAtRecoveryKeyCost() async throws {
+		try await withApp { app in
+			let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(5).lowercased()
+			let code = "w\(suffix)"
+			try await RegistrationCode(code: code).save(on: app.db)
+			let username = uniqueName("apikeycost")
+			var recoveryKey = ""
+			try await postUserCreate(app, agreeToTerms: true, username: username, verification: code) { res async throws in
+				XCTAssertEqual(res.status, .created)
+				recoveryKey = try res.content.decode(CreatedUserData.self).recoveryKey
+			}
+			let foundUser = try await userNamed(username, on: app)
+			let user = try XCTUnwrap(foundUser)
+			XCTAssertTrue(
+				user.recoveryKey.hasPrefix("$2b$\(CryptoHelper.recoveryKeyBcryptCost)$"),
+				"recovery keys must be hashed at the recovery-key cost, not the password cost"
+			)
+			let normalizedKey = recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
+			XCTAssertTrue(try Bcrypt.verify(normalizedKey, created: user.recoveryKey))
+		}
+	}
 }
