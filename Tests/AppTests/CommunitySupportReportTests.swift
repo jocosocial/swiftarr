@@ -210,11 +210,11 @@ class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 
 	// MARK: - Access control
 
-	func testOnlyRoleHoldersCanFileReports() async throws {
+	func testRoleHoldersAndTwitarrTeamAndAboveCanFileReports() async throws {
 		try await withApp { app in
 			let f = try await makeFixture(app)
-			// The `minAccess` default is `.banned`, so a role-only route could silently admit every logged-in user.
-			for token in [f.verifiedToken, f.moderatorToken, f.ttToken, f.thoToken] {
+			// The `minAccess` default is `.banned`, so a role-gated route could silently admit every logged-in user.
+			for token in [f.verifiedToken, f.moderatorToken] {
 				try await app.test(
 					.POST,
 					"/api/v3/communitysupport/report",
@@ -223,7 +223,38 @@ class CommunitySupportReportTests: XCTestCase, SwiftarrBaseTest {
 					afterResponse: { res async throws in XCTAssertEqual(res.status, .forbidden) }
 				)
 			}
+			for token in [f.memberToken, f.ttToken, f.thoToken] {
+				try await app.test(
+					.POST,
+					"/api/v3/communitysupport/report",
+					headers: bearer(token),
+					beforeRequest: { req throws in try req.content.encode(makeCreateData()) },
+					afterResponse: { res async throws in XCTAssertEqual(res.status, .created) }
+				)
+			}
+		}
+	}
+
+	func testAnEmptyStatusFilterMeansAllStatuses() async throws {
+		try await withApp { app in
+			let f = try await makeFixture(app)
 			_ = try await fileReport(app, f)
+			// The web form's "All statuses" option submits `status=`.
+			try await app.test(
+				.GET,
+				"/api/v3/communitysupport/reports?status=",
+				headers: bearer(f.memberToken),
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok)
+					XCTAssertFalse(try res.content.decode(Paginated<CommunitySupportReportListData>.self).items.isEmpty)
+				}
+			)
+			try await app.test(
+				.GET,
+				"/api/v3/communitysupport/reports?status=bogus",
+				headers: bearer(f.memberToken),
+				afterResponse: { res async throws in XCTAssertEqual(res.status, .badRequest) }
+			)
 		}
 	}
 

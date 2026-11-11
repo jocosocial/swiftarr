@@ -49,16 +49,24 @@ enum PrivilegedMailboxRequirement {
 /// mailbox's *notification bookkeeping*: the chat-unread fan-out, the `?foruser=` access checks, and
 /// the nightly consistency job all key off this table, so adding a new mailbox (see issue #517) means
 /// appending a row here, adding a `MailInbox` case, and seeding its phantom account.
-/// It does NOT cover authoring or UI: `FezController.createChat`'s `createdBy…` fields, `PostContentData.effectiveAuthor`,
-/// `SiteSeamailController`'s `postAs…` fields, and `ForumController.processForumMentions` are written out per mailbox
+/// Forum @mention notifications also key off this table (`forumMentionType`). It does NOT cover authoring or UI: `FezController.createChat`'s
+/// `createdBy…` fields, `PostContentData.effectiveAuthor`, and `SiteSeamailController`'s `postAs…` fields are written out per mailbox
 /// (moderator, TwitarrTeam, and CommunitySupport) and need their own updates for a new mailbox to be usable end-to-end.
 struct PrivilegedMailbox: Sendable {
 	let user: PrivilegedUser
 	let inbox: MailInbox
 	let requirement: PrivilegedMailboxRequirement
+	/// The notification type for a forum post that @mentions this mailbox, given the post ID and (when adding) the forum ID.
+	let forumMentionType: @Sendable (Int, String?) -> NotificationType
 	/// The `Abort(.forbidden)` reason when a user without `requirement` asks for this mailbox by name
 	/// (e.g. `?foruser=`).
 	let accessDeniedReason: String
+
+	/// Who may use the Community Support features: its role holders, and TwitarrTeam and above (which includes THO and admin). This is the single
+	/// definition of that rule--the mailbox, the reports, the forum mentions, the badge counts and the web UI all ask it (see
+	/// `UserCacheData.canAccessCommunitySupport`). Route groups state the same rule to `MinUserAccessLevelMiddleware` as `allowedRoles` +
+	/// `minAccess`, which can't be derived from it; keep them matching.
+	static let communitySupportRequirement = PrivilegedMailboxRequirement.roleOrAccessLevel(.communitysupport, .twitarrteam)
 
 	/// Order matters: a chat that somehow contains more than one phantom account resolves to the
 	/// *first* matching mailbox here (see `forChat`). This preserves existing behavior, where
@@ -68,12 +76,14 @@ struct PrivilegedMailbox: Sendable {
 			user: .TwitarrTeam,
 			inbox: .twitarrTeamSeamail,
 			requirement: .accessLevel(.twitarrteam),
+			forumMentionType: { .twitarrTeamForumMention($0, $1) },
 			accessDeniedReason: "Only TwitarrTeam members can access TwitarrTeam seamail."
 		),
 		PrivilegedMailbox(
 			user: .moderator,
 			inbox: .moderatorSeamail,
 			requirement: .accessLevel(.moderator),
+			forumMentionType: { .moderatorForumMention($0, $1) },
 			accessDeniedReason: "Only moderators can access moderator seamail."
 		),
 		// Last on purpose: a chat containing several phantom accounts resolves to the first row, and Community Support must not
@@ -81,7 +91,8 @@ struct PrivilegedMailbox: Sendable {
 		PrivilegedMailbox(
 			user: .CommunitySupport,
 			inbox: .communitySupportSeamail,
-			requirement: .roleOrAccessLevel(.communitysupport, .twitarrteam),
+			requirement: communitySupportRequirement,
+			forumMentionType: { .communitySupportForumMention($0, $1) },
 			accessDeniedReason: "Only Community Support team members can access Community Support seamail."
 		),
 	]
@@ -134,5 +145,12 @@ struct PrivilegedMailbox: Sendable {
 			}
 			return true
 		}
+	}
+}
+
+extension UserCacheData {
+	/// Whether the user is on the Community Support team or is TwitarrTeam or above (so, THO and admin too).
+	var canAccessCommunitySupport: Bool {
+		PrivilegedMailbox.communitySupportRequirement.isSatisfied(by: self)
 	}
 }

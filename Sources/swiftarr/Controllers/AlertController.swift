@@ -264,7 +264,7 @@ struct AlertController: APIRouteCollection {
 	func getCommunitySupportNotifications(for user: UserCacheData, on req: Request) async throws -> UserNotificationData
 		.CommunitySupportNotificationData?
 	{
-		guard CommunitySupportController.canAccess(user) else {
+		guard user.canAccessCommunitySupport else {
 			return nil
 		}
 		let userHash = try await req.redis.getUserHash(userID: user.userID)

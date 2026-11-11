@@ -1294,10 +1294,10 @@ extension FezController {
 		}
 		var creator = user
 		if data.createdByCommunitySupport == true {
-			guard CommunitySupportController.canAccess(user) else {
+			guard user.canAccessCommunitySupport else {
 				throw Abort(.badRequest, reason: "Must be on the Community Support team to post as @CommunitySupport")
 			}
-			guard let csUser = req.userCache.getUser(username: PrivilegedUser.CommunitySupport.rawValue) else {
+			guard let csUser = PrivilegedUser.CommunitySupport.cachedUser(on: req) else {
 				throw Abort(.internalServerError, reason: "Cannot find @CommunitySupport user")
 			}
 			creator = csUser

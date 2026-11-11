@@ -239,6 +239,66 @@ class CommunitySupportSeamailTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
+	// Group mentions notify each mailbox's own roster: @moderator reaches moderators and above, @twitarrteam TwitarrTeam and above, and
+	// @communitysupport the role holders plus TwitarrTeam and above.
+	func testGroupMentionsNotifyEachMailboxRoster() async throws {
+		try await withApp { app in
+			let f = try await makeFixture(app)
+			let category = Category(title: "Mention Test \(UUID().uuidString.prefix(8))", purpose: "test")
+			try await category.save(on: app.db)
+			let forum = try Forum(title: "Public talk", category: category, creatorID: f.attendee.id)
+			try await forum.save(on: app.db)
+			try await ForumPost(forum: forum, authorID: f.attendee.id, text: "first", images: []).save(on: app.db)
+			try await app.test(
+				.POST,
+				"/api/v3/forum/\(try forum.requireID())/create",
+				headers: bearer(f.attendee.token),
+				beforeRequest: { req throws in
+					try req.content.encode(PostContentData(text: "hello @moderator @twitarrteam @communitysupport", images: []))
+				},
+				afterResponse: { res async throws in XCTAssertEqual(res.status, .created) }
+			)
+			// (user, moderator mentions, TwitarrTeam mentions, Community Support mentions); nil means that section isn't sent to the user.
+			let expectations: [(String, token: String, mod: Int?, tt: Int?, cs: Int?)] = [
+				("moderator", f.moderator.token, 1, 0, nil),
+				("twitarrteam", f.tt.token, 1, 1, 1),
+				("role holder", f.memberA.token, nil, nil, 1),
+				("author", f.attendee.token, nil, nil, nil),
+			]
+			for (name, token, mod, tt, cs) in expectations {
+				try await app.test(
+					.GET,
+					"/api/v3/notification/global",
+					headers: bearer(token),
+					afterResponse: { res async throws in
+						let data = try res.content.decode(UserNotificationData.self)
+						XCTAssertEqual(data.moderatorData?.newModeratorForumMentionCount, mod, name)
+						XCTAssertEqual(data.moderatorData?.newTTForumMentionCount, tt, name)
+						XCTAssertEqual(data.communitySupportData?.newForumMentionCount, cs, name)
+					}
+				)
+			}
+			// Looking at a mailbox's mentions clears only that mailbox's count.
+			try await app.test(
+				.GET,
+				"/api/v3/forum/post/search?mentionname=moderator",
+				headers: bearer(f.tt.token),
+				afterResponse: { res async throws in XCTAssertEqual(res.status, .ok) }
+			)
+			try await app.test(
+				.GET,
+				"/api/v3/notification/global",
+				headers: bearer(f.tt.token),
+				afterResponse: { res async throws in
+					let data = try res.content.decode(UserNotificationData.self)
+					XCTAssertEqual(data.moderatorData?.newModeratorForumMentionCount, 0)
+					XCTAssertEqual(data.moderatorData?.newTTForumMentionCount, 1)
+					XCTAssertEqual(data.communitySupportData?.newForumMentionCount, 1)
+				}
+			)
+		}
+	}
+
 	func testOpenReportCountShowsForTeamOnly() async throws {
 		try await withApp { app in
 			let f = try await makeFixture(app)

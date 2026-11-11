@@ -2,7 +2,7 @@ import Vapor
 
 // DTOs for the Community Support report API (`/api/v3/communitysupport/*`), served by `CommunitySupportController`.
 
-/// Used to file a Community Support report. Only Community Support role holders may submit one.
+/// Used to file a Community Support report. Community Support role holders, and TwitarrTeam and above, may submit one.
 ///
 /// Required: `memberName`, `experienceTime`, `experienceLocation`, `experienceDescription`.
 ///

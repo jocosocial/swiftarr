@@ -12,6 +12,14 @@ Notes for AI coding agents (Claude Code, Codex, etc.) working on swiftarr contri
   Fluent converts between `Int` and the column type.
 - **Match existing indentation.** This codebase uses tabs (see `.swift-format`).
 
+## Access levels
+
+- **Admin can do everything.** Any action available to any user, role, or lower access level is also available to `.admin`. When adding a
+  role-gated feature, make sure the gate (route middleware, handler checks, and Leaf conditions) lets admin through.
+- **TwitarrTeam and THO get at least read-only visibility** into every feature, even ones gated on a role they don't hold.
+- Compute the gate once (a rule on `UserCacheData`, a flag on `TrunkContext`) and reuse it, rather than repeating role/level checks in each
+  controller and template. `UserCacheData.canAccessCommunitySupport` and `TrunkContext.userCanAccessCommunitySupport` are the model.
+
 ## Commits & PRs
 
 - **No agent attribution.** No "Generated with Claude Code" footers, no

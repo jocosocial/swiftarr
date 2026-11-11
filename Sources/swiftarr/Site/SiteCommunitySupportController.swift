@@ -31,8 +31,8 @@ struct SiteCommunitySupportController: SiteControllerUtils {
 	}
 
 	func registerRoutes(_ app: Application) throws {
-		// Role holders, and TwitarrTeam and above. (`minAccess` defaults to `.banned`, and role/level are OR'd, so a role-only group
-		// must pass `minAccess` explicitly or it would admit everybody.)
+		// Role holders, and TwitarrTeam and above (`PrivilegedMailbox.communitySupportRequirement` as route middleware). `minAccess` defaults
+		// to `.banned` and role/level are OR'd, so a role-gated group must pass `minAccess` explicitly or it would admit everybody.
 		let teamRoutes = getPrivateRoutes(
 			app,
 			feature: .communitySupport,
@@ -41,23 +41,14 @@ struct SiteCommunitySupportController: SiteControllerUtils {
 			path: "communitysupport"
 		)
 		teamRoutes.get(use: root)
+		teamRoutes.get("newreport", use: reportForm)
+		teamRoutes.post("report", use: postReport)
 		teamRoutes.get("reports", use: reports)
 		teamRoutes.get("report", reportIDParam, use: report)
 		teamRoutes.post("report", reportIDParam, "status", use: postStatus)
 		teamRoutes.post("report", reportIDParam, "discussion", use: postDiscussion)
 		teamRoutes.get("log", use: actionLog)
 		teamRoutes.get("seamail") { req -> Response in req.redirect(to: "/seamail?foruser=communitysupport") }
-
-		// Only role holders file reports.
-		let memberRoutes = getPrivateRoutes(
-			app,
-			feature: .communitySupport,
-			minAccess: .admin,
-			allowedRoles: [.communitysupport],
-			path: "communitysupport"
-		)
-		memberRoutes.get("newreport", use: reportForm)
-		memberRoutes.post("report", use: postReport)
 
 		// THO and above only, role or not.
 		let thoRoutes = getPrivateRoutes(app, feature: .communitySupport, minAccess: .tho, path: "communitysupport")
@@ -80,20 +71,14 @@ struct SiteCommunitySupportController: SiteControllerUtils {
 	func root(_ req: Request) async throws -> View {
 		struct PageContext: Encodable {
 			var trunk: TrunkContext
-			var canFileReports: Bool
 			var canDownload: Bool
-			init(_ req: Request, canFileReports: Bool, canDownload: Bool) {
+			init(_ req: Request, canDownload: Bool) {
 				trunk = .init(req, title: "Community Support", tab: .communitySupport)
-				self.canFileReports = canFileReports
 				self.canDownload = canDownload
 			}
 		}
 		let user = try req.auth.require(UserCacheData.self)
-		let ctx = PageContext(
-			req,
-			canFileReports: user.userRoles.contains(.communitysupport),
-			canDownload: user.accessLevel.hasAccess(.tho)
-		)
+		let ctx = PageContext(req, canDownload: user.accessLevel.hasAccess(.tho))
 		return try await req.view.render("CommunitySupport/root", ctx)
 	}
 

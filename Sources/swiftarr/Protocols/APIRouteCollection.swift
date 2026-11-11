@@ -510,7 +510,7 @@ extension APIRouteCollection {
 				try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)
 			}
 		case .communitySupportForumMention:
-			if CommunitySupportController.canAccess(user) {
+			if user.canAccessCommunitySupport {
 				try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)
 			}
 		case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting,

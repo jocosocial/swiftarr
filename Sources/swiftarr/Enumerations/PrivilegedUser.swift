@@ -24,7 +24,7 @@ extension PrivilegedUser {
 	/// username uniqueness check, but `CommunitySupport` is created by a migration that may run on a database where somebody has
 	/// already taken the name; validation keeps them from taking it after the fact.
 	static func isReservedUsername(_ username: String) -> Bool {
-		username.lowercased() == PrivilegedUser.CommunitySupport.queryParam
+		PrivilegedUser.CommunitySupport.matches(username)
 	}
 
 	/// True if the username belongs to a shared-mailbox phantom account (see `PrivilegedMailbox.all`). Moderator and TwitarrTeam are protected
@@ -33,6 +33,16 @@ extension PrivilegedUser {
 	static func isSharedMailboxAccount(_ username: String) -> Bool {
 		let name = username.lowercased()
 		return PrivilegedMailbox.all.contains { $0.user.queryParam == name }
+	}
+
+	/// Whether `name` names this account, ignoring case: the check for `?foruser=` values, `postAs` values, and `@mention` names (without the "@").
+	func matches(_ name: String) -> Bool {
+		name.lowercased() == queryParam
+	}
+
+	/// The cached phantom account for this user, or nil if the migration that creates it hasn't run on this instance.
+	func cachedUser(on req: Request) -> UserCacheData? {
+		req.userCache.getUser(username: rawValue)
 	}
 
 	// Returns the url query parameter comparison version of the usernames.

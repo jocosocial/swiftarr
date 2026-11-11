@@ -5,8 +5,8 @@ import Vapor
 /// The collection of `/api/v3/communitysupport/*` route endpoints and handler functions for Community Support reports.
 ///
 /// Community Support team members (holders of `UserRoleType.communitysupport`) file reports about things attendees tell them. Anyone on the team,
-/// and TwitarrTeam and above, can read the reports, change their status, comment on them, and start or open a discussion thread about one in the
-/// private Community Support forum category. Plain moderators have no access to the reports. Everything is recorded in an append-only log.
+/// and TwitarrTeam and above (which includes THO and admin), can file and read the reports, change their status, and start or open a
+/// discussion thread about one in the private Community Support forum category. Plain moderators have no access to the reports. Everything is recorded in an append-only log.
 ///
 /// - Important: `allowedRoles` and `minAccess` are OR'd by `MinUserAccessLevelMiddleware`, and `minAccess` defaults to `.banned`--so a
 ///   role-only route that omits `minAccess` would admit every logged-in user. Every route here sets `minAccess` explicitly.
@@ -16,20 +16,13 @@ struct CommunitySupportController: APIRouteCollection {
 	func registerRoutes(_ app: Application) throws {
 		let baseRoutes = app.grouped("api", "v3", "communitysupport")
 
-		// Filing a report is for the team only; TwitarrTeam can read but not write on the team's behalf.
-		let memberAuthGroup = baseRoutes.tokenRoutes(
-			feature: .communitySupport,
-			minAccess: .admin,
-			allowedRoles: [.communitysupport]
-		)
-		memberAuthGroup.post("report", use: createReportHandler)
-
-		// Everything else: role holders, or TwitarrTeam and above.
+		// Role holders, or TwitarrTeam and above. This is `PrivilegedMailbox.communitySupportRequirement` as route middleware.
 		let teamAuthGroup = baseRoutes.tokenRoutes(
 			feature: .communitySupport,
 			minAccess: .twitarrteam,
 			allowedRoles: [.communitysupport]
 		)
+		teamAuthGroup.post("report", use: createReportHandler)
 		teamAuthGroup.get("reports", use: reportsHandler)
 		teamAuthGroup.get("report", reportIDParam, use: reportHandler)
 		teamAuthGroup.post("report", reportIDParam, "status", use: statusHandler)
@@ -43,15 +36,10 @@ struct CommunitySupportController: APIRouteCollection {
 
 	// MARK: - Access
 
-	/// Whether the user is on the Community Support team, or is TwitarrTeam or above.
-	static func canAccess(_ user: UserCacheData) -> Bool {
-		user.userRoles.contains(.communitysupport) || user.accessLevel.hasAccess(.twitarrteam)
-	}
-
 	/// Throws 403 unless the user is on the Community Support team, or is TwitarrTeam or above. The route middleware already checks this; the in-handler
 	/// check keeps a route that's mistakenly registered without the right group from becoming open.
 	private func guardCanAccess(_ user: UserCacheData) throws {
-		guard Self.canAccess(user) else {
+		guard user.canAccessCommunitySupport else {
 			throw Abort(.forbidden, reason: "Community Support access required.")
 		}
 	}
@@ -60,16 +48,14 @@ struct CommunitySupportController: APIRouteCollection {
 
 	/// `POST /api/v3/communitysupport/report`
 	///
-	/// Files a Community Support report. Only Community Support role holders can file reports.
+	/// Files a Community Support report.
 	///
 	/// - Parameter requestBody: `CommunitySupportReportCreateData`
-	/// - Throws: 403 if the user doesn't hold the Community Support role.
+	/// - Throws: 403 if the user isn't on the Community Support team or TwitarrTeam and above.
 	/// - Returns: 201 Created with a `CommunitySupportReportData`.
 	func createReportHandler(_ req: Request) async throws -> Response {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		guard cacheUser.userRoles.contains(.communitysupport) else {
-			throw Abort(.forbidden, reason: "Only Community Support team members can file reports.")
-		}
+		try guardCanAccess(cacheUser)
 		try cacheUser.guardCanCreateContent()
 		// see `CommunitySupportReportCreateData.runValidations(using:)`
 		let data = try ValidatingJSONDecoder().decode(CommunitySupportReportCreateData.self, fromBodyOf: req)
@@ -107,7 +93,8 @@ struct CommunitySupportController: APIRouteCollection {
 		try guardCanAccess(cacheUser)
 		let pagination = Pagination(on: req, maxPageSize: 200)
 		let query = CommunitySupportReport.query(on: req.db)
-		let statusStrings: [String] = (try? req.query.get([String].self, at: "status")) ?? []
+		// An empty value (the web form's "All statuses" option) means no filter.
+		let statusStrings: [String] = ((try? req.query.get([String].self, at: "status")) ?? []).filter { !$0.isEmpty }
 		if !statusStrings.isEmpty {
 			let statuses = try statusStrings.map { string -> CommunitySupportReportStatus in
 				guard let status = CommunitySupportReportStatus(rawValue: string) else {

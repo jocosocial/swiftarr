@@ -7,15 +7,9 @@
 				</div>
 			</div>
 			<div class="list-group">
-				#if(canFileReports):
-					<a class="list-group-item list-group-item-action" href="/communitysupport/newreport">
-						<b>New Report</b>: Write up something an attendee told you
-					</a>
-				#else:
-					<div class="list-group-item disabled" aria-disabled="true">
-						<b>New Report</b>: Only Community Support team members can file reports. Ask THO to give you the Community Support role.
-					</div>
-				#endif
+				<a class="list-group-item list-group-item-action" href="/communitysupport/newreport">
+					<b>New Report</b>: Write up something an attendee told you
+				</a>
 				<a class="list-group-item list-group-item-action" href="/communitysupport/reports">
 					<b>Reports</b>: Review reports, change their status, and comment
 					#if(trunk.alertCounts.communitySupportData.openReportCount > 0):

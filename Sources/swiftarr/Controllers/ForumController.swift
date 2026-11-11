@@ -846,14 +846,10 @@ struct ForumController: APIRouteCollection {
 			}
 			postFilterMentions = mentionName
 			query.filter(\.$text, .custom("ILIKE"), "%\(mentionName)%")
-			if mentionName.lowercased() == "@moderator" && cacheUser.accessLevel.hasAccess(.moderator) {
-				try await markNotificationViewed(user: cacheUser, type: .moderatorForumMention(0), on: req)
-			}
-			if mentionName.lowercased() == "@twitarrteam" && cacheUser.accessLevel.hasAccess(.twitarrteam) {
-				try await markNotificationViewed(user: cacheUser, type: .twitarrTeamForumMention(0), on: req)
-			}
-			if mentionName.lowercased() == "@\(PrivilegedUser.CommunitySupport.queryParam)" && CommunitySupportController.canAccess(cacheUser) {
-				try await markNotificationViewed(user: cacheUser, type: .communitySupportForumMention(0), on: req)
+			// Looking at a mailbox's mentions clears that mailbox's unread mention count, for members of the mailbox.
+			for mailbox in PrivilegedMailbox.all
+			where mailbox.user.matches(String(mentionName.dropFirst())) && mailbox.isSatisfied(by: cacheUser) {
+				try await markNotificationViewed(user: cacheUser, type: mailbox.forumMentionType(0, nil), on: req)
 			}
 		}
 		if let byself = req.query[Bool.self, at: "byself"], byself == true {
@@ -1950,22 +1946,12 @@ extension ForumController {
 				group.addTask {
 					try await subtractNotifications(users: subtractUUIDs, type: .forumMention(postID), on: req)
 				}
-				if subtracts.map({ $0.lowercased() }).contains("twitarrteam") {
-					let ttMembers = req.userCache.allUsersWithAccessLevel(.twitarrteam)
+				// Group mentions (@moderator, @twitarrteam, @communitysupport) notify every member of the mailbox.
+				let lowercasedSubtracts = subtracts.map { $0.lowercased() }
+				for mailbox in PrivilegedMailbox.all where lowercasedSubtracts.contains(mailbox.user.queryParam) {
+					let members = mailbox.members(on: req).filter { $0.userID != cacheUser.userID }.map { $0.userID }
 					group.addTask {
-						try await subtractNotifications(users: ttMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .twitarrTeamForumMention(postID), on: req)
-					}
-				}
-				if subtracts.map({ $0.lowercased()}).contains("moderator") {
-					let modMembers = req.userCache.allUsersWithAccessLevel(.moderator)
-					group.addTask {
-						try await subtractNotifications(users: modMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .moderatorForumMention(postID), on: req)
-					}
-				}
-				if subtracts.map({ $0.lowercased() }).contains(PrivilegedUser.CommunitySupport.queryParam) {
-					let csMembers = communitySupportMembers(on: req)
-					group.addTask {
-						try await subtractNotifications(users: csMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .communitySupportForumMention(postID), on: req)
+						try await subtractNotifications(users: members, type: mailbox.forumMentionType(postID, nil), on: req)
 					}
 				}
 			}
@@ -1979,25 +1965,12 @@ extension ForumController {
 				group.addTask {
 					try await addNotifications(users: addUUIDs, type: .forumMention(postID, forumID), info: infoStr, on: req)
 				}
-				if adds.map({ $0.lowercased() }).contains("twitarrteam") {
-					let ttMembers = req.userCache.allUsersWithAccessLevel(.twitarrteam)
-					let infoStr = "\(authorText) wrote a forum post that @mentioned twitarrteam."
+				let lowercasedAdds = adds.map { $0.lowercased() }
+				for mailbox in PrivilegedMailbox.all where lowercasedAdds.contains(mailbox.user.queryParam) {
+					let members = mailbox.members(on: req).filter { $0.userID != cacheUser.userID }.map { $0.userID }
+					let infoStr = "\(authorText) wrote a forum post that @mentioned \(mailbox.user.queryParam)."
 					group.addTask {
-						try await addNotifications(users: ttMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .twitarrTeamForumMention(postID, forumID), info: infoStr, on: req)
-					}
-				}
-				if adds.map({ $0.lowercased()}).contains("moderator") {
-					let modMembers = req.userCache.allUsersWithAccessLevel(.moderator)
-					let infoStr = "\(authorText) wrote a forum post that @mentioned moderator."
-					group.addTask {
-						try await addNotifications(users: modMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .moderatorForumMention(postID, forumID), info: infoStr, on: req)
-					}
-				}
-				if adds.map({ $0.lowercased() }).contains(PrivilegedUser.CommunitySupport.queryParam) {
-					let csMembers = communitySupportMembers(on: req)
-					let infoStr = "\(authorText) wrote a forum post that @mentioned CommunitySupport."
-					group.addTask {
-						try await addNotifications(users: csMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .communitySupportForumMention(postID, forumID), info: infoStr, on: req)
+						try await addNotifications(users: members, type: mailbox.forumMentionType(postID, forumID), info: infoStr, on: req)
 					}
 				}
 			}
@@ -2043,12 +2016,6 @@ extension ForumController {
 			// I believe this line is required to let subtasks propagate thrown errors by rethrowing.
 			try await group.waitForAll()
 		}
-	}
-
-	/// Everyone an `@CommunitySupport` mention notifies: Community Support role holders, plus TwitarrTeam and above, who can see the team's content.
-	/// This is the same roster as the shared mailbox.
-	func communitySupportMembers(on req: Request) -> [UserCacheData] {
-		PrivilegedMailbox.matching(queryParam: PrivilegedUser.CommunitySupport.queryParam)?.members(on: req) ?? []
 	}
 
 	// Deleting a forum thread means we delete a bunch of posts at once. This fn coalesces the updates to User models

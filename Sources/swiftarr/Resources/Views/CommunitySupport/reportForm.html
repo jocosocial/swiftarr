@@ -9,7 +9,7 @@
 					</ol>
 				</nav>
 				<div class="alert alert-info" role="alert">
-					Write up what an attendee told you. Only the Community Support team and TwitarrTeam can see reports.
+					Write up what an attendee told you. Only Community Support team members, TwitarrTeam, and THO can see reports.
 				</div>
 
 				<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST" data-successurl="#(successURL)" id="reportForm">
@@ -25,8 +25,10 @@
 
 					<div class="mb-3">
 						<label for="reporterHandle" class="form-label">Reporter's Twitarr username (optional)</label>
-						<input type="text" class="form-control" name="reporterHandle" id="reporterHandle" maxlength="100" placeholder="@username">
-						<div class="form-text">If this matches an account, the report is linked to it.</div>
+						<input type="text" class="form-control user-autocomplete" name="reporterHandle" id="reporterHandle" maxlength="100" placeholder="@username"
+								autocapitalize="off" autocomplete="off" data-nameusage="fill" data-suggestions="reporter_suggestions">
+						<div class="list-group mt-1" id="reporter_suggestions"></div>
+						<div class="form-text">Start typing to find the account. If it matches one, the report is linked to it.</div>
 					</div>
 
 					<div class="mb-3">
@@ -36,7 +38,9 @@
 
 					<div class="mb-3">
 						<label for="subjectHandle" class="form-label">Who is the report about? (optional)</label>
-						<input type="text" class="form-control" name="subjectHandle" id="subjectHandle" maxlength="100" placeholder="Name or @username">
+						<input type="text" class="form-control user-autocomplete" name="subjectHandle" id="subjectHandle" maxlength="100" placeholder="Name or @username"
+								autocapitalize="off" autocomplete="off" data-nameusage="fill" data-suggestions="subject_suggestions">
+						<div class="list-group mt-1" id="subject_suggestions"></div>
 					</div>
 
 					<div class="mb-3">
