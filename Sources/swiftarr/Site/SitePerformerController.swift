@@ -535,14 +535,7 @@ struct SitePerformerController: SiteControllerUtils {
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "Bulk Add Performers", tab: .admin)
 				defaultURL = "https://jococruise.com/guests/"
-				if var components = URLComponents(string: Settings.shared.scheduleUpdateURL) {
-					components.scheme = "https"
-					components.path = "/directory/speakers"
-					defaultSchedURL = components.string ?? "https://jococruise2026.sched.com/directory/speakers"
-				}
-				else {
-					defaultSchedURL = "https://jococruise2026.sched.com/directory/speakers"
-				}
+				defaultSchedURL = Settings.shared.schedSpeakersURL
 			}
 		}
 		let ctx = try BulkAddPerformersPageContext(req)
