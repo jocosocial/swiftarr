@@ -1,0 +1,42 @@
+#extend("trunk"):
+	#export("body"):
+		<div class="container-md ms-0">
+			<div class="row justify-content-between align-items-center my-2">
+				<div class="col col-auto">
+					<b>Community Support</b>
+				</div>
+			</div>
+			<div class="list-group">
+				<a class="list-group-item list-group-item-action" href="/communitysupport/newreport">
+					<b>New Report</b>: Write up something an attendee told you
+				</a>
+				<a class="list-group-item list-group-item-action" href="/communitysupport/reports">
+					<b>Reports</b>: Review reports, change their status, and comment
+					#if(trunk.alertCounts.communitySupportData.openReportCount > 0):
+						<div><span class="text-muted border-bottom border-danger"><i>#(trunk.alertCounts.communitySupportData.openReportCount) Open Report#if(trunk.alertCounts.communitySupportData.openReportCount > 1):s#endif</i></span></div>
+					#endif
+				</a>
+				<a class="list-group-item list-group-item-action" href="/communitysupport/log">
+					<b>Log</b>: Everything the team has done with reports
+				</a>
+				<a class="list-group-item list-group-item-action" href="/seamail?foruser=communitysupport">
+					<b>Community Support Seamail</b>: Seamail to @CommunitySupport
+					#if(trunk.alertCounts.communitySupportData.newSeamailMessageCount > 0):
+						<div><span class="text-muted border-bottom border-danger"><i>#(trunk.alertCounts.communitySupportData.newSeamailMessageCount) New Message#if(trunk.alertCounts.communitySupportData.newSeamailMessageCount > 1):s#endif</i></span></div>
+					#endif
+				</a>
+				<a class="list-group-item list-group-item-action" href="/forumpost/mentions?mentionname=CommunitySupport">
+					<b>Forum Mentions</b>: Mentions of @CommunitySupport in forum posts
+					#if(trunk.alertCounts.communitySupportData.newForumMentionCount > 0):
+						<div><span class="text-muted border-bottom border-danger"><i>#(trunk.alertCounts.communitySupportData.newForumMentionCount) New Mention#if(trunk.alertCounts.communitySupportData.newForumMentionCount > 1):s#endif</i></span></div>
+					#endif
+				</a>
+				#if(canDownload):
+					<a class="list-group-item list-group-item-action" href="/communitysupport/reports/download">
+						<b>Download Reports</b>: All reports as a CSV file
+					</a>
+				#endif
+			</div>
+		</div>
+	#endexport
+#endextend

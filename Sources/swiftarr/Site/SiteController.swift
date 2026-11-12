@@ -21,6 +21,7 @@ struct TrunkContext: Encodable {
 		case games
 		case karaoke
 		case moderator
+		case communitySupport
 		case admin
 		case time
 		case map
@@ -37,6 +38,7 @@ struct TrunkContext: Encodable {
 	var userIsTHO: Bool
 	var userIsAdmin: Bool
 	var userCanManageAccounts: Bool
+	var userCanAccessCommunitySupport: Bool  // On the Community Support team, or TwitarrTeam and above (so THO and admin too).
 	var userRoles: [String]  // Use "contains(trunk.userRoles, "shutternautmanager")" or similar to check
 	var minAccessLevel: String?  // Minimum access required to view Twitarr pages; Value from Settings.
 	var preregistrationMode: Bool  // Mirrors the value in Settings.
@@ -44,6 +46,7 @@ struct TrunkContext: Encodable {
 	var pageIsForDisabledFeature: SwiftarrFeature?  // Middleware marked this request disabled for normal users but we're showing it to THO/admin
 	var showQuartermasterNav: Bool  // FALSE if the Quartermaster feature is disabled, unless the user is THO/admin (who can still reach the page).
 	var showNotificationsNav: Bool  // FALSE if the Notifications feature is disabled, unless the user is THO/admin (who can still reach the page).
+	var showCommunitySupportNav: Bool  // TRUE for Community Support users, unless the feature is disabled, except for THO/admin (who can still reach the pages).
 
 	var username: String
 	var userID: UUID
@@ -66,6 +69,7 @@ struct TrunkContext: Encodable {
 			userIsTHO = userAccessLevel.hasAccess(.tho)
 			userIsAdmin = userAccessLevel.hasAccess(.admin)
 			userCanManageAccounts = user.canManageAccounts
+			userCanAccessCommunitySupport = user.canAccessCommunitySupport
 			username = user.username
 			userID = user.userID
 			userRoles = user.userRoles.map { $0.rawValue }
@@ -77,6 +81,7 @@ struct TrunkContext: Encodable {
 			userIsTHO = false
 			userIsAdmin = false
 			userCanManageAccounts = false
+			userCanAccessCommunitySupport = false
 			username = ""
 			userID = UUID()
 			userRoles = []
@@ -91,6 +96,9 @@ struct TrunkContext: Encodable {
 			|| ["THO", "admin"].contains(username)
 		showNotificationsNav = !Settings.shared.disabledFeatures.isFeatureDisabled(.notificationLog, inApp: .swiftarr)
 			|| ["THO", "admin"].contains(username)
+		showCommunitySupportNav = userCanAccessCommunitySupport
+			&& (!Settings.shared.disabledFeatures.isFeatureDisabled(.communitySupport, inApp: .swiftarr)
+				|| ["THO", "admin"].contains(username))
 		eventStartingSoon = false
 		if req.route != nil, let alertsStr = req.session.data["alertCounts"],
 			let alertData = alertsStr.data(using: .utf8)
@@ -115,7 +123,7 @@ struct TrunkContext: Encodable {
 
 		self.title = title
 		self.tab = tab
-		self.inTwitarrSubmenu = [.home, .lfg, .games, .karaoke, .moderator, .admin].contains(tab)
+		self.inTwitarrSubmenu = [.home, .lfg, .games, .karaoke, .moderator, .communitySupport, .admin].contains(tab)
 
 		newTweetAlertwords = alertCounts.alertWords.contains { $0.newTwarrtMentionCount > 0 }
 		newForumAlertwords = alertCounts.alertWords.contains { $0.newForumMentionCount > 0 }
@@ -206,6 +214,7 @@ struct MessagePostContext: Encodable {
 	var isEdit: Bool = false
 	var postAsModerator: Bool = false
 	var postAsTwitarrTeam: Bool = false
+	var postAsCommunitySupport: Bool = false
 	var postAsUser: String = "self"
 
 	// Used as an parameter to the initializer
@@ -381,6 +390,7 @@ struct MessagePostContext: Encodable {
 		let mailbox = SeamailCreateMailbox(foruser: foruser)
 		postAsModerator = mailbox.postAsModerator
 		postAsTwitarrTeam = mailbox.postAsTwitarrTeam
+		postAsCommunitySupport = mailbox.postAsCommunitySupport
 	}
 
 	/// Post-as controls are only available when creating an announcement; edits keep the existing author.
@@ -442,7 +452,8 @@ extension MessagePostFormContent {
 			text: postText ?? "",
 			images: images,
 			postAsModerator: postAs?.lowercased() == PrivilegedUser.moderator.queryParam,
-			postAsTwitarrTeam: postAs?.lowercased() == PrivilegedUser.TwitarrTeam.queryParam
+			postAsTwitarrTeam: postAs?.lowercased() == PrivilegedUser.TwitarrTeam.queryParam,
+			postAsCommunitySupport: PrivilegedUser.CommunitySupport.matches(postAs ?? "")
 		)
 		return postContent
 	}

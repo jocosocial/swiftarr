@@ -461,6 +461,7 @@ struct SwiftarrConfigurator {
 		let corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
 		new.use(corsMiddleware, at: .beginning)
 
+		new.use(RobotsTagMiddleware())
 		new.use(SwiftarrErrorMiddleware(environment: app.environment))
 		new.use(SiteNoRouteErrorMiddleware(environment: app.environment))
 		app.middleware = new
@@ -664,6 +665,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(UpdateEventFavoriteSchema_Photographer(), to: .psql)
 		app.migrations.add(UpdateUserDiscordHandleMigration(), to: .psql)
 		app.migrations.add(AddPerformerAlternativeNamesMigration(), to: .psql)
+		app.migrations.add(AddEventPerformerManuallyLinkedMigration(), to: .psql)
 		app.migrations.add(AddFavoriteFieldToFezParticipantSchema(), to: .psql)
 		app.migrations.add(AddVisibilityFieldToFriendlyFezSchema(), to: .psql)
 		app.migrations.add(CreateClientAppSchema(), to: .psql)
@@ -671,6 +673,8 @@ struct SwiftarrConfigurator {
 		app.migrations.add(AddFunctionsForDebouncable(), to: .psql)
 		app.migrations.add(AddDebounceConstraint<FezPost>(), to: .psql)
 		app.migrations.add(AddDebounceConstraint<ForumPost>(), to: .psql)
+		app.migrations.add(CreateCommunitySupportReportSchema(), to: .psql)
+		app.migrations.add(CreateCommunitySupportActionSchema(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 
@@ -710,6 +714,8 @@ struct SwiftarrConfigurator {
 		app.migrations.add(RemoveCovidCategory(), to: .psql)
 		app.migrations.add(CreateQuartermasterSearchIndexes(), to: .psql)
 		app.migrations.add(CreatePerformerSearchIndexes(), to: .psql)
+		app.migrations.add(CreateCommunitySupportUser(), to: .psql)
+		app.migrations.add(AddCommunitySupportCategory(), to: .psql)
 
 		// DON'T add schema-modification migrations down here. Appending migrations that modify a table's schema at the end will
 		// break migrations that use Fluent to populate that table with data, as Fluent only models the current db schema.

@@ -356,7 +356,7 @@ struct FezController: APIRouteCollection {
 		if cacheUser.preregistrationApplies, fez.$owner.id != cacheUser.userID || !fez.fezType.isPreregistrationType {
 			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
 		}
-		if fez.fezType.isPrivateEventType, !userCanViewMemberData(user: cacheUser, fez: fez) {
+		if fez.fezType.isPrivateEventType, !userCanViewMemberData(user: cacheUser, fez: fez, on: req) {
 			throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
 		}
 
@@ -370,6 +370,10 @@ struct FezController: APIRouteCollection {
 		} else {
 			// For normal cases, just query for existing pivot (don't create if missing)
 			pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID).first()
+			// A pivot made while the user could read a shared mailbox outlives their access to it (role revoked, demoted). It isn't membership.
+			if pivot != nil, hasStaleMailboxPivot(user: cacheUser, fez: fez, on: req) {
+				throw Abort(.notFound, reason: "this \(fez.fezType.lfgLabel) is not available")
+			}
 		}
 
 		// Clear the addedTo flag when the user views the fez
@@ -559,7 +563,8 @@ struct FezController: APIRouteCollection {
 		guard fez.fezType != .personalEvent else {
 			throw Abort(.badRequest, reason: "Personal Events don't have posts.")
 		}
-		guard fez.participantArray.contains(cacheUser.userID) || cacheUser.accessLevel.hasAccess(.moderator) else {
+		// Same rule as reading the chat's members: participants, moderators, and the members of a shared mailbox the chat is addressed to.
+		guard userCanViewMemberData(user: cacheUser, fez: fez, on: req) else {
 			throw Abort(.forbidden, reason: "user is not member of \(fez.fezType.lfgLabel); cannot post")
 		}
 		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
@@ -976,7 +981,7 @@ struct FezController: APIRouteCollection {
 		do {
 			let user = try req.auth.require(UserCacheData.self)
 			let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
-			guard userCanViewMemberData(user: user, fez: fez), let fezID = try? fez.requireID() else {
+			guard userCanViewMemberData(user: user, fez: fez, on: req), let fezID = try? fez.requireID() else {
 				throw Abort(.badRequest, reason: "User can't vew messages in this LFG")
 			}
 			let userSocket = UserSocket(userID: user.userID, socket: ws, fezID: fezID, htmlOutput: false)
@@ -997,7 +1002,7 @@ struct FezController: APIRouteCollection {
 		let sockets = try await req.webSocketStore.getChatSockets(fez.requireID())
 		for userSocket in sockets {
 			guard let socketOwner = req.userCache.getUser(userSocket.userID),
-					userCanViewMemberData(user: socketOwner, fez: fez),
+					userCanViewMemberData(user: socketOwner, fez: fez, on: req),
 					!(socketOwner.getBlocks().contains(postAuthor.userID) || socketOwner.getMutes().contains(postAuthor.userID)) else {
 				return
 			}
@@ -1031,7 +1036,7 @@ struct FezController: APIRouteCollection {
 		try await req.webSocketStore.getChatSockets(fez.requireID()).forEach { userSocket in
 			let participantHeader = try req.userCache.getHeader(participantID)
 			guard let socketOwner = req.userCache.getUser(userSocket.userID),
-				userCanViewMemberData(user: socketOwner, fez: fez),
+				userCanViewMemberData(user: socketOwner, fez: fez, on: req),
 				!socketOwner.getBlocks().contains(participantHeader.userID)
 			else {
 				return
@@ -1285,12 +1290,21 @@ extension FezController {
 			guard data.initialUsers.allSatisfy({ $0 == user.userID }) else {
 				throw Abort(.forbidden, reason: "Other users cannot be added during preregistration.")
 			}
-			guard data.createdByModerator != true, data.createdByTwitarrTeam != true else {
+			guard data.createdByModerator != true, data.createdByTwitarrTeam != true, data.createdByCommunitySupport != true else {
 				throw Abort(.forbidden, reason: "Cannot create as a privileged account during preregistration.")
 			}
 		}
 		var creator = user
-		if data.createdByTwitarrTeam == true {
+		if data.createdByCommunitySupport == true {
+			guard user.canAccessCommunitySupport else {
+				throw Abort(.badRequest, reason: "Must be on the Community Support team to post as @CommunitySupport")
+			}
+			guard let csUser = PrivilegedUser.CommunitySupport.cachedUser(on: req) else {
+				throw Abort(.internalServerError, reason: "Cannot find @CommunitySupport user")
+			}
+			creator = csUser
+		}
+		else if data.createdByTwitarrTeam == true {
 			guard user.accessLevel >= .twitarrteam else {
 				throw Abort(.badRequest, reason: "Must have TwitarrTeam access to post as @TwitarrTeam")
 			}
@@ -1623,8 +1637,36 @@ extension FezController {
 		return PrivilegedMailbox.forChat(participantArray: fez.participantArray, on: req)?.inbox
 	}
 
-	func userCanViewMemberData(user: UserCacheData, fez: FriendlyFez) -> Bool {
+	/// Whether the user has a per-user pivot on a shared-mailbox chat that they no longer have any right to. Opening a chat as a mailbox member
+	/// creates a pivot (for per-user read tracking) but doesn't add the user to `participantArray`, so a user who loses the mailbox's role or
+	/// access level would otherwise keep reading the chat through the pivot.
+	func hasStaleMailboxPivot(user: UserCacheData, fez: FriendlyFez, on req: Request) -> Bool {
+		guard !fez.participantArray.contains(user.userID),
+			PrivilegedMailbox.forChat(participantArray: fez.participantArray, on: req) != nil
+		else {
+			return false
+		}
+		return PrivilegedMailbox.forChat(participantArray: fez.participantArray, satisfiedBy: user, on: req) == nil
+	}
+
+	/// Removes a user's pivots on shared-mailbox chats they can no longer read. Call after anything that can take away mailbox access: removing a
+	/// role, or lowering an access level. The user cache must already reflect the change. This keeps the chats out of the user's joined list and
+	/// stops every per-pivot endpoint (read-state, mute, favorite) from treating them as a member.
+	func removeStaleMailboxPivots(for userID: UUID, on req: Request) async throws {
+		guard let user = req.userCache.getUser(userID) else {
+			return
+		}
+		let pivots = try await FezParticipant.query(on: req.db).filter(\.$user.$id == userID).with(\.$fez).all()
+		for pivot in pivots where hasStaleMailboxPivot(user: user, fez: pivot.fez, on: req) {
+			try await pivot.delete(on: req.db)
+		}
+	}
+
+	/// Whether the user may see a chat's messages and members: they're a participant or a moderator, or they belong to a shared mailbox the
+	/// chat is addressed to (a Community Support role holder isn't a moderator).
+	func userCanViewMemberData(user: UserCacheData, fez: FriendlyFez, on req: Request) -> Bool {
 		return user.accessLevel.hasAccess(.moderator) || fez.participantArray.contains(user.userID)
+			|| PrivilegedMailbox.forChat(participantArray: fez.participantArray, satisfiedBy: user, on: req) != nil
 	}
 
 	/// Resolves and validates the `visibility` to use for a newly-created fez.
