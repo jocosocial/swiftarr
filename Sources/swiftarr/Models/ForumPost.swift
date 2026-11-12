@@ -25,7 +25,7 @@ final class ForumPost: Model, Searchable, @unchecked Sendable, Debouncable {
 	@ContentField(key: "text") var text: String
 
 	/// The filenames of any images for the post.
-	@OptionalField(key: "images") var images: [String]?
+	@OptionalContentField(key: "images") var images: [String]?
 
 	/// Moderators can set several statuses on forumPosts that modify editability and visibility.
 	@Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
