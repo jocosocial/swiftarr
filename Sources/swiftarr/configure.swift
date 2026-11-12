@@ -208,6 +208,22 @@ struct SwiftarrConfigurator {
 				)
 		}
 
+		// Sched.com integration. Read-only from the app; only settable via the environment.
+		if let schedBaseUrl = Environment.get("SCHED_BASE_URL"), schedBaseUrl != "" {
+			Settings.shared.schedBaseUrl = schedBaseUrl
+		}
+		else {
+			configLog.warning(
+				"SCHED_BASE_URL is not set. Defaulting to \(Settings.shared.schedBaseUrl)."
+			)
+		}
+		if let schedApiKey = Environment.get("SCHED_API_KEY"), schedApiKey != "" {
+			Settings.shared.schedApiKey = schedApiKey
+		}
+		else {
+			configLog.warning("SCHED_API_KEY is not set. Sched API features will not work.")
+		}
+
 		// Late Day Flip in Site UI
 		if let enableLateDayFlip = Environment.get("SWIFTARR_ENABLE_LATE_DAY_FLIP"), enableLateDayFlip != "" {
 			Settings.shared.enableLateDayFlip = Bool(enableLateDayFlip) ?? false

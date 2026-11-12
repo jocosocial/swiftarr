@@ -330,9 +330,6 @@ struct AdminController: APIRouteCollection {
 		if let value = data.shipWifiSSID {
 			Settings.shared.shipWifiSSID = value
 		}
-		if let value = data.scheduleUpdateURL {
-			Settings.shared.scheduleUpdateURL = value
-		}
 		if let value = data.upcomingEventNotificationSeconds {
 			Settings.shared.upcomingEventNotificationSeconds = Double(value)
 		}

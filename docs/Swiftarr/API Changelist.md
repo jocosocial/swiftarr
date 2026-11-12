@@ -364,3 +364,8 @@ additive; the existing count fields are unchanged and are now derived from these
 - New `/api/v3/communitysupport/*` controller for Community Support reports: `POST /report`, `GET /reports`, `GET /report/:report_id`, `POST /report/:report_id/status`, `POST /report/:report_id/discussion`, `GET /actionlog`, and `GET /export` (THO and above). Available to role holders, TwitarrTeam, and above; plain moderators have no access.
 - New shared mailbox user `@CommunitySupport` (`?foruser=communitysupport`). `FezContentData` gains `createdByCommunitySupport`; `PostContentData` gains `postAsCommunitySupport`.
 - `UserNotificationData` gains optional `communitySupportData`. New notification type `communitySupportForumMention`, with a matching `SocketNotificationData.NotificationTypeData` case.
+
+## Nov 12, 2026
+
+- `scheduleUpdateURL` has been removed from `SettingsAdminData` and `SettingsUpdateData`.
+- `ClientSettingsData` gains `schedBaseUrl`, the base URL of the sched.com site (e.g. `https://jococruise2026.sched.com`).

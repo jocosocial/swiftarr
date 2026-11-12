@@ -80,9 +80,12 @@ final class Settings: Encodable, @unchecked Sendable {
 	/// The name of the onboard Wifi network. Delivered to cients in the notification endpoint.
 	@StoredSettingsValue("shipWifiSSID", defaultValue: "NieuwAmsterdam-Guest") var shipWifiSSID: String
 	
-	/// The URL to use when checking for automatic schedule updates. Genearlly a sched.com URL of the form `https://jococruise2024.sched.com/all.ics`
-	/// Should always point to an URL that returns an iCalendar formatted file.
-	@StoredSettingsValue("scheduleUpdateURL", defaultValue: "https://jococruise2025.sched.com/all.ics") var scheduleUpdateURL: String
+	/// The base URL of the sched.com site for this cruise, e.g. `https://jococruise2026.sched.com`. Set from the `SCHED_BASE_URL` env var
+	/// and not writable from the app.
+	@SettingsValue var schedBaseUrl: String = "https://jococruise2026.sched.com"
+
+	/// The API key used to access the sched.com API. Set from the `SCHED_API_KEY` env var and not writable from the app.
+	@SettingsValue var schedApiKey: String = ""
 
 	// MARK: Limits
 	/// The maximum number of alt accounts per primary user account.
@@ -254,6 +257,29 @@ extension Settings {
 	/// Path to the 'admin' directory, inside the 'seeds' directory. Certain seed files can be upload by admin here, and ingested while the server is running.
 	var seedsDirectoryPath: URL {
 		return staticFilesRootPath.appendingPathComponent("seeds")
+	}
+}
+
+/// Derivative sched.com URLs. These are computed property getters that return a URL based on `schedBaseUrl`.
+extension Settings {
+	/// The URL to use when checking for automatic schedule updates.
+	/// Always points to an URL that returns an iCalendar formatted file.
+	var scheduleUpdateURL: String {
+		return schedURL(appendingPath: "all.ics")
+	}
+
+	/// The sched.com speakers directory page.
+	var schedSpeakersURL: String {
+		return schedURL(appendingPath: "directory/speakers")
+	}
+
+	/// Builds a URL string by appending a path to `schedBaseUrl`. Returns an empty string if the base URL isn't a valid URL,
+	/// which makes the schedule update job skip its run.
+	private func schedURL(appendingPath path: String) -> String {
+		guard let baseURL = URL(string: schedBaseUrl) else {
+			return ""
+		}
+		return baseURL.appendingPathComponent(path).absoluteString
 	}
 }
 

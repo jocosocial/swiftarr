@@ -3239,6 +3239,8 @@ public struct ClientSettingsData: Content {
 	var portTimeZoneOffset: Int
 	/// URL used for automated schedule updates (typically a sched.com iCalendar URL)
 	var scheduleUpdateURL: String
+	/// Base URL of the cruise's sched.com site, e.g. `https://jococruise2026.sched.com`
+	var schedBaseUrl: String
 	/// The name of the shipboard Wifi network
 	var shipWifiSSID: String?
 	/// If TRUE, users can create accounts, log in, and edit their profile before the cruise in a restricted pre-registration mode.
@@ -3264,6 +3266,7 @@ extension ClientSettingsData {
 		self.portTimeZoneAbbrev = Settings.shared.portTimeZone.abbreviation() ?? "EST"
 		self.portTimeZoneOffset = Settings.shared.portTimeZone.secondsFromGMT()
 		self.scheduleUpdateURL = Settings.shared.scheduleUpdateURL
+		self.schedBaseUrl = Settings.shared.schedBaseUrl
 		self.shipWifiSSID = Settings.shared.shipWifiSSID
 		self.enablePreregistration = Settings.shared.enablePreregistration
 		self.minAccessLevel = Settings.shared.minAccessLevel.rawValue

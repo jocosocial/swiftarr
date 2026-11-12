@@ -667,7 +667,6 @@ struct SiteAdminController: SiteControllerUtils {
 			var postAutoQuarantineThreshold: Int
 			var userAutoQuarantineThreshold: Int
 			var shipWifiSSID: String?
-			var scheduleUpdateURL: String?
 			var allowAnimatedImages: String?
 			var disableAppName: String
 			var disableFeatureName: String
@@ -715,7 +714,6 @@ struct SiteAdminController: SiteControllerUtils {
 			enableFeatures: enablePairs,
 			disableFeatures: disablePairs,
 			shipWifiSSID: postStruct.shipWifiSSID,
-			scheduleUpdateURL: postStruct.scheduleUpdateURL,
 			upcomingEventNotificationSeconds: postStruct.upcomingEventNotificationSeconds,
 			upcomingEventNotificationSetting: postStruct.upcomingEventNotificationSetting,
 			upcomingLFGNotificationSetting: postStruct.upcomingLFGNotificationSetting,
