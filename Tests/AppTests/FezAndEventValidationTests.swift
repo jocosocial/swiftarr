@@ -225,7 +225,7 @@ class FezAndEventValidationTests: XCTestCase {
 
 	func testRecovery_NewPasswordTooShort() throws {
 		let errs = try validationErrors(UserRecoveryData.self, recoveryJSON(newPassword: "abc"))
-		XCTAssertTrue(errs.contains("password has a 6 character minimum length"), "errs=\(errs)")
+		XCTAssertTrue(errs.contains("password has an 8 character minimum length"), "errs=\(errs)")
 	}
 
 	func testRecovery_BadUsername_PropagatesUsernameValidations() throws {

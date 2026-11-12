@@ -377,3 +377,7 @@ additive; the existing count fields are unchanged and are now derived from these
 - Failed attempts on `POST /api/v3/auth/login`, `/auth/recovery`, `/auth/username`, `/user/create` (bad registration codes), and `/user/password` (wrong current password) are now rate limited per username/registration code and per client IP. Over the limit, these return 429 with a `Retry-After` header (seconds). The recovery and username lookup lockouts that used to return a permanent 403 are now this temporary 429.
 - Admin: `SettingsAdminData` and `SettingsUpdateData` gain `authRateLimitEnabled`, `authRateLimitLoginFailures`, `authRateLimitUsernameFailures`, `authRateLimitIPFailures`, and `authRateLimitRecoveryFailures`.
 - Admin: added `POST /api/v3/admin/authratelimits/clear` (TwitarrTeam and above), which clears all current auth rate limit lockouts and returns `AuthRateLimitClearData`.
+
+## Nov 11, 2026
+
+- The minimum password length for `/user/create`, `/user/password`, and `/auth/recovery` (`newPassword`) is now 8 characters, up from 6. Existing passwords still work.

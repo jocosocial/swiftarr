@@ -26,9 +26,9 @@ class UserStructValidationTests: XCTestCase {
 	func testUserPassword_TooShort_FlagsMin() throws {
 		let errs = try validationErrors(
 			UserPasswordData.self,
-			#"{"currentPassword":"old","newPassword":"abc"}"#
+			#"{"currentPassword":"old","newPassword":"abcdefg"}"#
 		)
-		XCTAssertTrue(errs.contains("password has a 6 character minimum"), "errs=\(errs)")
+		XCTAssertTrue(errs.contains("password has an 8 character minimum"), "errs=\(errs)")
 	}
 
 	func testUserPassword_TooLong_FlagsMax() throws {
@@ -145,7 +145,7 @@ class UserStructValidationTests: XCTestCase {
 
 	func testUserCreate_PasswordTooShort() throws {
 		let errs = try validationErrors(UserCreateData.self, userCreateJSON(password: "abc"))
-		XCTAssertTrue(errs.contains("password has a 6 character minimum"), "errs=\(errs)")
+		XCTAssertTrue(errs.contains("password has an 8 character minimum"), "errs=\(errs)")
 	}
 
 	func testUserCreate_BadUsername_PropagatesUsernameValidations() throws {

@@ -2592,7 +2592,7 @@ public struct UserCreateData: Content {
 extension UserCreateData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
-		tester.validate(password.count >= 6, forKey: .password, or: "password has a 6 character minimum")
+		tester.validate(password.count >= 8, forKey: .password, or: "password has an 8 character minimum")
 		tester.validate(password.count <= 50, forKey: .password, or: "password has a 50 character limit")
 		usernameValidations(username: username)
 			.forEach {
@@ -2926,7 +2926,7 @@ public struct UserPasswordData: Content {
 extension UserPasswordData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
-		tester.validate(newPassword.count >= 6, forKey: .newPassword, or: "password has a 6 character minimum")
+		tester.validate(newPassword.count >= 8, forKey: .newPassword, or: "password has an 8 character minimum")
 		tester.validate(newPassword.count <= 50, forKey: .newPassword, or: "password has a 50 character limit")
 	}
 }
@@ -3028,7 +3028,7 @@ extension UserRecoveryData: RCFValidatable {
 			.forEach {
 				tester.addValidationError(forKey: .username, errorString: $0)
 			}
-		tester.validate(newPassword.count >= 6, forKey: .newPassword, or: "password has a 6 character minimum length")
+		tester.validate(newPassword.count >= 8, forKey: .newPassword, or: "password has an 8 character minimum length")
 		tester.validate(newPassword.count <= 50, forKey: .newPassword, or: "password has a 50 character limit")
 	}
 }

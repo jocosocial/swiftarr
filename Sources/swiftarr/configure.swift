@@ -489,7 +489,8 @@ struct SwiftarrConfigurator {
 	func configureSessions(_ app: Application) throws {
 		app.sessions.configuration.cookieName = "swiftarr_session"
 
-		// Configures cookie value creation.
+		// Configures cookie value creation. Production servers are always HTTPS; development servers and instances may not be.
+		let isSecure = app.environment == .production
 		app.sessions.configuration.cookieFactory = { sessionID in
 			.init(
 				string: sessionID.string,
@@ -497,7 +498,7 @@ struct SwiftarrConfigurator {
 				maxAge: nil,
 				domain: nil,
 				path: "/",
-				isSecure: false,
+				isSecure: isSecure,
 				isHTTPOnly: true,
 				sameSite: .lax
 			)
