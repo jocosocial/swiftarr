@@ -908,22 +908,39 @@ function applyForumDirection() {
     window.location.href = url.origin + url.pathname + (params.toString() ? "?" + params.toString() : "");
 }
 
-// Populates username completions for a partial username.
+// Populates username completions for a partial username. Works on any `input.user-autocomplete`. Suggestions go in the element whose id is
+// in the input's data-suggestions (default 'name_suggestions'). data-nameusage picks what choosing a suggestion does:
+//   "seamail": adds the user to the seamail participant list.
+//   "fill": puts "@username" in the input (the field stays free text, so the suggestions are only a help).
+for (let userSearch of document.querySelectorAll('input.user-autocomplete')) {
 let userSearchAPICallTimeout = null;
-let userSearch = document.querySelector('input.user-autocomplete');
-userSearch?.addEventListener('input', function (event) {
+userSearch.addEventListener('input', function (event) {
 	if (userSearchAPICallTimeout) {
 		clearTimeout(userSearchAPICallTimeout);
 	}
 	userSearchAPICallTimeout = setTimeout(() => {
 		userSearchAPICallTimeout = null;
-		let searchString = userSearch.value?.replace(/\s+/g, '');
+		let searchString = userSearch.value?.replace(/^@/, '').replace(/\s+/g, '');
 		if (searchString.length < 2) { return }
 		fetch("/seamail/usernames/search/" + encodeURIComponent(searchString))
 			.then(response => response.json())
 			.then(userHeaders => {
-				let suggestionDiv = document.getElementById('name_suggestions');
+				let suggestionDiv = document.getElementById(userSearch.dataset.suggestions || 'name_suggestions');
 				suggestionDiv.innerHTML = "";
+				if (userSearch.dataset.nameusage == "fill") {
+					for (let user of userHeaders) {
+						let item = document.createElement('button');
+						item.type = 'button';
+						item.className = 'list-group-item list-group-item-action';
+						item.textContent = "@" + user.username + " " + user.displayName;
+						item.addEventListener('click', function () {
+							userSearch.value = "@" + user.username;
+							suggestionDiv.innerHTML = "";
+						});
+						suggestionDiv.append(item);
+					}
+					return;
+				}
 				for (user of userHeaders) {
 					let listItem = document.getElementById('potentialMemberTemplate').content.firstElementChild.cloneNode(true);
 					listItem.dataset.userid = user.userID;
@@ -951,6 +968,7 @@ userSearch?.addEventListener('input', function (event) {
 
 	}, 200);
 })
+}
 
 function addToNamedParticipants(event) {
 	let listItem = event.target.closest('li');
@@ -991,6 +1009,9 @@ function syncSeamailCreatorName() {
 	}
 	else if (selected === 'twitarrteam') {
 		name = creatorName.dataset.usernameTwitarrteam;
+	}
+	else if (selected === 'communitysupport') {
+		name = creatorName.dataset.usernameCommunitysupport;
 	}
 	creatorName.textContent = '@' + name;
 }

@@ -31,6 +31,7 @@ public func routes(_ app: Application) throws {
 		PersonalEventController(),
 		EventFeedbackController(),
 		QuartermasterController(),
+		CommunitySupportController(),
 	]
 	try apiControllers.forEach { try $0.registerRoutes(app) }
 
@@ -61,6 +62,7 @@ public func routes(_ app: Application) throws {
 		SitePrivateEventController(),
 		SiteHuntController(),
 		SiteEventFeedbackController(),
+		SiteCommunitySupportController(),
 	]
 	try siteControllers.forEach { try $0.registerRoutes(app) }
 }

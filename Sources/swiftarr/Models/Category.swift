@@ -61,6 +61,12 @@ final class Category: Model, @unchecked Sendable {
 	// Used by Fluent
 	init() {}
 
+	/// True for categories that are staff areas: ones only moderators can see, and the Community Support category. The category list shows
+	/// these first, so the team's private areas sit together above the public ones.
+	var isStaffCategory: Bool {
+		accessLevelToView >= .moderator || requiredRole == .communitysupport
+	}
+
 	/// Initializes a new Category.
 	///
 	/// - Parameters:
