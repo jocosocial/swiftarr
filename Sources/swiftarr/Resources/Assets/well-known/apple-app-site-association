@@ -1,0 +1,21 @@
+{
+	"applinks": {
+		"details": [
+			{
+				"appIDs": [
+					"67V85M2YSV.com.grantcohoe.tricordarr",
+					"FQD36VNG36.com.challfry-FQD.Kraken"
+				],
+				"components": [
+					{ "/": "/*" }
+				]
+			}
+		]
+	},
+	"webcredentials": {
+		"apps": [
+			"67V85M2YSV.com.grantcohoe.tricordarr",
+			"FQD36VNG36.com.challfry-FQD.Kraken"
+		]
+	}
+}
