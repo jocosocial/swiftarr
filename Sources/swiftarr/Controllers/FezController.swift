@@ -592,44 +592,46 @@ struct FezController: APIRouteCollection {
 		// create and save the new post, update fezzes' cached post count
 		let effectiveAuthor = data.effectiveAuthor(actualAuthor: cacheUser, on: req)
 		let filename = filenames.count > 0 ? filenames[0] : nil
-		let post = try FezPost(fez: fez, authorID: effectiveAuthor.userID, text: data.text, image: filename)
-		fez.postCount += 1
-		try await post.save(on: req.db)
-		try await fez.save(on: req.db)
-		// If any participants block or mute this user, increase their hidden post count as they won't see this post.
-		// The nice thing about doing it this way is most of the time there will be no blocks and nothing to do.
-		var participantNotifyList: [UUID] = []
-		for participantUserID in fez.participantArray {
-			guard let participantCacheUser = req.userCache.getUser(participantUserID) else {
-				continue
-			}
-			if participantCacheUser.getBlocks().contains(effectiveAuthor.userID)
-				|| participantCacheUser.getMutes().contains(effectiveAuthor.userID)
-			{
-				if let pivot = try await getUserPivot(lfg: fez, userID: participantUserID, on: req.db) {
-					pivot.hiddenCount += 1
-					try await pivot.save(on: req.db)
-				}
-			}
-			else if participantUserID != cacheUser.userID {
-				if let pivot = try await getUserPivot(lfg: fez, userID: participantUserID, on: req.db), pivot.isMuted == true {
+		var post = try FezPost(fez: fez, authorID: effectiveAuthor.userID, text: data.text, image: filename)
+		// This returns true if a post was created, or false if it was debounced but we should return it like it's new.
+		if try await FezPost.createOrReturnDebounced(&post, on: req.db) {
+			fez.postCount += 1
+			try await fez.save(on: req.db)
+			// If any participants block or mute this user, increase their hidden post count as they won't see this post.
+			// The nice thing about doing it this way is most of the time there will be no blocks and nothing to do.
+			var participantNotifyList: [UUID] = []
+			for participantUserID in fez.participantArray {
+				guard let participantCacheUser = req.userCache.getUser(participantUserID) else {
 					continue
 				}
-				participantNotifyList.append(participantUserID)
+				if participantCacheUser.getBlocks().contains(effectiveAuthor.userID)
+					|| participantCacheUser.getMutes().contains(effectiveAuthor.userID)
+				{
+					if let pivot = try await getUserPivot(lfg: fez, userID: participantUserID, on: req.db) {
+						pivot.hiddenCount += 1
+						try await pivot.save(on: req.db)
+					}
+				}
+				else if participantUserID != cacheUser.userID {
+					if let pivot = try await getUserPivot(lfg: fez, userID: participantUserID, on: req.db), pivot.isMuted == true {
+						continue
+					}
+					participantNotifyList.append(participantUserID)
+				}
 			}
-		}
-		try await post.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
-		var infoStr = "@\(effectiveAuthor.username) wrote, \"\(post.text)\""
-		if fez.fezType != .closed {
-			infoStr.append(" in \(fez.fezType.lfgLabel) \"\(fez.title)\".")
-		}
-		try await addNotifications(users: participantNotifyList, type: .chatUnreadMsg(fez.requireID(), fez.fezType), info: infoStr, creatorID: cacheUser.userID, on: req)
-		try await forwardPostToSockets(fez, post, on: req)
-		// A user posting is assumed to have read all prev posts. (even if this proves untrue, we should increment
-		// readCount as they've read the post they just wrote!)
-		if let pivot = try await getUserPivot(lfg: fez, userID: cacheUser.userID, on: req.db) {
-			pivot.readCount = fez.postCount - pivot.hiddenCount
-			try await pivot.save(on: req.db)
+			try await post.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
+			var infoStr = "@\(effectiveAuthor.username) wrote, \"\(post.text)\""
+			if fez.fezType != .closed {
+				infoStr.append(" in \(fez.fezType.lfgLabel) \"\(fez.title)\".")
+			}
+			try await addNotifications(users: participantNotifyList, type: .chatUnreadMsg(fez.requireID(), fez.fezType), info: infoStr, creatorID: cacheUser.userID, on: req)
+			try await forwardPostToSockets(fez, post, on: req)
+			// A user posting is assumed to have read all prev posts. (even if this proves untrue, we should increment
+			// readCount as they've read the post they just wrote!)
+			if let pivot = try await getUserPivot(lfg: fez, userID: cacheUser.userID, on: req.db) {
+				pivot.readCount = fez.postCount - pivot.hiddenCount
+				try await pivot.save(on: req.db)
+			}
 		}
 		return try FezPostData(post: post, author: effectiveAuthor.makeHeader())
 	}

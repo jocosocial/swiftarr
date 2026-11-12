@@ -686,6 +686,9 @@ struct SwiftarrConfigurator {
 		app.migrations.add(AddVisibilityFieldToFriendlyFezSchema(), to: .psql)
 		app.migrations.add(CreateClientAppSchema(), to: .psql)
 		app.migrations.add(UpdateEventSchema_AgeRating(), to: .psql)
+		app.migrations.add(AddFunctionsForDebouncable(), to: .psql)
+		app.migrations.add(AddDebounceConstraint<FezPost>(), to: .psql)
+		app.migrations.add(AddDebounceConstraint<ForumPost>(), to: .psql)
 		app.migrations.add(CreateCommunitySupportReportSchema(), to: .psql)
 		app.migrations.add(CreateCommunitySupportActionSchema(), to: .psql)
 

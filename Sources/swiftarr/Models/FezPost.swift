@@ -7,7 +7,7 @@ import Vapor
 ///
 /// 	- See Also: [FezPostData](FezPostData) the DTO for returning info on FezPosts. FezPostData is also a member of `FezData`.
 /// 	- See Also: [CreateFezPostSchema](CreateFezPostSchema) the Migration for creating the FezPost table in the database.
-final class FezPost: Model, Searchable, @unchecked Sendable {
+final class FezPost: Model, Searchable, @unchecked Sendable, Debouncable {
 	static let schema = "fezposts"
 
 	// MARK: Properties
@@ -16,10 +16,10 @@ final class FezPost: Model, Searchable, @unchecked Sendable {
 	@ID(custom: "id") var id: Int?
 
 	/// The text content of the post.
-	@Field(key: "text") var text: String
+	@ContentField(key: "text") var text: String
 
 	/// The filename of any image content of the post. FezPosts are limited to one image, and "closed" Fez types cannot have any.
-	@OptionalField(key: "image") var image: String?
+	@OptionalContentField(key: "image") var image: String?
 
 	/// Moderators can set several statuses on fezPosts that modify editability and visibility.
 	@Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
@@ -32,6 +32,10 @@ final class FezPost: Model, Searchable, @unchecked Sendable {
 
 	/// Timestamp of the model's soft-deletion, set automatically.
 	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
+
+	/// Timestamp until which posts in this forum with the same text by the same user will be dropped.
+	/// Set automatically by a trigger in the Debouncable migration.
+	@Timestamp(key: debounceUntilKey, on: .none) var debounceUntil: Date?
 
 	// MARK: Relations
 
