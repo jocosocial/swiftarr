@@ -264,8 +264,7 @@ struct SiteSeamailController: SiteControllerUtils {
 	func seamailCreatePostHandler(_ req: Request) async throws -> Response {
 		let user = try req.auth.require(UserCacheData.self)
 		let formContent = try req.content.decode(SeamailCreateFormContent.self)
-		// Normally we let the API do validations, but in this case we make one call to create the Fez and another
-		// to post the message. Catching likely errors here reduces the chance we have to deal with partial failure.
+		// Catch the common validation errors here so the user gets a friendly message before we hit the API.
 		guard formContent.subject.count > 0 else {
 			throw Abort(.badRequest, reason: "Subject cannot be empty.")
 		}
@@ -284,6 +283,13 @@ struct SiteSeamailController: SiteControllerUtils {
 		}
 
 		let fezType = formContent.openchat == nil ? FezType.closed : FezType.open
+		let postContentData = PostContentData(
+			text: formContent.postText,
+			images: [],
+			postAsModerator: formContent.createdByModerator,
+			postAsTwitarrTeam: formContent.createdByTwitarrTeam,
+			postAsCommunitySupport: formContent.createdByCommunitySupport
+		)
 		let fezContent = FezContentData(
 			fezType: fezType,
 			title: formContent.subject,
@@ -296,40 +302,15 @@ struct SiteSeamailController: SiteControllerUtils {
 			initialUsers: participants,
 			createdByModerator: formContent.createdByModerator,
 			createdByTwitarrTeam: formContent.createdByTwitarrTeam,
-			createdByCommunitySupport: formContent.createdByCommunitySupport
+			createdByCommunitySupport: formContent.createdByCommunitySupport,
+			firstPost: postContentData
 		)
 		let createResponse = try await apiQuery(req, endpoint: "/fez/create", method: .POST, encodeContent: fezContent)
-		let fezData = try createResponse.content.decode(FezData.self)
 		let mailbox = SeamailCreateMailbox(foruser: formContent.foruser ?? req.query[String.self, at: "foruser"])
-		do {
-			let postContentData = PostContentData(
-				text: formContent.postText,
-				images: [],
-				postAsModerator: formContent.createdByModerator,
-				postAsTwitarrTeam: formContent.createdByTwitarrTeam,
-				postAsCommunitySupport: formContent.createdByCommunitySupport
-			)
-			let response = try await apiQuery(
-				req,
-				endpoint: "/fez/\(fezData.fezID)/post",
-				method: .POST,
-				encodeContent: postContentData
-			)
-			// Prefer the mailbox the user came from over any Location the API forwards.
-			let encoded = try await response.encodeResponse(for: req)
-			encoded.headers.replaceOrAdd(name: .location, value: mailbox.postSuccessURL)
-			return encoded
-		}
-		catch {
-			// If we successfully create the chat but can't add the initial message to it, redirect to the new chat.
-			var threadURL = "/seamail/\(fezData.fezID)"
-			if let foruser = mailbox.effectiveUser {
-				threadURL.append("?foruser=\(foruser)")
-			}
-			let headers = HTTPHeaders(dictionaryLiteral: ("Location", threadURL))
-			let response = Response(status: .badRequest, headers: headers)
-			return response
-		}
+		// Prefer the mailbox the user came from over any Location the API forwards.
+		let encoded = try await createResponse.encodeResponse(for: req)
+		encoded.headers.replaceOrAdd(name: .location, value: mailbox.postSuccessURL)
+		return encoded
 	}
 
 	// GET /seamail/:seamail_ID
