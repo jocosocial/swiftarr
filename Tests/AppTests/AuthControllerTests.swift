@@ -198,8 +198,8 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 				}
 			)
 
-			let reloaded = try await User.find(user.requireID(), on: app.db)
-			XCTAssertEqual(reloaded?.recoveryAttempts, 1)
+			let attempts = try await authRateLimitCount(app, .recovery(username))
+			XCTAssertEqual(attempts, 1)
 			try await user.delete(on: app.db)
 		}
 	}
@@ -532,8 +532,8 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 				}
 			)
 
-			let reloaded = try await User.find(user.requireID(), on: app.db)
-			XCTAssertEqual(reloaded?.recoveryAttempts, 1)
+			let attempts = try await authRateLimitCount(app, .usernameLookup(code))
+			XCTAssertEqual(attempts, 1)
 			try await user.delete(on: app.db)
 		}
 	}
@@ -630,8 +630,18 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 			let username = "lookup-keep-\(UUID().uuidString.prefix(8))"
 			let code = uniqueRegCode()
 			let user = try await makeLookupUser(app, username: username, verification: code)
-			user.recoveryAttempts = 2
-			try await user.save(on: app.db)
+			for _ in 0..<2 {
+				try await app.test(
+					.POST,
+					"/api/v3/auth/username",
+					beforeRequest: { req async throws in
+						try req.content.encode(lookupBody(code: code, key: "not-the-password"))
+					},
+					afterResponse: { res async throws in
+						XCTAssertEqual(res.status, .badRequest)
+					}
+				)
+			}
 
 			try await app.test(
 				.POST,
@@ -644,8 +654,8 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 				}
 			)
 
-			let reloaded = try await User.find(user.requireID(), on: app.db)
-			XCTAssertEqual(reloaded?.recoveryAttempts, 2)
+			let attempts = try await authRateLimitCount(app, .usernameLookup(code))
+			XCTAssertEqual(attempts, 2, "a successful lookup must not count, or clear earlier failures")
 			try await user.delete(on: app.db)
 		}
 	}
@@ -655,9 +665,20 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 			let username = "lookup-lock-\(UUID().uuidString.prefix(8))"
 			let code = uniqueRegCode()
 			let user = try await makeLookupUser(app, username: username, verification: code)
-			user.recoveryAttempts = 5
-			try await user.save(on: app.db)
+			for _ in 0..<5 {
+				try await app.test(
+					.POST,
+					"/api/v3/auth/username",
+					beforeRequest: { req async throws in
+						try req.content.encode(lookupBody(code: code, key: "not-the-password"))
+					},
+					afterResponse: { res async throws in
+						XCTAssertEqual(res.status, .badRequest)
+					}
+				)
+			}
 
+			// Even the right password is refused while the code is locked out.
 			try await app.test(
 				.POST,
 				"/api/v3/auth/username",
@@ -665,7 +686,8 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 					try req.content.encode(lookupBody(code: code, key: "password1"))
 				},
 				afterResponse: { res async throws in
-					XCTAssertEqual(res.status, .forbidden)
+					XCTAssertEqual(res.status, .tooManyRequests)
+					XCTAssertNotNil(res.headers.first(name: "Retry-After"))
 				}
 			)
 			try await user.delete(on: app.db)

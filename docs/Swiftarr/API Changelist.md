@@ -374,3 +374,6 @@ additive; the existing count fields are unchanged and are now derived from these
 
 - `POST /api/v3/user/password` now returns `TokenStringData` (still 201). A password change revokes the user's existing token on every device; clients must replace their stored token with the returned one.
 - `POST /api/v3/auth/recovery` now always returns a new token and revokes the old one, instead of returning the existing token. An unknown username now fails with the same 400 as a wrong recovery key.
+- Failed attempts on `POST /api/v3/auth/login`, `/auth/recovery`, `/auth/username`, `/user/create` (bad registration codes), and `/user/password` (wrong current password) are now rate limited per username/registration code and per client IP. Over the limit, these return 429 with a `Retry-After` header (seconds). The recovery and username lookup lockouts that used to return a permanent 403 are now this temporary 429.
+- Admin: `SettingsAdminData` and `SettingsUpdateData` gain `authRateLimitEnabled`, `authRateLimitLoginFailures`, `authRateLimitUsernameFailures`, `authRateLimitIPFailures`, and `authRateLimitRecoveryFailures`.
+- Admin: added `POST /api/v3/admin/authratelimits/clear` (TwitarrTeam and above), which clears all current auth rate limit lockouts and returns `AuthRateLimitClearData`.

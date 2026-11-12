@@ -89,16 +89,15 @@ struct AuthController: APIRouteCollection {
 	///   been executed via the code, subsequent recovery can only be done via the recoveryKey
 	///   provided during initial account creation.
 	///
-	/// - Note: To prevent brute-force malicious attempts, there is a limit on successive
-	///   failed recovery attempts, currently hard-coded to 5.
+	/// - Note: To prevent brute-force attempts, failed recoveries are rate limited per username and per client IP
+	///   (see `AuthRateLimiter`). An account that hits the limit is locked out of recovery for a while, not permanently.
 	///
 	/// - Note: An unknown username fails with the same 400 as a wrong recovery key, so this endpoint can't be used
 	///   to discover which usernames exist.
 	///
 	/// - Parameter requestBody: `UserRecoveryData`
-	/// - Throws: 400 error if the recovery fails. 403 error if the maximum number of successive
-	///   failed recovery attempts has been reached, or if the credentials match a banned user.
-	///   A 5xx response should be reported as a likely bug, please and thank you.
+	/// - Throws: 400 error if the recovery fails. 403 error if the credentials match a banned user. 429 error, with a
+	///   `Retry-After` header, after too many failed attempts. A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `TokenStringData` containing a new authentication token (string) that should
 	///   be used for all subsequent HTTP requests, until expiry or revocation.
 	func recoveryHandler(_ req: Request) async throws -> TokenStringData {
@@ -106,6 +105,11 @@ struct AuthController: APIRouteCollection {
 		let data = try ValidatingJSONDecoder().decode(UserRecoveryData.self, fromBodyOf: req)
 		let isRegistrationCode = RegistrationCode.isWellFormed(data.recoveryKey)
 		let noMatch = Abort(.badRequest, reason: "no match for supplied recovery key")
+		// Count the attempt before looking up the user, so unknown usernames are limited exactly like real ones.
+		let attempt = try await AuthRateLimiter.reserve(
+			[.clientIP(req.rateLimitClientIP), .recovery(data.username)],
+			on: req
+		)
 		// find data.username user
 		guard let user = try await User.query(on: req.db).filter(\.$username, .custom("ilike"), data.username).first()
 		else {
@@ -117,11 +121,6 @@ struct AuthController: APIRouteCollection {
 			}
 			throw noMatch
 		}
-		// abort if account is seeing potential brute-force attack
-		guard user.recoveryAttempts < 5 else {
-			throw Abort(.forbidden, reason: "please see a Twit-arr Team member for password recovery")
-		}
-
 		// Registration codes are normalized (lowercase, all whitespace stripped) prior to storage.
 		// Recovery keys are hashed after ASCII spaces are removed; passwords are matched as typed.
 		var foundMatch = false
@@ -156,9 +155,6 @@ struct AuthController: APIRouteCollection {
 		}
 		// abort if no match
 		guard foundMatch else {
-			// track the attempt count
-			user.recoveryAttempts += 1
-			try await user.save(on: req.db)
 			throw noMatch
 		}
 		// no login for punks. Checked after the credentials so ban status is only revealed to the account holder.
@@ -166,8 +162,8 @@ struct AuthController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "User is banned, and cannot login.")
 		}
 
-		// user appears valid, zero out attempt tracking and save new password
-		user.recoveryAttempts = 0
+		// user appears valid, save new password
+		await attempt.refund(on: req)
 		user.password = try await req.password.async.hash(data.newPassword)
 
 		// Whoever had the old password may still be logged in; revoke that login and issue a fresh token. The password reset
@@ -193,17 +189,22 @@ struct AuthController: APIRouteCollection {
 	///
 	/// Username lookup does not spend the registration code and does not log the user in.
 	///
-	/// - Note: To prevent brute-force malicious attempts, there is a limit on successive
-	///   failed attempts, currently hard-coded to 5, shared with password recovery.
+	/// - Note: To prevent brute-force attempts, failed lookups are rate limited per registration code and per client IP
+	///   (see `AuthRateLimiter`).
 	///
 	/// - Parameter requestBody: `UserUsernameLookupData`
 	/// - Throws: 400 error if the lookup fails or the second factor is a registration code.
-	///   403 error if the maximum number of successive failed recovery attempts has been reached.
+	///   429 error, with a `Retry-After` header, after too many failed attempts.
 	/// - Returns: `UserHeader` for the matching account.
 	func usernameHandler(_ req: Request) async throws -> UserHeader {
 		// see `UserUsernameLookupData.validations()`
 		let data = try ValidatingJSONDecoder().decode(UserUsernameLookupData.self, fromBodyOf: req)
 		let storedCodes = User.storedVerificationValues(for: data.registrationCode)
+		// Count the attempt before looking up the code, so unknown codes are limited exactly like real ones.
+		let attempt = try await AuthRateLimiter.reserve(
+			[.clientIP(req.rateLimitClientIP), .usernameLookup(data.registrationCode)],
+			on: req
+		)
 
 		let users = try await User.query(on: req.db).filter(\.$verification ~~ storedCodes).all()
 
@@ -211,12 +212,10 @@ struct AuthController: APIRouteCollection {
 		// registration code is not distinguishable from a made-up one.
 		let noMatch = Abort(.badRequest, reason: "no match for supplied credentials")
 		guard !users.isEmpty else {
+			// Spend the same bcrypt time as a wrong second factor (password, then recovery key) on a real code.
+			await CryptoHelper.dummyPasswordVerify(data.recoveryKey, on: req)
+			await CryptoHelper.dummyRecoveryKeyVerify(data.recoveryKey, on: req)
 			throw noMatch
-		}
-
-		// abort if account is seeing potential brute-force attack
-		guard users.allSatisfy({ $0.recoveryAttempts < 5 }) else {
-			throw Abort(.forbidden, reason: "please see a Twit-arr Team member for account recovery")
 		}
 
 		// Prefer a password match (identifies a specific primary or alt) over a recovery-key
@@ -244,13 +243,9 @@ struct AuthController: APIRouteCollection {
 
 		// abort if no match
 		guard let matched = passwordMatch ?? recoveryKeyMatch else {
-			// track the attempt count on every account sharing this registration code
-			for user in users {
-				user.recoveryAttempts += 1
-				try await user.save(on: req.db)
-			}
 			throw noMatch
 		}
+		await attempt.refund(on: req)
 
 		return try UserHeader(user: matched)
 	}
@@ -298,7 +293,8 @@ struct AuthController: APIRouteCollection {
 	/// - Requires: `User.accessLevel` other than `.banned`.
 	/// - Requires: HTTP Basic Auth in `Authorization` header.
 	/// - Throws: 401 error if the Basic authentication fails. 403 error if the user is
-	///   banned. A 5xx response should be reported as a likely bug, please and thank you.
+	///   banned. 429 error, with a `Retry-After` header, after too many failed logins (see `AuthRateLimiter`).
+	///   A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `TokenStringData` containing an authentication token (string) that should
 	///   be used for all subsequent HTTP requests, until expiry or revocation.
 	func loginHandler(_ req: Request) async throws -> TokenStringData {

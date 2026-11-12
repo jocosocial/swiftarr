@@ -139,7 +139,8 @@ struct UserController: APIRouteCollection {
 	/// - Parameter requestBody: `UserCreateData`, including `agreeToTerms` set to `true`.
 	/// - Throws: 400 error if `agreeToTerms` is not `true`, if the username is an invalid format,
 	///   if the verification code is malformed, or if there is no such registration code. 409 error if the
-	///   username is not available or the registration code has already been used.
+	///   username is not available or the registration code has already been used. 429 error, with a `Retry-After`
+	///   header, after too many bad registration codes from the client's IP (see `AuthRateLimiter`).
 	/// - Returns: `CreatedUserData` containing the newly created user's ID, username, and a
 	///   recovery key string.
 	func createHandler(_ req: Request) async throws -> Response {
@@ -163,12 +164,15 @@ struct UserController: APIRouteCollection {
 		let normalizedRegCode = RegistrationCode.normalized(submittedCode)
 		// Reject bad or used reg codes before the bcrypt work below, so junk requests stay cheap. This is only a fast
 		// path; the check inside the transaction is the one that guarantees each code goes to one user.
+		// Bad codes count against the client IP's auth failure limit, to slow down guessing registration codes.
+		let attempt = try await AuthRateLimiter.reserve([.clientIP(req.rateLimitClientIP)], on: req)
 		guard let regCode = try await RegistrationCode.query(on: req.db).filter(\.$code == normalizedRegCode).first() else {
 			throw Abort(.badRequest, reason: "No match for registration code")
 		}
 		guard regCode.$user.id == nil else {
 			throw Abort(.conflict, reason: "registration code has already been used")
 		}
+		await attempt.refund(on: req)
 
 		// create user
 		let recoveryKey = try UserController.generateRecoveryKey(on: req)
@@ -348,7 +352,8 @@ struct UserController: APIRouteCollection {
 	///
 	/// - Parameter requestBody: `UserPasswordData` struct containing the user's desired password.
 	/// - Throws: 400 error if the supplied password is not at least 6 characters. 403 error
-	///   if the user is a `.client`.
+	///   if the user is a `.client`. 429 error, with a `Retry-After` header, after too many wrong current passwords;
+	///   these count against the same limits as failed logins (see `AuthRateLimiter`).
 	/// - Returns: 201 Created on success, with `TokenStringData` containing the user's new token.
 	func passwordHandler(_ req: Request) async throws -> Response {
 		let user = try await req.auth.require(UserCacheData.self).getUser(on: req.db)
@@ -358,9 +363,15 @@ struct UserController: APIRouteCollection {
 		}
 		// see `UserPasswordData.validations()`
 		let data = try ValidatingJSONDecoder().decode(UserPasswordData.self, fromBodyOf: req)
+		// Wrong current passwords count against the same limits as failed logins.
+		let attempt = try await AuthRateLimiter.reserve(
+			AuthRateLimiter.Bucket.login(user.username, ip: req.rateLimitClientIP),
+			on: req
+		)
 		guard try await req.password.async.verify(data.currentPassword, created: user.password) else {
 			throw Abort(.badRequest, reason: "Existing password doesn't match; cannot set new password")
 		}
+		await attempt.refund(on: req)
 		// encrypt, then update user
 		let passwordHash = try await req.password.async.hash(data.newPassword)
 		user.password = passwordHash
