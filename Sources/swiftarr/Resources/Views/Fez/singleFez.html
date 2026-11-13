@@ -92,6 +92,7 @@
 							#if(fez.fezType != "personalEvent"):
 								<a class="btn btn-outline-primary" href="/lfg/#(fez.fezID)/members">Manage Members</a>
 							#endif
+							#extend("shareButton")
 							<a class="btn btn-outline-primary" href="/lfg/#(fez.fezID)/update">Update</a>
 							<button type="button" class="btn btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="\#cancelFezModal">Cancel</button>
 						#elseif(fez.fezType != "personalEvent"):
@@ -294,6 +295,8 @@
 				</div>
 			</div>
 		</div>
+		
+		#extend("shareModal")
 		
 		<div class="modal fade" id="cancelFezModal" tabindex="-1" aria-labelledby="cancel fez modal" aria-hidden="true">
 			<div class="modal-dialog">
