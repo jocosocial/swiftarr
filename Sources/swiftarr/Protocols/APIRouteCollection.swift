@@ -174,6 +174,9 @@ extension APIRouteCollection {
 	/// Runs work that can't be rolled back (Redis notifications, socket pushes, cache refreshes, appointment bookkeeping) for a change that has
 	/// already been committed. A failure is logged, not thrown: throwing would give the client an error for a request that succeeded, and a retry
 	/// would then duplicate the content.
+	///
+	/// Claude got cute with the fileID and line stuff. Until we see how this pattern goes,
+	/// I'll allow it. It's better than the long form descriptions of everything it was doing.
 	func dispatchEffect(on req: Request, fileID: String = #fileID, line: Int = #line, _ work: () async throws -> Void) async {
 		do {
 			try await work()
