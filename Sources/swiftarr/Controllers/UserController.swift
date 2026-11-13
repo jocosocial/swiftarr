@@ -405,12 +405,14 @@ struct UserController: APIRouteCollection {
 		}
 		// record update for accountability
 		let oldProfileEdit = try ProfileEdit(target: targetUser, editor: user)
-		try await oldProfileEdit.save(on: req.db)
 		targetUser.username = data.username
 		targetUser.buildUserSearchString()
-		try await targetUser.save(on: req.db)
+		try await req.db.transaction { db in
+			try await oldProfileEdit.save(on: db)
+			try await targetUser.save(on: db)
+			try await targetUser.logIfModeratorAction(.edit, user: cacheUser, on: db)
+		}
 		try await req.userCache.updateUser(targetUser.requireID())
-		await targetUser.logIfModeratorAction(.edit, user: cacheUser, on: req)
 		return .created
 	}
 
@@ -432,22 +434,38 @@ struct UserController: APIRouteCollection {
 		try user.guardCanEditProfile()
 		let data = try req.content.decode(ImageUploadData.self)
 		// get generated filename
-		let newImageName = try await processImage(data: data.image, usage: .userProfile, on: req) ?? data.filename
-		// Save a thumbnail of existing image if there was one and we're changing it.
+		let processedImageName = try await processImage(data: data.image, usage: .userProfile, on: req)
+		let newImageName = processedImageName ?? data.filename
+		// Keep a record of the existing image if there was one and we're changing it.
+		var replacedImage: String? = nil
+		var profileEdit: ProfileEdit? = nil
 		if let existingImage = user.userImage, !existingImage.isEmpty, existingImage != newImageName {
-			// create ProfileEdit record
-			let profileEdit = try ProfileEdit(target: user, editor: user)
-			// archive thumbnail
-			DispatchQueue.global(qos: .background)
-				.async {
-					self.archiveImage(existingImage, on: req)
-				}
-			try await profileEdit.save(on: req.db)
+			replacedImage = existingImage
+			profileEdit = try ProfileEdit(target: user, editor: user)
 		}
 		// Set new image
 		user.userImage = newImageName
 		user.profileUpdatedAt = Date()
-		try await user.save(on: req.db)
+		let profileEditToSave = profileEdit
+		do {
+			try await req.db.transaction { db in
+				try await profileEditToSave?.save(on: db)
+				try await user.save(on: db)
+			}
+		}
+		catch {
+			if let processedImageName = processedImageName {
+				deleteImageFiles([processedImageName], on: req)
+			}
+			throw error
+		}
+		// Archive the replaced image only once the change is committed; archiving removes the full-size file.
+		if let replacedImage = replacedImage {
+			DispatchQueue.global(qos: .background)
+				.async {
+					self.archiveImage(replacedImage, on: req)
+				}
+		}
 		let userCacheData = try await req.userCache.updateUser(user.requireID())
 		return userCacheData.makeHeader()
 	}
@@ -479,18 +497,21 @@ struct UserController: APIRouteCollection {
 		if let existingImage = targetUser.userImage, !existingImage.isEmpty {
 			// create ProfileEdit record
 			let profileEdit = try ProfileEdit(target: targetUser, editor: user)
-			// archive thumbnail
+			// remove image from profile
+			targetUser.userImage = nil
+			targetUser.profileUpdatedAt = Date()
+			let editedUser = targetUser
+			try await req.db.transaction { db in
+				try await profileEdit.save(on: db)
+				try await editedUser.save(on: db)
+				try await editedUser.logIfModeratorAction(.delete, user: cacheUser, on: db)
+			}
+			// archive thumbnail, once the change is committed; archiving removes the full-size file
 			DispatchQueue.global(qos: .background)
 				.async {
 					return self.archiveImage(existingImage, on: req)
 				}
-			try await profileEdit.save(on: req.db)
-			// remove image from profile
-			targetUser.userImage = nil
-			targetUser.profileUpdatedAt = Date()
-			try await targetUser.save(on: req.db)
 			try await req.userCache.updateUser(targetUser.requireID())
-			await targetUser.logIfModeratorAction(.delete, user: cacheUser, on: req)
 		}
 		return .noContent
 	}
@@ -546,7 +567,6 @@ struct UserController: APIRouteCollection {
 		let data = try ValidatingJSONDecoder().decode(UserProfileUploadData.self, fromBodyOf: req)
 		// record update for accountability
 		let oldProfileEdit = try ProfileEdit(target: targetUser, editor: user)
-		try await oldProfileEdit.save(on: req.db)
 
 		// update fields, nil if no value supplied
 		targetUser.about = data.about?.isEmpty == true ? nil : data.about
@@ -563,9 +583,13 @@ struct UserController: APIRouteCollection {
 		// build .userSearch value
 		targetUser.buildUserSearchString()
 
-		try await targetUser.save(on: req.db)
+		let editedUser = targetUser
+		try await req.db.transaction { db in
+			try await oldProfileEdit.save(on: db)
+			try await editedUser.save(on: db)
+			try await editedUser.logIfModeratorAction(.edit, user: cacheUser, on: db)
+		}
 		try await req.userCache.updateUser(targetUser.requireID())
-		await targetUser.logIfModeratorAction(.edit, user: cacheUser, on: req)
 		return try ProfilePublicData(
 			user: targetUser,
 			note: nil,
@@ -594,10 +618,12 @@ struct UserController: APIRouteCollection {
 		guard let cleanParam = cleanedParams.first, cleanParam.count > 3 else {
 			throw Abort(.badRequest, reason: "Cannot set alerts on very short or very common words")
 		}
-		let alertword =
-			try await AlertWord.query(on: req.db).filter(\.$word == cleanParam).first() ?? AlertWord(cleanParam)
-		try await alertword.save(on: req.db)
-		try await AlertWordPivot(alertword: alertword, userID: cacheUser.userID).save(on: req.db)
+		try await req.db.transaction { db in
+			let alertword =
+				try await AlertWord.query(on: db).filter(\.$word == cleanParam).first() ?? AlertWord(cleanParam)
+			try await alertword.save(on: db)
+			try await AlertWordPivot(alertword: alertword, userID: cacheUser.userID).save(on: db)
+		}
 		try await req.redis.addAlertword(parameter, userID: cacheUser.userID)
 		let keywordPivots = try await AlertWordPivot.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
 			.with(\.$alertword).all()
@@ -635,10 +661,16 @@ struct UserController: APIRouteCollection {
 			.all()
 		if let removePivot = pivots.first(where: { $0.alertword.word == parameter }) {
 			let alertWord = removePivot.alertword
-			try await removePivot.delete(on: req.db)
 			pivots.removeAll { $0.id == removePivot.id }
-			if try await alertWord.$users.$pivots.query(on: req.db).count() == 0 {
-				try await alertWord.delete(on: req.db)
+			let wordIsUnused = try await req.db.transaction { db -> Bool in
+				try await removePivot.delete(on: db)
+				if try await alertWord.$users.$pivots.query(on: db).count() == 0 {
+					try await alertWord.delete(on: db)
+					return true
+				}
+				return false
+			}
+			if wordIsUnused {
 				try await req.redis.removeAlertword(parameter)
 			}
 			try await req.redis.removeUserAlertword(parameter, userID: user.userID)

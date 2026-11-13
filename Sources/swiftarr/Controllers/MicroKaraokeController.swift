@@ -73,12 +73,11 @@ struct MicroKaraokeController: APIRouteCollection {
 			// Find an open slot in this song, if one exists. Songs may have open offers for all slots that have no uploads.
 			let openSlots = Set(0...(song.totalSnippets - 1)).subtracting(song.snippets.map { $0.songSnippetIndex })
 			if let chosenSlot = openSlots.randomElement() {
+				let newOffer = try MKSnippet(song: song, songSnippetIndex: chosenSlot, author: cacheUser)
 				// Hard-delete any snippet with this songID+snippetIndex that's been soft-deleted
 				try await MKSnippet.query(on: req.db).withDeleted().filter(\.$deletedAt < Date())
 						.filter(\.$song.$id == song.requireID()).filter(\.$songSnippetIndex == chosenSlot)
 						.delete(force: true)
-				
-				let newOffer = try MKSnippet(song: song, songSnippetIndex: chosenSlot, author: cacheUser)
 				try await newOffer.save(on: req.db)
 				let result = try makeOfferPacket(from: newOffer, song: song)
 				return result
@@ -131,13 +130,22 @@ struct MicroKaraokeController: APIRouteCollection {
 		}
 		offer.mediaURL = mediaURL
 		offer.deletedAt = nil
-		try await offer.save(on: req.db)
-		
-		// See if this snippet completes the song--if so, mark song complete
-		let finishedSnippetCount = try await MKSnippet.query(on: req.db).filter(\.$song.$id == offer.$song.id).filter(\.$mediaURL != nil).count()
-		if finishedSnippetCount >= offer.song.totalSnippets {
-			offer.song.isComplete = true
-			try await offer.song.save(on: req.db)
+		do {
+			try await req.db.transaction { db in
+				try await offer.save(on: db)
+				
+				// See if this snippet completes the song--if so, mark song complete
+				let finishedSnippetCount = try await MKSnippet.query(on: db).filter(\.$song.$id == offer.$song.id).filter(\.$mediaURL != nil).count()
+				if finishedSnippetCount >= offer.song.totalSnippets {
+					offer.song.isComplete = true
+					try await offer.song.save(on: db)
+				}
+			}
+		}
+		catch {
+			// The slot still has no video as far as the database is concerned, so don't leave the file behind.
+			try? FileManager.default.removeItem(at: snippetURL)
+			throw error
 		}
 		return .ok
 	}
@@ -302,24 +310,26 @@ struct MicroKaraokeController: APIRouteCollection {
 		let mkUserID = req.userCache.getUser(username: "MicroKaraoke")?.userID ?? UUID()
 		let newSongModel = MKSong(name: songInfo.songname, artist: songInfo.artist, totalSnippets: totalSnippets, 
 				bpm: songInfo.bpm, songCreatorID: mkUserID)
-		try await newSongModel.save(on: req.db)
+		// The song and its filler snippets are created together, so a failure can't leave a song with some of its filler missing.
+		try await req.db.transaction { db in
+			try await newSongModel.save(on: db)
 		
-		
-		// Immediately fill in the clips for any filler snippets where there's nobody singing and we need background video
-//		let snippets = try FileManager.default.contentsOfDirectory(at: selectedSong, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
-		for index in 0..<totalSnippets {
-			let fillPath = selectedSong.appendingPathComponent("\(index)").appendingPathComponent("fill.mp3")
-			if FileManager.default.fileExists(atPath: fillPath.path), let mkUser = req.userCache.getUser(username: "MicroKaraoke") {
-				let newSnippetModel = try MKSnippet(song: newSongModel, songSnippetIndex: index, author: mkUser)
-				var mediaURL = Settings.shared.canonicalServerURLComponents
-				let filename = newSongModel.isPortrait ? "fillVideoPortrait" : "fillVideoLandscape"
-				mediaURL.path = "/microkaraoke/\(songInfo.songname)/\(index)/\(filename).mp4"
-				guard let url = mediaURL.url else {
-					throw Abort(.internalServerError, reason: "Could not create URL for song filler video.")
+			// Immediately fill in the clips for any filler snippets where there's nobody singing and we need background video
+	//		let snippets = try FileManager.default.contentsOfDirectory(at: selectedSong, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
+			for index in 0..<totalSnippets {
+				let fillPath = selectedSong.appendingPathComponent("\(index)").appendingPathComponent("fill.mp3")
+				if FileManager.default.fileExists(atPath: fillPath.path), let mkUser = req.userCache.getUser(username: "MicroKaraoke") {
+					let newSnippetModel = try MKSnippet(song: newSongModel, songSnippetIndex: index, author: mkUser)
+					var mediaURL = Settings.shared.canonicalServerURLComponents
+					let filename = newSongModel.isPortrait ? "fillVideoPortrait" : "fillVideoLandscape"
+					mediaURL.path = "/microkaraoke/\(songInfo.songname)/\(index)/\(filename).mp4"
+					guard let url = mediaURL.url else {
+						throw Abort(.internalServerError, reason: "Could not create URL for song filler video.")
+					}
+					newSnippetModel.mediaURL = url.absoluteString
+					newSnippetModel.deletedAt = nil
+					try await newSnippetModel.save(on: db)
 				}
-				newSnippetModel.mediaURL = url.absoluteString
-				newSnippetModel.deletedAt = nil
-				try await newSnippetModel.save(on: req.db)
 			}
 		}
 	}

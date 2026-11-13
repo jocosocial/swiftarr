@@ -160,17 +160,21 @@ struct AuthController: APIRouteCollection {
 		// user appears valid, zero out attempt tracking and save new password
 		user.recoveryAttempts = 0
 		user.password = try Bcrypt.hash(data.newPassword)
-		try await user.save(on: req.db)
 
 		// return existing token if any
 		let existingToken = try await Token.query(on: req.db).filter(\.$user.$id == user.requireID()).first()
 		if let existing = existingToken {
+			try await user.save(on: req.db)
 			return try TokenStringData(user: user, token: existing)
 		}
 		else {
-			// otherwise generate and return new token
+			// otherwise generate and return new token. The password reset and the token are saved together, so a failure
+			// can't leave the account recovered (and a one-time registration code spent) without the client getting a token.
 			let token = try Token.generate(for: user)
-			try await token.save(on: req.db)
+			try await req.db.transaction { db in
+				try await user.save(on: db)
+				try await token.save(on: db)
+			}
 			try await req.userCache.updateUser(user.requireID())
 			return try TokenStringData(user: user, token: token)
 		}

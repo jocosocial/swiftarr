@@ -115,11 +115,13 @@ struct AdminController: APIRouteCollection {
 	/// - Returns: `HTTP 201 Created` with the new `ClientAppData`.
 	func clientAppCreateHandler(_ req: Request) async throws -> Response {
 		let data = try ValidatingJSONDecoder().decode(ClientAppUploadData.self, fromBodyOf: req)
-		let filenames = try await processImages(data.image.map { [$0] } ?? [], usage: .clientApp, maxImages: 1, on: req)
-		let app = ClientApp(name: data.name, description: data.description, image: filenames.first, developer: data.developer,
-				sortName: data.sortName?.isEmpty == false ? data.sortName : nil, links: data.links,
-				swiftarrClient: data.swiftarrClient)
-		try await app.save(on: req.db)
+		let app = try await withProcessedImages(data.image.map { [$0] } ?? [], usage: .clientApp, maxImages: 1, on: req) { filenames in
+			let app = ClientApp(name: data.name, description: data.description, image: filenames.first, developer: data.developer,
+					sortName: data.sortName?.isEmpty == false ? data.sortName : nil, links: data.links,
+					swiftarrClient: data.swiftarrClient)
+			try await app.save(on: req.db)
+			return app
+		}
 		let response = Response(status: .created)
 		try response.content.encode(try ClientAppData(app), as: .json)
 		return response
@@ -134,15 +136,16 @@ struct AdminController: APIRouteCollection {
 	func clientAppUpdateHandler(_ req: Request) async throws -> Response {
 		let data = try ValidatingJSONDecoder().decode(ClientAppUploadData.self, fromBodyOf: req)
 		let app = try await ClientApp.findFromParameter(clientAppIDParam, on: req)
-		let filenames = try await processImages(data.image.map { [$0] } ?? [], usage: .clientApp, maxImages: 1, on: req)
-		app.name = data.name
-		app.appDescription = data.description
-		app.image = filenames.first
-		app.developer = data.developer
-		app.sortName = data.sortName?.isEmpty == false ? data.sortName! : data.name
-		app.links = data.links
-		app.swiftarrClient = data.swiftarrClient
-		try await app.save(on: req.db)
+		try await withProcessedImages(data.image.map { [$0] } ?? [], usage: .clientApp, maxImages: 1, on: req) { filenames in
+			app.name = data.name
+			app.appDescription = data.description
+			app.image = filenames.first
+			app.developer = data.developer
+			app.sortName = data.sortName?.isEmpty == false ? data.sortName! : data.name
+			app.links = data.links
+			app.swiftarrClient = data.swiftarrClient
+			try await app.save(on: req.db)
+		}
 		let response = Response(status: .created)
 		try response.content.encode(try ClientAppData(app), as: .json)
 		return response
@@ -173,14 +176,15 @@ struct AdminController: APIRouteCollection {
 		try user.guardCanCreateContent(customErrorString: "user cannot add daily themes")
 		let data = try ValidatingJSONDecoder().decode(DailyThemeUploadData.self, fromBodyOf: req)
 		let imageArray = data.image != nil ? [data.image!] : []
-		let filenames = try await processImages(imageArray, usage: .dailyTheme, on: req)
-		let filename = filenames.isEmpty ? nil : filenames[0]
-		let dailyTheme = DailyTheme(title: data.title, info: data.info, image: filename, day: data.cruiseDay)
-		do {
-			try await dailyTheme.save(on: req.db)
-		}
-		catch let error as DatabaseError where error.isConstraintFailure {
-			throw Abort(.conflict, reason: "A daily theme for day \(data.cruiseDay) already exists. Edit the existing theme instead.")
+		try await withProcessedImages(imageArray, usage: .dailyTheme, on: req) { filenames in
+			let filename = filenames.isEmpty ? nil : filenames[0]
+			let dailyTheme = DailyTheme(title: data.title, info: data.info, image: filename, day: data.cruiseDay)
+			do {
+				try await dailyTheme.save(on: req.db)
+			}
+			catch let error as DatabaseError where error.isConstraintFailure {
+				throw Abort(.conflict, reason: "A daily theme for day \(data.cruiseDay) already exists. Edit the existing theme instead.")
+			}
 		}
 		return .created
 	}
@@ -199,17 +203,17 @@ struct AdminController: APIRouteCollection {
 		try user.guardCanCreateContent(customErrorString: "user cannot add daily themes")
 		let data = try ValidatingJSONDecoder().decode(DailyThemeUploadData.self, fromBodyOf: req)
 		let dailyTheme = try await DailyTheme.findFromParameter(dailyThemeIDParam, on: req)
-		// process images
-		let filenames = try await processImages(data.image != nil ? [data.image!] : [], usage: .dailyTheme, on: req)
-		dailyTheme.title = data.title
-		dailyTheme.info = data.info
-		dailyTheme.image = filenames.isEmpty ? nil : filenames[0]
-		dailyTheme.cruiseDay = data.cruiseDay
-		do {
-			try await dailyTheme.save(on: req.db)
-		}
-		catch let error as DatabaseError where error.isConstraintFailure {
-			throw Abort(.conflict, reason: "A daily theme for day \(data.cruiseDay) already exists.")
+		try await withProcessedImages(data.image != nil ? [data.image!] : [], usage: .dailyTheme, on: req) { filenames in
+			dailyTheme.title = data.title
+			dailyTheme.info = data.info
+			dailyTheme.image = filenames.isEmpty ? nil : filenames[0]
+			dailyTheme.cruiseDay = data.cruiseDay
+			do {
+				try await dailyTheme.save(on: req.db)
+			}
+			catch let error as DatabaseError where error.isConstraintFailure {
+				throw Abort(.conflict, reason: "A daily theme for day \(data.cruiseDay) already exists.")
+			}
 		}
 		return .created
 	}
@@ -1384,12 +1388,16 @@ struct AdminController: APIRouteCollection {
 					fez.startTime = fezData.startTime
 					fez.endTime = fezData.endTime
 					fez.participantArray = [userID]
-					try await fez.save(on: req.db)
-					try await fez.$participants.attach(user, on: req.db, {
-						$0.readCount = 0
-						$0.hiddenCount = 0
-					})
-					_ = try await storeNextJoinedAppointment(userID: userID, on: req)
+					try await req.db.transaction { db in
+						try await fez.save(on: db)
+						try await fez.$participants.attach(user, on: db, {
+							$0.readCount = 0
+							$0.hiddenCount = 0
+						})
+					}
+					await dispatchEffect(on: req) {
+						try await storeNextJoinedAppointment(userID: userID, on: req)
+					}
 				}
 				verification.fezCounts.importedCount += 1
 			}
@@ -1442,25 +1450,38 @@ struct AdminController: APIRouteCollection {
 			try await PerformerController().buildPerformerFromUploadData(performer: &performer, uploadData: performerData, on: req)
 			performer.$user.id = userID
 			performer.$photo.value = copiedUserImage
+			// The performer and its event links are written together. Events that can't be found are reported, not fatal.
+			let performerToSave = performer
+			var missingEventErrors: [String] = []
 			if !verifyOnly {
-				try await performer.save(on: req.db)			// Updates or creates
-			}
-			for eventUID in performerData.eventUIDs {
-				guard let event = try await Event.query(on: req.db).filter(\.$uid == eventUID).first() else {
-					verification.otherErrors.append("Couldn't find Event that Performer \"\(performerData.name)\" is performing in: UID = \(eventUID)")
-					continue
+				missingEventErrors = try await req.db.transaction { db -> [String] in
+					try await performerToSave.save(on: db)			// Updates or creates
+					var errors: [String] = []
+					for eventUID in performerData.eventUIDs {
+						guard let event = try await Event.query(on: db).filter(\.$uid == eventUID).first() else {
+							errors.append("Couldn't find Event that Performer \"\(performerData.name)\" is performing in: UID = \(eventUID)")
+							continue
+						}
+						let attachedEvent = try await EventPerformer.query(on: db)
+								.filter(\.$performer.$id == performerToSave.requireID()).filter(\.$event.$id == event.requireID()).first()
+						if attachedEvent == nil {
+							let newEventPerformer = EventPerformer()
+							newEventPerformer.$performer.id = try performerToSave.requireID()
+							newEventPerformer.$event.id = try event.requireID()
+							try await newEventPerformer.save(on: db)
+						}
+					}
+					return errors
 				}
-				if !verifyOnly {
-					let attachedEvent = try await EventPerformer.query(on: req.db)
-							.filter(\.$performer.$id == performer.requireID()).filter(\.$event.$id == event.requireID()).first()
-					if attachedEvent == nil {
-						let newEventPerformer = EventPerformer()
-						newEventPerformer.$performer.id = try performer.requireID()
-						newEventPerformer.$event.id = try event.requireID()
-						try await newEventPerformer.save(on: req.db)
+			}
+			else {
+				for eventUID in performerData.eventUIDs {
+					if try await Event.query(on: req.db).filter(\.$uid == eventUID).first() == nil {
+						missingEventErrors.append("Couldn't find Event that Performer \"\(performerData.name)\" is performing in: UID = \(eventUID)")
 					}
 				}
 			}
+			verification.otherErrors.append(contentsOf: missingEventErrors)
 			verification.performerCounts.importedCount += 1
 		}
 		catch {

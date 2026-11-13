@@ -79,6 +79,7 @@ extension APICollection {
 
 	// Calculates the start time of the earliest future joined LFG. Caches the value in Redis for quick access.
 	// This version of the function operates on the Application context for use in Jobs and such.
+	@discardableResult
 	func storeNextJoinedAppointment(userID: UUID, on app: Application) async throws -> (Date, UUID)? {
 		let nextJoinedLFG = try await getNextAppointment(userID: userID, db: app.db)
 		guard let lfg = nextJoinedLFG, let id = lfg.id, let startTime = lfg.startTime else {

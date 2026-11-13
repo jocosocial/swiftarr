@@ -1,4 +1,5 @@
 import Fluent
+import SQLKit
 import FluentSQL
 import Vapor
 
@@ -486,18 +487,23 @@ struct FezController: APIRouteCollection {
 			throw Abort(.notFound, reason: "This \(fez.fezType.lfgLabel) is not available")
 		}
 		// add user to both the participantArray and attach a pivot for them.
-		fez.participantArray.append(cacheUser.userID)
-		try await fez.save(on: req.db)
-		let newParticipant = try await getUserPivotForAdd(lfg: fez, userID: cacheUser.userID, on: req.db)
-		newParticipant.readCount = 0
-		newParticipant.addedTo = false  // Clear addedTo for voluntary joins (user wasn't added by someone else)
 		let blocksAndMutes = cacheUser.getBlocks().union(cacheUser.getMutes())
-		newParticipant.hiddenCount = try await fez.$fezPosts.query(on: req.db).filter(\.$author.$id ~~ blocksAndMutes)
-			.count()
-		try await newParticipant.save(on: req.db)
-		try await forwardMembershipChangeToSockets(fez, participantID: cacheUser.userID, joined: true, on: req)
+		let newParticipant = try await req.db.transaction { db -> FezParticipant in
+			fez.participantArray.append(cacheUser.userID)
+			try await fez.save(on: db)
+			let newParticipant = try await getUserPivotForAdd(lfg: fez, userID: cacheUser.userID, on: db)
+			newParticipant.readCount = 0
+			newParticipant.addedTo = false  // Clear addedTo for voluntary joins (user wasn't added by someone else)
+			newParticipant.hiddenCount = try await fez.$fezPosts.query(on: db).filter(\.$author.$id ~~ blocksAndMutes).count()
+			try await newParticipant.save(on: db)
+			return newParticipant
+		}
+		await dispatchEffects(
+			on: req,
+			{ try await forwardMembershipChangeToSockets(fez, participantID: cacheUser.userID, joined: true, on: req) },
+			{ try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req) }
+		)
 		let fezData = try buildFezData(from: fez, with: newParticipant, for: cacheUser, on: req)
-		_ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
 		// return with 201 status
 		let response = Response(status: .created)
 		try response.content.encode(fezData)
@@ -528,16 +534,21 @@ struct FezController: APIRouteCollection {
 		}
 		// Save a FezEditRecord containing the participant list before removal
 		let fezEdit = try FriendlyFezEdit(fez: fez, editorID: cacheUser.userID)
-		try await fezEdit.save(on: req.db)
 		// remove user from participantArray and also remove the pivot.
-		if let index = fez.participantArray.firstIndex(of: cacheUser.userID) {
-			fez.participantArray.remove(at: index)
+		try await req.db.transaction { db in
+			try await fezEdit.save(on: db)
+			if let index = fez.participantArray.firstIndex(of: cacheUser.userID) {
+				fez.participantArray.remove(at: index)
+			}
+			try await fez.save(on: db)
+			try await fez.$participants.$pivots.query(on: db).filter(\.$user.$id == cacheUser.userID).delete()
 		}
-		try await fez.save(on: req.db)
-		try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID).delete()
-		try await deleteFezNotifications(userIDs: [cacheUser.userID], fez: fez, on: req)
-		try await forwardMembershipChangeToSockets(fez, participantID: cacheUser.userID, joined: false, on: req)
-		_ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
+		await dispatchEffects(
+			on: req,
+			{ try await deleteFezNotifications(userIDs: [cacheUser.userID], fez: fez, on: req) },
+			{ try await forwardMembershipChangeToSockets(fez, participantID: cacheUser.userID, joined: false, on: req) },
+			{ try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req) }
+		)
 		return try buildFezData(from: fez, with: nil, for: cacheUser, on: req, formerMember: true)
 	}
 
@@ -577,25 +588,71 @@ struct FezController: APIRouteCollection {
 		return try await addFezPost(to: fez, data: data, cacheUser: cacheUser, on: req)
 	}
 
-	// This is the bulk of postAddHandler, pulled out into a separate fn so createChat can use it to create
-	// a Fez's optional initial post using the same rules (image limits, notifications, hidden-post bookkeeping)
-	// as posting to an existing Fez. Callers are responsible for any membership/lock/personalEvent guards.
+	// This is the bulk of postAddHandler, pulled out into a separate fn so other callers can create a post using the same
+	// rules (image limits, notifications, hidden-post bookkeeping) as posting to an existing Fez. Callers are responsible for
+	// any membership/lock/personalEvent guards. (createChat doesn't call this; it inserts its optional initial post inside the
+	// same transaction that creates the Fez, using the same `guardFezPostContent`, `insertFezPost` and `publishFezPost` pieces.)
 	func addFezPost(to fez: FriendlyFez, data: PostContentData, cacheUser: UserCacheData, on req: Request) async throws -> FezPostData {
-		guard ![.closed, .open].contains(fez.fezType) || data.images.count == 0 else {
+		try guardFezPostContent(data, fezType: fez.fezType)
+		// The post, the fez's post count, and all the pivot bookkeeping go in one transaction; nothing outside the database is touched until it commits.
+		let inserted = try await withProcessedImages(data.images, usage: .fezPost, on: req) { filenames in
+			try await req.db.transaction { db in
+				try await insertFezPost(to: fez, data: data, imageFilename: filenames.first, cacheUser: cacheUser, on: req, db: db)
+			}
+		}
+		await publishFezPost(inserted, in: fez, cacheUser: cacheUser, on: req)
+		return try FezPostData(post: inserted.post, author: inserted.author.makeHeader())
+	}
+
+	/// Image-count rules for a post's content. Seamail types can't have photos, and nothing can have more than one.
+	func guardFezPostContent(_ data: PostContentData, fezType: FezType) throws {
+		guard ![.closed, .open].contains(fezType) || data.images.count == 0 else {
 			throw Abort(.badRequest, reason: "Private conversations can't contain photos.")
 		}
 		guard data.images.count <= 1 else {
 			throw Abort(.badRequest, reason: "posts may only have one image")
 		}
-		// process image
-		let filenames = try await processImages(data.images, usage: .fezPost, on: req)
+	}
+
+	/// Adds `delta` to the fez's cached `postCount` with a single `UPDATE ... SET post_count = post_count + delta`, rather than writing back
+	/// a value computed in Swift, so concurrent posts and deletes can't overwrite each other's change. The updated row stays locked until the
+	/// surrounding transaction commits, which also serializes writers of the same fez. `fez.postCount` is set to the value the database now holds.
+	func adjustPostCount(of fez: FriendlyFez, by delta: Int, on db: Database) async throws {
+		guard let sql = db as? SQLDatabase else {
+			fez.postCount += delta
+			return
+		}
+		struct PostCountRow: Decodable {
+			let post_count: Int
+		}
+		let fezID = try fez.requireID()
+		let row = try await sql.raw(
+			"UPDATE \(ident: FriendlyFez.schema) SET post_count = post_count + \(bind: delta) WHERE id = \(bind: fezID) RETURNING post_count"
+		).first(decoding: PostCountRow.self)
+		guard let row = row else {
+			throw Abort(.notFound, reason: "chat not found")
+		}
+		fez.postCount = row.post_count
+	}
+
+	/// What `insertFezPost` decided that `publishFezPost` needs to tell people about once the transaction commits.
+	struct InsertedFezPost {
+		let post: FezPost
+		let author: UserCacheData
+		let notifyList: [UUID]
+	}
+
+	/// The database half of adding a post to a fez. Creates the post, bumps the fez's cached post count, adjusts the pivots of members who
+	/// block/mute the author (hidden count) and the author (read count), and logs a moderator action. Every write goes through `db`, so call
+	/// this inside a transaction. Nothing here touches Redis or sockets; pass the result to `publishFezPost` after the transaction commits.
+	func insertFezPost(to fez: FriendlyFez, data: PostContentData, imageFilename: String?, cacheUser: UserCacheData, on req: Request,
+			db: Database) async throws -> InsertedFezPost {
 		// create and save the new post, update fezzes' cached post count
 		let effectiveAuthor = data.effectiveAuthor(actualAuthor: cacheUser, on: req)
-		let filename = filenames.count > 0 ? filenames[0] : nil
-		let post = try FezPost(fez: fez, authorID: effectiveAuthor.userID, text: data.text, image: filename)
-		fez.postCount += 1
-		try await post.save(on: req.db)
-		try await fez.save(on: req.db)
+		let post = try FezPost(fez: fez, authorID: effectiveAuthor.userID, text: data.text, image: imageFilename)
+		try await adjustPostCount(of: fez, by: 1, on: db)
+		try await post.save(on: db)
+		try await fez.save(on: db)  // Also bumps updatedAt, which the chat lists sort on.
 		// If any participants block or mute this user, increase their hidden post count as they won't see this post.
 		// The nice thing about doing it this way is most of the time there will be no blocks and nothing to do.
 		var participantNotifyList: [UUID] = []
@@ -606,32 +663,43 @@ struct FezController: APIRouteCollection {
 			if participantCacheUser.getBlocks().contains(effectiveAuthor.userID)
 				|| participantCacheUser.getMutes().contains(effectiveAuthor.userID)
 			{
-				if let pivot = try await getUserPivot(lfg: fez, userID: participantUserID, on: req.db) {
+				if let pivot = try await getUserPivot(lfg: fez, userID: participantUserID, on: db) {
 					pivot.hiddenCount += 1
-					try await pivot.save(on: req.db)
+					try await pivot.save(on: db)
 				}
 			}
 			else if participantUserID != cacheUser.userID {
-				if let pivot = try await getUserPivot(lfg: fez, userID: participantUserID, on: req.db), pivot.isMuted == true {
+				if let pivot = try await getUserPivot(lfg: fez, userID: participantUserID, on: db), pivot.isMuted == true {
 					continue
 				}
 				participantNotifyList.append(participantUserID)
 			}
 		}
-		try await post.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
-		var infoStr = "@\(effectiveAuthor.username) wrote, \"\(post.text)\""
+		try await post.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: db)
+		// A user posting is assumed to have read all prev posts. (even if this proves untrue, we should increment
+		// readCount as they've read the post they just wrote!)
+		if let pivot = try await getUserPivot(lfg: fez, userID: cacheUser.userID, on: db) {
+			pivot.readCount = fez.postCount - pivot.hiddenCount
+			try await pivot.save(on: db)
+		}
+		return InsertedFezPost(post: post, author: effectiveAuthor, notifyList: participantNotifyList)
+	}
+
+	/// The side-effect half of adding a post to a fez: unread-message notifications and the websocket push. Call after the transaction
+	/// that ran `insertFezPost` has committed.
+	func publishFezPost(_ inserted: InsertedFezPost, in fez: FriendlyFez, cacheUser: UserCacheData, on req: Request) async {
+		var infoStr = "@\(inserted.author.username) wrote, \"\(inserted.post.text)\""
 		if fez.fezType != .closed {
 			infoStr.append(" in \(fez.fezType.lfgLabel) \"\(fez.title)\".")
 		}
-		try await addNotifications(users: participantNotifyList, type: .chatUnreadMsg(fez.requireID(), fez.fezType), info: infoStr, creatorID: cacheUser.userID, on: req)
-		try await forwardPostToSockets(fez, post, on: req)
-		// A user posting is assumed to have read all prev posts. (even if this proves untrue, we should increment
-		// readCount as they've read the post they just wrote!)
-		if let pivot = try await getUserPivot(lfg: fez, userID: cacheUser.userID, on: req.db) {
-			pivot.readCount = fez.postCount - pivot.hiddenCount
-			try await pivot.save(on: req.db)
-		}
-		return try FezPostData(post: post, author: effectiveAuthor.makeHeader())
+		await dispatchEffects(
+			on: req,
+			{
+				try await addNotifications(users: inserted.notifyList, type: .chatUnreadMsg(fez.requireID(), fez.fezType), info: infoStr,
+						creatorID: cacheUser.userID, on: req)
+			},
+			{ try await forwardPostToSockets(fez, inserted.post, on: req) }
+		)
 	}
 
 	/// `POST /api/v3/fez/post/ID/delete`
@@ -655,35 +723,40 @@ struct FezController: APIRouteCollection {
 			throw Abort(.notFound, reason: "\(fez.fezType.lfgLabel) is not available")
 		}
 		let postIndex = try await fez.$fezPosts.query(on: req.db).filter(\.$id < post.requireID()).count()
-		// delete post, reduce post count cached in fez
-		fez.postCount -= 1
-		try await fez.save(on: req.db)
-		try await post.delete(on: req.db)
-		var adjustNotificationCountForUsers: [UUID] = []
-		for participantPivot in fez.$participants.pivots {
-			// If this user was hiding this post, reduce their hidden count as the post is gone.
-			var pivotNeedsSave = false
-			if let participantCacheUser = req.userCache.getUser(participantPivot.$user.id),
-				participantCacheUser.getBlocks().contains(cacheUser.userID)
-					|| participantCacheUser.getMutes().contains(cacheUser.userID)
-			{
-				participantPivot.hiddenCount = max(participantPivot.hiddenCount - 1, 0)
-				pivotNeedsSave = true
+		let adjustNotificationCountForUsers = try await req.db.transaction { db -> [UUID] in
+			// delete post, reduce post count cached in fez
+			try await adjustPostCount(of: fez, by: -1, on: db)
+			try await fez.save(on: db)  // Also bumps updatedAt, which the chat lists sort on.
+			try await post.delete(on: db)
+			var adjustNotificationCountForUsers: [UUID] = []
+			for participantPivot in fez.$participants.pivots {
+				// If this user was hiding this post, reduce their hidden count as the post is gone.
+				var pivotNeedsSave = false
+				if let participantCacheUser = req.userCache.getUser(participantPivot.$user.id),
+					participantCacheUser.getBlocks().contains(cacheUser.userID)
+						|| participantCacheUser.getMutes().contains(cacheUser.userID)
+				{
+					participantPivot.hiddenCount = max(participantPivot.hiddenCount - 1, 0)
+					pivotNeedsSave = true
+				}
+				// If the user has read the post being deleted, reduce their read count by 1.
+				if participantPivot.readCount > postIndex {
+					participantPivot.readCount -= 1
+					pivotNeedsSave = true
+				}
+				if pivotNeedsSave {
+					try await participantPivot.save(on: db)
+				}
+				else if participantPivot.$user.id != cacheUser.userID {
+					adjustNotificationCountForUsers.append(participantPivot.$user.id)
+				}
 			}
-			// If the user has read the post being deleted, reduce their read count by 1.
-			if participantPivot.readCount > postIndex {
-				participantPivot.readCount -= 1
-				pivotNeedsSave = true
-			}
-			if pivotNeedsSave {
-				try await participantPivot.save(on: req.db)
-			}
-			else if participantPivot.$user.id != cacheUser.userID {
-				adjustNotificationCountForUsers.append(participantPivot.$user.id)
-			}
+			try await post.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: db)
+			return adjustNotificationCountForUsers
 		}
-		_ = try await subtractNotifications(users: adjustNotificationCountForUsers, type: .chatUnreadMsg(fez.requireID(), fez.fezType), on: req)
-		try await post.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
+		await dispatchEffect(on: req) {
+			_ = try await subtractNotifications(users: adjustNotificationCountForUsers, type: .chatUnreadMsg(fez.requireID(), fez.fezType), on: req)
+		}
 		return .noContent
 	}
 
@@ -771,7 +844,7 @@ struct FezController: APIRouteCollection {
 		fez.cancelled = true
 		try await fez.save(on: req.db)
 		for fezParticipant in fez.participantArray {
-			_ = try await storeNextJoinedAppointment(userID: fezParticipant, on: req)
+			try await storeNextJoinedAppointment(userID: fezParticipant, on: req)
 		}
 		let cancelNotifyTargets = fez.participantArray.filter { $0 != cacheUser.userID }
 			try await addNotifications(users: cancelNotifyTargets, type: .chatCanceled(fez.requireID(), fez.fezType), info: "\(fez.title) has been canceled", on: req)
@@ -802,11 +875,16 @@ struct FezController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "User does not have access to delete an \(fez.fezType.lfgLabel).")
 		}
 		try cacheUser.guardCanModifyContent(fez)
-		try await deleteFezNotifications(userIDs: fez.participantArray, fez: fez, on: req)
-		try await fez.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
-		try await fez.$participants.detachAll(on: req.db).get()
-		try await fez.delete(on: req.db)
-		_ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
+		try await req.db.transaction { db in
+			try await fez.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: db)
+			try await fez.$participants.detachAll(on: db).get()
+			try await fez.delete(on: db)
+		}
+		await dispatchEffects(
+			on: req,
+			{ try await deleteFezNotifications(userIDs: fez.participantArray, fez: fez, on: req) },
+			{ try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req) }
+		)
 		return .noContent
 	}
 
@@ -863,24 +941,30 @@ struct FezController: APIRouteCollection {
 		guard !requester.getBlocks().contains(addingUserID) else {
 			throw Abort(.badRequest, reason: "user is not available")
 		}
-		fez.participantArray.append(addingUserID)
 		let blocksAndMutes = cacheUser.getBlocks().union(cacheUser.getMutes())
-		let hiddenPostCount = try await fez.$fezPosts.query(on: req.db).filter(\.$author.$id ~~ blocksAndMutes).count()
-		let newParticipant = try await getUserPivotForAdd(lfg: fez, userID: addingUserID, on: req.db)
-		newParticipant.readCount = 0
-		newParticipant.hiddenCount = hiddenPostCount
-		newParticipant.addedTo = true
-		try await req.db.transaction { transaction in
-			try await fez.save(on: transaction)
-			try await newParticipant.save(on: transaction)
+		let newParticipant = try await req.db.transaction { db -> FezParticipant in
+			fez.participantArray.append(addingUserID)
+			let hiddenPostCount = try await fez.$fezPosts.query(on: db).filter(\.$author.$id ~~ blocksAndMutes).count()
+			let newParticipant = try await getUserPivotForAdd(lfg: fez, userID: addingUserID, on: db)
+			newParticipant.readCount = 0
+			newParticipant.hiddenCount = hiddenPostCount
+			newParticipant.addedTo = true
+			try await fez.save(on: db)
+			try await newParticipant.save(on: db)
+			return newParticipant
 		}
-		// Tell chat members listening on chat sockets about the new member
-		try await forwardMembershipChangeToSockets(fez, participantID: addingUserID, joined: true, on: req)
-		// Set addedTo = true and notify the new member they've been added
-		try await notifyAddedToFez(fez, for: newParticipant, by: requester, on: req)
+		await dispatchEffects(
+			on: req,
+			// Tell chat members listening on chat sockets about the new member
+			{ try await forwardMembershipChangeToSockets(fez, participantID: addingUserID, joined: true, on: req) },
+			// Notify the new member they've been added
+			{ try await notifyAddedToFez(fez, for: newParticipant, by: requester, on: req) }
+		)
 		let effectiveUser = getEffectiveUser(user: requester, req: req, fez: fez)
 		let requesterPivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first()
-		_ = try await storeNextJoinedAppointment(userID: addingUserID, on: req)
+		await dispatchEffect(on: req) {
+			try await storeNextJoinedAppointment(userID: addingUserID, on: req)
+		}
 		return try buildFezData(from: fez, with: requesterPivot, for: requester, on: req)
 	}
 
@@ -908,21 +992,24 @@ struct FezController: APIRouteCollection {
 		guard removeUserID != fez.$owner.id else {
 			throw Abort(.forbidden, reason: "Cannot remove the owner from \(fez.fezType.lfgLabel)")
 		}
-		// Save a FezEditRecord containing the participant list before removal
-		let fezEdit = try FriendlyFezEdit(fez: fez, editorID: requester.userID)
-		try await fezEdit.save(on: req.db)
-		try await fez.logIfModeratorAction(.edit, moderatorID: requester.userID, on: req)
-		// remove user
 		guard let index = fez.participantArray.firstIndex(of: removeUserID) else {
 			throw Abort(.badRequest, reason: "user is not a member of this \(fez.fezType.lfgLabel)")
 		}
+		// Save a FezEditRecord containing the participant list before removal
+		let fezEdit = try FriendlyFezEdit(fez: fez, editorID: requester.userID)
+		// remove user
 		fez.participantArray.remove(at: index)
-		try await req.db.transaction { transaction in
-			try await fez.save(on: transaction)
-			try await fez.$participants.detach(removeUser, on: transaction)
+		try await req.db.transaction { db in
+			try await fezEdit.save(on: db)
+			try await fez.logIfModeratorAction(.edit, moderatorID: requester.userID, on: db)
+			try await fez.save(on: db)
+			try await fez.$participants.detach(removeUser, on: db)
 		}
-		try await deleteFezNotifications(userIDs: [removeUserID], fez: fez, on: req)
-		try await forwardMembershipChangeToSockets(fez, participantID: removeUserID, joined: false, on: req)
+		await dispatchEffects(
+			on: req,
+			{ try await deleteFezNotifications(userIDs: [removeUserID], fez: fez, on: req) },
+			{ try await forwardMembershipChangeToSockets(fez, participantID: removeUserID, joined: false, on: req) }
+		)
 		let effectiveUser = getEffectiveUser(user: requester, req: req, fez: fez)
 		let pivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first()
 		return try buildFezData(from: fez, with: pivot, for: requester, on: req)
@@ -1073,7 +1160,7 @@ struct FezController: APIRouteCollection {
 		}
 		fezParticipant.isMuted = true
 		try await fezParticipant.save(on: req.db)
-		_ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
+		try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
 		return .created
 	}
 
@@ -1098,7 +1185,7 @@ struct FezController: APIRouteCollection {
 		}
 		fezParticipant.isMuted = nil
 		try await fezParticipant.save(on: req.db)
-		_ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
+		try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
 		return .noContent
 	}
 
@@ -1338,25 +1425,49 @@ extension FezController {
 				location: data.location, startTime: data.startTime, endTime: data.endTime, minCapacity: data.minCapacity,
 				maxCapacity: data.maxCapacity)
 		fez.participantArray = initialUsers
-		try await fez.save(on: req.db)
-		let participants = try await User.query(on: req.db).filter(\.$id ~~ initialUsers).all()
-		try await fez.$participants.attach(participants, on: req.db,
-				{
-					$0.readCount = 0
-					$0.hiddenCount = 0
-				})
-		for fezParticipant in fez.participantArray {
-			_ = try await storeNextJoinedAppointment(userID: fezParticipant, on: req)
-		}
-		let addedInitialUsers = Set(initialUsers).subtracting([user.userID, creator.userID])
-		// Notify users who were added (does not include the creator)
-		try await notifyAddedToFez(fez, for: Array(addedInitialUsers), by: creator, on: req)
-		var posts: [FezPostData] = []
+		let participantIDs = initialUsers
 		if let firstPost = data.firstPost {
 			guard fez.fezType != .personalEvent else {
 				throw Abort(.badRequest, reason: "Personal Events don't have posts.")
 			}
-			posts = [try await addFezPost(to: fez, data: firstPost, cacheUser: user, on: req)]
+			try guardFezPostContent(firstPost, fezType: fez.fezType)
+		}
+		// Users added by someone else (everyone except the user making the request and the creator persona) get an 'added to chat' flag and notification.
+		let addedInitialUsers = Set(initialUsers).subtracting([user.userID, creator.userID])
+		// The fez, its participants, and the optional first post all go in one transaction, so a failure part way can't leave behind a fez with no
+		// members or no first post (which a client retry would then duplicate).
+		let insertedFirstPost = try await withProcessedImages(data.firstPost?.images ?? [], usage: .fezPost, on: req) { filenames in
+			try await req.db.transaction { db -> InsertedFezPost? in
+				try await fez.save(on: db)
+				let participants = try await User.query(on: db).filter(\.$id ~~ participantIDs).all()
+				try await fez.$participants.attach(participants, on: db,
+						{
+							$0.readCount = 0
+							$0.hiddenCount = 0
+							$0.addedTo = addedInitialUsers.contains($0.$user.id)
+						})
+				guard let firstPost = data.firstPost else {
+					return nil
+				}
+				return try await insertFezPost(to: fez, data: firstPost, imageFilename: filenames.first, cacheUser: user, on: req, db: db)
+			}
+		}
+		// Everything past this point happens after the commit.
+		for fezParticipant in fez.participantArray {
+			await dispatchEffect(on: req) {
+				try await storeNextJoinedAppointment(userID: fezParticipant, on: req)
+			}
+		}
+		// Notify users who were added (does not include the creator)
+		if !addedInitialUsers.isEmpty {
+			await dispatchEffect(on: req) {
+				try await redisNotifyAddedToFez(fez, users: Array(addedInitialUsers), by: creator, on: req)
+			}
+		}
+		var posts: [FezPostData] = []
+		if let insertedFirstPost = insertedFirstPost {
+			await publishFezPost(insertedFirstPost, in: fez, cacheUser: user, on: req)
+			posts = [try FezPostData(post: insertedFirstPost.post, author: insertedFirstPost.author.makeHeader())]
 		}
 		let creatorPivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == creator.userID).first()
 		let fezData = try buildFezData(from: fez, with: creatorPivot, posts: posts, for: user, on: req)
@@ -1398,11 +1509,10 @@ extension FezController {
 		}
 		let visibility = try resolveVisibilityForUpdate(fez: fez, newType: data.fezType, requested: data.visibility, cacheUser: cacheUser)
 
-		if data.title != fez.title || data.location != fez.location || data.info != fez.info {
-			let fezEdit = try FriendlyFezEdit(fez: fez, editorID: cacheUser.userID)
-			try await fez.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: req)
-			try await fezEdit.save(on: req.db)
-		}
+		// The edit record captures the fez's current contents, so build it before applying the changes.
+		let fezEdit: FriendlyFezEdit? =
+			data.title != fez.title || data.location != fez.location || data.info != fez.info
+			? try FriendlyFezEdit(fez: fez, editorID: cacheUser.userID) : nil
 		fez.fezType = data.fezType
 		fez.visibility = visibility
 		fez.title = data.title
@@ -1413,9 +1523,17 @@ extension FezController {
 		fez.minCapacity = data.minCapacity
 		fez.maxCapacity = data.maxCapacity
 		fez.cancelled = false
-		try await fez.save(on: req.db)
+		try await req.db.transaction { db in
+			if let fezEdit = fezEdit {
+				try await fez.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: db)
+				try await fezEdit.save(on: db)
+			}
+			try await fez.save(on: db)
+		}
 		for fezParticipant in fez.participantArray {
-			_ = try await storeNextJoinedAppointment(userID: fezParticipant, on: req)
+			await dispatchEffect(on: req) {
+				try await storeNextJoinedAppointment(userID: fezParticipant, on: req)
+			}
 		}
 		let pivot = try await getUserPivot(lfg: fez, userID: cacheUser.userID, on: req.db)
 		return try buildFezData(from: fez, with: pivot, for: cacheUser, on: req)
@@ -1767,36 +1885,16 @@ extension FezController {
 		return phantom
 	}
 
-	// Sets addedTo = true for the specified users and sends them .addedToChat notifications.
-	// Call this when users are added to a fez by someone else (not when they join voluntarily).
-	func notifyAddedToFez(_ fez: FriendlyFez, for addedUserIDs: [UUID], by adder: UserCacheData, on req: Request) async throws {
-		guard !addedUserIDs.isEmpty else { return }
-		
-		// Set addedTo = true for all added users
-		let addedPivots = try await fez.$participants.$pivots.query(on: req.db)
-			.filter(\.$user.$id ~~ addedUserIDs)
-			.all()
-		for pivot in addedPivots {
-			pivot.addedTo = true
-			try await pivot.save(on: req.db)
-		}
-		
-		// Send notifications to added users
-		try await redisNotifyAddedToFez(fez, users: addedUserIDs, by: adder, on: req)
-	}
-	
-	// Overload that takes a single FezParticipant directly (for when you already have the pivot).
-	// Sends an .addedToChat notification to that user.
+	// Sends an .addedToChat notification to the user a FezParticipant pivot belongs to.
 	//
-	// The only caller right now of this function has a preceeding database transaction that sets addedTo = true.
-	// I am keeping this function here for future use and to keep the logic of notifying
-	// in one place.
+	// This only does the notification. Callers set `addedTo = true` on the pivot themselves, in the database transaction that
+	// adds the user, and call this after it commits.
 	func notifyAddedToFez(_ fez: FriendlyFez, for participant: FezParticipant, by adder: UserCacheData, on req: Request) async throws {
 		try await redisNotifyAddedToFez(fez, users: [participant.$user.id], by: adder, on: req)
 	}
 
 	// Helper function to send a .addedToChat notification to a list of users.
-	private func redisNotifyAddedToFez(_ fez: FriendlyFez, users: [UUID], by adder: UserCacheData, on req: Request) async throws {
+	func redisNotifyAddedToFez(_ fez: FriendlyFez, users: [UUID], by adder: UserCacheData, on req: Request) async throws {
 		let infoStr = "@\(adder.username) added you to their \(fez.fezType.lfgLabel) titled \"\(fez.title)\""
 		try await addNotifications(users: users, type: .addedToChat(fez.requireID(), fez.fezType), info: infoStr, on: req)
 	}
