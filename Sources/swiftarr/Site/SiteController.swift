@@ -38,6 +38,8 @@ struct ShareContext: Encodable {
 		var imageComponents = URLComponents()
 		imageComponents.path = "/api/v3/image/qrcode"
 		imageComponents.queryItems = [URLQueryItem(name: "string", value: string)]
+		// URLQueryItem leaves '+' alone, but the server decodes a bare '+' in a query as a space.
+		imageComponents.percentEncodedQuery = imageComponents.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
 		return imageComponents.string
 	}
 }
