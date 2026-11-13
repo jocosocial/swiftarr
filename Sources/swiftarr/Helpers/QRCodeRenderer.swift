@@ -24,10 +24,12 @@ struct QRCodeRenderer {
 		var iconApplied: Bool
 	}
 
-	/// Codes smaller than this don't have enough redundancy to give up the center, and codes at or above `maxIconModules` have
-	/// alignment patterns near the center that must not be erased. 29 is a version 3 code; 45 is version 7.
+	/// Codes smaller than this don't have enough redundancy to give up the center, and codes at or above `maxIconModules` are
+	/// denser than we've verified. 29 is a version 3 code; 46 is just past version 7 (45 modules), the largest we do.
+	/// Version 7 has an alignment pattern dead center that the icon erases; with level H error correction and its other
+	/// alignment patterns it still decodes (checked with OpenCV's detector, at full and quarter size).
 	static let minIconModules = 29
-	static let maxIconModules = 45
+	static let maxIconModules = 46
 
 	// 7x9 pixel font with 2-block strokes.
 	private static let glyphA = [
