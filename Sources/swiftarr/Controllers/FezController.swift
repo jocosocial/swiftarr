@@ -501,7 +501,7 @@ struct FezController: APIRouteCollection {
 		await dispatchEffects(
 			on: req,
 			{ try await forwardMembershipChangeToSockets(fez, participantID: cacheUser.userID, joined: true, on: req) },
-			{ _ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req) }
+			{ try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req) }
 		)
 		let fezData = try buildFezData(from: fez, with: newParticipant, for: cacheUser, on: req)
 		// return with 201 status
@@ -547,7 +547,7 @@ struct FezController: APIRouteCollection {
 			on: req,
 			{ try await deleteFezNotifications(userIDs: [cacheUser.userID], fez: fez, on: req) },
 			{ try await forwardMembershipChangeToSockets(fez, participantID: cacheUser.userID, joined: false, on: req) },
-			{ _ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req) }
+			{ try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req) }
 		)
 		return try buildFezData(from: fez, with: nil, for: cacheUser, on: req, formerMember: true)
 	}
@@ -844,7 +844,7 @@ struct FezController: APIRouteCollection {
 		fez.cancelled = true
 		try await fez.save(on: req.db)
 		for fezParticipant in fez.participantArray {
-			_ = try await storeNextJoinedAppointment(userID: fezParticipant, on: req)
+			try await storeNextJoinedAppointment(userID: fezParticipant, on: req)
 		}
 		let cancelNotifyTargets = fez.participantArray.filter { $0 != cacheUser.userID }
 			try await addNotifications(users: cancelNotifyTargets, type: .chatCanceled(fez.requireID(), fez.fezType), info: "\(fez.title) has been canceled", on: req)
@@ -883,7 +883,7 @@ struct FezController: APIRouteCollection {
 		await dispatchEffects(
 			on: req,
 			{ try await deleteFezNotifications(userIDs: fez.participantArray, fez: fez, on: req) },
-			{ _ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req) }
+			{ try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req) }
 		)
 		return .noContent
 	}
@@ -963,7 +963,7 @@ struct FezController: APIRouteCollection {
 		let effectiveUser = getEffectiveUser(user: requester, req: req, fez: fez)
 		let requesterPivot = try await fez.$participants.$pivots.query(on: req.db).filter(\.$user.$id == effectiveUser.userID).first()
 		await dispatchEffect(on: req) {
-			_ = try await storeNextJoinedAppointment(userID: addingUserID, on: req)
+			try await storeNextJoinedAppointment(userID: addingUserID, on: req)
 		}
 		return try buildFezData(from: fez, with: requesterPivot, for: requester, on: req)
 	}
@@ -1160,7 +1160,7 @@ struct FezController: APIRouteCollection {
 		}
 		fezParticipant.isMuted = true
 		try await fezParticipant.save(on: req.db)
-		_ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
+		try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
 		return .created
 	}
 
@@ -1185,7 +1185,7 @@ struct FezController: APIRouteCollection {
 		}
 		fezParticipant.isMuted = nil
 		try await fezParticipant.save(on: req.db)
-		_ = try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
+		try await storeNextJoinedAppointment(userID: cacheUser.userID, on: req)
 		return .noContent
 	}
 
@@ -1455,7 +1455,7 @@ extension FezController {
 		// Everything past this point happens after the commit.
 		for fezParticipant in fez.participantArray {
 			await dispatchEffect(on: req) {
-				_ = try await storeNextJoinedAppointment(userID: fezParticipant, on: req)
+				try await storeNextJoinedAppointment(userID: fezParticipant, on: req)
 			}
 		}
 		// Notify users who were added (does not include the creator)
@@ -1532,7 +1532,7 @@ extension FezController {
 		}
 		for fezParticipant in fez.participantArray {
 			await dispatchEffect(on: req) {
-				_ = try await storeNextJoinedAppointment(userID: fezParticipant, on: req)
+				try await storeNextJoinedAppointment(userID: fezParticipant, on: req)
 			}
 		}
 		let pivot = try await getUserPivot(lfg: fez, userID: cacheUser.userID, on: req.db)

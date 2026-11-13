@@ -1396,7 +1396,7 @@ struct AdminController: APIRouteCollection {
 						})
 					}
 					await dispatchEffect(on: req) {
-						_ = try await storeNextJoinedAppointment(userID: userID, on: req)
+						try await storeNextJoinedAppointment(userID: userID, on: req)
 					}
 				}
 				verification.fezCounts.importedCount += 1

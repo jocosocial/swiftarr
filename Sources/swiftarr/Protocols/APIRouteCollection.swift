@@ -501,7 +501,7 @@ extension APIRouteCollection {
 	func deleteFezNotifications(userIDs: [UUID], fez: FriendlyFez, on req: Request) async throws {
 		for userID in userIDs {
 			try await req.redis.markLFGDeleted(msgID: fez.requireID(), userID: userID)
-			_ = try await storeNextJoinedAppointment(userID: userID, on: req)
+			try await storeNextJoinedAppointment(userID: userID, on: req)
 		}
 	}
 
@@ -572,6 +572,7 @@ extension APIRouteCollection {
 	}
 
 	// Calculates the start time of the earliest future joined LFG. Caches the value in Redis for quick access.
+	@discardableResult
 	func storeNextJoinedAppointment(userID: UUID, on req: Request) async throws -> (Date, UUID)? {
 		let nextJoinedLFG = try await getNextAppointment(userID: userID, db: req.db)
 		// This will "clear" the next LFG values of the UserNotificationData if no LFGs match the
