@@ -169,6 +169,27 @@ extension APIRouteCollection {
 		}
 	}
 
+	// MARK: - Post-commit Side Effects
+
+	/// Runs work that can't be rolled back (Redis notifications, socket pushes, cache refreshes, appointment bookkeeping) for a change that has
+	/// already been committed. A failure is logged, not thrown: throwing would give the client an error for a request that succeeded, and a retry
+	/// would then duplicate the content.
+	func dispatchEffect(on req: Request, fileID: String = #fileID, line: Int = #line, _ work: () async throws -> Void) async {
+		do {
+			try await work()
+		}
+		catch {
+			req.logger.error("Post-commit work failed: \(error)", metadata: ["source": "\(fileID):\(line)"])
+		}
+	}
+
+	/// Runs several independent effects in order, each with its own failure handling (see `dispatchEffect`): one failing doesn't skip the rest.
+	func dispatchEffects(on req: Request, fileID: String = #fileID, line: Int = #line, _ effects: (() async throws -> Void)...) async {
+		for effect in effects {
+			await dispatchEffect(on: req, fileID: fileID, line: line, effect)
+		}
+	}
+
 	// MARK: - Notification Management
 
 	// When an event happens that could change notification counts for someone (e.g. a user posts a Twarrt with an @mention)

@@ -244,22 +244,71 @@ extension APIRouteCollection {
 	///	- req: The incoming `Request`, on which this processing must run.
 	/// - Returns: The generated names of the stored files.
 	func processImages(_ images: [ImageUploadData], usage: ImageUsage, maxImages: Int = 4, on req: Request) async throws -> [String] {
+		return try await processImagesTracked(images, usage: usage, maxImages: maxImages, on: req).filenames
+	}
+
+	/// Like `processImages`, but also reports which of the returned filenames were newly written by this call, as opposed to being
+	/// existing filenames that were passed through. Callers that go on to write the filenames to the database use this to know which
+	/// files to delete if that write fails. If processing fails partway through, files already written by this call are deleted before the error is rethrown.
+	func processImagesTracked(_ images: [ImageUploadData], usage: ImageUsage, maxImages: Int = 4, on req: Request) async throws
+		-> (filenames: [String], created: [String])
+	{
 		guard images.count <= maxImages else {
 			throw Abort(.badRequest, reason: "Too many image attachments")
 		}
-		var savedImageNames = [String?]()
-		for image in images {
-			// An empty value on either half means the slot holds nothing, not that it holds something
-			// empty. A zero-byte image especially must not count as present, or it shadows the filename
-			// beside it and the caller loses a photo the content already had.
-			if let imageData = image.image, !imageData.isEmpty {
-				savedImageNames.append( try await processImage(data: imageData, usage: usage, on: req))
-			}
-			else if let filename = image.filename, !filename.isEmpty {
-				savedImageNames.append(filename)
+		var savedImageNames = [String]()
+		var createdImageNames = [String]()
+		do {
+			for image in images {
+				// An empty value on either half means the slot holds nothing, not that it holds something
+				// empty. A zero-byte image especially must not count as present, or it shadows the filename
+				// beside it and the caller loses a photo the content already had.
+				if let imageData = image.image, !imageData.isEmpty {
+					if let name = try await processImage(data: imageData, usage: usage, on: req) {
+						savedImageNames.append(name)
+						createdImageNames.append(name)
+					}
+				}
+				else if let filename = image.filename, !filename.isEmpty {
+					savedImageNames.append(filename)
+				}
 			}
 		}
-		return savedImageNames.compactMap { $0 }
+		catch {
+			deleteImageFiles(createdImageNames, on: req)
+			throw error
+		}
+		return (savedImageNames, createdImageNames)
+	}
+
+	/// Processes the images, then runs `body` with the resulting filenames. `body` should contain the database transaction that stores
+	/// the filenames and nothing that must not be undone--if it throws, the image files this call newly wrote are deleted so a failed
+	/// request leaves nothing on disk. Run side effects that can't be rolled back (notifications, sockets) after this returns.
+	func withProcessedImages<T>(_ images: [ImageUploadData], usage: ImageUsage, maxImages: Int = 4, on req: Request,
+			_ body: ([String]) async throws -> T) async throws -> T {
+		let processed = try await processImagesTracked(images, usage: usage, maxImages: maxImages, on: req)
+		do {
+			return try await body(processed.filenames)
+		}
+		catch {
+			deleteImageFiles(processed.created, on: req)
+			throw error
+		}
+	}
+
+	/// Deletes the full-size and thumbnail files for images that were written but never referenced by committed data.
+	/// Failures are logged and otherwise ignored; an orphaned file is no worse than before this call.
+	func deleteImageFiles(_ filenames: [String], on req: Request) {
+		for filename in filenames {
+			for size in [ImageSizeGroup.full, ImageSizeGroup.thumbnail] {
+				do {
+					try FileManager().removeItem(at: getImagePath(for: filename, usage: .twarrt, size: size))
+				}
+				catch {
+					req.logger.debug("could not delete orphaned image \(filename): \(error)")
+				}
+			}
+		}
 	}
 
 	/// Takes an optional image in Data form as input, produces full and thumbnail JPEG vrsions,

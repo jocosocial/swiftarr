@@ -254,8 +254,10 @@ struct PerformerController: APIRouteCollection {
 		guard Settings.shared.enablePreregistration || cacheUser.userRoles.contains(.performerselfeditor) || cacheUser.accessLevel.hasAccess(.moderator) else {
 			throw Abort(.forbidden, reason: "Editing your Performer profile is limited to pre-registration; see the Help Desk if you need to change something.")
 		}
-		try await EventPerformer.query(on: req.db).filter(\.$performer.$id == performer.requireID()).delete()
-		try await performer.delete(on: req.db)
+		try await req.db.transaction { db in
+			try await EventPerformer.query(on: db).filter(\.$performer.$id == performer.requireID()).delete()
+			try await performer.delete(on: db)
+		}
 		return .ok
 	}
 	
@@ -685,8 +687,10 @@ struct PerformerController: APIRouteCollection {
 				let nameMatches = scrapedNames.contains(dbPerformer.name.lowercased())
 				let altNameMatches = (dbPerformer.alternativeNames ?? []).contains { scrapedNames.contains($0.lowercased()) }
 				if !nameMatches && !altNameMatches {
-					try await EventPerformer.query(on: req.db).filter(\.$performer.$id == dbPerformer.requireID()).delete()
-					try await dbPerformer.delete(on: req.db)
+					try await req.db.transaction { db in
+						try await EventPerformer.query(on: db).filter(\.$performer.$id == dbPerformer.requireID()).delete()
+						try await dbPerformer.delete(on: db)
+					}
 				}
 			}
 		}
@@ -701,8 +705,10 @@ struct PerformerController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Request parameter identifying Performer is missing.")
 		}
 		if let performer = try await Performer.query(on: req.db).filter(\.$id == performerID).first() {
-			try await EventPerformer.query(on: req.db).filter(\.$performer.$id == performer.requireID()).delete()
-			try await performer.delete(on: req.db)
+			try await req.db.transaction { db in
+				try await EventPerformer.query(on: db).filter(\.$performer.$id == performer.requireID()).delete()
+				try await performer.delete(on: db)
+			}
 			return .ok
 		}
 		return .noContent

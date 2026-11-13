@@ -212,27 +212,32 @@ struct CommunitySupportController: APIRouteCollection {
 		else {
 			throw Abort(.internalServerError, reason: "The Community Support forum category doesn't exist.")
 		}
-		// `createForum` does no permission checking, so do what `forumCreateHandler` does before calling it.
+		let forumController = ForumController()
+		// `insertForum` does no permission checking, so do what `forumCreateHandler` does before calling it.
 		guard cacheUser.accessLevel.hasAccess(category.accessLevelToCreate) else {
 			throw Abort(.forbidden, reason: "users cannot create forums in category")
 		}
-		try ForumController().guardUserCanAccessCategory(cacheUser, category: category)
-		let (forum, _) = try await ForumController()
-			.createForum(
+		try forumController.guardUserCanAccessCategory(cacheUser, category: category)
+		let subjectUsername = report.$subject.id.flatMap { req.userCache.getUser($0)?.username }
+		// The forum, its first post, the link from the report, and the action log entry all go in together; a failure part way
+		// can't leave a thread that isn't linked to its report.
+		let (forumID, firstPost) = try await req.db.transaction { db -> (UUID, ForumPost) in
+			let (forum, firstPost) = try await forumController.insertForum(
 				in: category,
-				title: report.discussionTitle(
-					subjectUsername: report.$subject.id.flatMap { req.userCache.getUser($0)?.username }
-				),
+				title: report.discussionTitle(subjectUsername: subjectUsername),
 				text: report.discussionPostText(),
 				effectiveAuthor: cacheUser,
 				actingUser: cacheUser,
-				on: req
+				on: db
 			)
-		let forumID = try forum.requireID()
-		report.$forum.id = forumID
-		try await report.save(on: req.db)
-		try await CommunitySupportAction(actor: cacheUser.userID, report: reportID, type: .discussionStarted)
-			.save(on: req.db)
+			let forumID = try forum.requireID()
+			report.$forum.id = forumID
+			try await report.save(on: db)
+			try await CommunitySupportAction(actor: cacheUser.userID, report: reportID, type: .discussionStarted)
+				.save(on: db)
+			return (forumID, firstPost)
+		}
+		await forumController.publishForumPost(firstPost, on: req)
 		return CommunitySupportDiscussionData(forumID: forumID, created: true)
 	}
 

@@ -61,6 +61,8 @@ swift test --filter PhotostreamControllerTests       # or omit --filter; CI skip
 scripts/instance.sh stop postgres-test redis-test    # when finished
 ```
 
+- **Run tests in the background** (e.g. `run_in_background`) and check the output when they finish; a full run takes minutes and shouldn't block the main
+  conversation.
 - A failing test triggers `autoRevert`, which drops the schema; re-run the `migrate`
   step before the next run.
 - Use `scripts/instance.sh rm -sfv postgres-test redis-test` to stop the test services and discard their volumes.

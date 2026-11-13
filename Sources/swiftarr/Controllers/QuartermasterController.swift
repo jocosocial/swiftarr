@@ -165,23 +165,42 @@ struct QuartermasterController: APIRouteCollection {
 
 		let ownerHeader = cacheUser.makeHeader()
 
-		let savedItems: [QuartermasterData] = try await req.db.transaction { db in
-			var results: [QuartermasterData] = []
+		// Process every item's image before opening the transaction, and delete the newly written files if any later step fails.
+		var images: [(filename: String?, isNew: Bool)] = []
+		do {
 			for entry in data.items {
-				let imageFilename = try await resolvedImageFilename(from: entry.image, on: req)
-				let item = QuartermasterItem(
-					ownerID: cacheUser.userID,
-					category: data.category,
-					itemName: entry.itemName,
-					itemDescription: entry.itemDescription,
-					location: data.location,
-					hideOwnerName: data.hideOwnerName,
-					image: imageFilename
-				)
-				try await item.save(on: db)
-				results.append(try QuartermasterData(item: item, owner: ownerHeader, showOwner: true))
+				images.append(try await resolvedImage(from: entry.image, on: req))
 			}
-			return results
+		}
+		catch {
+			deleteImageFiles(images.compactMap { $0.isNew ? $0.filename : nil }, on: req)
+			throw error
+		}
+		let resolvedImages = images
+		let savedItems: [QuartermasterData]
+		do {
+			savedItems = try await req.db.transaction { db in
+				var results: [QuartermasterData] = []
+				for (entry, image) in zip(data.items, resolvedImages) {
+					let imageFilename = image.filename
+					let item = QuartermasterItem(
+						ownerID: cacheUser.userID,
+						category: data.category,
+						itemName: entry.itemName,
+						itemDescription: entry.itemDescription,
+						location: data.location,
+						hideOwnerName: data.hideOwnerName,
+						image: imageFilename
+					)
+					try await item.save(on: db)
+					results.append(try QuartermasterData(item: item, owner: ownerHeader, showOwner: true))
+				}
+				return results
+			}
+		}
+		catch {
+			deleteImageFiles(resolvedImages.compactMap { $0.isNew ? $0.filename : nil }, on: req)
+			throw error
 		}
 
 		let response = Response(status: .created)
@@ -210,7 +229,8 @@ struct QuartermasterController: APIRouteCollection {
 		// `data.image` always describes the item's full desired image state (see QuartermasterContentData),
 		// so this resolves to the new filename whenever a photo was uploaded, the existing filename when
 		// the caller echoed it back unchanged, or nil to clear the photo.
-		let newImageFilename = try await resolvedImageFilename(from: data.image, on: req)
+		let newImage = try await resolvedImage(from: data.image, on: req)
+		let newImageFilename = newImage.filename
 
 		// Snapshot the current text fields before applying changes, only when the content actually changed.
 		let contentChanged = data.itemName != item.itemName
@@ -218,11 +238,7 @@ struct QuartermasterController: APIRouteCollection {
 			|| data.location != item.location
 			|| data.hideOwnerName != item.hideOwnerName
 			|| newImageFilename != item.image
-		if contentChanged {
-			let edit = try QuartermasterItemEdit(item: item, editorID: cacheUser.userID)
-			try await item.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: req)
-			try await edit.save(on: req.db)
-		}
+		let edit = contentChanged ? try QuartermasterItemEdit(item: item, editorID: cacheUser.userID) : nil
 
 		// Apply new values.
 		let oldImageFilename = item.image
@@ -232,7 +248,21 @@ struct QuartermasterController: APIRouteCollection {
 		item.location = data.location
 		item.hideOwnerName = data.hideOwnerName
 		item.image = newImageFilename
-		try await item.save(on: req.db)
+		do {
+			try await req.db.transaction { db in
+				if let edit = edit {
+					try await item.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: db)
+					try await edit.save(on: db)
+				}
+				try await item.save(on: db)
+			}
+		}
+		catch {
+			if newImage.isNew, let newImageFilename = newImageFilename {
+				deleteImageFiles([newImageFilename], on: req)
+			}
+			throw error
+		}
 
 		// Archive the replaced/removed image after the new state is saved, matching the pattern used
 		// when a user replaces their profile avatar.
@@ -265,8 +295,10 @@ struct QuartermasterController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "User does not have permission to delete this item.")
 		}
 		try cacheUser.guardCanModifyContent(item)
-		try await item.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
-		try await item.delete(on: req.db)
+		try await req.db.transaction { db in
+			try await item.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: db)
+			try await item.delete(on: db)
+		}
 		return .noContent
 	}
 
@@ -274,13 +306,15 @@ struct QuartermasterController: APIRouteCollection {
 
 	/// Resolves an optional `ImageUploadData` to the filename that should be stored on the item: processes
 	/// and saves new image data when present, otherwise passes an existing filename through unchanged
-	/// (or `nil`, when there's no image at all).
-	private func resolvedImageFilename(from upload: ImageUploadData?, on req: Request) async throws -> String? {
-		guard let upload else { return nil }
+	/// (or `nil`, when there's no image at all). `isNew` is true when a file was written, so the caller can
+	/// delete it if the item never gets saved.
+	private func resolvedImage(from upload: ImageUploadData?, on req: Request) async throws -> (filename: String?, isNew: Bool) {
+		guard let upload else { return (nil, false) }
 		if let newData = upload.image {
-			return try await processImage(data: newData, usage: .quartermasterItem, on: req)
+			let filename = try await processImage(data: newData, usage: .quartermasterItem, on: req)
+			return (filename, filename != nil)
 		}
-		return upload.filename
+		return (upload.filename, false)
 	}
 
 	/// Looks up the `QuartermasterItem` identified by `quartermasterIDParam`, converting a
