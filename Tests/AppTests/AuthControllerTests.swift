@@ -198,7 +198,7 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 				}
 			)
 
-			let attempts = try await authRateLimitCount(app, .recovery(username))
+			let attempts = await authRateLimitCount(app, .recovery(username))
 			XCTAssertEqual(attempts, 1)
 			try await user.delete(on: app.db)
 		}
@@ -532,7 +532,7 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 				}
 			)
 
-			let attempts = try await authRateLimitCount(app, .usernameLookup(code))
+			let attempts = await authRateLimitCount(app, .usernameLookup(code))
 			XCTAssertEqual(attempts, 1)
 			try await user.delete(on: app.db)
 		}
@@ -654,7 +654,7 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 				}
 			)
 
-			let attempts = try await authRateLimitCount(app, .usernameLookup(code))
+			let attempts = await authRateLimitCount(app, .usernameLookup(code))
 			XCTAssertEqual(attempts, 2, "a successful lookup must not count, or clear earlier failures")
 			try await user.delete(on: app.db)
 		}

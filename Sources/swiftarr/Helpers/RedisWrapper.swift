@@ -2,26 +2,6 @@ import Foundation
 @preconcurrency import Redis
 import Vapor
 
-// Lua scripts for the Auth Rate Limiting section of the RedisClient extension below.
-fileprivate let reserveAuthAttemptScript = """
-	local lockTTL = redis.call('TTL', KEYS[2])
-	if lockTTL > 0 then return {lockTTL, 0} end
-	local count = redis.call('INCR', KEYS[1])
-	if count == 1 then redis.call('EXPIRE', KEYS[1], ARGV[2]) end
-	if count <= tonumber(ARGV[1]) then return {0, 0} end
-	local strikes = redis.call('INCR', KEYS[3])
-	redis.call('EXPIRE', KEYS[3], ARGV[5])
-	local lockout = math.floor(math.min(tonumber(ARGV[3]) * 2 ^ (strikes - 1), tonumber(ARGV[4])))
-	redis.call('SET', KEYS[2], 1, 'EX', lockout)
-	redis.call('DEL', KEYS[1])
-	return {lockout, count}
-	"""
-
-fileprivate let refundAuthAttemptScript = """
-	if redis.call('EXISTS', KEYS[1]) == 1 and redis.call('DECR', KEYS[1]) <= 0 then redis.call('DEL', KEYS[1]) end
-	return 0
-	"""
-
 /// This extends Request.Redis with a bunch of function wrappers that (mostly) make a single Redis call. The function names describe what
 /// the functions do in Swiftarr API terms, keeping the Redis keys and specific commands used internal to this file. When looking at the Redis
 /// database you can refer to this file to see what various keys are used for, and having all the Redis code here makes it much easier to reason
@@ -343,70 +323,6 @@ extension RedisClient {
 
 	func writeSetting(_ field: String, value: RESPValue) async throws -> Bool {
 		return try await hset(field, to: value, in: "Settings").get()
-	}
-
-	// MARK: Auth Rate Limiting
-	//
-	// See `AuthRateLimiter`. Each bucket is 3 keys: "authlimit:<bucket>" counts attempts in the current window,
-	// "authlimit-lock:<bucket>" exists while the bucket is locked out, and "authlimit-strikes:<bucket>" counts lockouts
-	// in the last day so that each new lockout lasts twice as long as the previous one.
-	//
-	// The scripts run atomically in Redis, so concurrent requests can't all slip past the check before any of them
-	// is counted.
-	/// Counts one attempt against `bucket`. Going over `limit` attempts within `window` seconds locks the bucket.
-	/// Returns `wait`: 0 if the attempt may proceed, else the number of seconds the caller must wait. `lockedAtCount` is the
-	/// attempt count if this attempt is the one that locked the bucket, nil otherwise (including attempts against an already
-	/// locked bucket).
-	func reserveAuthAttempt(
-		_ bucket: String,
-		limit: Int,
-		window: Int,
-		baseLockout: Int,
-		maxLockout: Int
-	) async throws -> (wait: Int, lockedAtCount: Int?) {
-		let result = try await send(
-			command: "EVAL",
-			with: [
-				.init(from: reserveAuthAttemptScript), .init(from: 3),
-				.init(from: "authlimit:\(bucket)"), .init(from: "authlimit-lock:\(bucket)"),
-				.init(from: "authlimit-strikes:\(bucket)"),
-				.init(from: limit), .init(from: window), .init(from: baseLockout), .init(from: maxLockout),
-				.init(from: 24 * 60 * 60),
-			]
-		).get()
-		let values = result.array ?? []
-		let wait = values.first?.int ?? 0
-		let count = values.count > 1 ? values[1].int ?? 0 : 0
-		return (wait, count > 0 ? count : nil)
-	}
-
-	/// Takes back one attempt counted by `reserveAuthAttempt`, so that successful attempts don't count toward the limit.
-	func refundAuthAttempt(_ bucket: String) async throws {
-		_ = try await send(
-			command: "EVAL",
-			with: [.init(from: refundAuthAttemptScript), .init(from: 1), .init(from: "authlimit:\(bucket)")]
-		).get()
-	}
-
-	/// Clears a bucket's attempt count, lockout, and lockout history.
-	func clearAuthRateLimit(_ bucket: String) async throws {
-		_ = try await delete(["authlimit:\(bucket)", "authlimit-lock:\(bucket)", "authlimit-strikes:\(bucket)"]).get()
-	}
-
-	/// Clears every bucket that is currently locked out, including its lockout history. Buckets that are counting attempts
-	/// but aren't locked are left alone. Returns the number of lockouts cleared.
-	func clearLockedAuthRateLimits() async throws -> Int {
-		var lockKeys: Set<String> = []
-		var cursor = 0
-		repeat {
-			let (next, keys) = try await scan(startingFrom: cursor, matching: "authlimit-lock:*", count: 1000).get()
-			lockKeys.formUnion(keys)
-			cursor = next
-		} while cursor != 0
-		for lockKey in lockKeys {
-			try await clearAuthRateLimit(String(lockKey.dropFirst("authlimit-lock:".count)))
-		}
-		return lockKeys.count
 	}
 
 	// MARK: Special Purpose

@@ -1,5 +1,4 @@
 import Fluent
-import Redis
 import XCTVapor
 
 @testable import swiftarr
@@ -122,7 +121,7 @@ class AuthRateLimiterTests: XCTestCase, SwiftarrBaseTest {
 				try await login(app, user.username, "wrong", ip: "10.0.3.1", expect: .unauthorized)
 			}
 			try await login(app, user.username, "password1", ip: "10.0.3.1", expect: .ok)
-			let attempts = try await authRateLimitCount(app, .usernameAndIP(user.username, "10.0.3.1"))
+			let attempts = await authRateLimitCount(app, .usernameAndIP(user.username, "10.0.3.1"))
 			XCTAssertEqual(attempts, 0, "nothing is counted while rate limiting is off")
 			try await cleanup(app, user)
 		}
@@ -216,74 +215,108 @@ class AuthRateLimiterTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
-	// MARK: - Redis counters
+	// MARK: - AuthRateLimitStore
+
+	/// A clock the store tests can move forward.
+	private final class TestClock: @unchecked Sendable {
+		var now = Date(timeIntervalSince1970: 1_000_000)
+	}
+
+	private func makeStore() -> (AuthRateLimitStore, TestClock) {
+		let clock = TestClock()
+		return (AuthRateLimitStore(now: { clock.now }), clock)
+	}
 
 	// Concurrent attempts can't all slip past the check: exactly `limit` of them are allowed.
 	func testReserve_ConcurrentAttemptsCannotExceedLimit() async throws {
-		try await withApp { app in
-			let bucket = "test-concurrent-\(UUID().uuidString)"
-			let allowed = try await withThrowingTaskGroup(of: Int.self) { group in
-				for _ in 0..<20 {
-					group.addTask {
-						try await app.redis.reserveAuthAttempt(bucket, limit: 5, window: 60, baseLockout: 60, maxLockout: 600).wait
-					}
+		let (store, _) = makeStore()
+		let allowed = await withTaskGroup(of: Int.self) { group in
+			for _ in 0..<20 {
+				group.addTask {
+					await store.reserve("concurrent", limit: 5, window: 60, baseLockout: 60, maxLockout: 600).wait
 				}
-				var allowed = 0
-				for try await wait in group where wait == 0 {
-					allowed += 1
-				}
-				return allowed
 			}
-			XCTAssertEqual(allowed, 5)
-			try await app.redis.clearAuthRateLimit(bucket)
+			var allowed = 0
+			for await wait in group where wait == 0 {
+				allowed += 1
+			}
+			return allowed
 		}
+		XCTAssertEqual(allowed, 5)
 	}
 
 	// Only the attempt that triggers a lockout reports its count, so the lockout is logged once.
 	func testReserve_OnlyLockingAttemptReportsCount() async throws {
-		try await withApp { app in
-			let bucket = "test-lockcount-\(UUID().uuidString)"
-			func reserve() async throws -> (wait: Int, lockedAtCount: Int?) {
-				try await app.redis.reserveAuthAttempt(bucket, limit: 2, window: 60, baseLockout: 60, maxLockout: 600)
-			}
-			for _ in 0..<2 {
-				let allowed = try await reserve()
-				XCTAssertEqual(allowed.wait, 0)
-				XCTAssertNil(allowed.lockedAtCount)
-			}
-			let locking = try await reserve()
-			XCTAssertEqual(locking.wait, 60)
-			XCTAssertEqual(locking.lockedAtCount, 3)
-			let whileLocked = try await reserve()
-			XCTAssertGreaterThan(whileLocked.wait, 0)
-			XCTAssertNil(whileLocked.lockedAtCount, "attempts against an already locked bucket aren't reported again")
-			try await app.redis.clearAuthRateLimit(bucket)
+		let (store, clock) = makeStore()
+		func reserve() async -> (wait: Int, lockedAtCount: Int?) {
+			await store.reserve("lockcount", limit: 2, window: 60, baseLockout: 60, maxLockout: 600)
 		}
+		for _ in 0..<2 {
+			let allowed = await reserve()
+			XCTAssertEqual(allowed.wait, 0)
+			XCTAssertNil(allowed.lockedAtCount)
+		}
+		let locking = await reserve()
+		XCTAssertEqual(locking.wait, 60)
+		XCTAssertEqual(locking.lockedAtCount, 3)
+		clock.now += 20
+		let whileLocked = await reserve()
+		XCTAssertEqual(whileLocked.wait, 40)
+		XCTAssertNil(whileLocked.lockedAtCount, "attempts against an already locked bucket aren't reported again")
 	}
 
 	func testReserve_LockoutDoublesAndCaps() async throws {
-		try await withApp { app in
-			let bucket = "test-doubling-\(UUID().uuidString)"
-			func reserve() async throws -> Int {
-				try await app.redis.reserveAuthAttempt(bucket, limit: 1, window: 60, baseLockout: 60, maxLockout: 150).wait
-			}
-			func expireLock() async throws {
-				_ = try await app.redis.delete(RedisKey("authlimit-lock:\(bucket)")).get()
-			}
-			var first = try await reserve()
-			XCTAssertEqual(first, 0)
-			first = try await reserve()
-			XCTAssertEqual(first, 60)
-			try await expireLock()
-			_ = try await reserve()
-			let second = try await reserve()
-			XCTAssertEqual(second, 120, "each lockout within a day lasts twice as long as the last")
-			try await expireLock()
-			_ = try await reserve()
-			let third = try await reserve()
-			XCTAssertEqual(third, 150, "lockouts are capped")
-			try await app.redis.clearAuthRateLimit(bucket)
+		let (store, clock) = makeStore()
+		func reserve() async -> Int {
+			await store.reserve("doubling", limit: 1, window: 60, baseLockout: 60, maxLockout: 150).wait
 		}
+		var wait = await reserve()
+		XCTAssertEqual(wait, 0)
+		wait = await reserve()
+		XCTAssertEqual(wait, 60)
+		clock.now += 60
+		_ = await reserve()
+		wait = await reserve()
+		XCTAssertEqual(wait, 120, "each lockout within a day lasts twice as long as the last")
+		clock.now += 120
+		_ = await reserve()
+		wait = await reserve()
+		XCTAssertEqual(wait, 150, "lockouts are capped")
+		// A day after the last lockout, the next one starts back at the base length.
+		clock.now += AuthRateLimitStore.strikeMemory
+		_ = await reserve()
+		wait = await reserve()
+		XCTAssertEqual(wait, 60)
+	}
+
+	func testReserve_CountResetsWhenWindowEnds() async throws {
+		let (store, clock) = makeStore()
+		for _ in 0..<3 {
+			_ = await store.reserve("window", limit: 3, window: 60, baseLockout: 60, maxLockout: 600)
+		}
+		clock.now += 59
+		let count = await store.count("window")
+		XCTAssertEqual(count, 3)
+		clock.now += 1
+		let wait = await store.reserve("window", limit: 3, window: 60, baseLockout: 60, maxLockout: 600).wait
+		XCTAssertEqual(wait, 0, "attempts from an earlier window don't count")
+		let newCount = await store.count("window")
+		XCTAssertEqual(newCount, 1)
+	}
+
+	// Refunds can't push a count below zero, so successes can't bank credit for later failures.
+	func testRefund_StopsAtZero() async throws {
+		let (store, _) = makeStore()
+		_ = await store.reserve("refund", limit: 2, window: 60, baseLockout: 60, maxLockout: 600)
+		await store.refund("refund")
+		await store.refund("refund")
+		await store.refund("refund")
+		for _ in 0..<2 {
+			let wait = await store.reserve("refund", limit: 2, window: 60, baseLockout: 60, maxLockout: 600).wait
+			XCTAssertEqual(wait, 0)
+		}
+		let wait = await store.reserve("refund", limit: 2, window: 60, baseLockout: 60, maxLockout: 600).wait
+		XCTAssertEqual(wait, 60)
 	}
 
 	// MARK: - Clearing lockouts
@@ -299,6 +332,7 @@ class AuthRateLimiterTests: XCTestCase, SwiftarrBaseTest {
 		try await user.save(on: app.db)
 		let token = try Token.generate(for: user)
 		try await token.save(on: app.db)
+		try await app.asyncBoot()
 		try await app.initializeUserCache(app)
 		var headers = HTTPHeaders()
 		headers.bearerAuthorization = BearerAuthorization(token: token.token)
@@ -314,7 +348,7 @@ class AuthRateLimiterTests: XCTestCase, SwiftarrBaseTest {
 				try await login(app, user.username, "wrong", ip: ip, expect: .unauthorized)
 				try await login(app, user.username, "wrong", ip: ip, expect: .tooManyRequests)
 			}
-			let attemptsBefore = try await authRateLimitCount(app, .username(user.username))
+			let attemptsBefore = await authRateLimitCount(app, .username(user.username))
 			let (staff, staffHeaders) = try await makeStaffToken(app, accessLevel: .twitarrteam)
 
 			try await app.test(.POST, "/api/v3/admin/authratelimits/clear", headers: staffHeaders) { res async throws in
@@ -323,7 +357,7 @@ class AuthRateLimiterTests: XCTestCase, SwiftarrBaseTest {
 			}
 			try await login(app, user.username, "password1", ip: "10.0.7.1", expect: .ok)
 			// The per-username count across all IPs hadn't reached its limit, so it keeps counting.
-			let attemptsAfter = try await authRateLimitCount(app, .username(user.username))
+			let attemptsAfter = await authRateLimitCount(app, .username(user.username))
 			XCTAssertEqual(attemptsAfter, attemptsBefore)
 			try await cleanup(app, staff)
 			try await cleanup(app, user)

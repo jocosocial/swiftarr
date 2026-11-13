@@ -518,7 +518,7 @@ struct AdminController: APIRouteCollection {
 			if let code = account.unspentVerification {
 				buckets.append(.usernameLookup(code))
 			}
-			try await AuthRateLimiter.clear(buckets, on: req)
+			await AuthRateLimiter.clear(buckets, on: req)
 		}
 		await user.logIfModeratorAction(.accountUnlocked, user: cacheUser, on: req)
 		let targetUserID = try user.requireID()
@@ -938,7 +938,7 @@ struct AdminController: APIRouteCollection {
 	/// - Returns: `AuthRateLimitClearData` with the number of lockouts cleared.
 	func clearAuthRateLimitsHandler(_ req: Request) async throws -> AuthRateLimitClearData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let cleared = try await AuthRateLimiter.clearAllLockouts(on: req)
+		let cleared = await AuthRateLimiter.clearAllLockouts(on: req)
 		req.logger.notice("User \(cacheUser.username) (\(cacheUser.userID)) cleared \(cleared) auth rate limit lockouts")
 		return AuthRateLimitClearData(clearedCount: cleared)
 	}
