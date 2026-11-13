@@ -1002,7 +1002,8 @@ struct FezController: APIRouteCollection {
 			guard let socketOwner = req.userCache.getUser(userSocket.userID),
 					userCanViewMemberData(user: socketOwner, fez: fez, on: req),
 					!(socketOwner.getBlocks().contains(postAuthor.userID) || socketOwner.getMutes().contains(postAuthor.userID)) else {
-				return
+				// Skip only this socket; returning here would drop the post for every remaining socket.
+				continue
 			}
 			var leafPost = try SocketFezPostData(post: post, author: postAuthor)
 			if userSocket.htmlOutput {
