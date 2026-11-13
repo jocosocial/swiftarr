@@ -1310,7 +1310,8 @@ struct ForumController: APIRouteCollection {
 			forum: forum,
 			authorID: effectiveAuthor.userID,
 			text: newPostData.text,
-			images: filenames
+			images: filenames,
+			idempotencyKey: newPostData.idempotencyKey
 		)
 		let created = try await ForumPost.createOrReturnDebounced(&forumPost, on: req.db)
 		if created {

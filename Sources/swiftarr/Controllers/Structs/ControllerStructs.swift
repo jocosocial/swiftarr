@@ -2129,6 +2129,10 @@ public struct PostContentData: Content {
 	/// If the poster holds the Community Support role (or is TwitarrTeam or above) and this field is TRUE, this post will be authored by 'CommunitySupport'
 	/// instead of the author. Set this to FALSE unless the user specifically chooses this option.
 	var postAsCommunitySupport: Bool = false
+	/// Set this to a different value for all different post creations, and the same value for all retries.
+	/// If you've already created a post with this ID, it will be returned instead of creating a new one.
+	/// This prevents duplicate post creations, which were an issue on the ship's somewhat flaky wifi
+	var idempotencyKey: UUID? = nil
 }
 
 extension PostContentData {
@@ -2141,6 +2145,7 @@ extension PostContentData {
 		postAsModerator = try container.decodeIfPresent(Bool.self, forKey: .postAsModerator) ?? false
 		postAsTwitarrTeam = try container.decodeIfPresent(Bool.self, forKey: .postAsTwitarrTeam) ?? false
 		postAsCommunitySupport = try container.decodeIfPresent(Bool.self, forKey: .postAsCommunitySupport) ?? false
+		idempotencyKey = try container.decodeIfPresent(UUID.self, forKey: .idempotencyKey) ?? nil
 	}
 }
 

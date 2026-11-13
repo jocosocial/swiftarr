@@ -16,10 +16,10 @@ final class FezPost: Model, Searchable, @unchecked Sendable, Debouncable {
 	@ID(custom: "id") var id: Int?
 
 	/// The text content of the post.
-	@ContentField(key: "text") var text: String
+	@Field(key: "text") var text: String
 
 	/// The filename of any image content of the post. FezPosts are limited to one image, and "closed" Fez types cannot have any.
-	@OptionalContentField(key: "image") var image: String?
+	@OptionalField(key: "image") var image: String?
 
 	/// Moderators can set several statuses on fezPosts that modify editability and visibility.
 	@Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
@@ -33,10 +33,6 @@ final class FezPost: Model, Searchable, @unchecked Sendable, Debouncable {
 	/// Timestamp of the model's soft-deletion, set automatically.
 	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
 
-	/// Timestamp until which posts in this forum with the same text by the same user will be dropped.
-	/// Set automatically by a trigger in the Debouncable migration.
-	@Timestamp(key: debounceUntilKey, on: .none) var debounceUntil: Date?
-
 	// MARK: Relations
 
 	/// The `FriendlyFez` to which the post belongs.
@@ -44,6 +40,10 @@ final class FezPost: Model, Searchable, @unchecked Sendable, Debouncable {
 
 	/// The post's author.
 	@Parent(key: "author") var author: User
+	static let creatorKeyPath: CreatorKeyPath = \.$author
+
+	@OptionalField(key: "idempotency_key") var idempotencyKey: UUID?
+	static let idempotencyKeyKeyPath: IdempotencyKeyKeyPath = \.$idempotencyKey
 
 	// MARK: Initialization
 
@@ -61,7 +61,8 @@ final class FezPost: Model, Searchable, @unchecked Sendable, Debouncable {
 		fez: FriendlyFez,
 		authorID: UUID,
 		text: String,
-		image: String?
+		image: String?,
+		idempotencyKey: UUID? = nil
 	) throws {
 		self.$fez.id = try fez.requireID()
 		self.$fez.value = fez
@@ -70,6 +71,7 @@ final class FezPost: Model, Searchable, @unchecked Sendable, Debouncable {
 		// Generally I'm in favor of "validate input, sanitize output" but I hate "\r\n" with the fury of a thousand suns.
 		self.text = text.replacingOccurrences(of: "\r\n", with: "\r")
 		self.image = image
+		self.idempotencyKey = idempotencyKey
 		self.moderationStatus = .normal
 	}
 }

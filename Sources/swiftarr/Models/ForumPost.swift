@@ -22,10 +22,10 @@ final class ForumPost: Model, Searchable, @unchecked Sendable, Debouncable {
 	@ID(custom: "id") var id: Int?
 
 	/// The text content of the post.
-	@ContentField(key: "text") var text: String
+	@Field(key: "text") var text: String
 
 	/// The filenames of any images for the post.
-	@OptionalContentField(key: "images") var images: [String]?
+	@OptionalField(key: "images") var images: [String]?
 
 	/// Moderators can set several statuses on forumPosts that modify editability and visibility.
 	@Enum(key: "mod_status") var moderationStatus: ContentModerationStatus
@@ -39,10 +39,6 @@ final class ForumPost: Model, Searchable, @unchecked Sendable, Debouncable {
 	/// Timestamp of the model's soft-deletion, set automatically.
 	@Timestamp(key: "deleted_at", on: .delete) var deletedAt: Date?
 
-	/// Timestamp until which posts in this forum with the same text by the same user will be dropped.
-	/// Set automatically by a trigger in the Debouncable migration.
-	@Timestamp(key: debounceUntilKey, on: .none) var debounceUntil: Date?
-
 	/// Is the post pinned within the forum.
 	@Field(key: "pinned") var pinned: Bool
 
@@ -53,6 +49,10 @@ final class ForumPost: Model, Searchable, @unchecked Sendable, Debouncable {
 
 	/// The parent `User`  who authored the post.
 	@Parent(key: "author") var author: User
+	static let creatorKeyPath: CreatorKeyPath = \.$author
+
+	@OptionalField(key: "idempotency_key") var idempotencyKey: UUID?
+	static let idempotencyKeyKeyPath: IdempotencyKeyKeyPath = \.$idempotencyKey
 
 	/// The child `ForumPostEdit` accountability records of the post.
 	@Children(for: \.$post) var edits: [ForumPostEdit]
@@ -76,7 +76,8 @@ final class ForumPost: Model, Searchable, @unchecked Sendable, Debouncable {
 		forum: Forum,
 		authorID: UUID,
 		text: String,
-		images: [String]? = nil
+		images: [String]? = nil,
+		idempotencyKey: UUID? = nil
 	) throws {
 		self.$forum.id = try forum.requireID()
 		self.$forum.value = forum
@@ -84,6 +85,7 @@ final class ForumPost: Model, Searchable, @unchecked Sendable, Debouncable {
 		// We don't do much text manipulation on input, but let's normalize line endings.
 		self.text = text.replacingOccurrences(of: "\r\n", with: "\r")
 		self.images = images
+		self.idempotencyKey = idempotencyKey
 		self.moderationStatus = .normal
 		self.pinned = false
 	}

@@ -592,7 +592,7 @@ struct FezController: APIRouteCollection {
 		// create and save the new post, update fezzes' cached post count
 		let effectiveAuthor = data.effectiveAuthor(actualAuthor: cacheUser, on: req)
 		let filename = filenames.count > 0 ? filenames[0] : nil
-		var post = try FezPost(fez: fez, authorID: effectiveAuthor.userID, text: data.text, image: filename)
+		var post = try FezPost(fez: fez, authorID: effectiveAuthor.userID, text: data.text, image: filename, idempotencyKey: data.idempotencyKey)
 		// This returns true if a post was created, or false if it was debounced but we should return it like it's new.
 		if try await FezPost.createOrReturnDebounced(&post, on: req.db) {
 			fez.postCount += 1
