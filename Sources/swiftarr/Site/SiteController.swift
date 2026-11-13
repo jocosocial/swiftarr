@@ -20,22 +20,25 @@ extension Shareable {
 /// Add a `share: ShareContext?` to a page's context, then `#extend("shareButton")` and `#extend("shareModal")` in its template.
 struct ShareContext: Encodable {
 	private(set) var url: String
-	/// Server-relative URL of a QR code image encoding `url`. Relative so the image loads from whatever host the viewer reached
-	/// the page on, even if that isn't the canonical host (dev instances, tunnels, LAN addresses).
+	/// Server-relative URL of a QR code image encoding `url`. See `qrCodeImageURL(encoding:)`.
 	private(set) var qrCodeURL: String
 
 	init?(_ item: some Shareable) {
-		guard let url = item.shareURL else {
-			return nil
-		}
-		var imageComponents = URLComponents()
-		imageComponents.path = "/api/v3/image/qrcode"
-		imageComponents.queryItems = [URLQueryItem(name: "string", value: url)]
-		guard let qrCodeURL = imageComponents.string else {
+		guard let url = item.shareURL, let qrCodeURL = Self.qrCodeImageURL(encoding: url) else {
 			return nil
 		}
 		self.url = url
 		self.qrCodeURL = qrCodeURL
+	}
+
+	/// Builds the URL of an image of a QR code that encodes `string`, for use in an `<img>` tag. The URL is relative so the image
+	/// loads from whatever host served the page, even if that isn't the canonical host (dev instances, tunnels, LAN addresses).
+	/// `string` is what the QR code contains, and should be built from the canonical server URL.
+	static func qrCodeImageURL(encoding string: String) -> String? {
+		var imageComponents = URLComponents()
+		imageComponents.path = "/api/v3/image/qrcode"
+		imageComponents.queryItems = [URLQueryItem(name: "string", value: string)]
+		return imageComponents.string
 	}
 }
 
