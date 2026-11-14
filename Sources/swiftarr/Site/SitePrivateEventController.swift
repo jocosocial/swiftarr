@@ -217,7 +217,6 @@ struct SitePrivateEventController: SiteControllerUtils {
 		globalPERoutes.get(fezIDParam, use: privateEventPageHandler).destination("private event").setUsedForPreregistration()
 
 		let privateRoutes = getPrivateRoutes(app, feature: .personalevents, path: "privateevent")
-<<<<<<< HEAD
 		privateRoutes.get("create", use: peCreatePageHandler).setUsedForPreregistration()
 		privateRoutes.post("create", use: peCreateOrUpdatePostHandler).setUsedForPreregistration()
 		privateRoutes.get(fezIDParam, "update", use: peUpdatePageHandler).setUsedForPreregistration()
