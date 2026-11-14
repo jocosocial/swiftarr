@@ -388,19 +388,20 @@ struct SiteForumController: SiteControllerUtils {
 					"/forums/\(forums.categoryID)?start=\(pageIndex * limit)&limit=\(limit)\(paginationSortParam)"
 				}
 
+				let defaultSort = forums.defaultSort ?? (forums.isEventCategory ? .event : .update)
 				sortOrders = [
 					.init(
 						urlStr: req.url.string,
 						name: "Most Recent Post",
 						value: "update",
-						isDefault: !forums.isEventCategory
+						isDefault: defaultSort == .update
 					),
-					.init(urlStr: req.url.string, name: "Creation Time", value: "create"),
-					.init(urlStr: req.url.string, name: "Title", value: "title"),
+					.init(urlStr: req.url.string, name: "Creation Time", value: "create", isDefault: defaultSort == .create),
+					.init(urlStr: req.url.string, name: "Title", value: "title", isDefault: defaultSort == .title),
 				]
 				if forums.isEventCategory {
 					sortOrders.insert(
-						ForumsSortOrder(urlStr: req.url.string, name: "Event Time", value: "event", isDefault: true),
+						ForumsSortOrder(urlStr: req.url.string, name: "Event Time", value: "event", isDefault: defaultSort == .event),
 						at: 0
 					)
 				}
