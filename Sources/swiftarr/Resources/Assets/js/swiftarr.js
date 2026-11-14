@@ -142,7 +142,10 @@ labelReactionChips(document);
 new MutationObserver(records => {
 	for (const record of records) {
 		for (const node of record.addedNodes) {
-			if (node.nodeType === Node.ELEMENT_NODE) labelReactionChips(node);
+			if (node.nodeType !== Node.ELEMENT_NODE) continue;
+			labelReactionChips(node);
+			if (node.matches("[data-reaction-controls]")) initializeReactionControls(node);
+			for (const controls of node.querySelectorAll("[data-reaction-controls]")) initializeReactionControls(controls);
 		}
 	}
 }).observe(document.body, {childList: true, subtree: true});
@@ -524,18 +527,20 @@ async function deleteAction() {
 }
 
 // Make every post expand when first clicked, showing the previously hidden action bar.
-for (let posElement of document.querySelectorAll('.has-action-bar')) {
-	posElement.addEventListener("click", toggleActionBar);
-}
-function toggleActionBar(event) {
+document.addEventListener("click", event => {
+	const post = event.target.closest(".has-action-bar");
+	if (post) toggleActionBar(event, post);
+});
+/** Toggles actions for initial posts and posts inserted by the live message stream. */
+function toggleActionBar(event, post) {
 	// Action controls keep the bar open while their clicks can still reach Bootstrap's modal handlers.
-	if (event.target.closest('[data-label="actionbar"], [data-reaction-chip], [data-reaction-controls]')) {
+	if (event.target.closest('[data-label="actionbar"], [data-reaction-chip], [data-reaction-controls], .reaction-chip-disabled')) {
 		return;
 	}
-	let actionBar = event.currentTarget.querySelector('[data-label="actionbar"]');
+	let actionBar = post.querySelector('[data-label="actionbar"]');
 	if (actionBar && !actionBar.classList.contains("show")) {
 		var bsCollapse = new bootstrap.Collapse(actionBar, { toggle: false }).show();
-		updateLikeCounts(event.currentTarget);
+		updateLikeCounts(post);
 	}
 	else if (actionBar && actionBar.classList.contains("show")) {
 		var bsCollapse = new bootstrap.Collapse(actionBar, { toggle: false }).hide();

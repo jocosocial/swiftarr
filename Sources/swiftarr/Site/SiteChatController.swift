@@ -384,7 +384,7 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				}
 				self.fez = fez
 				self.breadcrumbLink = fez.fezType.isPrivateEventType ? "/dayplanner" : "/lfg"
-				self.reactionActionPrefix = "/lfg/post"
+				self.reactionActionPrefix = fez.fezType.isPrivateEventType ? "/privateevent/post" : "/lfg/post"
 				self.userID = cacheUser.userID
 				userIsMember = false
 				showModButton = trunk.userIsMod && ![.closed, .open].contains(fez.fezType)

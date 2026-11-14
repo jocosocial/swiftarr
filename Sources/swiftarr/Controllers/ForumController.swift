@@ -711,19 +711,12 @@ struct ForumController: APIRouteCollection {
 		}
 		// get bookmark state and grouped reactions
 		let postLikes = try await PostLikes.query(on: req.db).filter(\.$post.$id == post.requireID()).all()
-		let postReactions = try await ForumPostReaction.query(on: req.db).filter(\.$post.$id == post.requireID()).sort(\.$createdAt, .ascending).sort(\.$groupOrder, .ascending).all()
+		let reactions = try await PostReactionBuilder.forum(postIDs: [post.requireID()], on: req)[post.requireID()] ?? []
 		var isFavorite = false
 		for postLike in postLikes {
 			if postLike.isFavorite && postLike.$user.id == cacheUser.userID {
 				isFavorite = true
 			}
-		}
-		var groupedReactions = [String: [UUID]]()
-		for postReaction in postReactions {
-			groupedReactions[postReaction.emoji, default: []].append(postReaction.$user.id)
-		}
-		let reactions = ReactionData.orderedEmojis(postReactions.map(\.emoji)).map { emoji in
-			ReactionData(reaction: emoji, users: req.userCache.getHeaders(groupedReactions[emoji] ?? []))
 		}
 		// init return struct. Editors (moderators) see the real text/images of quarantined posts so
 		// that editing one preserves its images instead of wiping them; matches ModerationController.
@@ -1427,10 +1420,6 @@ struct ForumController: APIRouteCollection {
 		return try await post.fileReport(submitter: cacheUser, submitterMessage: data.message, on: req)
 	}
 
-	private func legacyReactionEmojis() -> Set<String> {
-		return Set([ReactionData.legacyEmoji(for: .laugh), ReactionData.legacyEmoji(for: .like), ReactionData.legacyEmoji(for: .love)])
-	}
-
 	/// Legacy `POST /api/v3/forum/post/ID/laugh`
 	func postLaughHandler(_ req: Request) async throws -> PostData {
 		return try await postReactHandler(req, emoji: ReactionData.legacyEmoji(for: .laugh), replaceLegacyReaction: true)
@@ -1481,8 +1470,10 @@ struct ForumController: APIRouteCollection {
 		guard post.$author.id != cacheUser.userID else {
 			throw Abort(.forbidden, reason: "user cannot react to own post")
 		}
+		// Old clients can hold one LikeType reaction: replace only those three emoji,
+		// retaining any unrelated reactions submitted by modern clients.
 		if replaceLegacyReaction {
-			let legacyEmojis = legacyReactionEmojis()
+			let legacyEmojis = ReactionData.allLegacy
 			let oldLegacyReacts = try await ForumPostReaction.query(on: req.db)
 				.filter(\.$user.$id == cacheUser.userID)
 				.filter(\.$post.$id == post.requireID())
@@ -1541,7 +1532,7 @@ struct ForumController: APIRouteCollection {
 			if let emoji {
 				return reaction.emoji == emoji
 			}
-			return legacyReactionEmojis().contains(reaction.emoji)
+			return ReactionData.allLegacy.contains(reaction.emoji)
 		}
 		for reaction in reactionsToRemove {
 			try await reaction.delete(on: req.db)
@@ -1987,24 +1978,13 @@ extension ForumController {
 		let postIDs = try filteredPosts.map { try $0.requireID() }
 		let userLikes = try await PostLikes.query(on: req.db).filter(\.$post.$id ~~ postIDs)
 			.filter(\.$user.$id == userID).all()
-		let postReactions = try await ForumPostReaction.query(on: req.db).filter(\.$post.$id ~~ postIDs).sort(\.$createdAt, .ascending).sort(\.$groupOrder, .ascending).all()
+		let postReactionMap = try await PostReactionBuilder.forum(postIDs: postIDs, on: req)
 		let userLikeDict = Dictionary(userLikes.map { ($0.$post.id, $0) }, uniquingKeysWith: { (first, _) in first })
-		var postReactionMap = [Int: [String: [UUID]]]()
-		var postReactionOrder = [Int: [String]]()
-		for reaction in postReactions {
-			let postID = reaction.$post.id
-			if postReactionMap[postID]?[reaction.emoji] == nil {
-				postReactionOrder[postID, default: []].append(reaction.emoji)
-			}
-			postReactionMap[postID, default: [:]][reaction.emoji, default: []].append(reaction.$user.id)
-		}
 		let postDataArray = try filteredPosts.map { post -> PostData in
 			let postID = try post.requireID()
 			let author = try req.userCache.getHeader(post.$author.id)
 			let bookmarked = assumeBookmarked ?? userLikeDict[postID]?.isFavorite ?? false
-			let reactions = (postReactionOrder[postID] ?? []).map { emoji in
-				ReactionData(reaction: emoji, users: req.userCache.getHeaders(postReactionMap[postID]?[emoji] ?? []))
-			}
+			let reactions = postReactionMap[postID] ?? []
 			let userLike = ReactionData.legacyLikeType(in: reactions, for: userID)
 			let likeCount = ReactionData.legacyLikeCount(in: reactions)
 			return try PostData(

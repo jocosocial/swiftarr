@@ -217,11 +217,14 @@ struct SitePrivateEventController: SiteControllerUtils {
 		globalPERoutes.get(fezIDParam, use: privateEventPageHandler).destination("private event").setUsedForPreregistration()
 
 		let privateRoutes = getPrivateRoutes(app, feature: .personalevents, path: "privateevent")
+<<<<<<< HEAD
 		privateRoutes.get("create", use: peCreatePageHandler).setUsedForPreregistration()
 		privateRoutes.post("create", use: peCreateOrUpdatePostHandler).setUsedForPreregistration()
 		privateRoutes.get(fezIDParam, "update", use: peUpdatePageHandler).setUsedForPreregistration()
 		privateRoutes.post(fezIDParam, "update", use: peCreateOrUpdatePostHandler).setUsedForPreregistration()
 		privateRoutes.get("list", use: peListHandler).setUsedForPreregistration()
+		privateRoutes.post("post", postIDParam, "react", use: SiteFriendlyFezController().fezPostReactHandler)
+		privateRoutes.post("post", postIDParam, "unreact", use: SiteFriendlyFezController().fezPostUnreactHandler)
 
 		// This route is intended for calendar apps, allowing for subscriptions to iCal calendar feeds.
 		let calendaringRoute = app.grouped([

@@ -74,8 +74,10 @@ struct FezController: APIRouteCollection {
 		tokenAuthGroup.post(fezIDParam, "unjoin", use: unjoinHandler)
 		tokenAuthGroup.post("post", fezPostIDParam, "delete", use: postDeleteHandler)
 		tokenAuthGroup.delete("post", fezPostIDParam, use: postDeleteHandler)
-		tokenAuthGroup.post("post", fezPostIDParam, "react", use: fezPostReactHandler)
-		tokenAuthGroup.post("post", fezPostIDParam, "unreact", use: fezPostUnreactHandler)
+		// Reactions use the post's actual feature rather than treating all chats as LFGs.
+		let reactionRoutes = fezRoutes.tokenRoutes()
+		reactionRoutes.post("post", fezPostIDParam, "react", use: fezPostReactHandler)
+		reactionRoutes.post("post", fezPostIDParam, "unreact", use: fezPostUnreactHandler)
 		tokenAuthGroup.post(fezIDParam, "user", userIDParam, "add", use: userAddHandler)
 		tokenAuthGroup.post(fezIDParam, "user", userIDParam, "remove", use: userRemoveHandler)
 		tokenAuthGroup.post(fezIDParam, "update", use: updateHandler).setUsedForPreregistration()
@@ -770,6 +772,7 @@ struct FezController: APIRouteCollection {
 		let reactionValue = try req.content.decode(PostReactionData.self).validatedReaction()
 		let post = try await FezPost.findFromParameter(fezPostIDParam, on: req)
 		let fez = try await post.$fez.get(on: req.db)
+		try guardReactionFeature(fez, user: cacheUser)
 		guard userCanViewMemberData(user: cacheUser, fez: fez) else {
 			throw Abort(.forbidden, reason: "user cannot view this \(fez.fezType.lfgLabel)")
 		}
@@ -804,6 +807,7 @@ struct FezController: APIRouteCollection {
 		let reactionValue = try req.content.decode(PostReactionData.self).validatedReaction()
 		let post = try await FezPost.findFromParameter(fezPostIDParam, on: req)
 		let fez = try await post.$fez.get(on: req.db)
+		try guardReactionFeature(fez, user: cacheUser)
 		guard userCanViewMemberData(user: cacheUser, fez: fez) else {
 			throw Abort(.forbidden, reason: "user cannot view this \(fez.fezType.lfgLabel)")
 		}
@@ -821,6 +825,14 @@ struct FezController: APIRouteCollection {
 		let postData = try await buildFezPostData(post, for: cacheUser, on: req)
 		try await forwardReactionChangeToSockets(fez, postData: postData, on: req)
 		return postData
+	}
+
+	/// Applies the correct chat feature gate while preserving the existing THO/admin bypass.
+	private func guardReactionFeature(_ fez: FriendlyFez, user: UserCacheData) throws {
+		let feature: SwiftarrFeature = fez.fezType == .closed ? .seamail : (fez.fezType.isPrivateEventType ? .personalevents : .friendlyfez)
+		if Settings.shared.disabledFeatures.isFeatureDisabled(feature), !["THO", "admin"].contains(user.username) {
+			throw Abort(.unavailableForLegalReasons, reason: "This feature has been disabled by the server admins.")
+		}
 	}
 
 	/// `POST /api/v3/fez/post/ID/report`
@@ -1159,14 +1171,18 @@ struct FezController: APIRouteCollection {
 			var leafPost = try SocketFezPostData(post: post, author: postAuthor)
 			if userSocket.htmlOutput {
 				struct FezPostContext: Encodable {
+					struct ThreadContext: Encodable {
+						var fezType: FezType
+					}
+					var fez: ThreadContext
 					var userID: UUID
 					var fezPost: SocketFezPostData
 					var showModButton: Bool
 					var reactionActionPrefix: String
 				}
-				let ctx = FezPostContext(userID: userSocket.userID, fezPost: leafPost,
+				let ctx = FezPostContext(fez: .init(fezType: fez.fezType), userID: userSocket.userID, fezPost: leafPost,
 						showModButton: socketOwner.accessLevel.hasAccess(.moderator) && fez.fezType != .closed,
-						reactionActionPrefix: fez.fezType == .closed ? "/seamail/post" : "/lfg/post")
+						reactionActionPrefix: fez.fezType == .closed ? "/seamail/post" : (fez.fezType.isPrivateEventType ? "/privateevent/post" : "/lfg/post"))
 				leafPost.html = try await req.view.render("Fez/fezPost", ctx) .flatMapThrowing { postBuffer -> String? in
 					if let data = postBuffer.data.getData(at: 0, length: postBuffer.data.readableBytes),
 							let htmlString = String(data: data, encoding: .utf8) {
@@ -1196,15 +1212,15 @@ struct FezController: APIRouteCollection {
 				struct ReactionFragmentContext: Encodable {
 					var reactions: [ReactionData]
 					var userID: UUID
-					var authorID: UUID
+					var author: UserHeader
 					var postID: Int
 					var reactionActionPrefix: String
 				}
 				payload.html = try await req.view.render(
 					"Fez/fezPostReactions",
 					ReactionFragmentContext(reactions: postData.reactions, userID: userSocket.userID,
-						authorID: postData.author.userID, postID: postData.postID,
-						reactionActionPrefix: fez.fezType == .closed ? "/seamail/post" : "/lfg/post")
+						author: postData.author, postID: postData.postID,
+						reactionActionPrefix: fez.fezType == .closed ? "/seamail/post" : (fez.fezType.isPrivateEventType ? "/privateevent/post" : "/lfg/post"))
 				).flatMapThrowing { rendered -> String in
 					guard let data = rendered.data.getData(at: 0, length: rendered.data.readableBytes),
 						let html = String(data: data, encoding: .utf8)
@@ -1706,14 +1722,7 @@ extension FezController {
 
 	/// Builds one chat post response with all current reactions.
 	private func buildFezPostData(_ post: FezPost, for user: UserCacheData, on req: Request) async throws -> FezPostData {
-		let reactions = try await FezPostReaction.query(on: req.db).filter(\.$post.$id == post.requireID()).sort(\.$createdAt, .ascending).sort(\.$groupOrder, .ascending).all()
-		let groupedReactions = Dictionary(grouping: reactions, by: \.emoji)
-		let reactionData = ReactionData.orderedEmojis(reactions.map(\.emoji)).map { reaction in
-			ReactionData(
-				reaction: reaction,
-				users: req.userCache.getHeaders(groupedReactions[reaction]?.map(\.$user.id) ?? [])
-			)
-		}
+		let reactionData = try await PostReactionBuilder.fez(postIDs: [post.requireID()], on: req)[post.requireID()] ?? []
 		return try FezPostData(
 			post: post,
 			author: req.userCache.getHeader(post.$author.id),
@@ -1750,21 +1759,10 @@ extension FezController {
 			.range(boundedPagination.range)
 			.all()
 		let postIDs = try posts.map { try $0.requireID() }
-		let allReactions = try await FezPostReaction.query(on: req.db).filter(\.$post.$id ~~ postIDs).sort(\.$createdAt, .ascending).sort(\.$groupOrder, .ascending).all()
-		var postReactionMap = [Int: [String: [UUID]]]()
-		var postReactionOrder = [Int: [String]]()
-		for reaction in allReactions {
-			if postReactionMap[reaction.$post.id]?[reaction.emoji] == nil {
-				postReactionOrder[reaction.$post.id, default: []].append(reaction.emoji)
-			}
-			postReactionMap[reaction.$post.id, default: [:]][reaction.emoji, default: []].append(reaction.$user.id)
-		}
+		let postReactionMap = try await PostReactionBuilder.fez(postIDs: postIDs, on: req)
 		let postDatas = try posts.map { post in
 			let postID = try post.requireID()
-			let grouped = postReactionMap[postID] ?? [:]
-			let reactionData = (postReactionOrder[postID] ?? []).map { reaction in
-				ReactionData(reaction: reaction, users: req.userCache.getHeaders(grouped[reaction] ?? []))
-			}
+			let reactionData = postReactionMap[postID] ?? []
 			return try FezPostData(
 				post: post,
 				author: req.userCache.getHeader(post.$author.id),

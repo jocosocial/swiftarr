@@ -125,6 +125,37 @@ final class ForumReactionCompatibilityTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
+	/// Private-event and Seamail reactions must work while LFG is disabled, but respect their own feature gates.
+	func testChatReactionFeatureGates() async throws {
+		try await withApp { app in
+			let fixture = try await makeFixture(app, suffix: UUID().uuidString.prefix(8).lowercased())
+			let previous = Settings.shared.disabledFeatures
+			defer { Settings.shared.disabledFeatures = previous }
+			for (type, feature) in [(FezType.privateEvent, SwiftarrFeature.personalevents), (.closed, .seamail), (.activity, .friendlyfez)] {
+				let fez = FriendlyFez(owner: fixture.post.$author.id, fezType: type, title: "Reaction feature fixture", location: nil, startTime: nil, endTime: nil)
+				fez.participantArray = [try fixture.reactor.requireID()]
+				try await fez.save(on: app.db)
+				let post = try FezPost(fez: fez, authorID: fixture.post.$author.id, text: "reaction feature fixture", image: nil)
+				try await post.save(on: app.db)
+				let path = "/api/v3/fez/post/\(try post.requireID())/react"
+				Settings.shared.disabledFeatures = DisabledFeaturesGroup(value: [.all: [.friendlyfez]])
+				try await app.test(.POST, path, headers: bearer(fixture.token), beforeRequest: { req async throws in
+					req.headers.contentType = .json
+					req.body = ByteBuffer(string: "{\"reaction\":\"👍\"}")
+				}, afterResponse: { res async throws in
+					XCTAssertEqual(res.status, type == .activity ? .unavailableForLegalReasons : .ok)
+				})
+				Settings.shared.disabledFeatures = DisabledFeaturesGroup(value: [.all: [feature]])
+				try await app.test(.POST, path, headers: bearer(fixture.token), beforeRequest: { req async throws in
+					req.headers.contentType = .json
+					req.body = ByteBuffer(string: "{\"reaction\":\"👍\"}")
+				}, afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .unavailableForLegalReasons)
+				})
+			}
+		}
+	}
+
 	/// Verifies each legacy DELETE endpoint removes only the matching LikeType emoji.
 	func testLegacyDeleteRoutesRemoveOnlyTheirOwnEmoji() async throws {
 		try await withApp { app in

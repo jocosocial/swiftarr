@@ -2178,11 +2178,8 @@ extension PostContentData: RCFValidatable {
 
 /// Used to return grouped reaction metadata.
 public struct ReactionData: Content {
-	/// Preserves the first occurrence of each emoji in a chronologically ordered reaction list.
-	static func orderedEmojis(_ emojis: [String]) -> [String] {
-		var seen = Set<String>()
-		return emojis.filter { seen.insert($0).inserted }
-	}
+	/// Emoji understood by clients using the original single LikeType reaction API.
+	static let allLegacy = Set([legacyEmoji(for: .laugh), legacyEmoji(for: .like), legacyEmoji(for: .love)])
 	/// A Unicode emoji or a custom emoji token such as `:arr:`.
 	var reaction: String
 	/// Users who reacted with this emoji.

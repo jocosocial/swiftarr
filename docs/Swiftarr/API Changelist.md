@@ -387,11 +387,6 @@ additive; the existing count fields are unchanged and are now derived from these
 - `CategoryData` gains an optional `defaultSort` field to direct clients to the preferred thread sort for a category. Splashdot sets this to `create` (newest threads first).
 - Category thread requests now honor `CategoryData.defaultSort` when `sort` is omitted. Supported values are `create`, `title`, `update`, and `event`.
 - Event categories advertise `defaultSort: "event"`. Explicit `sort=event` requests for non-event categories return HTTP 400.
-- Forum and Fez (LFG, Seamail, and private-event chat) posts now return grouped `reactions`, supporting Unicode emoji and custom emoji tokens such as `:arr:`.
-- Individual reactions can be added or removed with a JSON body of `{"reaction":"…"}`:
-  - `POST /api/v3/forum/post/:post_ID/react` and `POST /api/v3/forum/post/:post_ID/unreact`
-  - `POST /api/v3/fez/post/:post_ID/react` and `POST /api/v3/fez/post/:post_ID/unreact`
-- Existing forum like, love, and laugh endpoints and their legacy response fields remain available for older clients. A bodyless forum `POST .../unreact` still removes the user's legacy LikeType reaction.
-- Fez chat WebSocket clients receive grouped reaction state updates when a post reaction is added or removed.
-- Reaction identifiers ignore Unicode text/emoji presentation selectors while preserving skin tones and joined sequences. The legacy heart token remains `❤️`. Equivalent existing reactions are merged, and each distinct reaction retains its position while contributors remain.
-- `GET /api/v3/client/emoji` returns the server's public custom emoji catalog as an array of `reaction`, `name`, and `imageURL` values. Image URLs are relative to the server origin. Clients should use this catalog for custom emoji choices and rendering.
+- Forum and Fez posts support grouped Unicode and custom emoji reactions. JSON-body reaction endpoints coexist with legacy forum LikeType routes, response fields, and bodyless unreact requests. Fez WebSockets publish reaction updates.
+- Reaction identifiers normalize presentation variants while preserving skin tones and joined sequences. Private-event and Seamail reaction endpoints use their respective feature gates.
+- Clients can fetch the shared custom emoji catalog (tokens, labels, and server-relative image URLs) from `GET /api/v3/client/emoji`.
