@@ -28,7 +28,7 @@ final class Category: Model, @unchecked Sendable {
 
 	/// The default `sort` query parameter clients should use when requesting threads in this category.
 	/// Values match the forum category `sort` parameter (`create`, `update`, `title`, or `event`).
-	@OptionalField(key: "default_sort") var defaultSort: String?
+	@OptionalField(key: "default_sort") var defaultSort: ForumSort?
 
 	/// Minimum access level to view posts in this category. Usually set to `.quarantined`. But, a category reserved for moderators only
 	/// could have this set to `.moderator`.
@@ -82,7 +82,7 @@ final class Category: Model, @unchecked Sendable {
 		viewAccess: UserAccessLevel = .quarantined,
 		createForumAccess: UserAccessLevel = .verified,
 		isEventCategory: Bool = false,
-		defaultSort: String? = nil,
+		defaultSort: ForumSort? = nil,
 		requiredRole: UserRoleType? = nil
 	) {
 		self.title = title

@@ -205,7 +205,7 @@ public struct CategoryData: Content {
 	/// if TRUE, this category is for Event Forums, and is prepopulated with forum threads for each Schedule Event.
 	var isEventCategory: Bool
 	/// The default `sort` query parameter clients should use when requesting threads in this category, if any.
-	var defaultSort: String?
+	var defaultSort: ForumSort?
 	/// The threads in the category. Only populated for /categories/ID.
 	var forumThreads: [ForumListData]?
 	/// Pagination of the results. For the `GET /api/v3/categories` endpoint only the `Paginator`s `total` is meaningful.
