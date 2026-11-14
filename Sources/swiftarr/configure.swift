@@ -688,6 +688,8 @@ struct SwiftarrConfigurator {
 		app.migrations.add(AddEventPerformerManuallyLinkedMigration(), to: .psql)
 		app.migrations.add(AddFavoriteFieldToFezParticipantSchema(), to: .psql)
 		app.migrations.add(MigratePostLikesToReactions(), to: .psql)
+		app.migrations.add(AddReactionCreationDates(), to: .psql)
+		app.migrations.add(CanonicalizeReactionGroups(), to: .psql)
 		app.migrations.add(AddVisibilityFieldToFriendlyFezSchema(), to: .psql)
 		app.migrations.add(CreateClientAppSchema(), to: .psql)
 		app.migrations.add(UpdateEventSchema_AgeRating(), to: .psql)

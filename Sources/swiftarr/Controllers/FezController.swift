@@ -783,6 +783,12 @@ struct FezController: APIRouteCollection {
 			.first() == nil
 		{
 			let reaction = try FezPostReaction(cacheUser.userID, post, emoji: reactionValue)
+			// Copy the chip's position so removing its earliest contributor cannot move it.
+			if let existing = try await FezPostReaction.query(on: req.db)
+				.filter(\.$post.$id == post.requireID()).filter(\.$emoji == reactionValue).first() {
+				reaction.createdAt = existing.createdAt
+				reaction.groupOrder = existing.groupOrder
+			}
 			try await reaction.save(on: req.db)
 		}
 		let postData = try await buildFezPostData(post, for: cacheUser, on: req)
@@ -1700,9 +1706,9 @@ extension FezController {
 
 	/// Builds one chat post response with all current reactions.
 	private func buildFezPostData(_ post: FezPost, for user: UserCacheData, on req: Request) async throws -> FezPostData {
-		let reactions = try await FezPostReaction.query(on: req.db).filter(\.$post.$id == post.requireID()).all()
+		let reactions = try await FezPostReaction.query(on: req.db).filter(\.$post.$id == post.requireID()).sort(\.$createdAt, .ascending).sort(\.$groupOrder, .ascending).all()
 		let groupedReactions = Dictionary(grouping: reactions, by: \.emoji)
-		let reactionData = groupedReactions.keys.sorted().map { reaction in
+		let reactionData = ReactionData.orderedEmojis(reactions.map(\.emoji)).map { reaction in
 			ReactionData(
 				reaction: reaction,
 				users: req.userCache.getHeaders(groupedReactions[reaction]?.map(\.$user.id) ?? [])
@@ -1744,15 +1750,19 @@ extension FezController {
 			.range(boundedPagination.range)
 			.all()
 		let postIDs = try posts.map { try $0.requireID() }
-		let allReactions = try await FezPostReaction.query(on: req.db).filter(\.$post.$id ~~ postIDs).all()
+		let allReactions = try await FezPostReaction.query(on: req.db).filter(\.$post.$id ~~ postIDs).sort(\.$createdAt, .ascending).sort(\.$groupOrder, .ascending).all()
 		var postReactionMap = [Int: [String: [UUID]]]()
+		var postReactionOrder = [Int: [String]]()
 		for reaction in allReactions {
+			if postReactionMap[reaction.$post.id]?[reaction.emoji] == nil {
+				postReactionOrder[reaction.$post.id, default: []].append(reaction.emoji)
+			}
 			postReactionMap[reaction.$post.id, default: [:]][reaction.emoji, default: []].append(reaction.$user.id)
 		}
 		let postDatas = try posts.map { post in
 			let postID = try post.requireID()
 			let grouped = postReactionMap[postID] ?? [:]
-			let reactionData = grouped.keys.sorted().map { reaction in
+			let reactionData = (postReactionOrder[postID] ?? []).map { reaction in
 				ReactionData(reaction: reaction, users: req.userCache.getHeaders(grouped[reaction] ?? []))
 			}
 			return try FezPostData(

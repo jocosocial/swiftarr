@@ -97,63 +97,70 @@ document.addEventListener("click", async event => {
 	}
 });
 
-// Reaction choices are selected explicitly from this picker. Inline post text never creates reactions.
-const reactionEmojiGroups = [
-	{
-		name: "Faces",
-		emojis: [
-			["😀", "grinning face"], ["😃", "smiling face"], ["😄", "smiling face with open mouth"],
-			["😁", "beaming face"], ["😆", "laughing face"], ["😅", "grinning face with sweat"],
-			["😂", "face with tears of joy"], ["🤣", "rolling on the floor laughing"], ["🙂", "slightly smiling face"],
-			["🙃", "upside-down face"], ["😉", "winking face"], ["😊", "smiling face with smiling eyes"],
-			["😍", "heart eyes"], ["🥰", "smiling face with hearts"], ["😎", "smiling face with sunglasses"],
-			["🤔", "thinking face"], ["🤗", "hugging face"], ["🥳", "partying face"], ["🤩", "star-struck"],
-			["😴", "sleeping face"], ["😢", "crying face"], ["😭", "loudly crying face"], ["😡", "angry face"],
-			["🤯", "exploding head"], ["🤦", "facepalm"], ["🤷", "shrugging face"], ["🫡", "saluting face"],
-			["🫠", "melting face"],
-		],
-	},
-	{
-		name: "Hands",
-		emojis: [
-			["👍", "thumbs up"], ["👎", "thumbs down"], ["👏", "clapping hands"], ["🙌", "raising hands"],
-			["🙏", "folded hands"], ["👋", "waving hand"], ["🤝", "handshake"], ["💪", "flexed biceps"],
-			["🫶", "heart hands"], ["🤞", "crossed fingers"], ["✌️", "victory hand"], ["🫰", "hand with index finger and thumb crossed"],
-		],
-	},
-	{
-		name: "Hearts",
-		emojis: [
-			["❤️", "red heart"], ["🧡", "orange heart"], ["💛", "yellow heart"], ["💚", "green heart"],
-			["💙", "blue heart"], ["💜", "purple heart"], ["🤎", "brown heart"], ["🖤", "black heart"],
-			["🤍", "white heart"], ["💔", "broken heart"], ["💕", "two hearts"], ["💖", "sparkling heart"],
-			["💘", "heart with arrow"],
-		],
-	},
-	{
-		name: "Celebrations",
-		emojis: [
-			["🎉", "party popper"], ["🎊", "confetti ball"], ["🎂", "birthday cake"], ["🎈", "balloon"],
-			["🎁", "wrapped gift"], ["🍾", "bottle with popping cork"], ["🥂", "clinking glasses"],
-			["🍻", "clinking beer mugs"], ["🍷", "wine glass"], ["🍹", "tropical drink"], ["☕", "hot beverage"],
-			["🍕", "pizza"], ["🍰", "shortcake"],
-		],
-	},
-	{
-		name: "Travel and fun",
-		emojis: [
-			["🚢", "ship"], ["🛳️", "passenger ship"], ["⚓", "anchor"], ["🌊", "water wave"], ["🌴", "palm tree"],
-			["🏖️", "beach with umbrella"], ["☀️", "sun"], ["🌈", "rainbow"], ["🔥", "fire"], ["⭐", "star"],
-			["💯", "hundred points"], ["👀", "eyes"], ["🚀", "rocket"],
-		],
-	},
-];
-const reactionCustomEmojis = [
-	["arr", "arr"], ["back-deck-juice", "back deck juice"], ["buffet", "buffet"],
-	["die-ship", "die ship"], ["die", "die"], ["hottub", "hot tub"], ["joco", "Joco"],
-	["pirate", "pirate"], ["ship-front", "ship front"], ["ship", "ship"],
-	["tropical-drink", "tropical drink"], ["wangwang", "Wang Wang"], ["zombie", "zombie"],
-];
+let reactionCatalogPromise;
+let reactionLabelDatabase;
+let reactionLabelAliasesPromise;
+
+/** Match normalized stored tokens to the dataset's presentation-qualified emoji labels. */
+async function reactionLabelAlias(value) {
+	const key = text => text.replace(/[\uFE0E\uFE0F]/g, "").normalize("NFC");
+	if (!reactionLabelAliasesPromise) {
+		reactionLabelAliasesPromise = fetch("/public/emoji/data.json").then(response => {
+			if (!response.ok) throw new Error("Could not load emoji labels");
+			return response.json();
+		}).then(emojis => new Map(emojis.map(emoji => [key(emoji.emoji), emoji.annotation])))
+			.catch(error => { reactionLabelAliasesPromise = undefined; throw error; });
+	}
+	return (await reactionLabelAliasesPromise).get(key(value));
+}
+
+/** Resolve chip labels using the same standard dataset and server custom catalog as the picker. */
+async function labelReactionChips(root) {
+	const chips = [...root.querySelectorAll("[data-reaction-chip]")];
+	if (root.matches?.("[data-reaction-chip]")) chips.push(root);
+	if (!chips.length) return;
+	try {
+		const [custom, {default: Database}] = await Promise.all([
+			loadReactionCatalog(), import("/js/emoji-picker-element/database.js"),
+		]);
+		reactionLabelDatabase ??= new Database({dataSource: "/public/emoji/data.json"});
+		await Promise.all(chips.map(async chip => {
+			const value = chip.dataset.reaction;
+			const customEmoji = custom.find(emoji => emoji.reaction === value);
+			const emoji = customEmoji ? null : await reactionLabelDatabase.getEmojiByUnicodeOrName(value);
+			const label = customEmoji?.name ?? emoji?.annotation ?? await reactionLabelAlias(value) ?? value;
+			chip.title = label;
+			chip.setAttribute("aria-label", "Reaction: " + label);
+			const ownPost = chip.closest(".reaction-chip-disabled");
+			if (ownPost) ownPost.dataset.tooltip = label + ". You can't react to your own post";
+		}));
+	} catch { /* Keep reactions usable when label data is temporarily unavailable. */ }
+}
+
+labelReactionChips(document);
+// Chat replaces reaction fragments without a page reload.
+new MutationObserver(records => {
+	for (const record of records) {
+		for (const node of record.addedNodes) {
+			if (node.nodeType === Node.ELEMENT_NODE) labelReactionChips(node);
+		}
+	}
+}).observe(document.body, {childList: true, subtree: true});
+
+/** Load the server catalog and local picker module once, retrying after a failed load. */
+function loadReactionCatalog() {
+	if (!reactionCatalogPromise) {
+		reactionCatalogPromise = Promise.all([import("/js/emoji-picker-element/picker.js"),
+			fetch("/api/v3/client/emoji").then(response => {
+				if (!response.ok) throw new Error("Could not load custom emoji");
+				return response.json();
+			})]).then(([, emojis]) => emojis).catch(error => {
+			reactionCatalogPromise = undefined;
+			throw error;
+		});
+	}
+	return reactionCatalogPromise;
+}
 
 // Build a searchable picker on initial load or when a live chat fragment first needs one.
 function initializeReactionControls(controls) {
@@ -168,19 +175,7 @@ function initializeReactionControls(controls) {
 	menu.setAttribute("role", "dialog");
 	menu.setAttribute("aria-label", "Choose a reaction");
 
-	const search = document.createElement("input");
-	search.type = "search";
-	search.className = "form-control reaction-picker-search";
-	search.placeholder = "Search emoji";
-	search.setAttribute("aria-label", "Search emoji");
-
-	const optionsContainer = document.createElement("div");
-	optionsContainer.className = "reaction-picker-options";
-
-	const noResults = document.createElement("p");
-	noResults.className = "reaction-picker-no-results d-none";
-	noResults.textContent = "No matching emoji.";
-
+	let emojiPicker;
 	let activeButton;
 	let isSubmitting = false;
 
@@ -222,67 +217,6 @@ function initializeReactionControls(controls) {
 		}
 	}
 
-	function addReactionChoice(value, label, customName = null) {
-		const button = document.createElement("button");
-		button.type = "button";
-		button.className = "reaction-picker-choice";
-		button.setAttribute("aria-label", "Choose " + label);
-		button.title = label;
-		button.dataset.search = (label + " " + value).toLowerCase();
-		if (customName) {
-			button.title = label + " (" + value + ")";
-			button.dataset.search += " twit-arr custom :" + customName + ":";
-			const image = document.createElement("img");
-			image.src = "/img/emoji/small/" + customName + ".png";
-			image.alt = "";
-			button.append(image);
-		}
-		else {
-			button.textContent = value;
-		}
-
-		button.addEventListener("click", event => {
-			event.stopPropagation();
-			submitReaction(value);
-		});
-		return button;
-	}
-
-	function buildPickerOptions() {
-		if (optionsContainer.childElementCount > 0) {
-			return;
-		}
-		for (let group of reactionEmojiGroups) {
-			const section = document.createElement("section");
-			section.className = "reaction-picker-section";
-			const heading = document.createElement("h3");
-			heading.className = "reaction-picker-heading";
-			heading.textContent = group.name;
-			const grid = document.createElement("div");
-			grid.className = "reaction-picker-grid";
-			for (let [emoji, label] of group.emojis) {
-				grid.append(addReactionChoice(emoji, label));
-			}
-			section.append(heading, grid);
-			optionsContainer.append(section);
-		}
-
-		const customSection = document.createElement("section");
-		customSection.className = "reaction-picker-section";
-		const customHeading = document.createElement("h3");
-		customHeading.className = "reaction-picker-heading";
-		customHeading.textContent = "Twit-arr";
-		const customGrid = document.createElement("div");
-		customGrid.className = "reaction-picker-grid";
-		for (let [name, label] of reactionCustomEmojis) {
-			customGrid.append(addReactionChoice(":" + name + ":", label, name));
-		}
-		customSection.append(customHeading, customGrid);
-		// Keep the app's custom emoji visible as soon as either picker trigger is opened.
-		optionsContainer.prepend(customSection);
-	}
-
-	menu.append(search, optionsContainer, noResults);
 	picker.append(menu);
 
 	const reactButton = document.createElement("button");
@@ -303,14 +237,54 @@ function initializeReactionControls(controls) {
 	reactButton.setAttribute("aria-expanded", "false");
 	reactButton.setAttribute("aria-haspopup", "dialog");
 	picker.append(reactButton);
-	reactButton.addEventListener("click", event => {
+	reactButton.addEventListener("click", async event => {
 		event.stopPropagation();
 		if (isSubmitting || controls.closest("[data-postid]").dataset.reactionPending === "true") return;
 		const isOpen = !menu.classList.contains("show");
 		closeReactionPicker(picker);
 		activeButton = reactButton;
 		if (isOpen) {
-			buildPickerOptions();
+			try {
+				const emojis = await loadReactionCatalog();
+				if (isSubmitting || controls.closest("[data-postid]").dataset.reactionPending === "true" || !reactButton.isConnected) return;
+				if (!emojiPicker) {
+					emojiPicker = document.createElement("emoji-picker");
+					emojiPicker.dataSource = "/public/emoji/data.json";
+					emojiPicker.i18n = {
+						...emojiPicker.i18n,
+						categories: {...emojiPicker.i18n.categories, custom: "Twit-arr"},
+					};
+					// The stock indicator assumes all category tabs fit equally across the width.
+					// Use a scrollable tab strip with an indicator attached to each selected tab.
+					const layoutStyle = document.createElement("style");
+					layoutStyle.textContent = `
+						.nav { display: flex; overflow-x: auto; overscroll-behavior-x: contain; }
+						.nav-button { flex: 0 0 auto; border-bottom: 3px solid transparent; }
+						.nav-button[aria-selected="true"] { border-bottom-color: var(--indicator-color); }
+						.indicator-wrapper { display: none; }
+						.tabpanel { overflow-x: hidden; }
+						.emoji-menu { grid-template-columns: repeat(auto-fit, var(--total-emoji-size)); }
+					`;
+					emojiPicker.shadowRoot.append(layoutStyle);
+					const arrEmoji = emojis.find(emoji => emoji.reaction === ":arr:");
+					if (arrEmoji) {
+						// The library exposes category labels, but no category icon option.
+						// Style the custom tab inside its shadow root without modifying vendor code.
+						const tabStyle = document.createElement("style");
+						tabStyle.textContent = `.nav-button[data-group-id="-1"] .nav-emoji {
+							font-size: 0;
+							background: center / var(--category-emoji-size) no-repeat url(${JSON.stringify(arrEmoji.imageURL)});
+						}`;
+						emojiPicker.shadowRoot.append(tabStyle);
+					}
+					emojiPicker.customEmoji = emojis.map(emoji => ({name: emoji.name,
+						shortcodes: [emoji.reaction.slice(1, -1)], url: emoji.imageURL, category: "Twit-arr"}));
+					emojiPicker.addEventListener("emoji-click", event => {
+						submitReaction(event.detail.unicode ?? ":" + event.detail.emoji.shortcodes[0] + ":");
+					});
+					menu.append(emojiPicker);
+				}
+			} catch (error) { alert(error.message); return; }
 			menu.classList.add("show");
 			// Keep the popup inside the viewport even when the + chip is near either edge.
 			menu.style.left = "0px";
@@ -318,29 +292,11 @@ function initializeReactionControls(controls) {
 			const bounds = menu.getBoundingClientRect();
 			menu.style.left = Math.max(8 - bounds.left, Math.min(0, window.innerWidth - 8 - bounds.right)) + "px";
 			reactButton.setAttribute("aria-expanded", "true");
-			search.dispatchEvent(new Event("input"));
-			search.focus();
+			emojiPicker.shadowRoot?.querySelector("input")?.focus();
 		}
 	});
 
 	controls.replaceChildren(picker);
-
-	search.addEventListener("input", () => {
-		const query = search.value.trim().toLowerCase();
-		let visibleCount = 0;
-		for (let choice of menu.querySelectorAll(".reaction-picker-choice")) {
-			const visible = choice.dataset.search.includes(query);
-			choice.classList.toggle("d-none", !visible);
-			if (visible) {
-				visibleCount += 1;
-			}
-		}
-		for (let section of optionsContainer.querySelectorAll(".reaction-picker-section")) {
-			const visibleChoices = section.querySelectorAll(".reaction-picker-choice:not(.d-none)").length;
-			section.classList.toggle("d-none", visibleChoices === 0);
-		}
-		noResults.classList.toggle("d-none", visibleCount > 0);
-	});
 
 	menu.addEventListener("keydown", event => {
 		if (event.key === "Escape") {
@@ -371,12 +327,6 @@ function closeReactionPicker(picker) {
 	for (let button of picker.querySelectorAll(".reaction-picker-toggle")) {
 		button.setAttribute("aria-expanded", "false");
 	}
-	picker.querySelector(".reaction-picker-options")?.replaceChildren();
-	const search = picker.querySelector(".reaction-picker-search");
-	if (search) {
-		search.value = "";
-	}
-	picker.querySelector(".reaction-picker-no-results")?.classList.add("d-none");
 }
 
 document.addEventListener("click", event => {

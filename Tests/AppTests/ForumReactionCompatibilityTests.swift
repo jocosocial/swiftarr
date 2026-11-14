@@ -1,3 +1,4 @@
+import Fluent
 import XCTVapor
 
 @testable import swiftarr
@@ -83,6 +84,44 @@ final class ForumReactionCompatibilityTests: XCTestCase, SwiftarrBaseTest {
 					XCTAssertEqual(search.posts.map(\.postID), [try fixture.post.requireID()])
 				}
 			)
+		}
+	}
+
+	/// A chip keeps its position after its first contributor leaves, and presentation variants share its identity.
+	func testCanonicalReactionRetainsGroupPosition() async throws {
+		try await withApp { app in
+			let fixture = try await makeFixture(app, suffix: UUID().uuidString.prefix(8).lowercased())
+			var tokens = [fixture.token]
+			for _ in 0..<2 {
+				let user = User(username: "reaction-order-\(UUID())", password: try Bcrypt.hash("password1"),
+					recoveryKey: try Bcrypt.hash("recovery key"), accessLevel: .verified)
+				try await user.save(on: app.db)
+				let token = try Token.generate(for: user)
+				try await token.save(on: app.db)
+				tokens.append(token.token)
+			}
+			try await app.initializeUserCache(app)
+			let postID = try fixture.post.requireID()
+			/// Sends one mutation and checks the complete resulting chip order.
+			func mutate(_ user: Int, _ action: String, _ emoji: String, expected: [String]) async throws {
+				try await app.test(.POST, "/api/v3/forum/post/\(postID)/\(action)", headers: bearer(tokens[user]),
+					beforeRequest: { req async throws in
+						req.headers.contentType = .json
+						req.body = ByteBuffer(data: try JSONEncoder().encode(PostReactionData(reaction: emoji)))
+					}, afterResponse: { res async throws in
+						XCTAssertEqual(res.status, .ok)
+						XCTAssertEqual(try res.content.decode(PostData.self).reactions.map(\.reaction), expected)
+					})
+			}
+			try await mutate(0, "react", "👍", expected: ["👍"])
+			try await mutate(1, "react", "❤️", expected: ["👍", "❤️"])
+			try await mutate(2, "react", "👍", expected: ["👍", "❤️"])
+			try await mutate(0, "unreact", "👍\u{FE0F}", expected: ["👍", "❤️"])
+			try await mutate(1, "react", "👍\u{FE0F}", expected: ["👍", "❤️"])
+			try await mutate(1, "react", "👍", expected: ["👍", "❤️"])
+			let stored = try await ForumPostReaction.query(on: app.db).filter(\.$post.$id == postID).all()
+			XCTAssertEqual(stored.count, 3)
+			XCTAssertEqual(Set(stored.filter { $0.emoji == "👍" }.map(\.groupOrder)).count, 1)
 		}
 	}
 

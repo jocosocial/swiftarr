@@ -711,7 +711,7 @@ struct ForumController: APIRouteCollection {
 		}
 		// get bookmark state and grouped reactions
 		let postLikes = try await PostLikes.query(on: req.db).filter(\.$post.$id == post.requireID()).all()
-		let postReactions = try await ForumPostReaction.query(on: req.db).filter(\.$post.$id == post.requireID()).all()
+		let postReactions = try await ForumPostReaction.query(on: req.db).filter(\.$post.$id == post.requireID()).sort(\.$createdAt, .ascending).sort(\.$groupOrder, .ascending).all()
 		var isFavorite = false
 		for postLike in postLikes {
 			if postLike.isFavorite && postLike.$user.id == cacheUser.userID {
@@ -722,7 +722,7 @@ struct ForumController: APIRouteCollection {
 		for postReaction in postReactions {
 			groupedReactions[postReaction.emoji, default: []].append(postReaction.$user.id)
 		}
-		let reactions = groupedReactions.keys.sorted().map { emoji in
+		let reactions = ReactionData.orderedEmojis(postReactions.map(\.emoji)).map { emoji in
 			ReactionData(reaction: emoji, users: req.userCache.getHeaders(groupedReactions[emoji] ?? []))
 		}
 		// init return struct. Editors (moderators) see the real text/images of quarantined posts so
@@ -1498,6 +1498,12 @@ struct ForumController: APIRouteCollection {
 			.first() == nil
 		{
 			let reaction = try ForumPostReaction(cacheUser.userID, post, emoji: emoji)
+			// All contributors retain the distinct chip's original position, even after its first user leaves.
+			if let existing = try await ForumPostReaction.query(on: req.db)
+				.filter(\.$post.$id == post.requireID()).filter(\.$emoji == emoji).first() {
+				reaction.createdAt = existing.createdAt
+				reaction.groupOrder = existing.groupOrder
+			}
 			try await reaction.save(on: req.db)
 		}
 		let postDataArray = try await buildPostData([post], userID: cacheUser.userID, on: req)
@@ -1981,18 +1987,22 @@ extension ForumController {
 		let postIDs = try filteredPosts.map { try $0.requireID() }
 		let userLikes = try await PostLikes.query(on: req.db).filter(\.$post.$id ~~ postIDs)
 			.filter(\.$user.$id == userID).all()
-		let postReactions = try await ForumPostReaction.query(on: req.db).filter(\.$post.$id ~~ postIDs).all()
+		let postReactions = try await ForumPostReaction.query(on: req.db).filter(\.$post.$id ~~ postIDs).sort(\.$createdAt, .ascending).sort(\.$groupOrder, .ascending).all()
 		let userLikeDict = Dictionary(userLikes.map { ($0.$post.id, $0) }, uniquingKeysWith: { (first, _) in first })
 		var postReactionMap = [Int: [String: [UUID]]]()
+		var postReactionOrder = [Int: [String]]()
 		for reaction in postReactions {
 			let postID = reaction.$post.id
+			if postReactionMap[postID]?[reaction.emoji] == nil {
+				postReactionOrder[postID, default: []].append(reaction.emoji)
+			}
 			postReactionMap[postID, default: [:]][reaction.emoji, default: []].append(reaction.$user.id)
 		}
 		let postDataArray = try filteredPosts.map { post -> PostData in
 			let postID = try post.requireID()
 			let author = try req.userCache.getHeader(post.$author.id)
 			let bookmarked = assumeBookmarked ?? userLikeDict[postID]?.isFavorite ?? false
-			let reactions = (postReactionMap[postID] ?? [:]).keys.sorted().map { emoji in
+			let reactions = (postReactionOrder[postID] ?? []).map { emoji in
 				ReactionData(reaction: emoji, users: req.userCache.getHeaders(postReactionMap[postID]?[emoji] ?? []))
 			}
 			let userLike = ReactionData.legacyLikeType(in: reactions, for: userID)

@@ -2178,6 +2178,11 @@ extension PostContentData: RCFValidatable {
 
 /// Used to return grouped reaction metadata.
 public struct ReactionData: Content {
+	/// Preserves the first occurrence of each emoji in a chronologically ordered reaction list.
+	static func orderedEmojis(_ emojis: [String]) -> [String] {
+		var seen = Set<String>()
+		return emojis.filter { seen.insert($0).inserted }
+	}
 	/// A Unicode emoji or a custom emoji token such as `:arr:`.
 	var reaction: String
 	/// Users who reacted with this emoji.
@@ -2191,13 +2196,23 @@ public struct PostReactionData: Content {
 }
 
 extension PostReactionData {
+	/// Ignores presentation selectors while retaining skin tones, joiners, and other identity-bearing scalars.
+	static func canonicalReaction(_ value: String) -> String {
+		let text = value.replacingOccurrences(of: "\u{FE0E}", with: "")
+			.replacingOccurrences(of: "\u{FE0F}", with: "").precomposedStringWithCanonicalMapping
+		// Preserve the existing legacy heart token for older clients.
+		return text == "❤" ? "❤️" : text
+	}
+
 	/// Returns a trimmed reaction identifier after enforcing a small, URL-independent payload.
 	func validatedReaction() throws -> String {
 		let result = reaction.trimmingCharacters(in: .whitespacesAndNewlines)
 		guard !result.isEmpty, result.count <= 64, !result.contains(where: { $0.isWhitespace }) else {
 			throw Abort(.badRequest, reason: "reaction must contain 1 through 64 non-whitespace characters")
 		}
-		return result
+		let canonical = Self.canonicalReaction(result)
+		guard !canonical.isEmpty else { throw Abort(.badRequest, reason: "reaction must not contain only presentation selectors") }
+		return canonical
 	}
 }
 

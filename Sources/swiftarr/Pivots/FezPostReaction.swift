@@ -7,6 +7,8 @@ final class FezPostReaction: Model, @unchecked Sendable {
 
 	@ID(key: .id) var id: UUID?
 	@Field(key: "emoji") var emoji: String
+	@Field(key: "createdAt") var createdAt: Date
+	@Field(key: "groupOrder") var groupOrder: UUID
 
 	@Parent(key: "user") var user: User
 	@Parent(key: "fezPost") var post: FezPost
@@ -17,7 +19,9 @@ final class FezPostReaction: Model, @unchecked Sendable {
 		self.$user.id = userID
 		self.$post.id = try post.requireID()
 		self.$post.value = post
-		self.emoji = emoji
+		self.emoji = PostReactionData.canonicalReaction(emoji)
+		self.createdAt = Date()
+		self.groupOrder = UUID()
 	}
 }
 

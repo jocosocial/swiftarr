@@ -310,15 +310,6 @@ additive; the existing count fields are unchanged and are now derived from these
 
 - Added `POST /api/v3/fez/:fez_ID/markRead`, mirroring the existing forum `markRead` endpoint.
 
-## Sep 14, 2026
-
-- Forum and Fez (LFG, Seamail, and private-event chat) posts now return grouped `reactions`, supporting Unicode emoji and custom emoji tokens such as `:arr:`.
-- New endpoints add or remove an individual reaction with a JSON body of `{"reaction":"…"}`. For compatibility, a bodyless forum `POST .../unreact` still removes the user's legacy LikeType reaction:
-  - `POST /api/v3/forum/post/:post_ID/react` and `POST /api/v3/forum/post/:post_ID/unreact`
-  - `POST /api/v3/fez/post/:post_ID/react` and `POST /api/v3/fez/post/:post_ID/unreact`
-- Existing forum like, love, and laugh endpoints and their legacy response fields remain available for older clients.
-- Fez chat WebSocket clients receive grouped reaction state updates when a post reaction is added or removed.
-
 ## Sep 18, 2026
 
 - The admin operations under `/api/v3/hunts` are now accessible to TwitarrTeam and above **or** users with the `huntmanager` role.
@@ -396,3 +387,11 @@ additive; the existing count fields are unchanged and are now derived from these
 - `CategoryData` gains an optional `defaultSort` field to direct clients to the preferred thread sort for a category. Splashdot sets this to `create` (newest threads first).
 - Category thread requests now honor `CategoryData.defaultSort` when `sort` is omitted. Supported values are `create`, `title`, `update`, and `event`.
 - Event categories advertise `defaultSort: "event"`. Explicit `sort=event` requests for non-event categories return HTTP 400.
+- Forum and Fez (LFG, Seamail, and private-event chat) posts now return grouped `reactions`, supporting Unicode emoji and custom emoji tokens such as `:arr:`.
+- Individual reactions can be added or removed with a JSON body of `{"reaction":"…"}`:
+  - `POST /api/v3/forum/post/:post_ID/react` and `POST /api/v3/forum/post/:post_ID/unreact`
+  - `POST /api/v3/fez/post/:post_ID/react` and `POST /api/v3/fez/post/:post_ID/unreact`
+- Existing forum like, love, and laugh endpoints and their legacy response fields remain available for older clients. A bodyless forum `POST .../unreact` still removes the user's legacy LikeType reaction.
+- Fez chat WebSocket clients receive grouped reaction state updates when a post reaction is added or removed.
+- Reaction identifiers ignore Unicode text/emoji presentation selectors while preserving skin tones and joined sequences. The legacy heart token remains `❤️`. Equivalent existing reactions are merged, and each distinct reaction retains its position while contributors remain.
+- `GET /api/v3/client/emoji` returns the server's public custom emoji catalog as an array of `reaction`, `name`, and `imageURL` values. Image URLs are relative to the server origin. Clients should use this catalog for custom emoji choices and rendering.
