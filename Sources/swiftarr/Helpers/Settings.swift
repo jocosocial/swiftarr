@@ -109,6 +109,24 @@ final class Settings: Encodable, @unchecked Sendable {
 	/// How long a single user must wait between photostream uploads, in seconds. `0` disables the limit.
 	@StoredSettingsValue("photostreamUploadRateLimit", defaultValue: 300) var photostreamUploadRateLimit: Int
 
+	// MARK: Auth Rate Limiting
+	/// Master switch for `AuthRateLimiter`. When FALSE, failed logins, password changes, recoveries, username lookups, and
+	/// registration code attempts are not counted or limited at all.
+	@StoredSettingsValue("authRateLimitEnabled", defaultValue: true) var authRateLimitEnabled: Bool
+
+	/// Failed logins (or password changes) allowed per username, per client IP, in 15 minutes. `0` disables this limit.
+	@StoredSettingsValue("authRateLimitLoginFailures", defaultValue: 10) var authRateLimitLoginFailures: Int
+
+	/// Failed logins (or password changes) allowed per username from all IPs combined, in an hour. `0` disables this limit.
+	@StoredSettingsValue("authRateLimitUsernameFailures", defaultValue: 50) var authRateLimitUsernameFailures: Int
+
+	/// Failed auth attempts of any kind allowed per client IP, in 15 minutes. `0` disables this limit.
+	@StoredSettingsValue("authRateLimitIPFailures", defaultValue: 30) var authRateLimitIPFailures: Int
+
+	/// Failed password recoveries allowed per username, and failed username lookups per registration code, in an hour.
+	/// `0` disables this limit.
+	@StoredSettingsValue("authRateLimitRecoveryFailures", defaultValue: 5) var authRateLimitRecoveryFailures: Int
+
 	// MARK: Quarantine
 	/// The number of reports to trigger forum auto-quarantine.
 	@StoredSettingsValue("forumAutoQuarantineThreshold", defaultValue: 3) var forumAutoQuarantineThreshold: Int

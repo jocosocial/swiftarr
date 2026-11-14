@@ -703,6 +703,14 @@ public struct SettingsAppFeaturePair: Content {
 	var feature: String
 }
 
+/// Returned by: `POST /api/v3/admin/authratelimits/clear`
+///
+/// See `AdminController.clearAuthRateLimitsHandler()`.
+public struct AuthRateLimitClearData: Content {
+	/// The number of rate limit lockouts that were cleared.
+	var clearedCount: Int
+}
+
 /// Used to return the current `Settings` values. 
 ///
 /// Required by: `GET /api/v3/events/update`
@@ -722,6 +730,17 @@ public struct SettingsAdminData: Content {
 	var maxForumPostImages: Int
 	/// Minimum seconds a user must wait between photostream uploads. `0` disables the limit.
 	var photostreamUploadRateLimit: Int
+	/// Whether failed logins, password changes, recoveries, username lookups, and registration code attempts are rate limited.
+	var authRateLimitEnabled: Bool
+	/// Failed logins (or password changes) allowed per username, per client IP, in 15 minutes. `0` disables this limit.
+	var authRateLimitLoginFailures: Int
+	/// Failed logins (or password changes) allowed per username from all IPs combined, in an hour. `0` disables this limit.
+	var authRateLimitUsernameFailures: Int
+	/// Failed auth attempts of any kind allowed per client IP, in 15 minutes. `0` disables this limit.
+	var authRateLimitIPFailures: Int
+	/// Failed password recoveries allowed per username, and failed username lookups per registration code, in an hour.
+	/// `0` disables this limit.
+	var authRateLimitRecoveryFailures: Int
 	var forumAutoQuarantineThreshold: Int
 	var postAutoQuarantineThreshold: Int
 	var userAutoQuarantineThreshold: Int
@@ -746,6 +765,11 @@ extension SettingsAdminData {
 		self.maxImageSize = settings.maxImageSize
 		self.maxForumPostImages = settings.maxForumPostImages
 		self.photostreamUploadRateLimit = settings.photostreamUploadRateLimit
+		self.authRateLimitEnabled = settings.authRateLimitEnabled
+		self.authRateLimitLoginFailures = settings.authRateLimitLoginFailures
+		self.authRateLimitUsernameFailures = settings.authRateLimitUsernameFailures
+		self.authRateLimitIPFailures = settings.authRateLimitIPFailures
+		self.authRateLimitRecoveryFailures = settings.authRateLimitRecoveryFailures
 		self.forumAutoQuarantineThreshold = settings.forumAutoQuarantineThreshold
 		self.postAutoQuarantineThreshold = settings.postAutoQuarantineThreshold
 		self.userAutoQuarantineThreshold = settings.userAutoQuarantineThreshold
@@ -781,6 +805,11 @@ public struct SettingsUpdateData: Content {
 	var maxForumPostImages: Int?
 	/// Minimum seconds a user must wait between photostream uploads. `0` disables the limit.
 	var photostreamUploadRateLimit: Int?
+	var authRateLimitEnabled: Bool?
+	var authRateLimitLoginFailures: Int?
+	var authRateLimitUsernameFailures: Int?
+	var authRateLimitIPFailures: Int?
+	var authRateLimitRecoveryFailures: Int?
 	var forumAutoQuarantineThreshold: Int?
 	var postAutoQuarantineThreshold: Int?
 	var userAutoQuarantineThreshold: Int?

@@ -79,6 +79,7 @@ struct SiteAdminController: SiteControllerUtils {
 
 		privateTTRoutes.get("timezonechanges", use: timeZonesViewHandler)
 		privateTTRoutes.post("serversettings", "reloadtzfile", use: settingsReloadTZFilePostHandler)
+		privateTTRoutes.post("authratelimits", "clear", use: clearAuthRateLimitsPostHandler)
 
 		privateTTRoutes.get("schedule", use: scheduleManagerViewHandler)
 		privateTTRoutes.post("scheduleupload", use: scheduleUploadPostHandler)
@@ -663,6 +664,11 @@ struct SiteAdminController: SiteControllerUtils {
 			var maxImageSize: Int
 			var maxForumPostImages: Int
 			var photostreamUploadRateLimit: Int
+			var authRateLimitEnabled: String?
+			var authRateLimitLoginFailures: Int
+			var authRateLimitUsernameFailures: Int
+			var authRateLimitIPFailures: Int
+			var authRateLimitRecoveryFailures: Int
 			var forumAutoQuarantineThreshold: Int
 			var postAutoQuarantineThreshold: Int
 			var userAutoQuarantineThreshold: Int
@@ -707,6 +713,11 @@ struct SiteAdminController: SiteControllerUtils {
 			maxImageSize: postStruct.maxImageSize * 1_048_576,
 			maxForumPostImages: postStruct.maxForumPostImages,
 			photostreamUploadRateLimit: postStruct.photostreamUploadRateLimit,
+			authRateLimitEnabled: postStruct.authRateLimitEnabled == "on",
+			authRateLimitLoginFailures: postStruct.authRateLimitLoginFailures,
+			authRateLimitUsernameFailures: postStruct.authRateLimitUsernameFailures,
+			authRateLimitIPFailures: postStruct.authRateLimitIPFailures,
+			authRateLimitRecoveryFailures: postStruct.authRateLimitRecoveryFailures,
 			forumAutoQuarantineThreshold: postStruct.forumAutoQuarantineThreshold,
 			postAutoQuarantineThreshold: postStruct.postAutoQuarantineThreshold,
 			userAutoQuarantineThreshold: postStruct.userAutoQuarantineThreshold,
@@ -1036,6 +1047,14 @@ struct SiteAdminController: SiteControllerUtils {
 	func notificationConsistencyCheckHandler(_ req: Request) async throws -> HTTPStatus {
 		let _ = try await apiQuery(req, endpoint: "/admin/notifications/reload", method: .POST)
 		return .ok
+	}
+
+	// POST /admin/authratelimits/clear
+	//
+	// Clears every current login rate limit lockout. Returns JSON so the settings page can show how many were cleared.
+	func clearAuthRateLimitsPostHandler(_ req: Request) async throws -> AuthRateLimitClearData {
+		let response = try await apiQuery(req, endpoint: "/admin/authratelimits/clear", method: .POST)
+		return try response.content.decode(AuthRateLimitClearData.self)
 	}
 
 	// POST /admin/scheduleverify

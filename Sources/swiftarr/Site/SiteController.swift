@@ -829,6 +829,8 @@ extension SiteControllerUtils {
 			headers.add(name: "X-Swiftarr-User", value: req.session.data["userID"] ?? "UNKNOWN")
 		}
 		headers.add(name: "X-Swiftarr-Client", value: "swiftarr")
+		// Pass the client's IP along, so the API rate limits web UI logins by client rather than by this loopback connection.
+		headers.replaceOrAdd(name: .xForwardedFor, value: req.rateLimitClientIP)
 
 		// Step 2: Generate URLComponents, extract a 'clean' path, append the 'clean' path for the endpoint.
 		var urlComponents = Settings.shared.apiUrlComponents

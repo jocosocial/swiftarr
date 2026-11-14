@@ -102,6 +102,32 @@
 				</ul>
 				<ul class="list-group mt-2">
 					<li class="list-group-item active">
+						<b>Login Rate Limits</b>
+					</li>
+					<li class="list-group-item">
+						<input type="checkbox" id="authRateLimitEnabled" name="authRateLimitEnabled" #if(settings.authRateLimitEnabled):checked#endif #if(!enableFields):disabled#endif>
+						<label for="authRateLimitEnabled">Rate limit failed logins, password changes, recoveries, and registration codes</label><br>
+						<small>Callers over a limit are locked out for 15 minutes, doubling with each further lockout up to 24 hours. Set a limit to 0 to disable just that limit.</small>
+					</li>
+					<li class="list-group-item">
+						<label for="authRateLimitLoginFailures">Failed logins per username, per IP, per 15 minutes</label>
+						<input type="number" id="authRateLimitLoginFailures" name="authRateLimitLoginFailures" min="0" max="1000" value="#(settings.authRateLimitLoginFailures)" #if(!enableFields):disabled#endif>
+					</li>
+					<li class="list-group-item">
+						<label for="authRateLimitUsernameFailures">Failed logins per username, all IPs, per hour</label>
+						<input type="number" id="authRateLimitUsernameFailures" name="authRateLimitUsernameFailures" min="0" max="10000" value="#(settings.authRateLimitUsernameFailures)" #if(!enableFields):disabled#endif>
+					</li>
+					<li class="list-group-item">
+						<label for="authRateLimitIPFailures">Failed attempts of any kind per IP, per 15 minutes</label>
+						<input type="number" id="authRateLimitIPFailures" name="authRateLimitIPFailures" min="0" max="10000" value="#(settings.authRateLimitIPFailures)" #if(!enableFields):disabled#endif>
+					</li>
+					<li class="list-group-item">
+						<label for="authRateLimitRecoveryFailures">Failed password recoveries per username (and username lookups per registration code), per hour</label>
+						<input type="number" id="authRateLimitRecoveryFailures" name="authRateLimitRecoveryFailures" min="0" max="1000" value="#(settings.authRateLimitRecoveryFailures)" #if(!enableFields):disabled#endif>
+					</li>
+				</ul>
+				<ul class="list-group mt-2">
+					<li class="list-group-item active">
 						<b>Reporting</b>
 					</li>
 					<li class="list-group-item">
@@ -202,6 +228,23 @@
 							Job submitted! Check the server log for more information.
 						</div>
 						This job runs nightly. You can trigger it manually here. It's somewhat load intensive so use with caution.
+					</form>
+				</li>
+				<li class="list-group-item bg-transparent mb-3">
+					<form class="ajax" action="/admin/authratelimits/clear" enctype="multipart/form-data" method="POST" data-successurl="message" data-successfield="clearedCount" id="clearratelimitsform">
+						<div class="container-fluid">
+							<div class="alert alert-danger mt-3 d-none" role="alert">
+							</div>
+							<div class="row mb-2">
+								<div class="col col-auto gx-0">
+									<button type="submit" class="btn btn-primary">Clear Login Rate Limit Lockouts<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+								</div>
+							</div>
+						</div>
+						<div class="alert alert-success mt-3 d-none" role="alert">
+							Lockouts cleared: <span data-success-value></span>
+						</div>
+						Lets everyone who is currently locked out of logging in, recovering a password, looking up a username, or creating an account try again right away.
 					</form>
 				</li>
 			</ul>

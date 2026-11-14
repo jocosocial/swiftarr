@@ -820,10 +820,9 @@ struct ModerationController: APIRouteCollection {
 				try await Token.query(on: db).filter(\.$user.$id == targetUserAccount.requireID()).delete()
 			}
 		}
-		// Once that's committed: close any open sockets, keep going if we get an error, and refresh the user cache.
+		// Once that's committed: close any open sockets, clear web sessions, and refresh the user cache.
 		for targetUserAccount in allAccounts {
-			try? await req.webSocketStore.handleUserLogout(targetUserAccount.requireID())
-			try await req.userCache.updateUser(targetUserAccount.requireID())
+			try await AuthController.revokeLogins(forUserID: targetUserAccount.requireID(), on: req)
 		}
 		return .ok
 	}

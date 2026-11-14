@@ -40,6 +40,7 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.get("rollup", use: serverRollupCounts)
 
 		ttAuthGroup.post("notifications", "reload", use: triggerConsistencyJobHandler)
+		ttAuthGroup.post("authratelimits", "clear", use: clearAuthRateLimitsHandler)
 
 		ttAuthGroup.on(.POST, "clients", "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: clientAppCreateHandler)
 		ttAuthGroup.on(.POST, "clients", clientAppIDParam, "update", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: clientAppUpdateHandler)
@@ -319,6 +320,21 @@ struct AdminController: APIRouteCollection {
 		if let value = data.photostreamUploadRateLimit {
 			Settings.shared.photostreamUploadRateLimit = value
 		}
+		if let value = data.authRateLimitEnabled {
+			Settings.shared.authRateLimitEnabled = value
+		}
+		if let value = data.authRateLimitLoginFailures {
+			Settings.shared.authRateLimitLoginFailures = value
+		}
+		if let value = data.authRateLimitUsernameFailures {
+			Settings.shared.authRateLimitUsernameFailures = value
+		}
+		if let value = data.authRateLimitIPFailures {
+			Settings.shared.authRateLimitIPFailures = value
+		}
+		if let value = data.authRateLimitRecoveryFailures {
+			Settings.shared.authRateLimitRecoveryFailures = value
+		}
 		if let value = data.forumAutoQuarantineThreshold {
 			Settings.shared.forumAutoQuarantineThreshold = value
 		}
@@ -484,8 +500,9 @@ struct AdminController: APIRouteCollection {
 	/// `POST /api/v3/admin/regcodes/unlock/:userID`
 	///
 	/// Re-enables one-time password recovery via registration code for the given user and all of their alt accounts.
-	/// Strips the '*' prefix from `User.verification` (see `AuthController.recoveryHandler`) and clears
-	/// `recoveryAttempts` so a lockout after 5 failed recoveries can be reset by staff.
+	/// Strips the '*' prefix from `User.verification` (see `AuthController.recoveryHandler`) and clears the accounts'
+	/// recovery, username lookup, and per-username login rate limits (see `AuthRateLimiter`), so a locked-out user can try again
+	/// right away. Per-IP limits are not cleared.
 	///
 	/// - Throws: 403 if the caller is not TwitarrTeam or an Account Manager. 400 if the userID is missing or unknown.
 	/// - Returns: Updated `RegistrationCodeUserData`.
@@ -496,8 +513,12 @@ struct AdminController: APIRouteCollection {
 		let allAccounts = try await user.allAccounts(on: req.db)
 		for account in allAccounts {
 			account.unlockVerification()
-			account.recoveryAttempts = 0
 			try await account.save(on: req.db)
+			var buckets: [AuthRateLimiter.Bucket] = [.recovery(account.username), .username(account.username)]
+			if let code = account.unspentVerification {
+				buckets.append(.usernameLookup(code))
+			}
+			await AuthRateLimiter.clear(buckets, on: req)
 		}
 		await user.logIfModeratorAction(.accountUnlocked, user: cacheUser, on: req)
 		let targetUserID = try user.requireID()
@@ -908,6 +929,20 @@ struct AdminController: APIRouteCollection {
 		return .ok
 	}
 	
+	/// `POST /api/v3/admin/authratelimits/clear`
+	///
+	/// Clears every current login rate limit lockout (see `AuthRateLimiter`): for usernames, registration codes, and client
+	/// IPs alike. Locked-out users can try again immediately, and their next lockout starts back at the shortest duration.
+	/// Failed attempts that haven't reached a limit yet keep counting.
+	///
+	/// - Returns: `AuthRateLimitClearData` with the number of lockouts cleared.
+	func clearAuthRateLimitsHandler(_ req: Request) async throws -> AuthRateLimitClearData {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let cleared = await AuthRateLimiter.clearAllLockouts(on: req)
+		req.logger.notice("User \(cacheUser.username) (\(cacheUser.userID)) cleared \(cleared) auth rate limit lockouts")
+		return AuthRateLimitClearData(clearedCount: cleared)
+	}
+
 	// MARK: - Bulk User Update
 	
 	/// `GET /api/v3/admin/bulkuserfile/download`

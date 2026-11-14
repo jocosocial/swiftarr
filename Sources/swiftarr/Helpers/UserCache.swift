@@ -150,13 +150,20 @@ extension UserCacheData {
 	// at once, leading to incoming requests failing.
 	struct BasicAuth: AsyncBasicAuthenticator {
 		func authenticate(basic: BasicAuthorization, for request: Request) async throws {
+			let attempt = try await AuthRateLimiter.reserve(
+				AuthRateLimiter.Bucket.login(basic.username, ip: request.rateLimitClientIP),
+				on: request
+			)
 			guard let cacheUser = request.userCache.getUser(username: basic.username), cacheUser.accessLevel != .banned,
 				let user = try await User.query(on: request.db).filter(\.$id == cacheUser.userID).first()
 			else {
+				// Spend the same bcrypt time as a real account so response timing doesn't reveal which usernames exist.
+				await CryptoHelper.dummyPasswordVerify(basic.password, on: request)
 				return
 			}
 			if try await request.password.async.verify(basic.password, created: user.password) {
 				request.auth.login(cacheUser)
+				await attempt.refund(on: request)
 			}
 		}
 	}
