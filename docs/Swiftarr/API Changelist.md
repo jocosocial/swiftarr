@@ -381,3 +381,8 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Nov 11, 2026
 
 - The minimum password length for `/user/create`, `/user/password`, and `/auth/recovery` (`newPassword`) is now 8 characters, up from 6. Existing passwords still work.
+
+## Nov 14, 2026
+
+- Admin: added `POST /api/v3/admin/schedule/upload`, which takes the raw sched.com `GET /api/session/export?format=json` response as the request body and stages it for `GET /admin/schedule/verify` and `POST /admin/schedule/update/apply`, the same as an `.ics` upload. Added `POST /api/v3/admin/schedule/fetch`, which has the server pull the export from the Sched API itself and stage it. Both are TwitarrTeam and above.
+- Admin: `EventUpdateDifferenceData` gains optional `minorChanges` (`[EventMinorChangeData]`), listing the old and new values of each changed field for the events in `minorChangeEvents`.

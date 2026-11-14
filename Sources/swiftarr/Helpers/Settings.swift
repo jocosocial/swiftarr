@@ -291,6 +291,11 @@ extension Settings {
 		return schedURL(appendingPath: "directory/speakers")
 	}
 
+	/// The sched.com API endpoint that exports every session on the schedule. Needs `schedApiKey`.
+	var schedSessionExportURL: String {
+		return schedURL(appendingPath: "api/session/export")
+	}
+
 	/// Builds a URL string by appending a path to `schedBaseUrl`. Returns an empty string if the base URL isn't a valid URL,
 	/// which makes the schedule update job skip its run.
 	private func schedURL(appendingPath path: String) -> String {
