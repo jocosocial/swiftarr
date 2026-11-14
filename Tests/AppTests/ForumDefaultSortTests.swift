@@ -15,7 +15,7 @@ final class ForumDefaultSortTests: XCTestCase, SwiftarrBaseTest {
 			try await user.save(on: app.db)
 			let token = try Token.generate(for: user)
 			try await token.save(on: app.db)
-			let category = Category(title: "Sort fixture", purpose: "test", defaultSort: .create)
+			let category = Category(title: "Sort fixture \(UUID().uuidString)", purpose: "test", defaultSort: .create)
 			try await category.save(on: app.db)
 			let older = try Forum(title: "Older", category: category, creatorID: user.requireID())
 			let newer = try Forum(title: "Newer", category: category, creatorID: user.requireID())
@@ -53,7 +53,7 @@ final class ForumDefaultSortTests: XCTestCase, SwiftarrBaseTest {
 				}
 			)
 			let events = Category(
-				title: "Event sort fixture",
+				title: "Event sort fixture \(UUID().uuidString)",
 				purpose: "test",
 				isEventCategory: true,
 				defaultSort: .event
