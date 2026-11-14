@@ -689,6 +689,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(UpdateEventSchema_AgeRating(), to: .psql)
 		app.migrations.add(CreateCommunitySupportReportSchema(), to: .psql)
 		app.migrations.add(CreateCommunitySupportActionSchema(), to: .psql)
+		app.migrations.add(AddCategoryDefaultSortSchema(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 
@@ -723,6 +724,8 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreatePerformanceIndexes(), to: .psql)
 		app.migrations.add(CreateSeamailSearchIndexes(), to: .psql)
 		app.migrations.add(RenameWhereAndWhen(), to: .psql)
+		app.migrations.add(SetSplashdotDefaultSort(), to: .psql)
+		app.migrations.add(SetEventCategoryDefaultSort(), to: .psql)
 		app.migrations.add(AddFoodDrinkCategory(), to: .psql)
 		app.migrations.add(CreateMicroKaraokeUser(), to: .psql)
 		app.migrations.add(RemoveCovidCategory(), to: .psql)

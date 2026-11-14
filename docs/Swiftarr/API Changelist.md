@@ -381,3 +381,9 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Nov 11, 2026
 
 - The minimum password length for `/user/create`, `/user/password`, and `/auth/recovery` (`newPassword`) is now 8 characters, up from 6. Existing passwords still work.
+
+## Nov 14, 2026
+
+- `CategoryData` gains an optional `defaultSort` field to direct clients to the preferred thread sort for a category. Splashdot sets this to `create` (newest threads first).
+- Category thread requests now honor `CategoryData.defaultSort` when `sort` is omitted. Supported values are `create`, `title`, `update`, and `event`.
+- Event categories advertise `defaultSort: "event"`. Explicit `sort=event` requests for non-event categories return HTTP 400.

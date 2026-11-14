@@ -148,6 +148,38 @@ struct RenameWhereAndWhen: AsyncMigration {
 	}
 }
 
+struct SetSplashdotDefaultSort: AsyncMigration {
+	/// Sets Splashdot's API-provided default sort to forum creation time.
+	func prepare(on database: Database) async throws {
+		guard let splashdot = try await Category.query(on: database).filter(\.$title == "Splashdot").first() else {
+			return
+		}
+		splashdot.defaultSort = .create
+		try await splashdot.save(on: database)
+	}
+
+	/// Clears Splashdot's default sort.
+	func revert(on database: Database) async throws {
+		guard let splashdot = try await Category.query(on: database).filter(\.$title == "Splashdot").first() else {
+			return
+		}
+		splashdot.defaultSort = nil
+		try await splashdot.save(on: database)
+	}
+}
+
+struct AddCategoryDefaultSortSchema: AsyncMigration {
+	/// Adds the optional default sort value to forum categories.
+	func prepare(on database: Database) async throws {
+		try await database.schema(Category.schema).field("default_sort", .string).update()
+	}
+
+	/// Removes the category default sort field.
+	func revert(on database: Database) async throws {
+		try await database.schema(Category.schema).deleteField("default_sort").update()
+	}
+}
+
 struct AddFoodDrinkCategory: AsyncMigration {
 	/// Required by `Migration` protocol. Inserts the Food & Drink category.
 	///
@@ -226,5 +258,20 @@ struct RemoveCovidCategory: AsyncMigration {
 		category.forumCount = 0
 		try await category.save(on: database)
 		return
+	}
+}
+
+/// Advertises event ordering as the default for all event forum categories.
+struct SetEventCategoryDefaultSort: AsyncMigration {
+	/// Sets the default on existing event categories, including shadow events.
+	func prepare(on database: Database) async throws {
+		try await Category.query(on: database).filter(\.$isEventCategory == true)
+			.set(\.$defaultSort, to: .event).update()
+	}
+
+	/// Clears the event default without removing other configured sorts.
+	func revert(on database: Database) async throws {
+		try await Category.query(on: database).filter(\.$isEventCategory == true)
+			.filter(\.$defaultSort == .event).set(\.$defaultSort, to: nil).update()
 	}
 }
