@@ -55,19 +55,28 @@ class SwiftarrImageTests: XCTestCase {
 		}
 	}
 
+	/// Checks that the PNG is a `QRCodeRenderer` rendering of `text`: the size matches the renderer's geometry, and the center
+	/// of every module matches the encoded matrix. Modules under the center icon (if any) are skipped.
 	private func assertQRCode(_ data: Data, contains text: String) throws {
+		let renderer = QRCodeRenderer()
+		let matrix = try QRCode(text, errorCorrectLevel: .H, withBorder: false).imageCodes
+		let count = matrix.count
+		let size = (count + 2 * renderer.quietZone) * renderer.moduleSize
 		let image = try SwiftarrImage(data: data)
-		XCTAssertEqual(image.size.width, 400)
-		XCTAssertEqual(image.size.height, 400)
+		XCTAssertEqual(Int(image.size.width), size)
+		XCTAssertEqual(Int(image.size.height), size)
 		let pixels = try pixelsFromPNG(data)
-		XCTAssertEqual(pixels.count, 400 * 400 * 3)
-		guard pixels.count == 400 * 400 * 3 else { return }
-		let matrix = try QRCode(text).imageCodes
+		XCTAssertEqual(pixels.count, size * size * 3)
+		guard pixels.count == size * size * 3 else { return }
+		let hasIcon = count >= QRCodeRenderer.minIconModules && count < QRCodeRenderer.maxIconModules
 		for y in matrix.indices {
 			for x in matrix[y].indices {
-				let imageX = Int((Double(x) + 0.5) * 400 / Double(matrix[y].count))
-				let imageY = Int((Double(y) + 0.5) * 400 / Double(matrix.count))
-				let offset = (imageY * 400 + imageX) * 3
+				if hasIcon, abs(x - count / 2) <= 7, abs(y - count / 2) <= 4 {
+					continue
+				}
+				let imageX = (x + renderer.quietZone) * renderer.moduleSize + renderer.moduleSize / 2
+				let imageY = (y + renderer.quietZone) * renderer.moduleSize + renderer.moduleSize / 2
+				let offset = (imageY * size + imageX) * 3
 				let expected: UInt8 = matrix[y][x] ? 0 : 255
 				XCTAssertEqual(
 					Array(pixels[offset..<(offset + 3)]),
