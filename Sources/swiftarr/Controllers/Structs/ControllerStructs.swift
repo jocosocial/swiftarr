@@ -2592,8 +2592,7 @@ public struct UserCreateData: Content {
 extension UserCreateData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
-		tester.validate(password.count >= 8, forKey: .password, or: "password has an 8 character minimum")
-		tester.validate(password.count <= 50, forKey: .password, or: "password has a 50 character limit")
+		tester.validate(passwordLengthRange.contains(password.count), forKey: .password, or: passwordLengthError)
 		usernameValidations(username: username)
 			.forEach {
 				tester.addValidationError(forKey: .username, errorString: $0)
@@ -2926,8 +2925,7 @@ public struct UserPasswordData: Content {
 extension UserPasswordData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
-		tester.validate(newPassword.count >= 8, forKey: .newPassword, or: "password has an 8 character minimum")
-		tester.validate(newPassword.count <= 50, forKey: .newPassword, or: "password has a 50 character limit")
+		tester.validate(passwordLengthRange.contains(newPassword.count), forKey: .newPassword, or: passwordLengthError)
 	}
 }
 
@@ -3028,8 +3026,7 @@ extension UserRecoveryData: RCFValidatable {
 			.forEach {
 				tester.addValidationError(forKey: .username, errorString: $0)
 			}
-		tester.validate(newPassword.count >= 8, forKey: .newPassword, or: "password has an 8 character minimum length")
-		tester.validate(newPassword.count <= 50, forKey: .newPassword, or: "password has a 50 character limit")
+		tester.validate(passwordLengthRange.contains(newPassword.count), forKey: .newPassword, or: passwordLengthError)
 	}
 }
 
@@ -3145,6 +3142,13 @@ private func usernameValidations(username: String) -> [String] {
 	}
 	return errorStrings
 }
+
+// MARK: - Password Validation
+
+/// Allowed length for new passwords. Existing passwords aren't re-checked, so older, shorter ones still log in.
+let passwordLengthRange = 8...50
+let passwordLengthError =
+	"password must be between \(passwordLengthRange.lowerBound) and \(passwordLengthRange.upperBound) characters long"
 
 /// Prometheus Alertmanager webhook alert object.
 /// Applied from https://prometheus.io/docs/alerting/latest/configuration/#webhook_config
