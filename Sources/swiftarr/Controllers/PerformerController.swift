@@ -40,6 +40,8 @@ struct PerformerController: APIRouteCollection {
 		ttAuthGroup.get("performer", "link", "verify", use: performerLinkVerificationHandler)
 		ttAuthGroup.post("performer", "link", "apply", use: performerLinkApplyHandler)
 		ttAuthGroup.post("performer", "bulk", "upload", use: bulkPerformerUploadHandler)
+		ttAuthGroup.post("performer", "bulk", "sched", "upload", use: bulkSchedSpeakerUploadHandler)
+		ttAuthGroup.post("performer", "bulk", "sched", "fetch", use: bulkSchedSpeakerFetchHandler)
 		ttAuthGroup.get("performer", "bulk", "verify", use: bulkPerformerVerifyHandler)
 		ttAuthGroup.post("performer", "bulk", "apply", use: bulkPerformerApplyHandler)
 		ttAuthGroup.delete("performer", performerIDParam, use: deletePerformerHandler).setUsedForPreregistration()
@@ -489,12 +491,39 @@ struct PerformerController: APIRouteCollection {
 	///
 	/// - Returns: HTTP status.
 	func bulkPerformerUploadHandler(_ req: Request) async throws -> HTTPStatus {
-		let performers = try req.content.decode([PerformerData].self)
-		let filepath = try uploadedPerformersBulkPath()
-		try? FileManager.default.removeItem(at: filepath)
-		let encoder = JSONEncoder()
-		let jsonData = try encoder.encode(performers)
-		try await req.fileio.writeFile(ByteBuffer(data: jsonData), at: filepath.path)
+		try await stageBulkPerformers(try req.content.decode([PerformerData].self), on: req)
+		return .ok
+	}
+
+	/// `POST /api/v3/admin/performer/bulk/sched/upload`
+	///
+	/// Receives the raw JSON response from sched.com's `GET /api/role/export?role=speaker&format=json` endpoint, requested with
+	/// `fields=username,name,about,url,avatar,company,position,sessions`, converts the speakers to performers, and stages them
+	/// like `POST /api/v3/admin/performer/bulk/upload`. For servers that can't reach sched.com themselves.
+	///
+	/// The Sched API has no pronouns, social media links, or years attended; in the default merge mode, verify and apply leave
+	/// those fields alone for existing performers.
+	///
+	/// - Parameter requestBody: JSON array of Sched speakers.
+	/// - Throws: 400 error if the body isn't valid Sched speaker data.
+	/// - Returns: HTTP status.
+	func bulkSchedSpeakerUploadHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let body = req.body.data else {
+			throw Abort(.badRequest, reason: "No speaker data in request.")
+		}
+		try await stageSchedSpeakers(try SchedSpeaker.decodeSpeakers(from: body), on: req)
+		return .ok
+	}
+
+	/// `POST /api/v3/admin/performer/bulk/sched/fetch`
+	///
+	/// Gets the speakers from the sched.com API and stages them, as if they had been uploaded with
+	/// `POST /api/v3/admin/performer/bulk/sched/upload`. Requires the server to have a Sched API key and access to sched.com.
+	///
+	/// - Throws: 400 or 5xx error if the Sched API couldn't be reached or returned bad data.
+	/// - Returns: HTTP status.
+	func bulkSchedSpeakerFetchHandler(_ req: Request) async throws -> HTTPStatus {
+		try await stageSchedSpeakers(try await SchedClient(client: req.client).exportSpeakers(), on: req)
 		return .ok
 	}
 
@@ -503,8 +532,12 @@ struct PerformerController: APIRouteCollection {
 	/// Reads the saved bulk performer JSON file, loads all official performers from the database, and compares them
 	/// by name (case-insensitive) to produce a diff. Does not modify the database.
 	///
+	/// **URL Query Parameters:**
+	/// - `?overwrite=true` to show the changes an overwrite-mode apply would make. By default, the diff is for merge mode.
+	///
 	/// - Returns: `PerformerUpdateDifferenceData` with new, updated, unchanged, and not-in-source performers.
 	func bulkPerformerVerifyHandler(_ req: Request) async throws -> PerformerUpdateDifferenceData {
+		let overwrite = req.query[String.self, at: "overwrite"]?.lowercased() == "true"
 		let scrapedPerformers = try await readSavedBulkPerformers(on: req)
 		let dbPerformers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).all()
 		let dbPerformersByName = Dictionary(dbPerformers.map { ($0.name.lowercased(), $0) }) { first, _ in first }
@@ -530,7 +563,7 @@ struct PerformerController: APIRouteCollection {
 			let existing = dbPerformersByName[key]
 					?? dbPerformersByAltName[key]
 			if let existing = existing {
-				let changedFields = performerProfileChanges(scraped: scraped, existing: existing)
+				let changedFields = performerProfileChanges(scraped: scraped, existing: existing, overwrite: overwrite)
 				if !changedFields.isEmpty {
 					result.updatedPerformers.append(
 						try UpdatedPerformerData(
@@ -588,9 +621,12 @@ struct PerformerController: APIRouteCollection {
 	/// - Existing performers have their profile fields updated (photo is intentionally skipped to avoid image diffing).
 	/// - Optionally deletes performers not in source if `processDeletes=true` query param is set.
 	/// - Optionally skips updates to existing performers if `processUpdates=false` query param is set.
+	/// - By default, merges: a field that's nil or blank in the upload keeps the existing performer's value, and years attended
+	///   are added to the existing years. With the `overwrite=true` query param, the upload replaces every profile field.
 	///
 	/// - Returns: HTTP status.
 	func bulkPerformerApplyHandler(_ req: Request) async throws -> HTTPStatus {
+		let overwrite = req.query[String.self, at: "overwrite"]?.lowercased() == "true"
 		let processDeletes = req.query[String.self, at: "processDeletes"]?.lowercased() == "true"
 		let processUpdates = req.query[String.self, at: "processUpdates"]?.lowercased() != "false"
 		let linkEvents = req.query[String.self, at: "linkEvents"]?.lowercased() != "false"
@@ -618,21 +654,22 @@ struct PerformerController: APIRouteCollection {
 					?? dbPerformersByAltName[key]
 			let performerForLinks: Performer
 			if let existing = existing {
-				let changedFields = performerProfileChanges(scraped: scraped, existing: existing)
+				let changedFields = performerProfileChanges(scraped: scraped, existing: existing, overwrite: overwrite)
 				if processUpdates && !changedFields.isEmpty {
-					existing.pronouns = scraped.pronouns
-					existing.bio = scraped.bio
-					existing.organization = scraped.organization
-					existing.title = scraped.title
-					existing.website = scraped.website
-					existing.facebookURL = scraped.facebookURL
-					existing.xURL = scraped.xURL
-					existing.instagramURL = scraped.instagramURL
-					existing.youtubeURL = scraped.youtubeURL
-					var years = scraped.yearsAttended
-					if !years.contains(currentYear) {
-						years.append(currentYear)
+					existing.pronouns = mergedValue(scraped.pronouns, existing: existing.pronouns, overwrite: overwrite)
+					existing.bio = mergedValue(scraped.bio, existing: existing.bio, overwrite: overwrite)
+					existing.organization = mergedValue(scraped.organization, existing: existing.organization, overwrite: overwrite)
+					existing.title = mergedValue(scraped.title, existing: existing.title, overwrite: overwrite)
+					existing.website = mergedValue(scraped.website, existing: existing.website, overwrite: overwrite)
+					existing.facebookURL = mergedValue(scraped.facebookURL, existing: existing.facebookURL, overwrite: overwrite)
+					existing.xURL = mergedValue(scraped.xURL, existing: existing.xURL, overwrite: overwrite)
+					existing.instagramURL = mergedValue(scraped.instagramURL, existing: existing.instagramURL, overwrite: overwrite)
+					existing.youtubeURL = mergedValue(scraped.youtubeURL, existing: existing.youtubeURL, overwrite: overwrite)
+					var years = Set(scraped.yearsAttended)
+					if !overwrite {
+						years.formUnion(existing.yearsAttended)
 					}
+					years.insert(currentYear)
 					existing.yearsAttended = years.sorted()
 					try await existing.save(on: req.db)
 				}
@@ -746,6 +783,23 @@ struct PerformerController: APIRouteCollection {
 		return filePath
 	}
 
+	// Saves bulk performer data to disk for later verification and application, replacing any previous upload.
+	func stageBulkPerformers(_ performers: [PerformerData], on req: Request) async throws {
+		let filepath = try uploadedPerformersBulkPath()
+		try? FileManager.default.removeItem(at: filepath)
+		let jsonData = try JSONEncoder().encode(performers)
+		try await req.fileio.writeFile(ByteBuffer(data: jsonData), at: filepath.path)
+	}
+
+	// Converts Sched API speakers to performers and stages them.
+	func stageSchedSpeakers(_ speakers: [SchedSpeaker], on req: Request) async throws {
+		let performers = try speakers.map { try $0.makePerformerData() }.filter { !$0.header.name.isEmpty }
+		guard !performers.isEmpty else {
+			throw Abort(.badRequest, reason: "The Sched speaker data didn't contain any speakers.")
+		}
+		try await stageBulkPerformers(performers, on: req)
+	}
+
 	// Reads the saved bulk performer JSON from disk and decodes it into an array of PerformerData.
 	func readSavedBulkPerformers(on req: Request) async throws -> [PerformerData] {
 		let filepath = try uploadedPerformersBulkPath()
@@ -756,62 +810,72 @@ struct PerformerController: APIRouteCollection {
 		return try JSONDecoder().decode([PerformerData].self, from: jsonData)
 	}
 
-	// Builds field-level differences for a scraped performer profile versus the existing DB record.
+	// Builds field-level differences for a scraped performer profile versus the existing DB record, for the given apply mode.
+	// In merge mode (`overwrite` false), fields that are nil or blank in the scraped profile aren't changes.
 	// Intentionally does NOT compare photo, as we skip image updates for existing performers.
-	func performerProfileChanges(scraped: PerformerData, existing: Performer) -> [PerformerProfileFieldChangeData] {
+	func performerProfileChanges(scraped: PerformerData, existing: Performer, overwrite: Bool) -> [PerformerProfileFieldChangeData] {
 		var changes: [PerformerProfileFieldChangeData] = []
 		appendPerformerProfileChange(
 			fieldName: "Pronouns",
 			oldValue: existing.pronouns,
 			newValue: scraped.pronouns,
+			overwrite: overwrite,
 			to: &changes
 		)
 		appendPerformerProfileChange(
 			fieldName: "Bio",
 			oldValue: existing.bio,
 			newValue: scraped.bio,
+			overwrite: overwrite,
 			to: &changes
 		)
 		appendPerformerProfileChange(
 			fieldName: "Organization",
 			oldValue: existing.organization,
 			newValue: scraped.organization,
+			overwrite: overwrite,
 			to: &changes
 		)
 		appendPerformerProfileChange(
 			fieldName: "Title",
 			oldValue: existing.title,
 			newValue: scraped.title,
+			overwrite: overwrite,
 			to: &changes
 		)
 		appendPerformerProfileChange(
 			fieldName: "Website",
 			oldValue: existing.website,
 			newValue: scraped.website,
+			overwrite: overwrite,
 			to: &changes
 		)
 		appendPerformerProfileChange(
 			fieldName: "Facebook",
 			oldValue: existing.facebookURL,
 			newValue: scraped.facebookURL,
+			overwrite: overwrite,
 			to: &changes
 		)
 		appendPerformerProfileChange(
 			fieldName: "X",
 			oldValue: existing.xURL,
 			newValue: scraped.xURL,
+			overwrite: overwrite,
 			to: &changes
 		)
 		appendPerformerProfileChange(
 			fieldName: "Instagram",
 			oldValue: existing.instagramURL,
 			newValue: scraped.instagramURL,
+			overwrite: overwrite,
 			to: &changes
 		)
 		appendPerformerProfileChange(
 			fieldName: "YouTube",
 			oldValue: existing.youtubeURL,
 			newValue: scraped.youtubeURL,
+			overwrite: overwrite,
 			to: &changes
 		)
 		return changes
@@ -820,9 +884,11 @@ struct PerformerController: APIRouteCollection {
 	func appendPerformerProfileChange(
 		fieldName: String,
 		oldValue: String?,
-		newValue: String?,
+		newValue scrapedValue: String?,
+		overwrite: Bool,
 		to changes: inout [PerformerProfileFieldChangeData]
 	) {
+		let newValue = mergedValue(scrapedValue, existing: oldValue, overwrite: overwrite)
 		guard oldValue != newValue else {
 			return
 		}
@@ -833,6 +899,18 @@ struct PerformerController: APIRouteCollection {
 				newValue: performerProfileDisplayValue(newValue)
 			)
 		)
+	}
+
+	// The value a profile field gets when applying a bulk import. In overwrite mode that's the imported value. In merge mode,
+	// a nil or blank imported value means the source doesn't have that field, so the existing value is kept.
+	func mergedValue(_ newValue: String?, existing: String?, overwrite: Bool) -> String? {
+		if overwrite {
+			return newValue
+		}
+		guard let newValue, !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+			return existing
+		}
+		return newValue
 	}
 
 	func performerProfileDisplayValue(_ value: String?) -> String {
@@ -907,13 +985,13 @@ struct PerformerController: APIRouteCollection {
 				}
 			}
 			else {
-				let previewKey = "\(performerName.lowercased())|\(eventLookupKey(title: scrapedEvent.title, startTime: scrapedEvent.startTime))"
+				let previewKey = "\(performerName.lowercased())|\(scrapedEvent.uid ?? "")|\(scrapedEvent.startTime.map { eventLookupKey(title: scrapedEvent.title, startTime: $0) } ?? scrapedEvent.title.lowercased())"
 				if previewedUnmatchedEvents.insert(previewKey).inserted {
 					unmatchedEvents.append(
 						PerformerEventLinkPreviewData(
 							performerName: performerName,
 							eventTitle: scrapedEvent.title,
-							eventStartTime: formatBulkPerformerEventPreviewTime(scrapedEvent.startTime),
+							eventStartTime: scrapedEvent.startTime.map { formatBulkPerformerEventPreviewTime($0) } ?? "Unknown time",
 							eventLocation: nil
 						)
 					)
@@ -928,7 +1006,7 @@ struct PerformerController: APIRouteCollection {
 		dbEventsByTitleAndStartTime: [String: Event]
 	) -> Event? {
 		scrapedEvent.uid.flatMap { dbEventsByUID[$0] }
-			?? dbEventsByTitleAndStartTime[eventLookupKey(title: scrapedEvent.title, startTime: scrapedEvent.startTime)]
+			?? scrapedEvent.startTime.flatMap { dbEventsByTitleAndStartTime[eventLookupKey(title: scrapedEvent.title, startTime: $0)] }
 	}
 
 	func formatBulkPerformerEventPreviewTime(_ date: Date) -> String {

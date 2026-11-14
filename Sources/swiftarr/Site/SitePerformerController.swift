@@ -531,11 +531,14 @@ struct SitePerformerController: SiteControllerUtils {
 			var trunk: TrunkContext
 			var defaultURL: String
 			var defaultSchedURL: String
+			/// TRUE if the server has a Sched API key, so Sched speakers can come from the API instead of scraping.
+			var schedAPIAvailable: Bool
 
 			init(_ req: Request) throws {
 				trunk = .init(req, title: "Bulk Add Performers", tab: .admin)
-				defaultURL = "https://jococruise.com/guests/"
+				defaultURL = "https://jococruise.com/2026guests/"
 				defaultSchedURL = Settings.shared.schedSpeakersURL
+				schedAPIAvailable = !Settings.shared.schedApiKey.isEmpty
 			}
 		}
 		let ctx = try BulkAddPerformersPageContext(req)
@@ -546,11 +549,16 @@ struct SitePerformerController: SiteControllerUtils {
 	//
 	// Fetches the performer listing page at the given URL, scrapes all linked performer pages,
 	// and uploads the scraped data to the API for storage. On success, the browser navigates to the verify page.
+	// For the "schedapi" source, the API fetches and stages the speakers from the Sched API instead.
 	func postBulkFetchPerformers(_ req: Request) async throws -> HTTPStatus {
 		struct BulkFetchFormData: Content {
 			var sourceURL: String
 			var source: String?
 			var sampleOnly: Bool?
+		}
+		if (try? req.content.get(String.self, at: "source")) == "schedapi" {
+			try await apiQuery(req, endpoint: "/admin/performer/bulk/sched/fetch", method: .POST)
+			return .ok
 		}
 		let formData = try req.content.decode(BulkFetchFormData.self)
 		let sampleOnly = formData.sampleOnly ?? false
@@ -571,20 +579,24 @@ struct SitePerformerController: SiteControllerUtils {
 	// `GET /admin/performer/bulk/verify`
 	//
 	// Calls the API verify endpoint and renders the diff page showing new, updated, unchanged, and not-in-source performers.
+	// `?overwrite=true` shows the diff for an overwrite-mode apply instead of the default merge mode.
 	func bulkAddVerifyPage(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/admin/performer/bulk/verify")
+		let overwrite = req.query[String.self, at: "overwrite"]?.lowercased() == "true"
+		let response = try await apiQuery(req, endpoint: "/admin/performer/bulk/verify\(overwrite ? "?overwrite=true" : "")")
 		let differenceData = try response.content.decode(PerformerUpdateDifferenceData.self)
 
 		struct BulkAddVerifyContext: Encodable {
 			var trunk: TrunkContext
 			var diff: PerformerUpdateDifferenceData
+			var overwrite: Bool
 
-			init(_ req: Request, differenceData: PerformerUpdateDifferenceData) throws {
+			init(_ req: Request, differenceData: PerformerUpdateDifferenceData, overwrite: Bool) throws {
 				trunk = .init(req, title: "Verify Performer Import", tab: .admin)
 				self.diff = differenceData
+				self.overwrite = overwrite
 			}
 		}
-		let ctx = try BulkAddVerifyContext(req, differenceData: differenceData)
+		let ctx = try BulkAddVerifyContext(req, differenceData: differenceData, overwrite: overwrite)
 		return try await req.view.render("Performers/bulkAddVerify", ctx)
 	}
 
@@ -596,7 +608,11 @@ struct SitePerformerController: SiteControllerUtils {
 		let linkEvents = (try? req.content.get(String.self, at: "linkEvents")) == "on"
 		let ignoreUpdates = (try? req.content.get(String.self, at: "ignoreUpdates")) == "on"
 		let processDeletes = (try? req.content.get(String.self, at: "processDeletes")) == "on"
+		let overwrite = (try? req.content.get(String.self, at: "overwrite")) == "true"
 		var query = [URLQueryItem]()
+		if overwrite {
+			query.append(URLQueryItem(name: "overwrite", value: "true"))
+		}
 		if !linkEvents {
 			query.append(URLQueryItem(name: "linkEvents", value: "false"))
 		}
@@ -632,7 +648,44 @@ struct SitePerformerController: SiteControllerUtils {
 	}
 }
 
+// Thrown when a scraped site answers with a Cloudflare bot challenge instead of the page.
+fileprivate struct ScrapeChallengeError: AbortError {
+	var host: String
+	var status: HTTPResponseStatus { .badGateway }
+	var reason: String {
+		"\(host) answered with a Cloudflare bot challenge instead of the page, so it can't be scraped from this server right now."
+	}
+}
+
 extension SitePerformerController {
+	fileprivate var scrapeUserAgent: String {
+		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"
+	}
+
+	// GETs a page to scrape and returns its HTML. Throws `ScrapeChallengeError` if Cloudflare served a bot challenge
+	// instead of the page (it marks those with a `cf-mitigated: challenge` header), and an error for other non-200 responses.
+	fileprivate func fetchScrapePage(_ urlString: String, userAgent: String? = nil, on req: Request) async throws -> String {
+		var headers = HTTPHeaders()
+		if let userAgent {
+			headers.add(name: .userAgent, value: userAgent)
+		}
+		let response = try await req.client.get(URI(string: urlString), headers: headers)
+		let host = URL(string: urlString)?.host ?? urlString
+		let html = response.body.flatMap { body in body.getString(at: body.readerIndex, length: body.readableBytes) }
+		if response.headers.first(name: "cf-mitigated")?.lowercased() == "challenge"
+				|| (response.headers.first(name: .server)?.lowercased() == "cloudflare"
+					&& html?.contains("<title>Just a moment...</title>") == true) {
+			throw ScrapeChallengeError(host: host)
+		}
+		guard response.status == .ok else {
+			throw Abort(.badGateway, reason: "\(host) returned \(response.status.code) for \(urlString).")
+		}
+		guard let html else {
+			throw Abort(.badRequest, reason: "No HTML returned from URL: \(urlString)")
+		}
+		return html
+	}
+
 	// Helper function to check if a URL contains a 4-digit year pattern (e.g., "/2026", "/2027").
 	// Used to filter out year-specific navigation links when scraping performer pages.
 	fileprivate func containsYearPattern(_ url: String) -> Bool {
@@ -641,17 +694,13 @@ extension SitePerformerController {
 	
 	// Scrapes the performer listing page at the given URL, finds links to individual performer pages,
 	// and scrapes each one using buildPerformerFromURL to get full performer data.
-	// Meant to work with the JoCo Cruise guests page (e.g. "https://jococruise.com/guests/").
+	// Meant to work with the JoCo Cruise guests page (e.g. "https://jococruise.com/2026guests/").
 	// Like all scrapers, this code is fragile to changes in the HTML structure of the page being scraped.
 	fileprivate func buildPerformersFromListingPage(_ urlString: String, sampleOnly: Bool = false, on req: Request) async throws -> [PerformerData] {
 		guard let _ = URL(string: urlString) else {
 			throw Abort(.badRequest, reason: "Invalid listing URL: \(urlString)")
 		}
-		let uri = URI(string: urlString)
-		var response = try await req.client.get(uri)
-		guard let bytes = response.body?.readableBytes, let html = response.body?.readString(length: bytes) else {
-			throw Abort(.badRequest, reason: "No HTML returned from URL: \(urlString)")
-		}
+		let html = try await fetchScrapePage(urlString, on: req)
 		let doc = try SwiftSoup.parse(html)
 		// Find all h2 elements that contain a link -- these are the performer entries on the listing page.
 		// Each performer name is an <a> tag inside an <h2>, linking to their individual page.
@@ -668,6 +717,9 @@ extension SitePerformerController {
 				}
 			}
 		}
+		guard !performerURLs.isEmpty else {
+			throw Abort(.badRequest, reason: "No performer links were found on the listing page at \(urlString). The page format may have changed.")
+		}
 		req.logger.info("Found \(performerURLs.count) performer URLs on listing page")
 		var performers = [PerformerData]()
 		for performerURL in performerURLs {
@@ -679,6 +731,9 @@ extension SitePerformerController {
 				if sampleOnly {
 					break
 				}
+			}
+			catch let error as ScrapeChallengeError {
+				throw error
 			}
 			catch {
 				req.logger.warning("Failed to scrape performer from \(performerURL): \(error)")
@@ -701,12 +756,7 @@ extension SitePerformerController {
 		guard let siteRootURL = rootComponents.url else {
 			throw Abort(.badRequest, reason: "Could not derive site root from sched listing URL: \(urlString)")
 		}
-		let uri = URI(string: urlString)
-		let headers = HTTPHeaders([("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)")])
-		var response = try await req.client.get(uri, headers: headers)
-		guard let bytes = response.body?.readableBytes, let html = response.body?.readString(length: bytes) else {
-			throw Abort(.badRequest, reason: "No HTML returned from URL: \(urlString)")
-		}
+		let html = try await fetchScrapePage(urlString, userAgent: scrapeUserAgent, on: req)
 		let doc = try SwiftSoup.parse(html)
 		let avatarLinks = try doc.select("a.sched-avatar")
 		guard !avatarLinks.isEmpty else {
@@ -732,6 +782,9 @@ extension SitePerformerController {
 					break
 				}
 			}
+			catch let error as ScrapeChallengeError {
+				throw error
+			}
 			catch {
 				req.logger.warning("Failed to scrape sched performer from \(speakerURL): \(error)")
 			}
@@ -749,11 +802,7 @@ extension SitePerformerController {
 		guard let _ = URL(string: urlString) else {
 			throw Abort(.badRequest, reason: "Invalid performer URL: \(urlString)")
 		}
-		let uri = URI(string: urlString)
-		var response = try await req.client.get(uri)
-		guard let bytes = response.body?.readableBytes, let html = response.body?.readString(length: bytes) else {
-			throw Abort(.badRequest, reason: "No HTML returned from URL: \(urlString)")
-		}
+		let html = try await fetchScrapePage(urlString, on: req)
 		var result = PerformerData()
 		let doc = try SwiftSoup.parse(html)
 		result.youtubeURL = try doc.select("li.et-social-youtube a").first()?.attr("href")
@@ -767,7 +816,7 @@ extension SitePerformerController {
 		result.yearsAttended = try doc.select("div.et_pb_column_2_tb_body div.et_pb_blurb_description").first()?.text()
 				.split(separator: " • ").compactMap( { Int($0) } ) ?? []
 		if let bio = try doc.select("div.et_pb_text_2_tb_body div").first() {
-			result.bio = try processHTMLIntoMarkdown(bio)
+			result.bio = try markdown(fromHTML: bio)
 		}
 		// Clear out any values scraped from the page footer (they're all JoCo links, not specific to this performer)
 		if result.youtubeURL == "https://www.youtube.com/jococruise" {
@@ -789,12 +838,7 @@ extension SitePerformerController {
 		guard let _ = URL(string: urlString) else {
 			throw Abort(.badRequest, reason: "Invalid sched.com URL: \(urlString)")
 		}
-		let uri = URI(string: urlString)
-		let headers = HTTPHeaders([("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)")])
-		var response = try await req.client.get(uri, headers: headers)
-		guard let bytes = response.body?.readableBytes, let html = response.body?.readString(length: bytes) else {
-			throw Abort(.badRequest, reason: "No HTML returned from URL: \(urlString)")
-		}
+		let html = try await fetchScrapePage(urlString, userAgent: scrapeUserAgent, on: req)
 		var result = PerformerData()
 		let doc = try SwiftSoup.parse(html)
 		result.header.name = try doc.select("h2.user-profile__name").first()?.text() ?? ""
@@ -815,7 +859,7 @@ extension SitePerformerController {
 		result.instagramURL = try doc.select("div.social-profile.instagram a").first()?.attr("href")
 		result.youtubeURL = try doc.select("div.social-profile.youtube a").first()?.attr("href")
 		if let bio = try doc.select("div.user-profile__about-content").first() {
-			result.bio = try processHTMLIntoMarkdown(bio)
+			result.bio = try markdown(fromHTML: bio)
 		}
 		result.scrapedEventRefs = try buildSchedSessionReferences(from: doc)
 		req.logger.info("Scraped sched.com performer: '\(result.header.name)', photo: \(result.header.photo ?? "nil")")
@@ -894,54 +938,6 @@ extension SitePerformerController {
 		}
 		return eventTime
 	}
-
-	// A really bad implementation of HTML to Markdown. Only works with a few Markdonw tags, but these seem to be the only
-	// ones used by the Performer Bio html sections on jococruise.com and sched.com.
-	// 
-	// Any HTML tags not recognized and converted into their Markdown equivalent are removed from the output.
-	fileprivate func processHTMLIntoMarkdown(_ rootNode: Node) throws  -> String {
-		let accum = StringBuilder()
-        var nextNode: Node = rootNode
-        var parentStack: [(Node, String)] = [(rootNode, "")]
-
-		traversal: while true {
-	        let curNode = nextNode
-	        var tailText: String = ""
-            if let textNode = curNode as? TextNode {
-				accum.append(textNode.getWholeText())
-            } else if let element = (curNode as? Element) {
-				switch element.tagName() {
-					case "strong": accum.append("**"); tailText = "**"
-					case "i", "em": accum.append("*"); tailText = "*"
-					case "p": tailText = "\n"
-					case "br": accum.append("\n")
-					case "a": accum.append("["); tailText = try "](\(element.attr("href")))"
-					default: break
-				}
-            }
-            if curNode.childNodeSize() > 0 {
-                nextNode = curNode.childNode(0)
-                parentStack.append((curNode, tailText))
-			} else {
-				accum.append(tailText)
-				while true {
-					if let node = nextNode.nextSibling() {
-						nextNode = node
-						break
-					}
- 					if parentStack.isEmpty {
-						break traversal
-					}
-					else {
-						var tail: String
-						(nextNode, tail) = parentStack.removeLast()
-						accum.append(tail)
-					}
-				}
-            }
-        }
-        return accum.toString()
-    }
 }
 
 // Used to create a PerformerUploadData from the web form. Used in a couple of places.

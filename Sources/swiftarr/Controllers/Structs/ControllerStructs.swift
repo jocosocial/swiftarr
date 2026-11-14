@@ -1882,7 +1882,8 @@ struct ScrapedPerformerEventReferenceData: Content, Sendable {
 	/// Event title as shown on the speaker page.
 	var title: String
 	/// Event start time normalized into the same timezone basis as imported schedule events.
-	var startTime: Date
+	/// Nil when the reference came from the Sched API, which identifies sessions only by UID.
+	var startTime: Date?
 }
 
 /// Returns info about a single perfomer. Most fields are optional, and the array fields may be empty, although they shouldn't be under normal conditions.
