@@ -696,8 +696,6 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateCommunitySupportReportSchema(), to: .psql)
 		app.migrations.add(CreateCommunitySupportActionSchema(), to: .psql)
 		app.migrations.add(AddCategoryDefaultSortSchema(), to: .psql)
-		app.migrations.add(CreateForumPostReactionSchema(), to: .psql)
-		app.migrations.add(CreateFezPostReactionSchema(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 
