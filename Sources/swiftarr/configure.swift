@@ -694,8 +694,6 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateForumPostReactionSchema(), to: .psql)
 		app.migrations.add(CreateFezPostReactionSchema(), to: .psql)
 		app.migrations.add(MigratePostLikesToReactions(), to: .psql)
-		app.migrations.add(AddReactionCreationDates(), to: .psql)
-		app.migrations.add(CanonicalizeReactionGroups(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 

@@ -31,6 +31,9 @@ struct CreateFezPostReactionSchema: AsyncMigration {
 			.id()
 			.unique(on: "user", "fezPost", "emoji")
 			.field("emoji", .string, .required)
+			// Every contributor to a chip shares its first reaction's date and group identifier, which fix the chip's position.
+			.field("createdAt", .datetime, .required)
+			.field("groupOrder", .uuid, .required)
 			.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
 			.field("fezPost", .int, .required, .references("fezposts", "id", onDelete: .cascade))
 			.create()
