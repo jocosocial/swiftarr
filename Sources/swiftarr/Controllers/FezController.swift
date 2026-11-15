@@ -773,7 +773,7 @@ struct FezController: APIRouteCollection {
 		let post = try await FezPost.findFromParameter(fezPostIDParam, on: req)
 		let fez = try await post.$fez.get(on: req.db)
 		try guardReactionFeature(fez, user: cacheUser)
-		guard userCanViewMemberData(user: cacheUser, fez: fez) else {
+		guard userCanViewMemberData(user: cacheUser, fez: fez, on: req) else {
 			throw Abort(.forbidden, reason: "user cannot view this \(fez.fezType.lfgLabel)")
 		}
 		guard post.$author.id != cacheUser.userID else {
@@ -808,7 +808,7 @@ struct FezController: APIRouteCollection {
 		let post = try await FezPost.findFromParameter(fezPostIDParam, on: req)
 		let fez = try await post.$fez.get(on: req.db)
 		try guardReactionFeature(fez, user: cacheUser)
-		guard userCanViewMemberData(user: cacheUser, fez: fez) else {
+		guard userCanViewMemberData(user: cacheUser, fez: fez, on: req) else {
 			throw Abort(.forbidden, reason: "user cannot view this \(fez.fezType.lfgLabel)")
 		}
 		guard post.$author.id != cacheUser.userID else {
@@ -1203,7 +1203,7 @@ struct FezController: APIRouteCollection {
 		let sockets = try await req.webSocketStore.getChatSockets(fez.requireID())
 		for userSocket in sockets {
 			guard let socketOwner = req.userCache.getUser(userSocket.userID),
-				userCanViewMemberData(user: socketOwner, fez: fez),
+				userCanViewMemberData(user: socketOwner, fez: fez, on: req),
 				!(socketOwner.getBlocks().contains(postData.author.userID)
 					|| socketOwner.getMutes().contains(postData.author.userID))
 			else { continue }
