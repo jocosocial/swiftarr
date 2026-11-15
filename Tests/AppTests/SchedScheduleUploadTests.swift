@@ -50,11 +50,16 @@ class SchedScheduleUploadTests: XCTestCase, SwiftarrBaseTest {
 			})
 
 			// The test db is seeded from the same schedule's .ics export, so the only changes are the added age ratings.
+			// Other suites may have deleted some seeded events (DailyThemeScheduleTests removes the "Theme:" ones), and
+			// those come back as created.
+			let existingUIDs = Set(try await Event.query(on: app.db).all().map(\.uid))
+			let missingUIDs = Set(try SchedSession.decodeSessions(from: try exportFixture())
+				.compactMap { try $0.makeEvent()?.uid }.filter { !existingUIDs.contains($0) })
 			try await app.test(.GET, "/api/v3/admin/schedule/verify", headers: headers(ttToken),
 					afterResponse: { res async throws in
 				XCTAssertEqual(res.status, .ok)
 				let diff = try res.content.decode(EventUpdateDifferenceData.self)
-				XCTAssertEqual(diff.createdEvents.count, 0)
+				XCTAssertEqual(Set(diff.createdEvents.map(\.uid)), missingUIDs)
 				XCTAssertEqual(diff.timeChangeEvents.count, 0)
 				XCTAssertEqual(diff.locationChangeEvents.count, 0)
 				XCTAssertEqual(diff.minorChangeEvents.count, 233)
@@ -79,7 +84,7 @@ class SchedScheduleUploadTests: XCTestCase, SwiftarrBaseTest {
 				let diff = try res.content.decode(EventUpdateDifferenceData.self)
 				XCTAssertEqual(diff.createdEvents.count, 0)
 				XCTAssertEqual(diff.minorChangeEvents.count, 0)
-				XCTAssertGreaterThanOrEqual(diff.deletedEvents.count, 517)
+				XCTAssertEqual(diff.deletedEvents.count, existingUIDs.count)
 			})
 		}
 	}
