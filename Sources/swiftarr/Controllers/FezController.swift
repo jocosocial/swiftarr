@@ -786,12 +786,7 @@ struct FezController: APIRouteCollection {
 			.first() == nil
 		{
 			let reaction = try FezPostReaction(cacheUser.userID, post, emoji: reactionValue)
-			// Copy the chip's position so removing its earliest contributor cannot move it.
-			if let existing = try await FezPostReaction.query(on: req.db)
-				.filter(\.$post.$id == post.requireID()).filter(\.$emoji == reactionValue).first() {
-				reaction.createdAt = existing.createdAt
-				reaction.groupOrder = existing.groupOrder
-			}
+			try await reaction.adoptChipPosition(on: req.db)
 			try await reaction.save(on: req.db)
 		}
 		let postData = try await buildFezPostData(post, for: cacheUser, on: req)

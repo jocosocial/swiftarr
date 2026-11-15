@@ -1489,12 +1489,7 @@ struct ForumController: APIRouteCollection {
 			.first() == nil
 		{
 			let reaction = try ForumPostReaction(cacheUser.userID, post, emoji: emoji)
-			// All contributors retain the distinct chip's original position, even after its first user leaves.
-			if let existing = try await ForumPostReaction.query(on: req.db)
-				.filter(\.$post.$id == post.requireID()).filter(\.$emoji == emoji).first() {
-				reaction.createdAt = existing.createdAt
-				reaction.groupOrder = existing.groupOrder
-			}
+			try await reaction.adoptChipPosition(on: req.db)
 			try await reaction.save(on: req.db)
 		}
 		let postDataArray = try await buildPostData([post], userID: cacheUser.userID, on: req)

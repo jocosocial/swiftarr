@@ -23,6 +23,16 @@ final class ForumPostReaction: Model, @unchecked Sendable {
 		self.createdAt = Date()
 		self.groupOrder = UUID()
 	}
+
+	/// Takes the date and group identifier of the post's existing chip for this emoji, if there is one.
+	/// Every contributor shares them, so the chip keeps its position even after its first user leaves.
+	func adoptChipPosition(on db: Database) async throws {
+		if let existing = try await ForumPostReaction.query(on: db)
+			.filter(\.$post.$id == $post.id).filter(\.$emoji == emoji).first() {
+			createdAt = existing.createdAt
+			groupOrder = existing.groupOrder
+		}
+	}
 }
 
 struct CreateForumPostReactionSchema: AsyncMigration {
