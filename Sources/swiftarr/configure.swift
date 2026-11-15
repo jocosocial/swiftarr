@@ -687,15 +687,15 @@ struct SwiftarrConfigurator {
 		app.migrations.add(AddPerformerAlternativeNamesMigration(), to: .psql)
 		app.migrations.add(AddEventPerformerManuallyLinkedMigration(), to: .psql)
 		app.migrations.add(AddFavoriteFieldToFezParticipantSchema(), to: .psql)
-		app.migrations.add(MigratePostLikesToReactions(), to: .psql)
-		app.migrations.add(AddReactionCreationDates(), to: .psql)
-		app.migrations.add(CanonicalizeReactionGroups(), to: .psql)
 		app.migrations.add(AddVisibilityFieldToFriendlyFezSchema(), to: .psql)
 		app.migrations.add(CreateClientAppSchema(), to: .psql)
 		app.migrations.add(UpdateEventSchema_AgeRating(), to: .psql)
 		app.migrations.add(CreateCommunitySupportReportSchema(), to: .psql)
 		app.migrations.add(CreateCommunitySupportActionSchema(), to: .psql)
 		app.migrations.add(AddCategoryDefaultSortSchema(), to: .psql)
+		app.migrations.add(MigratePostLikesToReactions(), to: .psql)
+		app.migrations.add(AddReactionCreationDates(), to: .psql)
+		app.migrations.add(CanonicalizeReactionGroups(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 
