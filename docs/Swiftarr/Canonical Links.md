@@ -42,8 +42,6 @@ Method | Route | Notes
 --- | --- | ---
 | GET | /logout | This GETs a page that has a logout button. Probably not a great user experience to open a web view just so the user can click the button and logout.
 | GET | /createAltAccount | Lets the current user create an alternate account. 
-| GET | /tweets | Shows tweets from the tweet stream. Supports a bunch of query options.
-| GET | /tweets/:twarrt_id | Shows a thread in the tweet stream. Supports a bunch of query options.
 | GET | /forums | Shows forum categories.
 | GET | /forums/:category_id | Shows forum threads in a category
 | GET | /forum/:forum_id | Shows an individual forum thread.

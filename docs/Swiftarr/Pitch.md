@@ -21,12 +21,12 @@ Here’s a short list of differentiating features:
 * User Account Features - Sub-accounts, symmetric user blocks as well as user mutes
 * Context-aware search for the web UI. 
 
-There’s a bunch of minor features, from twarrts allowing 4 images to a unified notifications endpoint.
+There’s a bunch of minor features, including a unified notifications endpoint.
 
 Plus, there’s a bunch of stuff that I still want to do for 2022:
 
 * Board Games and Karaoke song indexes would tie into Friendly Fez, with a “find people to play this” button of some sort.
-* Canonical links for most content, including twarrts and forum posts. This means, with some work, a native client could scan a forum post’s text, find a link to a Fez, and make that link open in-app.
+* Canonical links for most content, including forum posts. This means, with some work, a native client could scan a forum post’s text, find a link to a Fez, and make that link open in-app.
 * Come up with a plan for DB migration, allowing us to deploy the server via Heroku or similar before boat, and migrate the DB to the boat server on embarkation day.
 
 ### Why Not Swiftarr
