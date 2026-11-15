@@ -144,7 +144,7 @@ struct ForumController: APIRouteCollection {
 	/// * `?sort=[create, update, title, event]` - Sort forums by `create` time, `update` time, or `title`, or the start time of their associated `Event`.
 	/// * `?order=[ascending, descending]` - Specify a sort order. Omit this parameter to use the default ordering for the category type.
 	/// Create and update return newest forums first. `event` is only valid for Event categories, is default for them, and returns forums in ascending event start time; secondary sort
-	/// is alpha on event title. `Update` is the default for non-event categories.
+	/// is alpha on event title. Categories may override the default with `defaultSort`.
 	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
 	///
@@ -157,7 +157,7 @@ struct ForumController: APIRouteCollection {
 	/// * `?afterdate=DATE` -
 	/// * `?beforedate=DATE` -
 	///
-	/// With no parameters, defaults to `?sort=update&start=0&limit=50`.
+	/// With no parameters, uses the category default sort, or event sorting for event categories and update sorting otherwise.
 	///
 	/// If you want to ensure you have all the threads in a category, you can sort by create time and ask for threads newer than
 	/// the last time you asked. If you want to update last post times and post counts, you can sort by update time and get the
@@ -204,21 +204,21 @@ struct ForumController: APIRouteCollection {
 		}
 		var dateFilterUsesUpdate = false
 		let orderDirection = req.orderDirection()
-		switch req.query[String.self, at: "sort"] {
-		case "create": _ = countQuery.sort(\.$createdAt, orderDirection ?? .descending)
-		case "title": _ = countQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
-		case "update":
+		let requestedSort = req.query[String.self, at: "sort"].flatMap(ForumSort.init(rawValue:))
+		let sort = requestedSort ?? category.defaultSort ?? (category.isEventCategory ? .event : .update)
+		switch sort {
+		case .create: _ = countQuery.sort(\.$createdAt, orderDirection ?? .descending)
+		case .title: _ = countQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
+		case .update:
 			_ = countQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 			dateFilterUsesUpdate = true
-		default:
-			if category.isEventCategory {
-				// Sort by event start time
-				_ = countQuery.sort(Event.self, \Event.$startTime, orderDirection ?? .ascending).sort(Event.self, \Event.$title, orderDirection ?? .ascending)
+		case .event:
+			guard category.isEventCategory else {
+				throw Abort(.badRequest, reason: "Event sorting is only available for event categories.")
 			}
-			else {
-				_ = countQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
-				dateFilterUsesUpdate = true
-			}
+			// Sort by event start time, then event title.
+			_ = countQuery.sort(Event.self, \Event.$startTime, orderDirection ?? .ascending)
+				.sort(Event.self, \Event.$title, orderDirection ?? .ascending)
 		}
 		if let beforeDate = req.query[Date.self, at: "beforedate"] {
 			if dateFilterUsesUpdate {
@@ -380,9 +380,9 @@ struct ForumController: APIRouteCollection {
 		let forumCount = try await countQuery.count()
 		let orderDirection = req.orderDirection();
 		let forumQuery = countQuery.copy().range(pagination.range).join(child: \.$scheduleEvent, method: .left)
-		switch req.query[String.self, at: "sort"] {
-			case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
-			case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
+		switch req.query[String.self, at: "sort"].flatMap(ForumSort.init(rawValue:)) {
+			case .create: _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
+			case .title: _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
 			default: _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 		}
 		let forums = try await forumQuery.all()
@@ -416,9 +416,9 @@ struct ForumController: APIRouteCollection {
 		let forumCount = try await countQuery.count()
 		let orderDirection = req.orderDirection();
 		let forumQuery = countQuery.copy().range(pagination.range).join(child: \.$scheduleEvent, method: .left)
-		switch req.query[String.self, at: "sort"] {
-		case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
-		case "update": _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
+		switch req.query[String.self, at: "sort"].flatMap(ForumSort.init(rawValue:)) {
+		case .create: _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
+		case .update: _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 		default: _ = forumQuery.sort(.custom("lower(forum.title)"), orderDirection ?? .ascending)
 		}
 		async let forums = try forumQuery.all()
@@ -455,9 +455,9 @@ struct ForumController: APIRouteCollection {
 		let forumCount = try await countQuery.count()
 		let orderDirection = req.orderDirection()
 		let forumQuery = countQuery.copy().range(pagination.range).join(child: \.$scheduleEvent, method: .left)
-		switch req.query[String.self, at: "sort"] {
-		case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
-		case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
+		switch req.query[String.self, at: "sort"].flatMap(ForumSort.init(rawValue:)) {
+		case .create: _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
+		case .title: _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
 		default: _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 		}
 		async let forums = try forumQuery.all()
@@ -494,9 +494,9 @@ struct ForumController: APIRouteCollection {
 		let forumCount = try await countQuery.count()
 		let orderDirection = req.orderDirection()
 		let forumQuery = countQuery.copy().range(pagination.range).join(child: \.$scheduleEvent, method: .left)
-		switch req.query[String.self, at: "sort"] {
-		case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
-		case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
+		switch req.query[String.self, at: "sort"].flatMap(ForumSort.init(rawValue:)) {
+		case .create: _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
+		case .title: _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
 		default: _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 		}
 		async let forums = try forumQuery.all()
@@ -551,9 +551,9 @@ struct ForumController: APIRouteCollection {
 		let forumCount = try await countQuery.count()
 		let orderDirection = req.orderDirection()
 		let forumQuery = countQuery.copy().range(pagination.range).join(child: \.$scheduleEvent, method: .left)
-		switch req.query[String.self, at: "sort"] {
-		case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
-		case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
+		switch req.query[String.self, at: "sort"].flatMap(ForumSort.init(rawValue:)) {
+		case .create: _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
+		case .title: _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
 		default: _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 		}
 		let forums = try await forumQuery.all()
