@@ -51,7 +51,7 @@ class NotificationLogTests: XCTestCase, SwiftarrBaseTest {
 			let recipient = try await makeUser(app, username: "recip-\(suffix)")
 			try await fireNotification(
 				app,
-				type: .twarrtMention(42),
+				type: .forumMention(42),
 				info: "Someone mentioned you",
 				recipients: [try recipient.requireID()]
 			)
@@ -67,7 +67,7 @@ class NotificationLogTests: XCTestCase, SwiftarrBaseTest {
 					XCTAssertEqual(res.status, .ok)
 					let data = try res.content.decode(Paginated<NotificationLogData>.self)
 					XCTAssertEqual(data.items.count, 1)
-					XCTAssertEqual(data.items.first?.type, .twarrtMention)
+					XCTAssertEqual(data.items.first?.type, .forumMention)
 					XCTAssertEqual(data.items.first?.info, "Someone mentioned you")
 					XCTAssertEqual(data.items.first?.contentID, "42")
 				}
@@ -123,7 +123,7 @@ class NotificationLogTests: XCTestCase, SwiftarrBaseTest {
 			let bystander = try await makeUser(app, username: "bystander-\(suffix)")
 			try await fireNotification(
 				app,
-				type: .twarrtMention(7),
+				type: .forumMention(7),
 				info: "for targeted only",
 				recipients: [try targeted.requireID()]
 			)
@@ -148,9 +148,9 @@ class NotificationLogTests: XCTestCase, SwiftarrBaseTest {
 			let suffix = UUID().uuidString.prefix(8).lowercased()
 			let recipient = try await makeUser(app, username: "paged-\(suffix)")
 			let recipientID = try recipient.requireID()
-			try await fireNotification(app, type: .twarrtMention(1), info: "first", recipients: [recipientID])
-			try await fireNotification(app, type: .twarrtMention(2), info: "second", recipients: [recipientID])
-			try await fireNotification(app, type: .twarrtMention(3), info: "third", recipients: [recipientID])
+			try await fireNotification(app, type: .forumMention(1), info: "first", recipients: [recipientID])
+			try await fireNotification(app, type: .forumMention(2), info: "second", recipients: [recipientID])
+			try await fireNotification(app, type: .forumMention(3), info: "third", recipients: [recipientID])
 
 			let token = try await makeToken(app, for: recipient)
 			try await bootCache(app)
@@ -179,7 +179,7 @@ class NotificationLogTests: XCTestCase, SwiftarrBaseTest {
 			let suffix = UUID().uuidString.prefix(8).lowercased()
 			let recipient = try await makeUser(app, username: "dedupe-\(suffix)")
 			let recipientID = try recipient.requireID()
-			try await fireNotification(app, type: .twarrtMention(55), info: "dedupe me", recipients: [recipientID])
+			try await fireNotification(app, type: .forumMention(55), info: "dedupe me", recipients: [recipientID])
 
 			let entry = try await NotificationLogEntry.query(on: app.db)
 				.join(NotificationRecipient.self, on: \NotificationLogEntry.$id == \NotificationRecipient.$notification.$id)
@@ -219,7 +219,7 @@ class NotificationLogTests: XCTestCase, SwiftarrBaseTest {
 			try await staleEntry.save(on: app.db)
 			try await NotificationRecipient(notificationID: try staleEntry.requireID(), userID: recipientID).save(on: app.db)
 
-			try await fireNotification(app, type: .twarrtMention(9), info: "still works", recipients: [recipientID])
+			try await fireNotification(app, type: .forumMention(9), info: "still works", recipients: [recipientID])
 
 			let token = try await makeToken(app, for: recipient)
 			try await bootCache(app)

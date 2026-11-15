@@ -7,7 +7,7 @@ enum ReportType: String, Codable {
 	case forum
 	/// An individual `ForumPost`.
 	case forumPost
-	/// An individual `Twarrt`.
+	/// An individual `Twarrt`. The stream is gone; this case stays so stored report and moderator-action rows still decode.
 	case twarrt
 	/// A `User`, although it specifically refers to the user's profile fields.
 	case userProfile

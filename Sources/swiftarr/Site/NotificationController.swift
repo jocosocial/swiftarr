@@ -28,8 +28,6 @@ struct NotificationLogRowContext: Encodable {
 			return "/privateevent/\(contentID)"
 		case .followedEventStarting:
 			return "/events/\(contentID)"
-		case .alertwordTwarrt, .twarrtMention:
-			return "/tweets/\(contentID)"
 		case .alertwordPost, .forumMention, .moderatorForumMention, .twitarrTeamForumMention, .communitySupportForumMention:
 			return "/forum/containingpost/\(contentID)"
 		case .announcement, .microKaraokeSongReady, .incomingPhoneCall, .phoneCallAnswered, .phoneCallEnded:

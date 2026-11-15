@@ -387,3 +387,6 @@ additive; the existing count fields are unchanged and are now derived from these
 - `CategoryData` gains an optional `defaultSort` field to direct clients to the preferred thread sort for a category. Splashdot sets this to `create` (newest threads first).
 - Category thread requests now honor `CategoryData.defaultSort` when `sort` is omitted. Supported values are `create`, `title`, `update`, and `event`.
 - Event categories advertise `defaultSort: "event"`. Explicit `sort=event` requests for non-event categories return HTTP 400.
+- Removed `GET /api/v3/mod/twarrt/:id` and `POST /api/v3/mod/twarrt/:id/setstate/:state`. The twarrt stream is gone. `ReportType` still includes `twarrt` so existing report rows decode.
+- `SwiftarrFeature` no longer includes `tweets`. A stored `"tweets"` value in `disabledFeatures` decodes as `"unknown"`.
+- Removed notification types `twarrtMention` and `alertwordTwarrt` from `SocketNotificationData`. `UserNotificationData` still includes `twarrtMentionCount` and `newTwarrtMentionCount`.

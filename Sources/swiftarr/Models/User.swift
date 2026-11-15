@@ -144,12 +144,6 @@ final class User: Model, @unchecked Sendable {
 	/// The child `UserRole`s this user has. Roles generally give a user the ability to perform new actions or view more information.
 	@Children(for: \.$user) var roles: [UserRole]
 
-	/// The child `Twarrt`s created by the user.
-	@Children(for: \.$author) var twarrts: [Twarrt]
-
-	/// The sibling `Twarrt`s "liked" by the user.
-	@Siblings(through: TwarrtLikes.self, from: \.$user, to: \.$twarrt) var twarrtLikes: [Twarrt]
-
 	/// The child `Forum`s created by the user.
 	@Children(for: \.$creator) var forums: [Forum]
 

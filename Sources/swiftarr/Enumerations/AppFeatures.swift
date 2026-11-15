@@ -34,7 +34,6 @@ enum SwiftarrClientApp: String, Content, CaseIterable {
 /// Functional areas of the Swiftarr API. Used in the `SettingsAppFeaturePair` struct.
 /// Clients: Be sure to anticipate server values not listed here.
 public enum SwiftarrFeature: String, Content, CaseIterable, Sendable {
-	case tweets  // Tweet stream; perma-disabled
 	case forums
 	case seamail  // Chat. Includes group chats and 'open' chats that allow membership changes after creation
 	case schedule
@@ -62,6 +61,7 @@ public enum SwiftarrFeature: String, Content, CaseIterable, Sendable {
 	case unknown
 
 	/// When creating ourselves from a decoder, return .unknown for cases we're not prepared to handle.
+	/// A stored `"tweets"` value (the removed twarrt stream) decodes as `.unknown`.
 	public init(from decoder: Decoder) throws {
 		guard let rawValue = try? decoder.singleValueContainer().decode(String.self) else {
 			self = .unknown
