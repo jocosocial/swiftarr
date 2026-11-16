@@ -1,7 +1,7 @@
 import Fluent
 import FluentSQL
 
-/// Converts legacy forum likes into reaction rows. The three emoji literals are already in canonical form.
+/// Converts legacy forum likes into reaction rows using the legacy routes' exact emoji strings.
 struct MigratePostLikesToReactions: AsyncMigration {
 	/// Original like times are unknown, so every converted row shares one date; each post's chip gets one
 	/// group identifier, derived deterministically because a volatile function is re-evaluated for every row.

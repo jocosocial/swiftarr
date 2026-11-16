@@ -2193,23 +2193,16 @@ public struct PostReactionData: Content {
 }
 
 extension PostReactionData {
-	/// Ignores presentation selectors while retaining skin tones, joiners, and other identity-bearing scalars.
-	static func canonicalReaction(_ value: String) -> String {
-		let text = value.replacingOccurrences(of: "\u{FE0E}", with: "")
-			.replacingOccurrences(of: "\u{FE0F}", with: "").precomposedStringWithCanonicalMapping
-		// Preserve the existing legacy heart token for older clients.
-		return text == "❤" ? "❤️" : text
-	}
-
-	/// Returns a trimmed reaction identifier after enforcing a small, URL-independent payload.
+	/// Validates a small, URL-independent payload while preserving the exact submitted reaction.
 	func validatedReaction() throws -> String {
-		let result = reaction.trimmingCharacters(in: .whitespacesAndNewlines)
+		let result = reaction
 		guard !result.isEmpty, result.count <= 64, !result.contains(where: { $0.isWhitespace }) else {
 			throw Abort(.badRequest, reason: "reaction must contain 1 through 64 non-whitespace characters")
 		}
-		let canonical = Self.canonicalReaction(result)
-		guard !canonical.isEmpty else { throw Abort(.badRequest, reason: "reaction must not contain only presentation selectors") }
-		return canonical
+		guard result.unicodeScalars.contains(where: { $0.value != 0xFE0E && $0.value != 0xFE0F }) else {
+			throw Abort(.badRequest, reason: "reaction must not contain only presentation selectors")
+		}
+		return result
 	}
 }
 

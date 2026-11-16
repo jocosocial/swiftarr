@@ -388,5 +388,9 @@ additive; the existing count fields are unchanged and are now derived from these
 - Category thread requests now honor `CategoryData.defaultSort` when `sort` is omitted. Supported values are `create`, `title`, `update`, and `event`.
 - Event categories advertise `defaultSort: "event"`. Explicit `sort=event` requests for non-event categories return HTTP 400.
 - Forum and Fez posts support grouped Unicode and custom emoji reactions. JSON-body reaction endpoints coexist with legacy forum LikeType routes, response fields, and bodyless unreact requests. Fez WebSockets publish reaction updates.
-- Reaction identifiers normalize presentation variants while preserving skin tones and joined sequences. Private-event and Seamail reaction endpoints use their respective feature gates.
+- Private-event and Seamail reaction endpoints use their respective feature gates.
 - Clients can fetch the shared custom emoji catalog (tokens, labels, server-relative image URLs, and a `secret` flag) from `GET /api/v3/client/emoji`. The catalog lists every custom emoji, so clients need no list of their own; entries marked `secret` should be rendered but left out of pickers.
+
+## Nov 15, 2026
+
+- Reactions preserve the exact submitted Unicode sequence, including presentation selectors; presentation variants are distinct reactions.

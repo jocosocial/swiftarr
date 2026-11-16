@@ -19,7 +19,7 @@ final class ForumPostReaction: Model, @unchecked Sendable {
 		self.$user.id = userID
 		self.$post.id = try post.requireID()
 		self.$post.value = post
-		self.emoji = PostReactionData.canonicalReaction(emoji)
+		self.emoji = emoji
 		self.createdAt = Date()
 		self.groupOrder = UUID()
 	}

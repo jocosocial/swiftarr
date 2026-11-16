@@ -99,20 +99,6 @@ document.addEventListener("click", async event => {
 
 let reactionCatalogPromise;
 let reactionLabelDatabase;
-let reactionLabelAliasesPromise;
-
-/** Match normalized stored tokens to the dataset's presentation-qualified emoji labels. */
-async function reactionLabelAlias(value) {
-	const key = text => text.replace(/[\uFE0E\uFE0F]/g, "").normalize("NFC");
-	if (!reactionLabelAliasesPromise) {
-		reactionLabelAliasesPromise = fetch("/public/emoji/data.json").then(response => {
-			if (!response.ok) throw new Error("Could not load emoji labels");
-			return response.json();
-		}).then(emojis => new Map(emojis.map(emoji => [key(emoji.emoji), emoji.annotation])))
-			.catch(error => { reactionLabelAliasesPromise = undefined; throw error; });
-	}
-	return (await reactionLabelAliasesPromise).get(key(value));
-}
 
 /** Resolve chip labels using the same standard dataset and server custom catalog as the picker. */
 async function labelReactionChips(root) {
@@ -128,7 +114,7 @@ async function labelReactionChips(root) {
 			const value = chip.dataset.reaction;
 			const customEmoji = custom.find(emoji => emoji.reaction === value);
 			const emoji = customEmoji ? null : await reactionLabelDatabase.getEmojiByUnicodeOrName(value);
-			const label = customEmoji?.name ?? emoji?.annotation ?? await reactionLabelAlias(value) ?? value;
+			const label = customEmoji?.name ?? emoji?.annotation ?? value;
 			chip.title = label;
 			chip.setAttribute("aria-label", "Reaction: " + label);
 			const ownPost = chip.closest(".reaction-chip-disabled");

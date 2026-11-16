@@ -87,8 +87,8 @@ final class ForumReactionCompatibilityTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
-	/// A chip keeps its position after its first contributor leaves, and presentation variants share its identity.
-	func testCanonicalReactionRetainsGroupPosition() async throws {
+	/// A chip keeps its position after its first contributor leaves; presentation variants remain distinct.
+	func testExactReactionRetainsGroupPosition() async throws {
 		try await withApp { app in
 			let fixture = try await makeFixture(app, suffix: UUID().uuidString.prefix(8).lowercased())
 			var tokens = [fixture.token]
@@ -116,11 +116,11 @@ final class ForumReactionCompatibilityTests: XCTestCase, SwiftarrBaseTest {
 			try await mutate(0, "react", "👍", expected: ["👍"])
 			try await mutate(1, "react", "❤️", expected: ["👍", "❤️"])
 			try await mutate(2, "react", "👍", expected: ["👍", "❤️"])
-			try await mutate(0, "unreact", "👍\u{FE0F}", expected: ["👍", "❤️"])
-			try await mutate(1, "react", "👍\u{FE0F}", expected: ["👍", "❤️"])
-			try await mutate(1, "react", "👍", expected: ["👍", "❤️"])
+			try await mutate(0, "unreact", "👍", expected: ["👍", "❤️"])
+			try await mutate(1, "react", "👍\u{FE0F}", expected: ["👍", "❤️", "👍\u{FE0F}"])
+			try await mutate(1, "react", "👍", expected: ["👍", "❤️", "👍\u{FE0F}"])
 			let stored = try await ForumPostReaction.query(on: app.db).filter(\.$post.$id == postID).all()
-			XCTAssertEqual(stored.count, 3)
+			XCTAssertEqual(stored.count, 4)
 			XCTAssertEqual(Set(stored.filter { $0.emoji == "👍" }.map(\.groupOrder)).count, 1)
 		}
 	}
