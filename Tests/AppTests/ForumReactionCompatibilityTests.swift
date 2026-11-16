@@ -87,6 +87,77 @@ final class ForumReactionCompatibilityTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
+	/// Sends a reaction through the JSON API and returns the response status.
+	private static func reactStatus(_ app: Application, fixture: Fixture, emoji: String) async throws -> HTTPStatus {
+		var status = HTTPStatus.ok
+		try await app.test(
+			.POST,
+			"/api/v3/forum/post/\(try fixture.post.requireID())/react",
+			headers: HTTPHeaders([("Authorization", "Bearer \(fixture.token)")]),
+			beforeRequest: { req async throws in
+				req.headers.contentType = .json
+				req.body = ByteBuffer(data: try JSONEncoder().encode(PostReactionData(reaction: emoji)))
+			},
+			afterResponse: { res async throws in status = res.status }
+		)
+		return status
+	}
+
+	/// Free text is refused, and a user is held to ten distinct reactions on one post.
+	func testReactRejectsTextAndCapsDistinctReactionsPerUser() async throws {
+		try await withApp { app in
+			let fixture = try await makeFixture(app, suffix: UUID().uuidString.prefix(8).lowercased())
+			let postID = try fixture.post.requireID()
+			let rejected = try await Self.reactStatus(app, fixture: fixture, emoji: "lol")
+			XCTAssertEqual(rejected, .badRequest)
+
+			let ten = ["👍", "❤️", "😆", "🎉", "👀", "✅", "🔥", "🙏", ":arr:", ":mbta:"]
+			for emoji in ten {
+				let status = try await Self.reactStatus(app, fixture: fixture, emoji: emoji)
+				XCTAssertEqual(status, .ok, emoji)
+			}
+			// The eleventh distinct reaction is refused...
+			let eleventh = try await Self.reactStatus(app, fixture: fixture, emoji: "🚀")
+			XCTAssertEqual(eleventh, .badRequest)
+			// ...but repeating one the user already has is still the idempotent no-op it always was.
+			let repeated = try await Self.reactStatus(app, fixture: fixture, emoji: "👍")
+			XCTAssertEqual(repeated, .ok)
+			let stored = try await ForumPostReaction.query(on: app.db).filter(\.$post.$id == postID).count()
+			XCTAssertEqual(stored, 10)
+
+			// Removing one makes room again.
+			try await app.test(.POST, "/api/v3/forum/post/\(postID)/unreact", headers: bearer(fixture.token),
+				beforeRequest: { req async throws in
+					req.headers.contentType = .json
+					req.body = ByteBuffer(data: try JSONEncoder().encode(PostReactionData(reaction: "👍")))
+				}, afterResponse: { res async throws in XCTAssertEqual(res.status, .ok) })
+			let afterRemoval = try await Self.reactStatus(app, fixture: fixture, emoji: "🚀")
+			XCTAssertEqual(afterRemoval, .ok)
+		}
+	}
+
+	/// Concurrent writes cannot exceed the cap or turn an idempotent repeat into a unique-key error.
+	func testConcurrentReactionWrites() async throws {
+		try await withApp { app in
+			let fixture = try await makeFixture(app, suffix: UUID().uuidString.prefix(8).lowercased())
+			for emoji in ["👍", "❤️", "😆", "🎉", "👀", "✅", "🔥", "🙏", ":arr:"] {
+				let status = try await Self.reactStatus(app, fixture: fixture, emoji: emoji)
+				XCTAssertEqual(status, .ok)
+			}
+			async let first = Self.reactStatus(app, fixture: fixture, emoji: "🚀")
+			async let second = Self.reactStatus(app, fixture: fixture, emoji: "🌊")
+			let statuses = try await [first, second]
+			XCTAssertEqual(statuses.filter { $0 == .ok }.count, 1)
+			XCTAssertEqual(statuses.filter { $0 == .badRequest }.count, 1)
+			let count = try await ForumPostReaction.query(on: app.db).filter(\.$post.$id == fixture.post.requireID()).count()
+			XCTAssertEqual(count, 10)
+			async let repeatOne = Self.reactStatus(app, fixture: fixture, emoji: "👍")
+			async let repeatTwo = Self.reactStatus(app, fixture: fixture, emoji: "👍")
+			let repeated = try await [repeatOne, repeatTwo]
+			XCTAssertTrue(repeated.allSatisfy { $0 == .ok })
+		}
+	}
+
 	/// A chip keeps its position after its first contributor leaves; presentation variants remain distinct.
 	func testExactReactionRetainsGroupPosition() async throws {
 		try await withApp { app in

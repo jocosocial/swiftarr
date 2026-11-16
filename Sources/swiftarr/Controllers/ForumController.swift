@@ -1438,6 +1438,9 @@ struct ForumController: APIRouteCollection {
 	/// `POST /api/v3/forum/post/ID/react`
 	///
 	/// Adds the `PostReactionData` reaction to the post. This endpoint is idempotent.
+	///
+	/// - Throws: 400 error if the reaction is not a single emoji or a custom emoji token, or if the user already has
+	///   `PostReactionData.maxReactionsPerUserPerPost` different reactions on the post. 403 error if user is the post's creator.
 	func postReactHandler(_ req: Request) async throws -> PostData {
 		let emoji = try req.content.decode(PostReactionData.self).validatedReaction()
 		return try await postReactHandler(req, emoji: emoji, replaceLegacyReaction: false)
@@ -1458,6 +1461,7 @@ struct ForumController: APIRouteCollection {
 		return try await postUnreactHandler(req, emoji: ReactionData.legacyEmoji(for: .love))
 	}
 
+	/// Adds a reaction under a post lock, optionally replacing the user's legacy LikeType reaction atomically.
 	private func postReactHandler(_ req: Request, emoji: String, replaceLegacyReaction: Bool) async throws -> PostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// get post and forum
@@ -1470,27 +1474,30 @@ struct ForumController: APIRouteCollection {
 		guard post.$author.id != cacheUser.userID else {
 			throw Abort(.forbidden, reason: "user cannot react to own post")
 		}
-		// Old clients can hold one LikeType reaction: replace only those three emoji,
-		// retaining any unrelated reactions submitted by modern clients.
-		if replaceLegacyReaction {
-			let legacyEmojis = ReactionData.allLegacy
-			let oldLegacyReacts = try await ForumPostReaction.query(on: req.db)
-				.filter(\.$user.$id == cacheUser.userID)
+		try await req.db.transaction { db in
+			try await PostReactionWriter.lock(postID: post.requireID(), table: ForumPost.schema, on: db)
+			// Old clients can hold one LikeType reaction: replace only those three emoji,
+			// retaining any unrelated reactions submitted by modern clients.
+			if replaceLegacyReaction {
+				let legacyEmojis = ReactionData.allLegacy
+				let oldLegacyReacts = try await ForumPostReaction.query(on: db)
+					.filter(\.$user.$id == cacheUser.userID)
+					.filter(\.$post.$id == post.requireID())
+					.all()
+					.filter { legacyEmojis.contains($0.emoji) && $0.emoji != emoji }
+				for reaction in oldLegacyReacts {
+					try await reaction.delete(on: db)
+				}
+			}
+			let ownReactions = try await ForumPostReaction.query(on: db).filter(\.$user.$id == cacheUser.userID)
 				.filter(\.$post.$id == post.requireID())
 				.all()
-				.filter { legacyEmojis.contains($0.emoji) && $0.emoji != emoji }
-			for reaction in oldLegacyReacts {
-				try await reaction.delete(on: req.db)
+			if !ownReactions.contains(where: { $0.emoji == emoji }) {
+				try PostReactionData.guardBelowReactionLimit(ownReactions.count)
+				let reaction = try ForumPostReaction(cacheUser.userID, post, emoji: emoji)
+				try await reaction.adoptChipPosition(on: db)
+				try await reaction.save(on: db)
 			}
-		}
-		if try await ForumPostReaction.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
-			.filter(\.$post.$id == post.requireID())
-			.filter(\.$emoji == emoji)
-			.first() == nil
-		{
-			let reaction = try ForumPostReaction(cacheUser.userID, post, emoji: emoji)
-			try await reaction.adoptChipPosition(on: req.db)
-			try await reaction.save(on: req.db)
 		}
 		let postDataArray = try await buildPostData([post], userID: cacheUser.userID, on: req)
 		return postDataArray[0]
@@ -1502,12 +1509,13 @@ struct ForumController: APIRouteCollection {
 	/// legacy LikeType reaction for compatibility with older clients.
 	func postUnreactHandler(_ req: Request) async throws -> PostData {
 		if (req.body.data?.readableBytes ?? 0) > 0 {
-			let emoji = try req.content.decode(PostReactionData.self).validatedReaction()
+			let emoji = try req.content.decode(PostReactionData.self).validatedReaction(requireAllowed: false)
 			return try await postUnreactHandler(req, emoji: emoji)
 		}
 		return try await postUnreactHandler(req, emoji: nil)
 	}
 
+	/// Removes a specific reaction or all legacy reactions while serializing against additions to the post.
 	private func postUnreactHandler(_ req: Request, emoji: String?) async throws -> PostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		// get post and forum
@@ -1520,17 +1528,20 @@ struct ForumController: APIRouteCollection {
 		guard post.$author.id != cacheUser.userID else {
 			throw Abort(.forbidden, reason: "user cannot react to own post")
 		}
-		let postReactions = try await ForumPostReaction.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
-			.filter(\.$post.$id == post.requireID())
-			.all()
-		let reactionsToRemove = postReactions.filter { reaction in
-			if let emoji {
-				return reaction.emoji == emoji
+		try await req.db.transaction { db in
+			try await PostReactionWriter.lock(postID: post.requireID(), table: ForumPost.schema, on: db)
+			let postReactions = try await ForumPostReaction.query(on: db).filter(\.$user.$id == cacheUser.userID)
+				.filter(\.$post.$id == post.requireID())
+				.all()
+			let reactionsToRemove = postReactions.filter { reaction in
+				if let emoji {
+					return reaction.emoji == emoji
+				}
+				return ReactionData.allLegacy.contains(reaction.emoji)
 			}
-			return ReactionData.allLegacy.contains(reaction.emoji)
-		}
-		for reaction in reactionsToRemove {
-			try await reaction.delete(on: req.db)
+			for reaction in reactionsToRemove {
+				try await reaction.delete(on: db)
+			}
 		}
 		let postDataArray = try await buildPostData([post], userID: cacheUser.userID, on: req)
 		return postDataArray[0]

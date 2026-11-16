@@ -393,4 +393,5 @@ additive; the existing count fields are unchanged and are now derived from these
 
 ## Nov 15, 2026
 
+- New reactions must be a single emoji or a known custom emoji token (400 otherwise), with a maximum of 10 distinct reactions per user per post. Removing reactions remains unrestricted by these checks.
 - Reactions preserve the exact submitted Unicode sequence, including presentation selectors; presentation variants are distinct reactions.

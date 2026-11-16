@@ -2193,8 +2193,38 @@ public struct PostReactionData: Content {
 }
 
 extension PostReactionData {
+	/// The most distinct reactions one user may put on a single post. Enough to be expressive; small
+	/// enough that one person cannot bury a post under a wall of chips.
+	static let maxReactionsPerUserPerPost = 10
+
+	/// Whether the value is something a reaction may be: a custom emoji token from the catalog, or exactly one emoji.
+	///
+	/// Reactions are shown beside other people's posts and cannot be reported like a post can, so free text is refused.
+	/// "One emoji" means a single grapheme cluster built only from emoji scalars and the joiners, modifiers, keycap
+	/// mark and flag tags that combine them. That admits skin tones, family sequences, flags and keycaps, while
+	/// letters, bare digits and punctuation (which Unicode also classes as emoji, for keycaps) are not enough alone.
+	static func isAllowedReaction(_ value: String) -> Bool {
+		if ReactionEmojiCatalog.tokens.contains(value) {
+			return true
+		}
+		guard value.count == 1 else { return false }
+		let scalars = value.unicodeScalars
+		let allEmojiParts = scalars.allSatisfy { scalar in
+			scalar.properties.isEmoji || scalar.properties.isEmojiModifier
+				|| scalar.value == 0x200D  // zero-width joiner
+				|| scalar.value == 0x20E3  // combining enclosing keycap
+				|| scalar.value == 0xFE0E || scalar.value == 0xFE0F  // presentation selectors
+				|| (0xE0020...0xE007F).contains(scalar.value)  // tag characters in subdivision flags
+		}
+		let hasPictograph = scalars.contains { ($0.properties.isEmoji && $0.value > 0x7F) || $0.value == 0x20E3 }
+		return allEmojiParts && hasPictograph
+	}
+
 	/// Validates a small, URL-independent payload while preserving the exact submitted reaction.
-	func validatedReaction() throws -> String {
+	///
+	/// - Parameter requireAllowed: When true, the value must also pass `isAllowedReaction(_:)`. Adding a reaction
+	///   requires it. Removing one does not, so a reaction stored before this rule existed can still be taken off.
+	func validatedReaction(requireAllowed: Bool = true) throws -> String {
 		let result = reaction
 		guard !result.isEmpty, result.count <= 64, !result.contains(where: { $0.isWhitespace }) else {
 			throw Abort(.badRequest, reason: "reaction must contain 1 through 64 non-whitespace characters")
@@ -2202,7 +2232,17 @@ extension PostReactionData {
 		guard result.unicodeScalars.contains(where: { $0.value != 0xFE0E && $0.value != 0xFE0F }) else {
 			throw Abort(.badRequest, reason: "reaction must not contain only presentation selectors")
 		}
+		guard !requireAllowed || Self.isAllowedReaction(result) else {
+			throw Abort(.badRequest, reason: "reaction must be a single emoji or a custom emoji such as :arr:")
+		}
 		return result
+	}
+
+	/// Refuses a new reaction once the user already has the maximum number of distinct reactions on the post.
+	static func guardBelowReactionLimit(_ existingCount: Int) throws {
+		guard existingCount < maxReactionsPerUserPerPost else {
+			throw Abort(.badRequest, reason: "You can add at most \(maxReactionsPerUserPerPost) different reactions to a post")
+		}
 	}
 }
 

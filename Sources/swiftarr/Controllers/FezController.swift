@@ -767,6 +767,9 @@ struct FezController: APIRouteCollection {
 	/// `POST /api/v3/fez/post/ID/react`
 	///
 	/// Adds the `PostReactionData` reaction to a chat post. This endpoint is idempotent.
+	///
+	/// - Throws: 400 error if the reaction is not a single emoji or a custom emoji token, or if the user already has
+	///   `PostReactionData.maxReactionsPerUserPerPost` different reactions on the post. 403 error if user is the post's creator.
 	func fezPostReactHandler(_ req: Request) async throws -> FezPostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		let reactionValue = try req.content.decode(PostReactionData.self).validatedReaction()
@@ -779,15 +782,18 @@ struct FezController: APIRouteCollection {
 		guard post.$author.id != cacheUser.userID else {
 			throw Abort(.forbidden, reason: "user cannot react to own post")
 		}
-		if try await FezPostReaction.query(on: req.db)
-			.filter(\.$user.$id == cacheUser.userID)
-			.filter(\.$post.$id == post.requireID())
-			.filter(\.$emoji == reactionValue)
-			.first() == nil
-		{
-			let reaction = try FezPostReaction(cacheUser.userID, post, emoji: reactionValue)
-			try await reaction.adoptChipPosition(on: req.db)
-			try await reaction.save(on: req.db)
+		try await req.db.transaction { db in
+			try await PostReactionWriter.lock(postID: post.requireID(), table: FezPost.schema, on: db)
+			let ownReactions = try await FezPostReaction.query(on: db)
+				.filter(\.$user.$id == cacheUser.userID)
+				.filter(\.$post.$id == post.requireID())
+				.all()
+			if !ownReactions.contains(where: { $0.emoji == reactionValue }) {
+				try PostReactionData.guardBelowReactionLimit(ownReactions.count)
+				let reaction = try FezPostReaction(cacheUser.userID, post, emoji: reactionValue)
+				try await reaction.adoptChipPosition(on: db)
+				try await reaction.save(on: db)
+			}
 		}
 		let postData = try await buildFezPostData(post, for: cacheUser, on: req)
 		try await forwardReactionChangeToSockets(fez, postData: postData, on: req)
@@ -799,7 +805,7 @@ struct FezController: APIRouteCollection {
 	/// Removes the `PostReactionData` reaction from a chat post. This endpoint is idempotent.
 	func fezPostUnreactHandler(_ req: Request) async throws -> FezPostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let reactionValue = try req.content.decode(PostReactionData.self).validatedReaction()
+		let reactionValue = try req.content.decode(PostReactionData.self).validatedReaction(requireAllowed: false)
 		let post = try await FezPost.findFromParameter(fezPostIDParam, on: req)
 		let fez = try await post.$fez.get(on: req.db)
 		try guardReactionFeature(fez, user: cacheUser)
@@ -809,13 +815,16 @@ struct FezController: APIRouteCollection {
 		guard post.$author.id != cacheUser.userID else {
 			throw Abort(.forbidden, reason: "user cannot react to own post")
 		}
-		if let reaction = try await FezPostReaction.query(on: req.db)
-			.filter(\.$user.$id == cacheUser.userID)
-			.filter(\.$post.$id == post.requireID())
-			.filter(\.$emoji == reactionValue)
-			.first()
-		{
-			try await reaction.delete(on: req.db)
+		try await req.db.transaction { db in
+			try await PostReactionWriter.lock(postID: post.requireID(), table: FezPost.schema, on: db)
+			if let reaction = try await FezPostReaction.query(on: db)
+				.filter(\.$user.$id == cacheUser.userID)
+				.filter(\.$post.$id == post.requireID())
+				.filter(\.$emoji == reactionValue)
+				.first()
+			{
+				try await reaction.delete(on: db)
+			}
 		}
 		let postData = try await buildFezPostData(post, for: cacheUser, on: req)
 		try await forwardReactionChangeToSockets(fez, postData: postData, on: req)

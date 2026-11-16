@@ -20,6 +20,9 @@ enum ReactionEmojiCatalog {
 		AddJocomojiTag.jocomoji.map { entry($0, secret: false) }
 		+ AddJocomojiTag.secretJocomoji.map { entry($0, secret: true) }
 
+	/// Every custom emoji token, for checking that a submitted reaction is one of them.
+	static let tokens = Set(custom.map(\.reaction))
+
 	private static func entry(_ name: String, secret: Bool) -> CustomEmojiData {
 		CustomEmojiData(reaction: ":\(name):", name: labels[name] ?? name.replacingOccurrences(of: "-", with: " "),
 			imageURL: "/img/emoji/small/\(name).png", secret: secret)
