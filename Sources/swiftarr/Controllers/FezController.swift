@@ -806,7 +806,7 @@ struct FezController: APIRouteCollection {
 	/// Removes the `PostReactionData` reaction from a chat post. This endpoint is idempotent.
 	func fezPostUnreactHandler(_ req: Request) async throws -> FezPostData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let reactionValue = try req.content.decode(PostReactionData.self).validatedReaction(requireAllowed: false)
+		let reactionValue = try req.content.decode(PostReactionData.self).validatedReaction()
 		let post = try await FezPost.findFromParameter(fezPostIDParam, on: req)
 		let fez = try await post.$fez.get(on: req.db)
 		try guardReactionFeature(fez, user: cacheUser)

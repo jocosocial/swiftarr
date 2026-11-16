@@ -110,6 +110,11 @@ final class ForumReactionCompatibilityTests: XCTestCase, SwiftarrBaseTest {
 			let postID = try fixture.post.requireID()
 			let rejected = try await Self.reactStatus(app, fixture: fixture, emoji: "lol")
 			XCTAssertEqual(rejected, .badRequest)
+			try await app.test(.POST, "/api/v3/forum/post/\(postID)/unreact", headers: bearer(fixture.token),
+				beforeRequest: { req async throws in
+					req.headers.contentType = .json
+					req.body = ByteBuffer(data: try JSONEncoder().encode(PostReactionData(reaction: "lol")))
+				}, afterResponse: { res async throws in XCTAssertEqual(res.status, .badRequest) })
 
 			let ten = ["👍", "❤️", "😆", "🎉", "👀", "✅", "🔥", "🙏", ":arr:", ":mbta:"]
 			for emoji in ten {

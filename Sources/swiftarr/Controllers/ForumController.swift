@@ -1512,7 +1512,7 @@ struct ForumController: APIRouteCollection {
 	/// legacy LikeType reaction for compatibility with older clients.
 	func postUnreactHandler(_ req: Request) async throws -> PostData {
 		if (req.body.data?.readableBytes ?? 0) > 0 {
-			let emoji = try req.content.decode(PostReactionData.self).validatedReaction(requireAllowed: false)
+			let emoji = try req.content.decode(PostReactionData.self).validatedReaction()
 			return try await postUnreactHandler(req, emoji: emoji)
 		}
 		return try await postUnreactHandler(req, emoji: nil)

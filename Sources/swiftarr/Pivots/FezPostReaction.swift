@@ -1,4 +1,5 @@
 import Fluent
+import FluentSQL
 import Foundation
 
 /// A reaction pivot between `User` and `FezPost`.
@@ -36,6 +37,7 @@ final class FezPostReaction: Model, @unchecked Sendable {
 }
 
 struct CreateFezPostReactionSchema: AsyncMigration {
+	/// Creates reaction storage and the post lookup index used by snapshot reads and chip positioning.
 	func prepare(on database: Database) async throws {
 		try await database.schema(FezPostReaction.schema)
 			.id()
@@ -47,6 +49,9 @@ struct CreateFezPostReactionSchema: AsyncMigration {
 			.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
 			.field("fezPost", .int, .required, .references("fezposts", "id", onDelete: .cascade))
 			.create()
+		if let sql = database as? SQLDatabase {
+			try await sql.raw("CREATE INDEX idx_fezpost_reactions_post_emoji ON \(ident: FezPostReaction.schema) (\(ident: "fezPost"), emoji)").run()
+		}
 	}
 
 	func revert(on database: Database) async throws {

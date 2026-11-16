@@ -2224,10 +2224,7 @@ extension PostReactionData {
 	}
 
 	/// Validates a small, URL-independent payload while preserving the exact submitted reaction.
-	///
-	/// - Parameter requireAllowed: When true, the value must also pass `isAllowedReaction(_:)`. Adding a reaction
-	///   requires it. Removing one does not, so a reaction stored before this rule existed can still be taken off.
-	func validatedReaction(requireAllowed: Bool = true) throws -> String {
+	func validatedReaction() throws -> String {
 		let result = reaction
 		guard !result.isEmpty, result.count <= 64, !result.contains(where: { $0.isWhitespace }) else {
 			throw Abort(.badRequest, reason: "reaction must contain 1 through 64 non-whitespace characters")
@@ -2235,7 +2232,7 @@ extension PostReactionData {
 		guard result.unicodeScalars.contains(where: { $0.value != 0xFE0E && $0.value != 0xFE0F }) else {
 			throw Abort(.badRequest, reason: "reaction must not contain only presentation selectors")
 		}
-		guard !requireAllowed || Self.isAllowedReaction(result) else {
+		guard Self.isAllowedReaction(result) else {
 			throw Abort(.badRequest, reason: "reaction must be a single emoji or a custom emoji such as :arr:")
 		}
 		return result

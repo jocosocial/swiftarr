@@ -36,12 +36,6 @@ class ContentStructValidationTests: XCTestCase {
 		}
 	}
 
-	func testPostReaction_RemovalAcceptsValuesThatCanNoLongerBeAdded() throws {
-		// A reaction stored before validation existed must still be removable.
-		XCTAssertEqual(try PostReactionData(reaction: "lol").validatedReaction(requireAllowed: false), "lol")
-		XCTAssertThrowsError(try PostReactionData(reaction: "two words").validatedReaction(requireAllowed: false))
-	}
-
 	func testPostReaction_LimitAllowsTenAndRefusesTheEleventh() {
 		XCTAssertEqual(PostReactionData.maxReactionsPerUserPerPost, 10)
 		XCTAssertNoThrow(try PostReactionData.guardBelowReactionLimit(9))

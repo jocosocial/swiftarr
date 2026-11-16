@@ -1,4 +1,5 @@
 import Fluent
+import FluentSQL
 import Foundation
 
 /// A reaction pivot between `User` and `ForumPost`.
@@ -36,6 +37,7 @@ final class ForumPostReaction: Model, @unchecked Sendable {
 }
 
 struct CreateForumPostReactionSchema: AsyncMigration {
+	/// Creates reaction storage and the post lookup index used by snapshot reads and chip positioning.
 	func prepare(on database: Database) async throws {
 		try await database.schema(ForumPostReaction.schema)
 			.id()
@@ -47,6 +49,9 @@ struct CreateForumPostReactionSchema: AsyncMigration {
 			.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
 			.field("forumPost", .int, .required, .references("forumpost", "id", onDelete: .cascade))
 			.create()
+		if let sql = database as? SQLDatabase {
+			try await sql.raw("CREATE INDEX idx_forumpost_reactions_post_emoji ON \(ident: ForumPostReaction.schema) (\(ident: "forumPost"), emoji)").run()
+		}
 	}
 
 	func revert(on database: Database) async throws {
