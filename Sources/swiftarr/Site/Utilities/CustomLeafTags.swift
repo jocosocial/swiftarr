@@ -67,10 +67,12 @@ struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 		"arr", "back-deck-juice", "buffet", "die-ship", "die", "hottub", "joco", "pirate", "ship-front",
 		"ship", "tropical-drink", "wangwang", "zombie",
 	]
+	/// Easter eggs: these render wherever they are typed, but no picker offers them.
+	static let secretJocomoji = ["mbta"]
 
 	static func process(_ str: String) -> String {
 		var string = str
-		for emojiTag in AddJocomojiTag.jocomoji {
+		for emojiTag in AddJocomojiTag.jocomoji + AddJocomojiTag.secretJocomoji {
 			string = string.replacingOccurrences(
 				of: ":\(emojiTag):",
 				with: "<img src=\"/img/emoji/small/\(emojiTag).png\" width=18 height=18>"

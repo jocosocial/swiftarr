@@ -37,7 +37,10 @@ struct ClientController: APIRouteCollection {
 		saBasicAuthGroup.post("alert", use: prometheusAlertHandler)
 	}
 
-	/// Returns public custom reaction tokens, display names, and server-relative image URLs.
+	/// `GET /api/v3/client/emoji`
+	///
+	/// Returns every custom emoji: its token, display name, server-relative image URL, and whether it is secret.
+	/// Secret emoji are included so clients can render them; clients must not list them in pickers.
 	func emojiHandler(_ req: Request) -> [CustomEmojiData] {
 		ReactionEmojiCatalog.custom
 	}

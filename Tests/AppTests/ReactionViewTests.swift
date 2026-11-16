@@ -4,6 +4,25 @@ import XCTVapor
 
 /// Exercises the common reaction partial through Leaf's parameterized template extension.
 final class ReactionViewTests: XCTestCase {
+	/// Clients have no emoji list of their own, so the catalog must name every emoji and mark the secret ones.
+	func testCatalogListsSecretEmojiWithFlag() throws {
+		let catalog = ReactionEmojiCatalog.custom
+		XCTAssertEqual(catalog.count, AddJocomojiTag.jocomoji.count + AddJocomojiTag.secretJocomoji.count)
+		XCTAssertEqual(Set(catalog.map(\.reaction)).count, catalog.count)
+		let arr = try XCTUnwrap(catalog.first { $0.reaction == ":arr:" })
+		XCTAssertFalse(arr.secret)
+		XCTAssertEqual(arr.imageURL, "/img/emoji/small/arr.png")
+		let mbta = try XCTUnwrap(catalog.first { $0.reaction == ":mbta:" })
+		XCTAssertTrue(mbta.secret)
+		// Every image the catalog points at has to exist, or clients render nothing for that emoji.
+		let assets = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+			.deletingLastPathComponent().appendingPathComponent("Sources/swiftarr/Resources/Assets")
+		for emoji in catalog {
+			XCTAssertTrue(FileManager.default.fileExists(atPath: assets.appendingPathComponent(emoji.imageURL).path), emoji.imageURL)
+		}
+		XCTAssertTrue(AddJocomojiTag.process(":mbta:").contains("/img/emoji/small/mbta.png"))
+	}
+
 	/// A single partial must render matching chip state for initial pages and WebSocket fragments.
 	func testSharedReactionTemplate() async throws {
 		let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
