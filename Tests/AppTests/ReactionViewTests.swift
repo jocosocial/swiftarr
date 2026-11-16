@@ -39,7 +39,7 @@ final class ReactionViewTests: XCTestCase {
 		do {
 			app.directory.viewsDirectory = directory.path + "/"
 			try SwiftarrConfigurator(app).configureLeaf(app)
-			struct User: Encodable { let userID: String }
+			struct User: Encodable { let userID: String; let username: String = "reactor<&" }
 			struct Reaction: Encodable { let reaction: String; let users: [User] }
 			struct Post: Encodable { let reactions: [Reaction]; let author: User; let postID: Int }
 			struct Context: Encodable { let post: Post; let viewer: String }
@@ -51,6 +51,10 @@ final class ReactionViewTests: XCTestCase {
 				XCTAssertEqual(html.contains("data-open-reaction-picker"), viewer != "author")
 				XCTAssertEqual(html.contains("reaction-chip-disabled"), viewer == "author")
 				XCTAssertEqual(html.contains("aria-pressed=\"true\""), viewer == "reactor")
+				XCTAssertTrue(html.contains("data-reaction-popover"))
+				XCTAssertTrue(html.contains("data-reaction-user"))
+				XCTAssertTrue(html.contains("@reactor&lt;&amp;"))
+				XCTAssertFalse(html.contains("data-tooltip"))
 			}
 		} catch {
 			try await app.asyncShutdown()

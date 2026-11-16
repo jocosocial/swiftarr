@@ -1,4 +1,4 @@
-import("/js/bootstrap.bundle.js");
+const bootstrapReady = import("/js/bootstrap.bundle.js");
 
 // Make buttons with data-action properties post their actions when tapped.
 for (let btn of document.querySelectorAll('[data-action]')) {
@@ -100,12 +100,52 @@ document.addEventListener("click", async event => {
 let reactionCatalogPromise;
 let reactionLabelDatabase;
 
+/** Builds popover content with text nodes so contributor names cannot become HTML. */
+function reactionPopoverContent(wrapper) {
+	const content = document.createElement("div");
+	const users = document.createElement("ul");
+	users.className = "list-unstyled mb-0 reaction-popover-users";
+	for (const user of wrapper.querySelectorAll("[data-reaction-user]")) {
+		const item = document.createElement("li");
+		item.textContent = user.textContent;
+		users.append(item);
+	}
+	content.append(users);
+	if (wrapper.classList.contains("reaction-chip-disabled")) {
+		const explanation = document.createElement("p");
+		explanation.className = "mt-2 mb-0";
+		explanation.textContent = "You can't react to your own post";
+		content.append(explanation);
+	}
+	return content;
+}
+
+/** Gives initial and live reaction chips the same hover/focus contributor popover. */
+function initializeReactionPopover(chip) {
+	const wrapper = chip.closest("[data-reaction-popover]");
+	if (!wrapper || !chip.isConnected) return;
+	chip.removeAttribute("title");
+	chip.dataset.reactionLabel ??= chip.dataset.reaction;
+	bootstrap.Popover.getOrCreateInstance(wrapper, {
+		trigger: "hover focus", placement: "top", container: "body", html: true,
+		title: () => {
+			const title = document.createElement("span");
+			title.textContent = chip.dataset.reactionLabel;
+			return title;
+		},
+		content: () => reactionPopoverContent(wrapper),
+	});
+}
+
 /** Resolve chip labels using the same standard dataset and server custom catalog as the picker. */
 async function labelReactionChips(root) {
 	const chips = [...root.querySelectorAll("[data-reaction-chip]")];
 	if (root.matches?.("[data-reaction-chip]")) chips.push(root);
 	if (!chips.length) return;
 	try {
+		// Bootstrap is loaded as a module and may not be ready when this script first runs.
+		await bootstrapReady;
+		for (const chip of chips) initializeReactionPopover(chip);
 		const [custom, {default: Database}] = await Promise.all([
 			loadReactionCatalog(), import("/js/emoji-picker-element/database.js"),
 		]);
@@ -115,10 +155,16 @@ async function labelReactionChips(root) {
 			const customEmoji = custom.find(emoji => emoji.reaction === value);
 			const emoji = customEmoji ? null : await reactionLabelDatabase.getEmojiByUnicodeOrName(value);
 			const label = customEmoji?.name ?? emoji?.annotation ?? value;
-			chip.title = label;
-			chip.setAttribute("aria-label", "Reaction: " + label);
-			const ownPost = chip.closest(".reaction-chip-disabled");
-			if (ownPost) ownPost.dataset.tooltip = label + ". You can't react to your own post";
+			if (!chip.isConnected) return;
+			chip.dataset.reactionLabel = label;
+			const wrapper = chip.closest("[data-reaction-popover]");
+			const users = [...wrapper.querySelectorAll("[data-reaction-user]")].map(user => user.textContent);
+			chip.setAttribute("aria-label", "Reaction: " + label + ". " + users.join(", "));
+			const title = document.createElement("span");
+			title.textContent = label;
+			bootstrap.Popover.getInstance(wrapper)?.setContent({
+				".popover-header": title, ".popover-body": () => reactionPopoverContent(wrapper),
+			});
 		}));
 	} catch { /* Keep reactions usable when label data is temporarily unavailable. */ }
 }
@@ -127,6 +173,12 @@ labelReactionChips(document);
 // Chat replaces reaction fragments without a page reload.
 new MutationObserver(records => {
 	for (const record of records) {
+		// A live fragment can replace a chip while its popover is open; dispose the detached anchor's overlay.
+		for (const node of record.removedNodes) {
+			if (node.nodeType !== Node.ELEMENT_NODE || node.isConnected) continue;
+			if (node.matches("[data-reaction-popover]")) globalThis.bootstrap?.Popover.getInstance(node)?.dispose();
+			for (const wrapper of node.querySelectorAll("[data-reaction-popover]")) globalThis.bootstrap?.Popover.getInstance(wrapper)?.dispose();
+		}
 		for (const node of record.addedNodes) {
 			if (node.nodeType !== Node.ELEMENT_NODE) continue;
 			labelReactionChips(node);
