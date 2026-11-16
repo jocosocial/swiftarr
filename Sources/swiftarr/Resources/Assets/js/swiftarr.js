@@ -267,8 +267,9 @@ function initializeReactionControls(controls) {
 						emojiPicker.shadowRoot.append(tabStyle);
 					}
 					// The catalog includes secret emoji so they can be rendered and labelled; the picker must not offer them.
+					// Leave the subgroup unnamed so the library omits its heading, matching the built-in categories.
 					emojiPicker.customEmoji = emojis.filter(emoji => !emoji.secret).map(emoji => ({name: emoji.name,
-						shortcodes: [emoji.reaction.slice(1, -1)], url: emoji.imageURL, category: "Twit-arr"}));
+						shortcodes: [emoji.reaction.slice(1, -1)], url: emoji.imageURL}));
 					emojiPicker.addEventListener("emoji-click", event => {
 						submitReaction(event.detail.unicode ?? ":" + event.detail.emoji.shortcodes[0] + ":");
 					});
