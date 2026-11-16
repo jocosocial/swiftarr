@@ -46,6 +46,18 @@ import Vapor
 
 // MARK: - Tags for Styling Posts, Announcements, Daily Themes
 
+/// Tests membership in the user list of a grouped reaction for site chip highlighting.
+struct ReactionHasUserTag: LeafTag {
+	/// Checks whether the current user appears in a reaction's user list.
+	func render(_ ctx: LeafContext) throws -> LeafData {
+		try ctx.requireParameterCount(2)
+		guard let users = ctx.parameters[0].array, let userID = ctx.parameters[1].string else {
+			return .bool(false)
+		}
+		return .bool(users.contains { $0.dictionary?["userID"]?.string == userID })
+	}
+}
+
 /// Runs the element sanitizer on the given string, and then converts Jocomoji (specific string tags with the form :tag:)
 /// into inline images. Generally, use this tag for user text that isn't posts.
 ///
@@ -55,10 +67,12 @@ struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 		"arr", "back-deck-juice", "buffet", "die-ship", "die", "hottub", "joco", "pirate", "ship-front",
 		"ship", "tropical-drink", "wangwang", "zombie",
 	]
+	/// Easter eggs: these render wherever they are typed, but no picker offers them.
+	static let secretJocomoji = ["mbta"]
 
 	static func process(_ str: String) -> String {
 		var string = str
-		for emojiTag in AddJocomojiTag.jocomoji {
+		for emojiTag in AddJocomojiTag.jocomoji + AddJocomojiTag.secretJocomoji {
 			string = string.replacingOccurrences(
 				of: ":\(emojiTag):",
 				with: "<img src=\"/img/emoji/small/\(emojiTag).png\" width=18 height=18>"

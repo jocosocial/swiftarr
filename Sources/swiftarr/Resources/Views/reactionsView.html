@@ -1,0 +1,11 @@
+<div class="row mt-1" aria-label="Post reactions" data-reaction-container>
+	<div class="col">
+		#import("reactionItems")
+		#if(countOrZero(import("reactionCount")) > 0 && import("viewer") != import("reactionAuthor")):
+			<span class="reaction-controls reaction-inline-controls" data-reaction-controls data-reaction-label="+" data-reactpath="#import("reactionPrefix")/#import("reactionPostID")/react">
+				<button type="button" class="btn btn-sm btn-outline-primary reaction-picker-toggle" data-open-reaction-picker aria-label="Add a reaction"
+					aria-haspopup="dialog" aria-expanded="false" #if(import("viewer") == nil):disabled#endif>+</button>
+			</span>
+		#endif
+	</div>
+</div>

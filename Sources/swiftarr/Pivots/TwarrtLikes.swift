@@ -1,6 +1,18 @@
 import Fluent
 import Foundation
 
+// Dormant Twarrt models and this legacy LikeType dependency are tracked for removal in
+// https://github.com/jocosocial/swiftarr/issues/643.
+/// The type of "like" reaction that a user can apply to a `Twarrt`.
+enum LikeType: String, Codable {
+	/// A 😆.
+	case laugh
+	/// A 👍.
+	case like
+	/// A ❤️.
+	case love
+}
+
 /// A `Pivot` holding a sibllings relation between `User` and `Twarrt`.
 
 final class TwarrtLikes: Model, @unchecked Sendable {

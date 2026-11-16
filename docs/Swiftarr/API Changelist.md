@@ -326,7 +326,7 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Oct 19, 2026
 
 - Added a Client Apps index (mostly for printed posters):
-  - Open: `GET /api/v3/admin/clients` `GET /api/v3/admin/clients/:client_app_id` 
+  - Open: `GET /api/v3/admin/clients` `GET /api/v3/admin/clients/:client_app_id`
   - TT and above: `POST /api/v3/admin/clients/create`, `POST /api/v3/admin/clients/:client_app_id/update`, `DELETE /api/v3/admin/clients/:client_app_id/update` `DELETE /api/v3/admin/clients/:client_app_id`.
 
 ## Oct 20, 2026
@@ -387,3 +387,12 @@ additive; the existing count fields are unchanged and are now derived from these
 - `CategoryData` gains an optional `defaultSort` field to direct clients to the preferred thread sort for a category. Splashdot sets this to `create` (newest threads first).
 - Category thread requests now honor `CategoryData.defaultSort` when `sort` is omitted. Supported values are `create`, `title`, `update`, and `event`.
 - Event categories advertise `defaultSort: "event"`. Explicit `sort=event` requests for non-event categories return HTTP 400.
+- Forum and Fez posts support grouped Unicode and custom emoji reactions. JSON-body reaction endpoints coexist with legacy forum LikeType routes, response fields, and bodyless unreact requests. Fez WebSockets publish reaction updates.
+- Private-event and Seamail reaction endpoints use their respective feature gates.
+- Clients can fetch the shared custom emoji catalog (tokens, labels, server-relative image URLs, and a `secret` flag) from `GET /api/v3/client/emoji`. The catalog lists every custom emoji, so clients need no list of their own; entries marked `secret` should be rendered but left out of pickers.
+
+## Nov 15, 2026
+
+- Forum and chat post responses and chat reaction WebSocket updates include `reactionRevision`. Clients should ignore reaction snapshots with a lower revision than the one already displayed.
+- Reaction additions and removals must name a single emoji or a known custom emoji token (400 otherwise). A user may add at most 10 distinct reactions per post.
+- Reactions preserve the exact submitted Unicode sequence, including presentation selectors; presentation variants are distinct reactions.

@@ -1,0 +1,60 @@
+import Fluent
+import FluentSQL
+import Foundation
+
+/// A reaction pivot between `User` and `ForumPost`.
+final class ForumPostReaction: Model, @unchecked Sendable {
+	static let schema = "forumpost+reactions"
+
+	@ID(key: .id) var id: UUID?
+	@Field(key: "emoji") var emoji: String
+	@Field(key: "createdAt") var createdAt: Date
+	@Field(key: "groupOrder") var groupOrder: UUID
+
+	@Parent(key: "user") var user: User
+	@Parent(key: "forumPost") var post: ForumPost
+
+	init() {}
+
+	init(_ userID: UUID, _ post: ForumPost, emoji: String) throws {
+		self.$user.id = userID
+		self.$post.id = try post.requireID()
+		self.$post.value = post
+		self.emoji = emoji
+		self.createdAt = Date()
+		self.groupOrder = UUID()
+	}
+
+	/// Takes the date and group identifier of the post's existing chip for this emoji, if there is one.
+	/// Every contributor shares them, so the chip keeps its position even after its first user leaves.
+	func adoptChipPosition(on db: Database) async throws {
+		if let existing = try await ForumPostReaction.query(on: db)
+			.filter(\.$post.$id == $post.id).filter(\.$emoji == emoji).first() {
+			createdAt = existing.createdAt
+			groupOrder = existing.groupOrder
+		}
+	}
+}
+
+struct CreateForumPostReactionSchema: AsyncMigration {
+	/// Creates reaction storage and the post lookup index used by snapshot reads and chip positioning.
+	func prepare(on database: Database) async throws {
+		try await database.schema(ForumPostReaction.schema)
+			.id()
+			.unique(on: "user", "forumPost", "emoji")
+			.field("emoji", .string, .required)
+			// Every contributor to a chip shares its first reaction's date and group identifier, which fix the chip's position.
+			.field("createdAt", .datetime, .required)
+			.field("groupOrder", .uuid, .required)
+			.field("user", .uuid, .required, .references("user", "id", onDelete: .cascade))
+			.field("forumPost", .int, .required, .references("forumpost", "id", onDelete: .cascade))
+			.create()
+		if let sql = database as? SQLDatabase {
+			try await sql.raw("CREATE INDEX idx_forumpost_reactions_post_emoji ON \(ident: ForumPostReaction.schema) (\(ident: "forumPost"), emoji)").run()
+		}
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema(ForumPostReaction.schema).delete()
+	}
+}

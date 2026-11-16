@@ -1,0 +1,11 @@
+<span class="reaction-chip-wrapper #if(import("viewer") == import("reactionAuthor")):reaction-chip-disabled#endif" data-reaction-popover
+#if(import("viewer") == nil || import("viewer") == import("reactionAuthor")):tabindex="0"#endif>
+<button type="button" class="btn btn-sm btn-outline-primary reaction-chip me-1 #if(reactionHasUser(reaction.users, import("viewer"))):active#endif"
+aria-pressed="#if(reactionHasUser(reaction.users, import("viewer"))):true#else:false#endif" aria-label="Toggle reaction #(reaction.reaction)"
+data-reaction-chip data-reaction="#(reaction.reaction)" data-reactpath="#import("reactionPrefix")/#import("reactionPostID")/react"
+data-unreactpath="#import("reactionPrefix")/#import("reactionPostID")/unreact" #if(import("viewer") == nil || import("viewer") == import("reactionAuthor")):disabled#endif>
+<span class="reaction-chip-emoji" aria-hidden="true">#addJocomoji(reaction.reaction)</span>
+<span class="reaction-chip-count">#(count(reaction.users))</span>
+</button>
+<span hidden data-reaction-users aria-hidden="true">#for(user in reaction.users):<span data-reaction-user>@#(user.username)</span>#endfor</span>
+</span>

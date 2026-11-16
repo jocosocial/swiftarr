@@ -653,7 +653,7 @@ struct ServerRollupData: Content {
 				.forum: Forum.query(on: db).count(),
 				.forumPost: ForumPost.query(on: db).count(),
 				.forumPostEdit: ForumPostEdit.query(on: db).count(),
-				.forumPostLike: PostLikes.query(on: db).filter(\.$likeType != nil).count(),
+				.forumPostLike: ForumPostReaction.query(on: db).count(),
 
 				// Games and Karaoke
 				.karaokePlayedSong: KaraokePlayedSong.query(on: db).count(),
@@ -981,4 +981,3 @@ extension UserSaveRestoreData {
 		}
 	}
 }
-

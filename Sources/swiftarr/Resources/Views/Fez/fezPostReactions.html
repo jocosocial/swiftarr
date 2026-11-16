@@ -1,0 +1,10 @@
+#extend("reactionsView"):
+	#export("viewer", userID)
+	#export("reactionAuthor", author.userID)
+	#export("reactionPostID", postID)
+	#export("reactionPrefix", reactionActionPrefix)
+	#export("reactionCount", reactions)
+	#export("reactionItems"):
+	#for(reaction in reactions):#extend("reactionChip")#endfor
+	#endexport
+#endextend

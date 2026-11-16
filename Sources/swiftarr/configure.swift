@@ -529,6 +529,7 @@ struct SwiftarrConfigurator {
 
 		// Custom Leaf tags
 		app.leaf.tags["addJocomoji"] = AddJocomojiTag()
+		app.leaf.tags["reactionHasUser"] = ReactionHasUserTag()
 		app.leaf.tags["formatTwarrtText"] = try FormatPostTextTag(.twarrt)
 		app.leaf.tags["formatPostText"] = try FormatPostTextTag(.forumpost)
 		app.leaf.tags["formatFezText"] = try FormatPostTextTag(.fez)
@@ -690,6 +691,10 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreateCommunitySupportReportSchema(), to: .psql)
 		app.migrations.add(CreateCommunitySupportActionSchema(), to: .psql)
 		app.migrations.add(AddCategoryDefaultSortSchema(), to: .psql)
+		app.migrations.add(CreateForumPostReactionSchema(), to: .psql)
+		app.migrations.add(CreateFezPostReactionSchema(), to: .psql)
+		app.migrations.add(MigratePostLikesToReactions(), to: .psql)
+		app.migrations.add(AddReactionRevisions(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 

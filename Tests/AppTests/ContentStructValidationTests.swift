@@ -14,6 +14,40 @@ class ContentStructValidationTests: XCTestCase {
 
 	private let validFirstPost = #"{"text":"hello","images":[],"postAsModerator":false,"postAsTwitarrTeam":false}"#
 
+	// MARK: - PostReactionData
+
+	func testPostReaction_AcceptsUnicodeAndCustomEmoji() throws {
+		XCTAssertEqual(try PostReactionData(reaction: "👍").validatedReaction(), "👍")
+		XCTAssertThrowsError(try PostReactionData(reaction: " 👍 ").validatedReaction())
+		XCTAssertEqual(try PostReactionData(reaction: ":arr:").validatedReaction(), ":arr:")
+	}
+
+	func testPostReaction_AcceptsEveryKindOfSingleEmoji() throws {
+		// Skin tone, ZWJ family, flag, subdivision flag, keycap, text-default emoji, and a secret custom emoji.
+		for emoji in ["👍🏽", "👨‍👩‍👧‍👦", "🇨🇦", "🏴󠁧󠁢󠁳󠁣󠁴󠁿", "1️⃣", "#️⃣", "☺️", "©️", ":mbta:"] {
+			XCTAssertNoThrow(try PostReactionData(reaction: emoji).validatedReaction(), emoji)
+		}
+	}
+
+	func testPostReaction_RejectsAnythingThatIsNotOneEmoji() {
+		// Words, an unknown token, bare digits and punctuation (emoji only as keycaps), two emoji, emoji with text.
+		for value in ["lol", "nope!", ":notanemoji:", "1", "#", "*", "42", "👍👍", "👍a", "a👍", "<b>", "é"] {
+			XCTAssertThrowsError(try PostReactionData(reaction: value).validatedReaction(), value)
+		}
+	}
+
+	func testPostReaction_LimitAllowsTenAndRefusesTheEleventh() {
+		XCTAssertEqual(PostReactionData.maxReactionsPerUserPerPost, 10)
+		XCTAssertNoThrow(try PostReactionData.guardBelowReactionLimit(9))
+		XCTAssertThrowsError(try PostReactionData.guardBelowReactionLimit(10))
+	}
+
+	func testPostReaction_RejectsBlankWhitespaceAndOversizedValues() {
+		XCTAssertThrowsError(try PostReactionData(reaction: " \n ").validatedReaction())
+		XCTAssertThrowsError(try PostReactionData(reaction: "two words").validatedReaction())
+		XCTAssertThrowsError(try PostReactionData(reaction: String(repeating: "a", count: 65)).validatedReaction())
+	}
+
 	// MARK: - ForumCreateData
 
 	func testForumCreate_Valid() throws {

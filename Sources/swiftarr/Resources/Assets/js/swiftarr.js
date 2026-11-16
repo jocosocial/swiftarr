@@ -1,4 +1,4 @@
-import("/js/bootstrap.bundle.js");
+const bootstrapReady = import("/js/bootstrap.bundle.js");
 
 // Make buttons with data-action properties post their actions when tapped.
 for (let btn of document.querySelectorAll('[data-action]')) {
@@ -63,6 +63,321 @@ for (let btn of document.querySelectorAll('[data-action]')) {
 	}
 }
 
+// Delegate chip clicks so live chat reaction updates work without registering new listeners.
+document.addEventListener("click", async event => {
+	const chip = event.target.closest("[data-reaction-chip]");
+	if (!chip) return;
+	event.stopPropagation();
+	if (chip.disabled) return;
+	const post = chip.closest("[data-postid]");
+	if (post.dataset.reactionPending === "true") return;
+	post.dataset.reactionPending = "true";
+	const buttons = [...post.querySelectorAll("[data-reaction-chip], .reaction-picker-toggle")];
+	const previousStates = buttons.map(button => button.disabled);
+	for (let button of buttons) button.disabled = true;
+	const path = chip.getAttribute("aria-pressed") === "true" ? chip.dataset.unreactpath : chip.dataset.reactpath;
+	try {
+		const response = await fetch(path, {
+			method: "POST",
+			headers: {"Content-Type": "application/json"},
+			body: JSON.stringify({reaction: chip.dataset.reaction}),
+		});
+		if (!response.ok) {
+			const error = await response.json();
+			throw new Error(error.reason);
+		}
+		location.reload();
+	}
+	catch (error) {
+		alert(error.message ?? "Could not update reaction");
+	}
+	finally {
+		delete post.dataset.reactionPending;
+		buttons.forEach((button, index) => button.disabled = previousStates[index]);
+	}
+});
+
+let reactionCatalogPromise;
+let reactionLabelDatabase;
+
+/** Builds popover content with text nodes so contributor names cannot become HTML. */
+function reactionPopoverContent(wrapper) {
+	const content = document.createElement("div");
+	const users = document.createElement("ul");
+	users.className = "list-unstyled mb-0 reaction-popover-users";
+	for (const user of wrapper.querySelectorAll("[data-reaction-user]")) {
+		const item = document.createElement("li");
+		item.textContent = user.textContent;
+		users.append(item);
+	}
+	content.append(users);
+	if (wrapper.classList.contains("reaction-chip-disabled")) {
+		const explanation = document.createElement("p");
+		explanation.className = "mt-2 mb-0";
+		explanation.textContent = "You can't react to your own post";
+		content.append(explanation);
+	}
+	return content;
+}
+
+/** Gives initial and live reaction chips the same hover/focus contributor popover. */
+function initializeReactionPopover(chip) {
+	const wrapper = chip.closest("[data-reaction-popover]");
+	if (!wrapper || !chip.isConnected) return;
+	chip.removeAttribute("title");
+	chip.dataset.reactionLabel ??= chip.dataset.reaction;
+	bootstrap.Popover.getOrCreateInstance(wrapper, {
+		trigger: "hover focus", placement: "top", container: "body", html: true,
+		title: () => {
+			const title = document.createElement("span");
+			title.textContent = chip.dataset.reactionLabel;
+			return title;
+		},
+		content: () => reactionPopoverContent(wrapper),
+	});
+}
+
+/** Resolve chip labels using the same standard dataset and server custom catalog as the picker. */
+async function labelReactionChips(root) {
+	const chips = [...root.querySelectorAll("[data-reaction-chip]")];
+	if (root.matches?.("[data-reaction-chip]")) chips.push(root);
+	if (!chips.length) return;
+	try {
+		// Bootstrap is loaded as a module and may not be ready when this script first runs.
+		await bootstrapReady;
+		for (const chip of chips) initializeReactionPopover(chip);
+		const [custom, {default: Database}] = await Promise.all([
+			loadReactionCatalog(), import("/js/emoji-picker-element/database.js"),
+		]);
+		reactionLabelDatabase ??= new Database({dataSource: "/public/emoji/data.json"});
+		await Promise.all(chips.map(async chip => {
+			const value = chip.dataset.reaction;
+			const customEmoji = custom.find(emoji => emoji.reaction === value);
+			const emoji = customEmoji ? null : await reactionLabelDatabase.getEmojiByUnicodeOrName(value);
+			const label = customEmoji?.name ?? emoji?.annotation ?? value;
+			if (!chip.isConnected) return;
+			chip.dataset.reactionLabel = label;
+			const wrapper = chip.closest("[data-reaction-popover]");
+			const users = [...wrapper.querySelectorAll("[data-reaction-user]")].map(user => user.textContent);
+			chip.setAttribute("aria-label", "Reaction: " + label + ". " + users.join(", "));
+			const title = document.createElement("span");
+			title.textContent = label;
+			bootstrap.Popover.getInstance(wrapper)?.setContent({
+				".popover-header": title, ".popover-body": () => reactionPopoverContent(wrapper),
+			});
+		}));
+	} catch { /* Keep reactions usable when label data is temporarily unavailable. */ }
+}
+
+labelReactionChips(document);
+// Chat replaces reaction fragments without a page reload.
+new MutationObserver(records => {
+	for (const record of records) {
+		// A live fragment can replace a chip while its popover is open; dispose the detached anchor's overlay.
+		for (const node of record.removedNodes) {
+			if (node.nodeType !== Node.ELEMENT_NODE || node.isConnected) continue;
+			if (node.matches("[data-reaction-popover]")) globalThis.bootstrap?.Popover.getInstance(node)?.dispose();
+			for (const wrapper of node.querySelectorAll("[data-reaction-popover]")) globalThis.bootstrap?.Popover.getInstance(wrapper)?.dispose();
+		}
+		for (const node of record.addedNodes) {
+			if (node.nodeType !== Node.ELEMENT_NODE) continue;
+			labelReactionChips(node);
+			if (node.matches("[data-reaction-controls]")) initializeReactionControls(node);
+			for (const controls of node.querySelectorAll("[data-reaction-controls]")) initializeReactionControls(controls);
+		}
+	}
+}).observe(document.body, {childList: true, subtree: true});
+
+/** Load the server catalog and local picker module once, retrying after a failed load. */
+function loadReactionCatalog() {
+	if (!reactionCatalogPromise) {
+		reactionCatalogPromise = Promise.all([import("/js/emoji-picker-element/picker.js"),
+			fetch("/api/v3/client/emoji").then(response => {
+				if (!response.ok) throw new Error("Could not load custom emoji");
+				return response.json();
+			})]).then(([, emojis]) => emojis).catch(error => {
+			reactionCatalogPromise = undefined;
+			throw error;
+		});
+	}
+	return reactionCatalogPromise;
+}
+
+// Build a searchable picker on initial load or when a live chat fragment first needs one.
+function initializeReactionControls(controls) {
+	if (controls.dataset.reactionReady === "true") return;
+	controls.dataset.reactionReady = "true";
+	const disabled = controls.querySelector("[data-open-reaction-picker]")?.disabled ?? false;
+	const picker = document.createElement("div");
+	picker.className = "reaction-control dropdown";
+
+	const menu = document.createElement("div");
+	menu.className = "reaction-picker-menu";
+	menu.setAttribute("role", "dialog");
+	menu.setAttribute("aria-label", "Choose a reaction");
+
+	let emojiPicker;
+	let activeButton;
+	let isSubmitting = false;
+
+	// Submit a choice immediately for the action that opened the picker.
+	async function submitReaction(reaction) {
+		const post = controls.closest("[data-postid]");
+		if (isSubmitting || !activeButton || post.dataset.reactionPending === "true") {
+			return;
+		}
+		const path = activeButton.dataset.reactionpath;
+		isSubmitting = true;
+		post.dataset.reactionPending = "true";
+		closeReactionPicker(picker);
+		const buttons = [...post.querySelectorAll("[data-reaction-chip], .reaction-picker-toggle")];
+		const previousStates = buttons.map(button => button.disabled);
+		for (let button of buttons) {
+			button.disabled = true;
+		}
+		try {
+			const response = await fetch(path, {
+				method: "POST",
+				headers: {"Content-Type": "application/json"},
+				body: JSON.stringify({reaction}),
+			});
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.reason);
+			}
+			location.reload();
+		}
+		catch (error) {
+			alert(error.message ?? "Could not update reaction");
+		}
+		finally {
+			isSubmitting = false;
+			delete post.dataset.reactionPending;
+			buttons.forEach((button, index) => button.disabled = previousStates[index]);
+			activeButton.focus();
+		}
+	}
+
+	picker.append(menu);
+
+	const reactButton = document.createElement("button");
+	reactButton.type = "button";
+	reactButton.className = "btn btn-outline-primary reaction-action reaction-picker-toggle";
+	reactButton.textContent = controls.dataset.reactionLabel ?? "React";
+	if (controls.dataset.reactionLabel === "+") {
+		const glyph = document.createElement("span");
+		glyph.className = "reaction-add-glyph";
+		glyph.textContent = "+";
+		glyph.setAttribute("aria-hidden", "true");
+		reactButton.replaceChildren(glyph);
+	}
+	reactButton.disabled = disabled;
+	reactButton.setAttribute("aria-label", "Add a reaction");
+	reactButton.dataset.reactionAction = "react";
+	reactButton.dataset.reactionpath = controls.dataset.reactpath;
+	reactButton.setAttribute("aria-expanded", "false");
+	reactButton.setAttribute("aria-haspopup", "dialog");
+	picker.append(reactButton);
+	reactButton.addEventListener("click", async event => {
+		event.stopPropagation();
+		if (isSubmitting || controls.closest("[data-postid]").dataset.reactionPending === "true") return;
+		const isOpen = !menu.classList.contains("show");
+		closeReactionPicker(picker);
+		activeButton = reactButton;
+		if (isOpen) {
+			try {
+				const emojis = await loadReactionCatalog();
+				if (isSubmitting || controls.closest("[data-postid]").dataset.reactionPending === "true" || !reactButton.isConnected) return;
+				if (!emojiPicker) {
+					emojiPicker = document.createElement("emoji-picker");
+					emojiPicker.dataSource = "/public/emoji/data.json";
+					emojiPicker.i18n = {
+						...emojiPicker.i18n,
+						categories: {...emojiPicker.i18n.categories, custom: "Twit-arr"},
+					};
+					// The stock indicator assumes all category tabs fit equally across the width.
+					// Use a scrollable tab strip with an indicator attached to each selected tab.
+					const layoutStyle = document.createElement("style");
+					layoutStyle.textContent = `
+						.nav { display: flex; overflow-x: auto; overscroll-behavior-x: contain; }
+						.nav-button { flex: 0 0 auto; border-bottom: 3px solid transparent; }
+						.nav-button[aria-selected="true"] { border-bottom-color: var(--indicator-color); }
+						.indicator-wrapper { display: none; }
+						.tabpanel { overflow-x: hidden; }
+						.emoji-menu { grid-template-columns: repeat(auto-fit, var(--total-emoji-size)); }
+					`;
+					emojiPicker.shadowRoot.append(layoutStyle);
+					const arrEmoji = emojis.find(emoji => emoji.reaction === ":arr:");
+					if (arrEmoji) {
+						// The library exposes category labels, but no category icon option.
+						// Style the custom tab inside its shadow root without modifying vendor code.
+						const tabStyle = document.createElement("style");
+						tabStyle.textContent = `.nav-button[data-group-id="-1"] .nav-emoji {
+							font-size: 0;
+							background: center / var(--category-emoji-size) no-repeat url(${JSON.stringify(arrEmoji.imageURL)});
+						}`;
+						emojiPicker.shadowRoot.append(tabStyle);
+					}
+					// The catalog includes secret emoji so they can be rendered and labelled; the picker must not offer them.
+					// Leave the subgroup unnamed so the library omits its heading, matching the built-in categories.
+					emojiPicker.customEmoji = emojis.filter(emoji => !emoji.secret).map(emoji => ({name: emoji.name,
+						shortcodes: [emoji.reaction.slice(1, -1)], url: emoji.imageURL}));
+					emojiPicker.addEventListener("emoji-click", event => {
+						submitReaction(event.detail.unicode ?? ":" + event.detail.emoji.shortcodes[0] + ":");
+					});
+					menu.append(emojiPicker);
+				}
+			} catch (error) { alert(error.message); return; }
+			menu.classList.add("show");
+			// Keep the popup inside the viewport even when the + chip is near either edge.
+			menu.style.left = "0px";
+			menu.style.right = "auto";
+			const bounds = menu.getBoundingClientRect();
+			menu.style.left = Math.max(8 - bounds.left, Math.min(0, window.innerWidth - 8 - bounds.right)) + "px";
+			reactButton.setAttribute("aria-expanded", "true");
+			emojiPicker.shadowRoot?.querySelector("input")?.focus();
+		}
+	});
+
+	controls.replaceChildren(picker);
+
+	menu.addEventListener("keydown", event => {
+		if (event.key === "Escape") {
+			event.preventDefault();
+			closeReactionPicker(picker);
+			activeButton?.focus();
+		}
+	});
+}
+
+for (let controls of document.querySelectorAll("[data-reaction-controls]")) {
+	initializeReactionControls(controls);
+}
+
+// WebSocket fragments contain a usable + button before their picker has been initialized.
+document.addEventListener("click", event => {
+	const button = event.target.closest("[data-open-reaction-picker]");
+	if (!button || button.disabled) return;
+	const controls = button.closest("[data-reaction-controls]");
+	if (controls.closest("[data-postid]").dataset.reactionPending === "true") return;
+	initializeReactionControls(controls);
+	controls.querySelector(".reaction-picker-toggle").click();
+});
+
+function closeReactionPicker(picker) {
+	const menu = picker.querySelector(".reaction-picker-menu");
+	menu?.classList.remove("show");
+	for (let button of picker.querySelectorAll(".reaction-picker-toggle")) {
+		button.setAttribute("aria-expanded", "false");
+	}
+}
+
+document.addEventListener("click", event => {
+	const openPicker = document.querySelector(".reaction-picker-menu.show")?.closest(".reaction-control");
+	if (openPicker && !openPicker.contains(event.target)) {
+		closeReactionPicker(openPicker);
+	}
+}, true);
 // Updates button state for buttons that perform a data-action
 function setActionButtonsState(tappedButton, state, isRadioButton) {
 	if (!tappedButton) { return }
@@ -252,14 +567,20 @@ async function deleteAction() {
 }
 
 // Make every post expand when first clicked, showing the previously hidden action bar.
-for (let posElement of document.querySelectorAll('.has-action-bar')) {
-	posElement.addEventListener("click", toggleActionBar);
-}
-function toggleActionBar() {
-	let actionBar = event.currentTarget.querySelector('[data-label="actionbar"]');
+document.addEventListener("click", event => {
+	const post = event.target.closest(".has-action-bar");
+	if (post) toggleActionBar(event, post);
+});
+/** Toggles actions for initial posts and posts inserted by the live message stream. */
+function toggleActionBar(event, post) {
+	// Action controls keep the bar open while their clicks can still reach Bootstrap's modal handlers.
+	if (event.target.closest('[data-label="actionbar"], [data-reaction-chip], [data-reaction-controls], .reaction-chip-disabled')) {
+		return;
+	}
+	let actionBar = post.querySelector('[data-label="actionbar"]');
 	if (actionBar && !actionBar.classList.contains("show")) {
 		var bsCollapse = new bootstrap.Collapse(actionBar, { toggle: false }).show();
-		updateLikeCounts(event.currentTarget);
+		updateLikeCounts(post);
 	}
 	else if (actionBar && actionBar.classList.contains("show")) {
 		var bsCollapse = new bootstrap.Collapse(actionBar, { toggle: false }).hide();

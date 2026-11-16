@@ -21,6 +21,7 @@ struct ClientController: APIRouteCollection {
 		// open access endpoints
 		clientRoutes.get("health", use: healthHandler)
 		clientRoutes.get("settings", use: settingsHandler)
+		clientRoutes.get("emoji", use: emojiHandler)
 
 		// endpoints available only when logged in
 		let tokenAuthGroup = clientRoutes.tokenRoutes()
@@ -34,6 +35,14 @@ struct ClientController: APIRouteCollection {
 		let saBasicAuthGroup = clientRoutes.addServiceAccountBasicAuthRequirement()
 		saBasicAuthGroup.get("metrics", use: prometheusMetricsSource)
 		saBasicAuthGroup.post("alert", use: prometheusAlertHandler)
+	}
+
+	/// `GET /api/v3/client/emoji`
+	///
+	/// Returns every custom emoji: its token, display name, server-relative image URL, and whether it is secret.
+	/// Secret emoji are included so clients can render them; clients must not list them in pickers.
+	func emojiHandler(_ req: Request) -> [CustomEmojiData] {
+		ReactionEmojiCatalog.custom
 	}
 
 	// MARK: - tokenAuthGroup Handlers (logged in)
