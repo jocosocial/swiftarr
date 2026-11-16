@@ -711,7 +711,8 @@ struct ForumController: APIRouteCollection {
 		}
 		// get bookmark state and grouped reactions
 		let postLikes = try await PostLikes.query(on: req.db).filter(\.$post.$id == post.requireID()).all()
-		let reactions = try await PostReactionBuilder.forum(postIDs: [post.requireID()], on: req)[post.requireID()] ?? []
+		let snapshot = try await PostReactionBuilder.forum(postIDs: [post.requireID()], on: req)[post.requireID()] ?? .init()
+		let reactions = snapshot.reactions
 		var isFavorite = false
 		for postLike in postLikes {
 			if postLike.isFavorite && postLike.$user.id == cacheUser.userID {
@@ -731,6 +732,7 @@ struct ForumController: APIRouteCollection {
 		postDetailData.likes = ReactionData.users(in: reactions, for: .like)
 		postDetailData.loves = ReactionData.users(in: reactions, for: .love)
 		postDetailData.reactions = reactions
+		postDetailData.reactionRevision = snapshot.revision
 		return postDetailData
 	}
 
@@ -1498,6 +1500,7 @@ struct ForumController: APIRouteCollection {
 				try await reaction.adoptChipPosition(on: db)
 				try await reaction.save(on: db)
 			}
+			try await PostReactionWriter.advance(postID: post.requireID(), table: ForumPost.schema, on: db)
 		}
 		let postDataArray = try await buildPostData([post], userID: cacheUser.userID, on: req)
 		return postDataArray[0]
@@ -1542,6 +1545,7 @@ struct ForumController: APIRouteCollection {
 			for reaction in reactionsToRemove {
 				try await reaction.delete(on: db)
 			}
+			try await PostReactionWriter.advance(postID: post.requireID(), table: ForumPost.schema, on: db)
 		}
 		let postDataArray = try await buildPostData([post], userID: cacheUser.userID, on: req)
 		return postDataArray[0]
@@ -1990,7 +1994,8 @@ extension ForumController {
 			let postID = try post.requireID()
 			let author = try req.userCache.getHeader(post.$author.id)
 			let bookmarked = assumeBookmarked ?? userLikeDict[postID]?.isFavorite ?? false
-			let reactions = postReactionMap[postID] ?? []
+			let snapshot = postReactionMap[postID] ?? .init()
+			let reactions = snapshot.reactions
 			let userLike = ReactionData.legacyLikeType(in: reactions, for: userID)
 			let likeCount = ReactionData.legacyLikeCount(in: reactions)
 			return try PostData(
@@ -1999,7 +2004,8 @@ extension ForumController {
 				bookmarked: bookmarked,
 				userLike: userLike,
 				likeCount: likeCount,
-				reactions: reactions
+				reactions: reactions,
+				reactionRevision: snapshot.revision
 			)
 		}
 		return postDataArray

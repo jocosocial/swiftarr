@@ -136,6 +136,31 @@ final class ForumReactionCompatibilityTests: XCTestCase, SwiftarrBaseTest {
 		}
 	}
 
+	/// Removing the last reaction retains its newer revision in mutation and detail responses.
+	func testEmptyReactionSnapshotKeepsRevision() async throws {
+		try await withApp { app in
+			let fixture = try await makeFixture(app, suffix: UUID().uuidString.prefix(8).lowercased())
+			let postID = try fixture.post.requireID()
+			for (action, revision) in [("react", 1), ("unreact", 2)] {
+				try await app.test(.POST, "/api/v3/forum/post/\(postID)/\(action)", headers: bearer(fixture.token),
+					beforeRequest: { req async throws in
+						req.headers.contentType = .json
+						req.body = ByteBuffer(data: try JSONEncoder().encode(PostReactionData(reaction: "👍")))
+					}, afterResponse: { res async throws in
+						XCTAssertEqual(res.status, .ok)
+						let data = try res.content.decode(PostData.self)
+						XCTAssertEqual(data.reactionRevision, revision)
+						XCTAssertEqual(data.reactions.count, action == "react" ? 1 : 0)
+					})
+			}
+			try await app.test(.GET, "/api/v3/forum/post/\(postID)", headers: bearer(fixture.token)) { res async throws in
+				let data = try res.content.decode(PostDetailData.self)
+				XCTAssertEqual(data.reactionRevision, 2)
+				XCTAssertTrue(data.reactions.isEmpty)
+			}
+		}
+	}
+
 	/// Concurrent writes cannot exceed the cap or turn an idempotent repeat into a unique-key error.
 	func testConcurrentReactionWrites() async throws {
 		try await withApp { app in
@@ -174,7 +199,9 @@ final class ForumReactionCompatibilityTests: XCTestCase, SwiftarrBaseTest {
 			try await app.initializeUserCache(app)
 			let postID = try fixture.post.requireID()
 			/// Sends one mutation and checks the complete resulting chip order.
+			var revision = 0
 			func mutate(_ user: Int, _ action: String, _ emoji: String, expected: [String]) async throws {
+				revision += 1
 				try await app.test(.POST, "/api/v3/forum/post/\(postID)/\(action)", headers: bearer(tokens[user]),
 					beforeRequest: { req async throws in
 						req.headers.contentType = .json
@@ -182,6 +209,7 @@ final class ForumReactionCompatibilityTests: XCTestCase, SwiftarrBaseTest {
 					}, afterResponse: { res async throws in
 						XCTAssertEqual(res.status, .ok)
 						XCTAssertEqual(try res.content.decode(PostData.self).reactions.map(\.reaction), expected)
+						XCTAssertEqual(try res.content.decode(PostData.self).reactionRevision, revision)
 					})
 			}
 			try await mutate(0, "react", "👍", expected: ["👍"])

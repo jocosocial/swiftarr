@@ -794,6 +794,7 @@ struct FezController: APIRouteCollection {
 				try await reaction.adoptChipPosition(on: db)
 				try await reaction.save(on: db)
 			}
+			try await PostReactionWriter.advance(postID: post.requireID(), table: FezPost.schema, on: db)
 		}
 		let postData = try await buildFezPostData(post, for: cacheUser, on: req)
 		try await forwardReactionChangeToSockets(fez, postData: postData, on: req)
@@ -825,6 +826,7 @@ struct FezController: APIRouteCollection {
 			{
 				try await reaction.delete(on: db)
 			}
+			try await PostReactionWriter.advance(postID: post.requireID(), table: FezPost.schema, on: db)
 		}
 		let postData = try await buildFezPostData(post, for: cacheUser, on: req)
 		try await forwardReactionChangeToSockets(fez, postData: postData, on: req)
@@ -1211,7 +1213,7 @@ struct FezController: APIRouteCollection {
 				!(socketOwner.getBlocks().contains(postData.author.userID)
 					|| socketOwner.getMutes().contains(postData.author.userID))
 			else { continue }
-			var payload = SocketFezReactionData(postID: postData.postID, reactions: postData.reactions)
+			var payload = SocketFezReactionData(postID: postData.postID, reactions: postData.reactions, reactionRevision: postData.reactionRevision)
 			if userSocket.htmlOutput {
 				struct ReactionFragmentContext: Encodable {
 					var reactions: [ReactionData]
@@ -1726,11 +1728,12 @@ extension FezController {
 
 	/// Builds one chat post response with all current reactions.
 	private func buildFezPostData(_ post: FezPost, for user: UserCacheData, on req: Request) async throws -> FezPostData {
-		let reactionData = try await PostReactionBuilder.fez(postIDs: [post.requireID()], on: req)[post.requireID()] ?? []
+		let reactionData = try await PostReactionBuilder.fez(postIDs: [post.requireID()], on: req)[post.requireID()] ?? .init()
 		return try FezPostData(
 			post: post,
 			author: req.userCache.getHeader(post.$author.id),
-			reactions: reactionData,
+			reactions: reactionData.reactions,
+			reactionRevision: reactionData.revision,
 			overrideQuarantine: user.accessLevel.hasAccess(.moderator)
 		)
 	}
@@ -1766,11 +1769,12 @@ extension FezController {
 		let postReactionMap = try await PostReactionBuilder.fez(postIDs: postIDs, on: req)
 		let postDatas = try posts.map { post in
 			let postID = try post.requireID()
-			let reactionData = postReactionMap[postID] ?? []
+			let reactionData = postReactionMap[postID] ?? .init()
 			return try FezPostData(
 				post: post,
 				author: req.userCache.getHeader(post.$author.id),
-				reactions: reactionData,
+				reactions: reactionData.reactions,
+				reactionRevision: reactionData.revision,
 				overrideQuarantine: user.accessLevel.hasAccess(.moderator)
 			)
 		}

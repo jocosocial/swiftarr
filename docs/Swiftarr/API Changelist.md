@@ -393,5 +393,6 @@ additive; the existing count fields are unchanged and are now derived from these
 
 ## Nov 15, 2026
 
+- Forum and chat post responses and chat reaction WebSocket updates include `reactionRevision`. Clients should ignore reaction snapshots with a lower revision than the one already displayed.
 - New reactions must be a single emoji or a known custom emoji token (400 otherwise), with a maximum of 10 distinct reactions per user per post. Removing reactions remains unrestricted by these checks.
 - Reactions preserve the exact submitted Unicode sequence, including presentation selectors; presentation variants are distinct reactions.

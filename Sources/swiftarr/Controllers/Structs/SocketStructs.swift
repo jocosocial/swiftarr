@@ -25,6 +25,8 @@ struct SocketFezPostData: Content {
 	var text: String
 	/// Grouped emoji reactions attached to this post.
 	var reactions: [ReactionData]
+	/// Revision corresponding to the grouped reactions.
+	var reactionRevision: Int = 0
 	/// When the post was made.
 	var timestamp: Date
 	/// An optional image that may be attached to the post.
@@ -40,6 +42,7 @@ extension SocketFezPostData {
 		self.author = post.author
 		self.text = post.text
 		self.reactions = post.reactions
+		self.reactionRevision = post.reactionRevision
 		self.timestamp = post.timestamp
 		self.image = post.image
 	}
@@ -62,6 +65,8 @@ struct SocketFezReactionData: Content {
 	var postID: Int
 	/// The complete, grouped reaction state for that post.
 	var reactions: [ReactionData]
+	/// Revision corresponding to the grouped reactions.
+	var reactionRevision: Int = 0
 	/// Rendered reaction badge fragment for website clients.
 	var html: String? = nil
 }

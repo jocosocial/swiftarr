@@ -1065,10 +1065,12 @@ public struct FezPostData: Content {
 	var image: String?
 	/// Emoji reactions grouped by emoji.
 	var reactions: [ReactionData]
+	/// Monotonic version of this reaction snapshot.
+	var reactionRevision: Int = 0
 }
 
 extension FezPostData {
-	init(post: FezPost, author: UserHeader, reactions: [ReactionData] = [], overrideQuarantine: Bool = false) throws {
+	init(post: FezPost, author: UserHeader, reactions: [ReactionData] = [], reactionRevision: Int = 0, overrideQuarantine: Bool = false) throws {
 		guard author.userID == post.$author.id else {
 			throw Abort(.internalServerError, reason: "Internal server error--Post's author does not match.")
 		}
@@ -1079,6 +1081,7 @@ extension FezPostData {
 		self.timestamp = post.createdAt ?? post.updatedAt ?? Date()
 		self.image = post.moderationStatus.showsContent() || overrideQuarantine ? post.image : nil
 		self.reactions = reactions
+		self.reactionRevision = reactionRevision
 	}
 }
 
@@ -2327,6 +2330,8 @@ public struct PostData: Content {
 	var likeCount: Int
 	/// Emoji reactions grouped by emoji.
 	var reactions: [ReactionData]
+	/// Monotonic version of this reaction snapshot.
+	var reactionRevision: Int = 0
 	/// Whether the post has been pinned to the forum.
 	var isPinned: Bool?
 }
@@ -2339,6 +2344,7 @@ extension PostData {
 		userLike: LikeType? = nil,
 		likeCount: Int = 0,
 		reactions: [ReactionData],
+		reactionRevision: Int = 0,
 		overrideQuarantine: Bool = false
 	) throws {
 		postID = try post.requireID()
@@ -2350,6 +2356,7 @@ extension PostData {
 		self.userLike = userLike
 		self.likeCount = likeCount
 		self.reactions = reactions
+		self.reactionRevision = reactionRevision
 		self.isPinned = post.pinned
 	}
 
@@ -2410,6 +2417,8 @@ public struct PostDetailData: Content {
 	var loves: [UserHeader]
 	/// Emoji reactions grouped by emoji.
 	var reactions: [ReactionData]
+	/// Monotonic version of this reaction snapshot.
+	var reactionRevision: Int = 0
 }
 
 extension PostDetailData {
