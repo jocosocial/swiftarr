@@ -1,5 +1,5 @@
 {
-  "originHash" : "0ec9a052c679c72e6a6283e9d891c694fc56acbbacb84d9e81af70d3f8c6bfec",
+  "originHash" : "50c5a69e6d5e396d7ef64679159ae878bb90a99b2ccda1ff28baba4262d1bf21",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -98,15 +98,6 @@
       "state" : {
         "revision" : "64cc0a5c8dcf4fbd03be73b944f6850c0b82e439",
         "version" : "1.14.3"
-      }
-    },
-    {
-      "identity" : "leaf-markdown",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/jocosocial/leaf-markdown.git",
-      "state" : {
-        "revision" : "30af674c503ab2dd139fa8feb6c634b739e5eb2b",
-        "version" : "4.0.0"
       }
     },
     {
@@ -269,6 +260,15 @@
       "state" : {
         "revision" : "96a2f8a0fa41e9e09af4585e2724c4e825410b91",
         "version" : "1.6.2"
+      }
+    },
+    {
+      "identity" : "swift-markdown",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swiftlang/swift-markdown.git",
+      "state" : {
+        "revision" : "25cb61d3482054b09ae76ca4f281b1bfe7fe5a43",
+        "version" : "0.9.0"
       }
     },
     {

@@ -7,7 +7,7 @@
 
 import Foundation
 import Leaf
-import LeafMarkdown
+import Markdown
 import Vapor
 
 /// This tag should output-sanitize all string values in self, replacing existing values.
@@ -107,7 +107,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 			return LeafData.string("")
 		}
 
-		// Posts starting with the <Markdown> marker are rendered as Markdown via leaf-markdown's
+		// Posts starting with the <Markdown> marker are rendered as Markdown via swift-markdown's
 		// cmark parser. cmark runs in safe mode, so any user-supplied raw HTML is neutralized
 		// rather than passed through, and the tagfilter extension strips unknown tags.
 		// After cmark parses, rewrite the forum's inline syntax (jocomoji, mentions, hashtags)
@@ -117,7 +117,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		// Bare URLs are auto-linked by cmark's autolink extension.
 		if string.hasPrefix("<Markdown>") {
 			let cleaned = Self.stripMarkdownWrapper(string)
-			let html = try MarkdownTag.markdownToHTML(cleaned, options: [])
+			let html = HTMLFormatter.format(cleaned)
 			let styled = Self.applyInlineRewrites(html)
 			return LeafData.string("<div class=\"markdown-body\">\(styled)</div>")
 		}
@@ -472,7 +472,7 @@ struct MarkdownBodyTag: UnsafeUnescapedLeafTag {
 		guard let markdown = ctx.parameters[0].string else {
 			return LeafData.string("")
 		}
-		let html = try MarkdownTag.markdownToHTML(markdown, options: [])
+		let html = HTMLFormatter.format(markdown)
 		let styled = FormatPostTextTag.addMentionLinkClasses(html)
 		return LeafData.string("<div class=\"markdown-body\">\(styled)</div>")
 	}

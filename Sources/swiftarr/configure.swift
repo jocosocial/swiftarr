@@ -2,7 +2,7 @@ import Fluent
 import FluentPostgresDriver
 import Leaf
 import LeafKit
-import LeafMarkdown
+import Markdown
 import Metrics
 import Prometheus
 import Queues
