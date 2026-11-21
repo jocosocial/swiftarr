@@ -138,7 +138,9 @@ struct UserController: APIRouteCollection {
 	///
 	/// - Parameter requestBody: `UserCreateData`, including `agreeToTerms` set to `true`.
 	/// - Throws: 400 error if `agreeToTerms` is not `true`, if the username is an invalid format,
-	///   or if the verification code is malformed. 409 error if the username is not available.
+	///   if the verification code is malformed, or if there is no such registration code. 409 error if the
+	///   username is not available or the registration code has already been used. 429 error, with a `Retry-After`
+	///   header, after too many bad registration codes from the client's IP (see `AuthRateLimiter`).
 	/// - Returns: `CreatedUserData` containing the newly created user's ID, username, and a
 	///   recovery key string.
 	func createHandler(_ req: Request) async throws -> Response {
@@ -160,12 +162,23 @@ struct UserController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Malformed verification code. Verification code must be 6 alphanumeric letters; spaces optional.")
 		}
 		let normalizedRegCode = RegistrationCode.normalized(submittedCode)
+		// Reject bad or used reg codes before the bcrypt work below, so junk requests stay cheap. This is only a fast
+		// path; the check inside the transaction is the one that guarantees each code goes to one user.
+		// Bad codes count against the client IP's auth failure limit, to slow down guessing registration codes.
+		let attempt = try await AuthRateLimiter.reserve([.clientIP(req.rateLimitClientIP)], on: req)
+		guard let regCode = try await RegistrationCode.query(on: req.db).filter(\.$code == normalizedRegCode).first() else {
+			throw Abort(.badRequest, reason: "No match for registration code")
+		}
+		guard regCode.$user.id == nil else {
+			throw Abort(.conflict, reason: "registration code has already been used")
+		}
+		await attempt.refund(on: req)
 
 		// create user
 		let recoveryKey = try UserController.generateRecoveryKey(on: req)
 		let normalizedKey = recoveryKey.lowercased().replacingOccurrences(of: " ", with: "")
-		let recoveryHash = try Bcrypt.hash(normalizedKey)
-		let passwordHash = try req.password.hash(data.password)
+		let recoveryHash = try await CryptoHelper.hashRecoveryKey(normalizedKey, on: req)
+		let passwordHash = try await req.password.async.hash(data.password)
 		let user = User(
 			username: data.username,
 			password: passwordHash,
@@ -291,7 +304,7 @@ struct UserController: APIRouteCollection {
 			throw Abort(.conflict, reason: "username '\(data.username)' is not available")
 		}
 		// if user has a parent, sub-account inherits, else this account is parent
-		let passwordHash = try Bcrypt.hash(data.password)
+		let passwordHash = try await req.password.async.hash(data.password)
 		// sub-account inherits .accessLevel, .recoveryKey and .verification
 		let subAccount = User(
 			username: data.username,
@@ -333,11 +346,16 @@ struct UserController: APIRouteCollection {
 	///
 	/// Updates a user's password to the supplied value, encrypted.
 	///
+	/// Changing the password revokes the user's login token, logging them out of every client, device, and web
+	/// session, including the one making this call. The response carries a new token; clients should replace their
+	/// stored token with it.
+	///
 	/// - Parameter requestBody: `UserPasswordData` struct containing the user's desired password.
 	/// - Throws: 400 error if the supplied password is not at least 6 characters. 403 error
-	///   if the user is a `.client`.
-	/// - Returns: 201 Created on success.
-	func passwordHandler(_ req: Request) async throws -> HTTPStatus {
+	///   if the user is a `.client`. 429 error, with a `Retry-After` header, after too many wrong current passwords;
+	///   these count against the same limits as failed logins (see `AuthRateLimiter`).
+	/// - Returns: 201 Created on success, with `TokenStringData` containing the user's new token.
+	func passwordHandler(_ req: Request) async throws -> Response {
 		let user = try await req.auth.require(UserCacheData.self).getUser(on: req.db)
 		// clients are hard-coded
 		guard user.accessLevel != .client else {
@@ -345,14 +363,24 @@ struct UserController: APIRouteCollection {
 		}
 		// see `UserPasswordData.validations()`
 		let data = try ValidatingJSONDecoder().decode(UserPasswordData.self, fromBodyOf: req)
-		guard try Bcrypt.verify(data.currentPassword, created: user.password) else {
+		// Wrong current passwords count against the same limits as failed logins.
+		let attempt = try await AuthRateLimiter.reserve(
+			AuthRateLimiter.Bucket.login(user.username, ip: req.rateLimitClientIP),
+			on: req
+		)
+		guard try await req.password.async.verify(data.currentPassword, created: user.password) else {
 			throw Abort(.badRequest, reason: "Existing password doesn't match; cannot set new password")
 		}
+		await attempt.refund(on: req)
 		// encrypt, then update user
-		let passwordHash = try Bcrypt.hash(data.newPassword)
+		let passwordHash = try await req.password.async.hash(data.newPassword)
 		user.password = passwordHash
 		try await user.save(on: req.db)
-		return .created
+		// Whoever had the old password may still be logged in; revoke that login and issue a fresh token.
+		let tokenData = try await AuthController.rotateToken(for: user, on: req)
+		let response = Response(status: .created)
+		try response.content.encode(tokenData)
+		return response
 	}
 
 	/// `POST /api/v3/user/username`
@@ -405,12 +433,14 @@ struct UserController: APIRouteCollection {
 		}
 		// record update for accountability
 		let oldProfileEdit = try ProfileEdit(target: targetUser, editor: user)
-		try await oldProfileEdit.save(on: req.db)
 		targetUser.username = data.username
 		targetUser.buildUserSearchString()
-		try await targetUser.save(on: req.db)
+		try await req.db.transaction { db in
+			try await oldProfileEdit.save(on: db)
+			try await targetUser.save(on: db)
+			try await targetUser.logIfModeratorAction(.edit, user: cacheUser, on: db)
+		}
 		try await req.userCache.updateUser(targetUser.requireID())
-		await targetUser.logIfModeratorAction(.edit, user: cacheUser, on: req)
 		return .created
 	}
 
@@ -432,22 +462,38 @@ struct UserController: APIRouteCollection {
 		try user.guardCanEditProfile()
 		let data = try req.content.decode(ImageUploadData.self)
 		// get generated filename
-		let newImageName = try await processImage(data: data.image, usage: .userProfile, on: req) ?? data.filename
-		// Save a thumbnail of existing image if there was one and we're changing it.
+		let processedImageName = try await processImage(data: data.image, usage: .userProfile, on: req)
+		let newImageName = processedImageName ?? data.filename
+		// Keep a record of the existing image if there was one and we're changing it.
+		var replacedImage: String? = nil
+		var profileEdit: ProfileEdit? = nil
 		if let existingImage = user.userImage, !existingImage.isEmpty, existingImage != newImageName {
-			// create ProfileEdit record
-			let profileEdit = try ProfileEdit(target: user, editor: user)
-			// archive thumbnail
-			DispatchQueue.global(qos: .background)
-				.async {
-					self.archiveImage(existingImage, on: req)
-				}
-			try await profileEdit.save(on: req.db)
+			replacedImage = existingImage
+			profileEdit = try ProfileEdit(target: user, editor: user)
 		}
 		// Set new image
 		user.userImage = newImageName
 		user.profileUpdatedAt = Date()
-		try await user.save(on: req.db)
+		let profileEditToSave = profileEdit
+		do {
+			try await req.db.transaction { db in
+				try await profileEditToSave?.save(on: db)
+				try await user.save(on: db)
+			}
+		}
+		catch {
+			if let processedImageName = processedImageName {
+				deleteImageFiles([processedImageName], on: req)
+			}
+			throw error
+		}
+		// Archive the replaced image only once the change is committed; archiving removes the full-size file.
+		if let replacedImage = replacedImage {
+			DispatchQueue.global(qos: .background)
+				.async {
+					self.archiveImage(replacedImage, on: req)
+				}
+		}
 		let userCacheData = try await req.userCache.updateUser(user.requireID())
 		return userCacheData.makeHeader()
 	}
@@ -479,18 +525,21 @@ struct UserController: APIRouteCollection {
 		if let existingImage = targetUser.userImage, !existingImage.isEmpty {
 			// create ProfileEdit record
 			let profileEdit = try ProfileEdit(target: targetUser, editor: user)
-			// archive thumbnail
+			// remove image from profile
+			targetUser.userImage = nil
+			targetUser.profileUpdatedAt = Date()
+			let editedUser = targetUser
+			try await req.db.transaction { db in
+				try await profileEdit.save(on: db)
+				try await editedUser.save(on: db)
+				try await editedUser.logIfModeratorAction(.delete, user: cacheUser, on: db)
+			}
+			// archive thumbnail, once the change is committed; archiving removes the full-size file
 			DispatchQueue.global(qos: .background)
 				.async {
 					return self.archiveImage(existingImage, on: req)
 				}
-			try await profileEdit.save(on: req.db)
-			// remove image from profile
-			targetUser.userImage = nil
-			targetUser.profileUpdatedAt = Date()
-			try await targetUser.save(on: req.db)
 			try await req.userCache.updateUser(targetUser.requireID())
-			await targetUser.logIfModeratorAction(.delete, user: cacheUser, on: req)
 		}
 		return .noContent
 	}
@@ -546,7 +595,6 @@ struct UserController: APIRouteCollection {
 		let data = try ValidatingJSONDecoder().decode(UserProfileUploadData.self, fromBodyOf: req)
 		// record update for accountability
 		let oldProfileEdit = try ProfileEdit(target: targetUser, editor: user)
-		try await oldProfileEdit.save(on: req.db)
 
 		// update fields, nil if no value supplied
 		targetUser.about = data.about?.isEmpty == true ? nil : data.about
@@ -563,9 +611,13 @@ struct UserController: APIRouteCollection {
 		// build .userSearch value
 		targetUser.buildUserSearchString()
 
-		try await targetUser.save(on: req.db)
+		let editedUser = targetUser
+		try await req.db.transaction { db in
+			try await oldProfileEdit.save(on: db)
+			try await editedUser.save(on: db)
+			try await editedUser.logIfModeratorAction(.edit, user: cacheUser, on: db)
+		}
 		try await req.userCache.updateUser(targetUser.requireID())
-		await targetUser.logIfModeratorAction(.edit, user: cacheUser, on: req)
 		return try ProfilePublicData(
 			user: targetUser,
 			note: nil,
@@ -594,10 +646,12 @@ struct UserController: APIRouteCollection {
 		guard let cleanParam = cleanedParams.first, cleanParam.count > 3 else {
 			throw Abort(.badRequest, reason: "Cannot set alerts on very short or very common words")
 		}
-		let alertword =
-			try await AlertWord.query(on: req.db).filter(\.$word == cleanParam).first() ?? AlertWord(cleanParam)
-		try await alertword.save(on: req.db)
-		try await AlertWordPivot(alertword: alertword, userID: cacheUser.userID).save(on: req.db)
+		try await req.db.transaction { db in
+			let alertword =
+				try await AlertWord.query(on: db).filter(\.$word == cleanParam).first() ?? AlertWord(cleanParam)
+			try await alertword.save(on: db)
+			try await AlertWordPivot(alertword: alertword, userID: cacheUser.userID).save(on: db)
+		}
 		try await req.redis.addAlertword(parameter, userID: cacheUser.userID)
 		let keywordPivots = try await AlertWordPivot.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
 			.with(\.$alertword).all()
@@ -635,10 +689,16 @@ struct UserController: APIRouteCollection {
 			.all()
 		if let removePivot = pivots.first(where: { $0.alertword.word == parameter }) {
 			let alertWord = removePivot.alertword
-			try await removePivot.delete(on: req.db)
 			pivots.removeAll { $0.id == removePivot.id }
-			if try await alertWord.$users.$pivots.query(on: req.db).count() == 0 {
-				try await alertWord.delete(on: req.db)
+			let wordIsUnused = try await req.db.transaction { db -> Bool in
+				try await removePivot.delete(on: db)
+				if try await alertWord.$users.$pivots.query(on: db).count() == 0 {
+					try await alertWord.delete(on: db)
+					return true
+				}
+				return false
+			}
+			if wordIsUnused {
 				try await req.redis.removeAlertword(parameter)
 			}
 			try await req.redis.removeUserAlertword(parameter, userID: user.userID)

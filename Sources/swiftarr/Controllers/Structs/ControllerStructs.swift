@@ -204,6 +204,8 @@ public struct CategoryData: Content {
 	var isRestricted: Bool
 	/// if TRUE, this category is for Event Forums, and is prepopulated with forum threads for each Schedule Event.
 	var isEventCategory: Bool
+	/// The default `sort` query parameter clients should use when requesting threads in this category, if any.
+	var defaultSort: ForumSort?
 	/// The threads in the category. Only populated for /categories/ID.
 	var forumThreads: [ForumListData]?
 	/// Pagination of the results. For the `GET /api/v3/categories` endpoint only the `Paginator`s `total` is meaningful.
@@ -219,6 +221,7 @@ extension CategoryData {
 		purpose = cat.purpose
 		isRestricted = restricted
 		isEventCategory = cat.isEventCategory
+		defaultSort = cat.defaultSort
 		self.forumThreads = forumThreads
 		self.paginator = paginator
 	}
@@ -642,6 +645,9 @@ public struct FezContentData: Content {
 	var createdByModerator: Bool?
 	/// If TRUE, the Fez will be created by user @TwitarrTeam instead of the current user. Current user must be a TT member.
 	var createdByTwitarrTeam: Bool?
+	/// If TRUE, the Fez will be created by user @CommunitySupport instead of the current user. Current user must be on the Community Support team
+	/// (hold the Community Support role) or be TwitarrTeam or above.
+	var createdByCommunitySupport: Bool?
 	/// If set, creates the fez's opening post at creation time instead of requiring a separate call.
 	var firstPost: PostContentData?
 }
@@ -660,6 +666,7 @@ extension FezContentData {
 		self.maxCapacity = 0
 		self.createdByModerator = false
 		self.createdByTwitarrTeam = false
+		self.createdByCommunitySupport = false
 		self.firstPost = nil
 	}
 }
@@ -694,6 +701,11 @@ extension FezContentData: RCFValidatable {
 			!(createdByModerator == true && createdByTwitarrTeam == true),
 			forKey: .createdByModerator,
 			or: "cannot create as both @moderator and @TwitarrTeam"
+		)
+		tester.validate(
+			!(createdByCommunitySupport == true && (createdByModerator == true || createdByTwitarrTeam == true)),
+			forKey: .createdByCommunitySupport,
+			or: "cannot create as @CommunitySupport and another account at the same time"
 		)
 	}
 }
@@ -2117,10 +2129,13 @@ public struct PostContentData: Content {
 	/// If the poster has moderator privileges and this field is TRUE, this post will be authored by 'TwitarrTeam' instead of the author.
 	/// Set this to FALSE unless the user is a moderator who specifically chooses this option.
 	var postAsTwitarrTeam: Bool = false
+	/// If the poster holds the Community Support role (or is TwitarrTeam or above) and this field is TRUE, this post will be authored by 'CommunitySupport'
+	/// instead of the author. Set this to FALSE unless the user specifically chooses this option.
+	var postAsCommunitySupport: Bool = false
 }
 
 extension PostContentData {
-	/// Decodes a post. `postAsModerator` and `postAsTwitarrTeam` may be omitted from the JSON,
+	/// Decodes a post. `postAsModerator`, `postAsTwitarrTeam`, and `postAsCommunitySupport` may be omitted from the JSON,
 	/// in which case they decode as FALSE, matching their documented default semantics.
 	public init(from decoder: Decoder) throws {
 		let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -2128,6 +2143,7 @@ extension PostContentData {
 		images = try container.decode([ImageUploadData].self, forKey: .images)
 		postAsModerator = try container.decodeIfPresent(Bool.self, forKey: .postAsModerator) ?? false
 		postAsTwitarrTeam = try container.decodeIfPresent(Bool.self, forKey: .postAsTwitarrTeam) ?? false
+		postAsCommunitySupport = try container.decodeIfPresent(Bool.self, forKey: .postAsCommunitySupport) ?? false
 	}
 }
 
@@ -2148,6 +2164,11 @@ extension PostContentData: RCFValidatable {
 			!(postAsModerator && postAsTwitarrTeam),
 			forKey: .postAsModerator,
 			or: "cannot post as both @moderator and @TwitarrTeam"
+		)
+		tester.validate(
+			!(postAsCommunitySupport && (postAsModerator || postAsTwitarrTeam)),
+			forKey: .postAsCommunitySupport,
+			or: "cannot post as @CommunitySupport and another account at the same time"
 		)
 	}
 }
@@ -2574,8 +2595,7 @@ public struct UserCreateData: Content {
 extension UserCreateData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
-		tester.validate(password.count >= 6, forKey: .password, or: "password has a 6 character minimum")
-		tester.validate(password.count <= 50, forKey: .password, or: "password has a 50 character limit")
+		tester.validate(passwordLengthRange.contains(password.count), forKey: .password, or: passwordLengthError)
 		usernameValidations(username: username)
 			.forEach {
 				tester.addValidationError(forKey: .username, errorString: $0)
@@ -2766,6 +2786,22 @@ public struct UserNotificationData: Content {
 
 	/// Will be nil for non-moderator accounts.
 	var moderatorData: ModeratorNotificationData?
+
+	/// Notification counts for the Community Support team: its role holders, and TwitarrTeam and above.
+	public struct CommunitySupportNotificationData: Content {
+		/// The number of Community Support reports that are new or in progress.
+		var openReportCount: Int
+
+		/// The number of Seamails to @CommunitySupport (more precisely, ones where @CommunitySupport is a participant) that have new messages.
+		/// Like `ModeratorNotificationData.newModeratorSeamailMessageCount`, this counts the shared mailbox's threads, not the user's own.
+		var newSeamailMessageCount: Int
+
+		/// Number of forum post @mentions the user has not read for @CommunitySupport.
+		var newForumMentionCount: Int
+	}
+
+	/// Will be nil for accounts that aren't on the Community Support team or TwitarrTeam and above.
+	var communitySupportData: CommunitySupportNotificationData?
 }
 
 extension UserNotificationData {
@@ -2892,8 +2928,7 @@ public struct UserPasswordData: Content {
 extension UserPasswordData: RCFValidatable {
 	func runValidations(using decoder: ValidatingDecoder) throws {
 		let tester = try decoder.validator(keyedBy: CodingKeys.self)
-		tester.validate(newPassword.count >= 6, forKey: .newPassword, or: "password has a 6 character minimum")
-		tester.validate(newPassword.count <= 50, forKey: .newPassword, or: "password has a 50 character limit")
+		tester.validate(passwordLengthRange.contains(newPassword.count), forKey: .newPassword, or: passwordLengthError)
 	}
 }
 
@@ -2994,8 +3029,7 @@ extension UserRecoveryData: RCFValidatable {
 			.forEach {
 				tester.addValidationError(forKey: .username, errorString: $0)
 			}
-		tester.validate(newPassword.count >= 6, forKey: .newPassword, or: "password has a 6 character minimum length")
-		tester.validate(newPassword.count <= 50, forKey: .newPassword, or: "password has a 50 character limit")
+		tester.validate(passwordLengthRange.contains(newPassword.count), forKey: .newPassword, or: passwordLengthError)
 	}
 }
 
@@ -3097,6 +3131,7 @@ private func usernameValidations(username: String) -> [String] {
 	var errorStrings: [String] = []
 	if username.count < 2 { errorStrings.append("username has a 2 character minimum") }
 	if username.count > 50 { errorStrings.append("username has a 50 character limit") }
+	if PrivilegedUser.isReservedUsername(username) { errorStrings.append("username is reserved") }
 	if !username.unicodeScalars.allSatisfy({ CharacterSet.validUsernameChars.contains($0) }) {
 		errorStrings.append("username can only contain alphanumeric characters plus \"\(usernameSeparatorString)\"")
 	}
@@ -3110,6 +3145,13 @@ private func usernameValidations(username: String) -> [String] {
 	}
 	return errorStrings
 }
+
+// MARK: - Password Validation
+
+/// Allowed length for new passwords. Existing passwords aren't re-checked, so older, shorter ones still log in.
+let passwordLengthRange = 8...50
+let passwordLengthError =
+	"password must be between \(passwordLengthRange.lowerBound) and \(passwordLengthRange.upperBound) characters long"
 
 /// Prometheus Alertmanager webhook alert object.
 /// Applied from https://prometheus.io/docs/alerting/latest/configuration/#webhook_config
@@ -3204,6 +3246,8 @@ public struct ClientSettingsData: Content {
 	var portTimeZoneOffset: Int
 	/// URL used for automated schedule updates (typically a sched.com iCalendar URL)
 	var scheduleUpdateURL: String
+	/// Base URL of the cruise's sched.com site, e.g. `https://jococruise2026.sched.com`
+	var schedBaseUrl: String
 	/// The name of the shipboard Wifi network
 	var shipWifiSSID: String?
 	/// If TRUE, users can create accounts, log in, and edit their profile before the cruise in a restricted pre-registration mode.
@@ -3229,6 +3273,7 @@ extension ClientSettingsData {
 		self.portTimeZoneAbbrev = Settings.shared.portTimeZone.abbreviation() ?? "EST"
 		self.portTimeZoneOffset = Settings.shared.portTimeZone.secondsFromGMT()
 		self.scheduleUpdateURL = Settings.shared.scheduleUpdateURL
+		self.schedBaseUrl = Settings.shared.schedBaseUrl
 		self.shipWifiSSID = Settings.shared.shipWifiSSID
 		self.enablePreregistration = Settings.shared.enablePreregistration
 		self.minAccessLevel = Settings.shared.minAccessLevel.rawValue

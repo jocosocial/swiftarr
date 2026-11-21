@@ -54,6 +54,7 @@ public enum SwiftarrFeature: String, Content, CaseIterable, Sendable {
 	case eventFeedback  	// Form for Shadow Event hosts to give feedback on how their event went
 	case quartermaster  // Searchable "have / need" item board
 	case notificationLog  // Web UI page showing a user's notification history
+	case communitySupport  // Community Support reports, private forum category, and shared mailbox
 
 	case all
 

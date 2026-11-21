@@ -1,0 +1,123 @@
+#extend("trunk"):
+	#export("body"):
+		<div class="container-md ms-0 my-1">
+			<div class="row justify-content-between align-items-center my-1">
+				<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/admin">Admin</a></li>
+							<li class="breadcrumb-item"><a href="/admin/performer/root">Manage Performers</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Event Performers</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+			<div class="row mb-2">
+				<div class="col">
+					<h5 class="mb-0">#(event.title)</h5>
+					<span class="text-secondary"><i>#eventTime(event.startTime, event.endTime)</i></span> &middot; #(event.location)
+				</div>
+			</div>
+			<div class="row mb-2">
+				<div class="col">
+					<div id="eventPerformerError" class="alert alert-danger d-none mb-2"></div>
+					<p class="text-muted small mb-2">Performers linked here are kept when the performer spreadsheet is re-applied.</p>
+					#if(count(event.performers) == 0):
+						<div class="text-muted">No performers are linked to this event.</div>
+					#else:
+						<table class="table table-sm table-hover align-middle">
+							<thead>
+								<tr>
+									<th style="width: 68px;">Image</th>
+									<th>Name</th>
+									<th style="width: 120px;">Type</th>
+									<th style="width: 100px;"></th>
+								</tr>
+							</thead>
+							<tbody>
+								#for(performer in event.performers):
+									<tr>
+										<td>
+											#if(performer.photo != nil && performer.photo != ""):
+												<img src="/api/v3/image/thumb/#(performer.photo)" alt="Performer image" style="width: 48px; height: 48px; object-fit: cover;">
+											#else:
+												<img src="/img/NoAvatarUser.png" alt="No performer image" style="width: 48px; height: 48px; object-fit: cover;">
+											#endif
+										</td>
+										<td><a href="/performer/#(performer.id)">#(performer.name)</a></td>
+										<td>
+											#if(performer.isOfficialPerformer):
+												<span class="badge text-bg-primary">Official</span>
+											#else:
+												<span class="badge text-bg-secondary">Shadow</span>
+											#endif
+										</td>
+										<td>
+											<button type="button" class="btn btn-outline-danger btn-sm" data-performerid="#(performer.id)" data-action="unlink">Remove</button>
+										</td>
+									</tr>
+								#endfor
+							</tbody>
+						</table>
+					#endif
+				</div>
+			</div>
+			<div class="row mb-2">
+				<div class="col-12 col-md-8">
+					<label for="performerChoice" class="form-label"><b>Add a performer</b></label>
+					<div class="input-group">
+						<select id="performerChoice" class="form-select">
+							<option value="">Choose a performer...</option>
+							#if(count(officialChoices) > 0):
+								<optgroup label="Official Performers">
+									#for(performer in officialChoices):
+										<option value="#(performer.id)">#(performer.name)</option>
+									#endfor
+								</optgroup>
+							#endif
+							#if(count(shadowChoices) > 0):
+								<optgroup label="Shadow Event Organizers">
+									#for(performer in shadowChoices):
+										<option value="#(performer.id)">#(performer.name)</option>
+									#endfor
+								</optgroup>
+							#endif
+						</select>
+						<button id="addPerformerButton" type="button" class="btn btn-primary">Add</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script>
+			(() => {
+				const eventID = "#(event.eventID)";
+				const errorAlert = document.getElementById('eventPerformerError');
+
+				async function send(performerID, action) {
+					errorAlert.classList.add('d-none');
+					try {
+						const response = await fetch(`/admin/performer/${performerID}/event/${eventID}/${action}`, { method: 'POST' });
+						if (response.status >= 300) {
+							throw new Error(`Server returned ${response.status}`);
+						}
+						location.reload();
+					}
+					catch (err) {
+						errorAlert.textContent = `Could not ${action} performer: ${err.message}`;
+						errorAlert.classList.remove('d-none');
+					}
+				}
+
+				document.getElementById('addPerformerButton')?.addEventListener('click', () => {
+					const performerID = document.getElementById('performerChoice').value;
+					if (performerID) {
+						send(performerID, 'link');
+					}
+				});
+				for (const button of document.querySelectorAll('button[data-action="unlink"]')) {
+					button.addEventListener('click', () => send(button.dataset.performerid, 'unlink'));
+				}
+			})();
+		</script>
+	#endexport
+#endextend

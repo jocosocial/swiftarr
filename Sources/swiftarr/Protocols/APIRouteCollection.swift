@@ -157,12 +157,39 @@ extension APIRouteCollection {
 		guard targetUser.username != "THO" else {
 			throw Abort(.badRequest, reason: "Cannot change name or  access level of @THO account.")
 		}
+		guard targetUser.username != PrivilegedUser.CommunitySupport.rawValue else {
+			throw Abort(.badRequest, reason: "Cannot change name or access level of @CommunitySupport account.")
+		}
 		guard targetUser.username != "admin" else {
 			throw Abort(.badRequest, reason: "Cannot change name or  access level of @admin account.")
 		}
 		// Can't change access level of Clients
 		guard targetUser.accessLevel != .client else {
 			throw Abort(.badRequest, reason: "Cannot change name or  access level of Client accounts.")
+		}
+	}
+
+	// MARK: - Post-commit Side Effects
+
+	/// Runs work that can't be rolled back (Redis notifications, socket pushes, cache refreshes, appointment bookkeeping) for a change that has
+	/// already been committed. A failure is logged, not thrown: throwing would give the client an error for a request that succeeded, and a retry
+	/// would then duplicate the content.
+	///
+	/// Claude got cute with the fileID and line stuff. Until we see how this pattern goes,
+	/// I'll allow it. It's better than the long form descriptions of everything it was doing.
+	func dispatchEffect(on req: Request, fileID: String = #fileID, line: Int = #line, _ work: () async throws -> Void) async {
+		do {
+			try await work()
+		}
+		catch {
+			req.logger.error("Post-commit work failed: \(error)", metadata: ["source": "\(fileID):\(line)"])
+		}
+	}
+
+	/// Runs several independent effects in order, each with its own failure handling (see `dispatchEffect`): one failing doesn't skip the rest.
+	func dispatchEffects(on req: Request, fileID: String = #fileID, line: Int = #line, _ effects: (() async throws -> Void)...) async {
+		for effect in effects {
+			await dispatchEffect(on: req, fileID: fileID, line: line, effect)
 		}
 	}
 
@@ -267,7 +294,7 @@ extension APIRouteCollection {
 				for userID in users {
 					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
-			case .forumMention, .twitarrTeamForumMention, .moderatorForumMention:
+			case .forumMention, .twitarrTeamForumMention, .moderatorForumMention, .communitySupportForumMention:
 				for userID in users {
 					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
@@ -424,7 +451,7 @@ extension APIRouteCollection {
 						)
 					}
 				}
-			case .forumMention, .twitarrTeamForumMention, .moderatorForumMention:
+			case .forumMention, .twitarrTeamForumMention, .moderatorForumMention, .communitySupportForumMention:
 				for userID in users {
 					group.addTask {
 						try await req.redis.incrementIntInUserHash(
@@ -477,7 +504,7 @@ extension APIRouteCollection {
 	func deleteFezNotifications(userIDs: [UUID], fez: FriendlyFez, on req: Request) async throws {
 		for userID in userIDs {
 			try await req.redis.markLFGDeleted(msgID: fez.requireID(), userID: userID)
-			_ = try await storeNextJoinedAppointment(userID: userID, on: req)
+			try await storeNextJoinedAppointment(userID: userID, on: req)
 		}
 	}
 
@@ -504,6 +531,10 @@ extension APIRouteCollection {
 			}
 		case .twitarrTeamForumMention:
 			if user.accessLevel.hasAccess(.twitarrteam) {
+				try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)
+			}
+		case .communitySupportForumMention:
+			if user.canAccessCommunitySupport {
 				try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)
 			}
 		case .nextFollowedEventTime, .followedEventStarting, .nextJoinedLFGTime, .joinedLFGStarting,
@@ -544,6 +575,7 @@ extension APIRouteCollection {
 	}
 
 	// Calculates the start time of the earliest future joined LFG. Caches the value in Redis for quick access.
+	@discardableResult
 	func storeNextJoinedAppointment(userID: UUID, on req: Request) async throws -> (Date, UUID)? {
 		let nextJoinedLFG = try await getNextAppointment(userID: userID, db: req.db)
 		// This will "clear" the next LFG values of the UserNotificationData if no LFGs match the

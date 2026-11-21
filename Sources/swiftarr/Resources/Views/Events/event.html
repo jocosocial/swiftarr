@@ -82,6 +82,9 @@
 				#endif
 			</div>
 			<div class="col col-auto btn-group btn-group-sm mt-1" role="group" aria-label="Event actions">
+				#if(trunk.userIsTwitarrTeam):
+					<a class="btn btn-outline-primary" href="/admin/performer/event/#(event.eventID)">Performers</a>
+				#endif
 				#if(trunk.userIsLoggedIn):
 					#if(event.eventType == "Shadow Event" || event.eventType == "Workshop"):
 						#if(trunk.preregistrationMode || contains(trunk.userRoles, "performerselfeditor")):

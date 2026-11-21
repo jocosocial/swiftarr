@@ -214,14 +214,14 @@ struct SitePrivateEventController: SiteControllerUtils {
 		globalRoutes.get("shutternauts", use: showDayPlanner).destination("the Shutternaut day planner").setUsedForPreregistration()
 		
 		let globalPERoutes = getGlobalRoutes(app, feature: .personalevents, path: "privateevent")
-		globalPERoutes.get(fezIDParam, use: privateEventPageHandler).destination("private event")
+		globalPERoutes.get(fezIDParam, use: privateEventPageHandler).destination("private event").setUsedForPreregistration()
 
 		let privateRoutes = getPrivateRoutes(app, feature: .personalevents, path: "privateevent")
-		privateRoutes.get("create", use: peCreatePageHandler)
-		privateRoutes.post("create", use: peCreateOrUpdatePostHandler)
-		privateRoutes.get(fezIDParam, "update", use: peUpdatePageHandler)
-		privateRoutes.post(fezIDParam, "update", use: peCreateOrUpdatePostHandler)
-		privateRoutes.get("list", use: peListHandler)
+		privateRoutes.get("create", use: peCreatePageHandler).setUsedForPreregistration()
+		privateRoutes.post("create", use: peCreateOrUpdatePostHandler).setUsedForPreregistration()
+		privateRoutes.get(fezIDParam, "update", use: peUpdatePageHandler).setUsedForPreregistration()
+		privateRoutes.post(fezIDParam, "update", use: peCreateOrUpdatePostHandler).setUsedForPreregistration()
+		privateRoutes.get("list", use: peListHandler).setUsedForPreregistration()
 
 		// This route is intended for calendar apps, allowing for subscriptions to iCal calendar feeds.
 		let calendaringRoute = app.grouped([
@@ -265,8 +265,10 @@ struct SitePrivateEventController: SiteControllerUtils {
 		let events = try eventsResponse.content.decode([EventData].self)
 
 		var lfgs: FezListData? = nil
-		if !shutternautSharedSchedule && !Settings.shared.enablePreregistration {
-			let lfgResponse = try await apiQuery(req, endpoint: "/fez/joined", query: lfgParams +
+		let preregistrationApplies = req.auth.get(UserCacheData.self)?.preregistrationApplies == true
+		if !shutternautSharedSchedule {
+			// During preregistration only the user's own LFGs and Personal/Private Events are available.
+			let lfgResponse = try await apiQuery(req, endpoint: preregistrationApplies ? "/fez/owner" : "/fez/joined", query: lfgParams +
 					[URLQueryItem(name: "excludetype", value: "open"), URLQueryItem(name: "excludetype", value: "closed")], passThroughQuery: false)
 			lfgs = try lfgResponse.content.decode(FezListData.self)
 		}
@@ -460,8 +462,10 @@ struct SitePrivateEventController: SiteControllerUtils {
 			throw Abort(.badRequest, reason: "Couldn't parse start time")
 		}
 		let endTime = startTime.addingTimeInterval(TimeInterval(postStruct.duration) * 60.0)
+		// Others can't be invited until we're on the boat.
+		let preregistrationApplies = req.auth.get(UserCacheData.self)?.preregistrationApplies == true
 		var participants = postStruct.participants.split(separator: ",").compactMap { UUID(uuidString: String($0)) }
-		participants = Array(Set(participants))
+		participants = preregistrationApplies ? [] : Array(Set(participants))
 		var fezContentData = FezContentData(
 			fezType: fezType,
 			visibility: postStruct.showVisibilityOption != nil ? (postStruct.unlisted == "on" ? .unlisted : .private) : nil,
@@ -476,13 +480,26 @@ struct SitePrivateEventController: SiteControllerUtils {
 		)
 		let isCreating = req.parameters.get(fezIDParam.paramString) == nil
 		var path = "/fez/create"
+		var usersToAdd = [UUID]()
 		if let updatingFezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() {
 			path = "/fez/\(updatingFezID)/update"
 			let response = try await apiQuery(req, endpoint: "/fez/\(updatingFezID)")
 			let fez = try response.content.decode(FezData.self)
 			fezContentData.fezType = fez.fezType
+			// A Personal Event can be converted to a Private Event, once. Update ignores `initialUsers`, so the invitees
+			// get added after the conversion.
+			if fez.fezType == .personalEvent && postStruct.inviteOthers == "on" {
+				fezContentData.fezType = .privateEvent
+				usersToAdd = participants
+			}
 		}
 		let apiResponse = try await apiQuery(req, endpoint: path, method: .POST, encodeContent: fezContentData)
+		if let updatingFezID = req.parameters.get(fezIDParam.paramString)?.percentEncodeFilePathEntry() {
+			let selfID = req.auth.get(UserCacheData.self)?.userID
+			for userID in usersToAdd where userID != selfID {
+				try await apiQuery(req, endpoint: "/fez/\(updatingFezID)/user/\(userID)/add", method: .POST)
+			}
+		}
 		let response = Response(status: .created)
 		if isCreating {
 			let newFez = try apiResponse.content.decode(FezData.self)
@@ -504,8 +521,10 @@ struct SitePrivateEventController: SiteControllerUtils {
 	//
 	// Shows the Private Events page, with a list of all events.
 	func peListHandler(_ req: Request) async throws -> View {
-		let response = try await apiQuery(req, endpoint: "/fez/joined", query: [URLQueryItem(name: "type", value: "privateEvent"),
-				URLQueryItem(name: "type", value: "personalEvent")])
+		// During preregistration only the user's own events are available.
+		let preregistrationApplies = req.auth.get(UserCacheData.self)?.preregistrationApplies == true
+		let response = try await apiQuery(req, endpoint: preregistrationApplies ? "/fez/owner" : "/fez/joined",
+				query: [URLQueryItem(name: "type", value: "privateEvent"), URLQueryItem(name: "type", value: "personalEvent")])
 		let eventList = try response.content.decode(FezListData.self)
 		let ctx = try PrivateEventListPageContext(req, fezList: eventList, fezzes: eventList.fezzes)
 		return try await req.view.render("PrivateEvent/privateEventList", ctx)

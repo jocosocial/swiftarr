@@ -80,9 +80,12 @@ final class Settings: Encodable, @unchecked Sendable {
 	/// The name of the onboard Wifi network. Delivered to cients in the notification endpoint.
 	@StoredSettingsValue("shipWifiSSID", defaultValue: "NieuwAmsterdam-Guest") var shipWifiSSID: String
 	
-	/// The URL to use when checking for automatic schedule updates. Genearlly a sched.com URL of the form `https://jococruise2024.sched.com/all.ics`
-	/// Should always point to an URL that returns an iCalendar formatted file.
-	@StoredSettingsValue("scheduleUpdateURL", defaultValue: "https://jococruise2025.sched.com/all.ics") var scheduleUpdateURL: String
+	/// The base URL of the sched.com site for this cruise, e.g. `https://jococruise2026.sched.com`. Set from the `SCHED_BASE_URL` env var
+	/// and not writable from the app.
+	@SettingsValue var schedBaseUrl: String = "https://jococruise2026.sched.com"
+
+	/// The API key used to access the sched.com API. Set from the `SCHED_API_KEY` env var and not writable from the app.
+	@SettingsValue var schedApiKey: String = ""
 
 	// MARK: Limits
 	/// The maximum number of alt accounts per primary user account.
@@ -105,6 +108,24 @@ final class Settings: Encodable, @unchecked Sendable {
 
 	/// How long a single user must wait between photostream uploads, in seconds. `0` disables the limit.
 	@StoredSettingsValue("photostreamUploadRateLimit", defaultValue: 300) var photostreamUploadRateLimit: Int
+
+	// MARK: Auth Rate Limiting
+	/// Master switch for `AuthRateLimiter`. When FALSE, failed logins, password changes, recoveries, username lookups, and
+	/// registration code attempts are not counted or limited at all.
+	@StoredSettingsValue("authRateLimitEnabled", defaultValue: true) var authRateLimitEnabled: Bool
+
+	/// Failed logins (or password changes) allowed per username, per client IP, in 15 minutes. `0` disables this limit.
+	@StoredSettingsValue("authRateLimitLoginFailures", defaultValue: 10) var authRateLimitLoginFailures: Int
+
+	/// Failed logins (or password changes) allowed per username from all IPs combined, in an hour. `0` disables this limit.
+	@StoredSettingsValue("authRateLimitUsernameFailures", defaultValue: 50) var authRateLimitUsernameFailures: Int
+
+	/// Failed auth attempts of any kind allowed per client IP, in 15 minutes. `0` disables this limit.
+	@StoredSettingsValue("authRateLimitIPFailures", defaultValue: 30) var authRateLimitIPFailures: Int
+
+	/// Failed password recoveries allowed per username, and failed username lookups per registration code, in an hour.
+	/// `0` disables this limit.
+	@StoredSettingsValue("authRateLimitRecoveryFailures", defaultValue: 5) var authRateLimitRecoveryFailures: Int
 
 	// MARK: Quarantine
 	/// The number of reports to trigger forum auto-quarantine.
@@ -254,6 +275,29 @@ extension Settings {
 	/// Path to the 'admin' directory, inside the 'seeds' directory. Certain seed files can be upload by admin here, and ingested while the server is running.
 	var seedsDirectoryPath: URL {
 		return staticFilesRootPath.appendingPathComponent("seeds")
+	}
+}
+
+/// Derivative sched.com URLs. These are computed property getters that return a URL based on `schedBaseUrl`.
+extension Settings {
+	/// The URL to use when checking for automatic schedule updates.
+	/// Always points to an URL that returns an iCalendar formatted file.
+	var scheduleUpdateURL: String {
+		return schedURL(appendingPath: "all.ics")
+	}
+
+	/// The sched.com speakers directory page.
+	var schedSpeakersURL: String {
+		return schedURL(appendingPath: "directory/speakers")
+	}
+
+	/// Builds a URL string by appending a path to `schedBaseUrl`. Returns an empty string if the base URL isn't a valid URL,
+	/// which makes the schedule update job skip its run.
+	private func schedURL(appendingPath path: String) -> String {
+		guard let baseURL = URL(string: schedBaseUrl) else {
+			return ""
+		}
+		return baseURL.appendingPathComponent(path).absoluteString
 	}
 }
 

@@ -209,6 +209,22 @@ struct SwiftarrConfigurator {
 				)
 		}
 
+		// Sched.com integration. Read-only from the app; only settable via the environment.
+		if let schedBaseUrl = Environment.get("SCHED_BASE_URL"), schedBaseUrl != "" {
+			Settings.shared.schedBaseUrl = schedBaseUrl
+		}
+		else {
+			configLog.warning(
+				"SCHED_BASE_URL is not set. Defaulting to \(Settings.shared.schedBaseUrl)."
+			)
+		}
+		if let schedApiKey = Environment.get("SCHED_API_KEY"), schedApiKey != "" {
+			Settings.shared.schedApiKey = schedApiKey
+		}
+		else {
+			configLog.warning("SCHED_API_KEY is not set. Sched API features will not work.")
+		}
+
 		// Late Day Flip in Site UI
 		if let enableLateDayFlip = Environment.get("SWIFTARR_ENABLE_LATE_DAY_FLIP"), enableLateDayFlip != "" {
 			Settings.shared.enableLateDayFlip = Bool(enableLateDayFlip) ?? false
@@ -462,18 +478,20 @@ struct SwiftarrConfigurator {
 		let corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
 		new.use(corsMiddleware, at: .beginning)
 
+		new.use(RobotsTagMiddleware())
 		new.use(SwiftarrErrorMiddleware(environment: app.environment))
 		new.use(SiteNoRouteErrorMiddleware(environment: app.environment))
 		app.middleware = new
 
 		// Change the default bcrypt cost for user accounts
-		app.passwords.use(.bcrypt(cost: 9))
+		app.passwords.use(.bcrypt(cost: CryptoHelper.bcryptCost))
 	}
 
 	func configureSessions(_ app: Application) throws {
 		app.sessions.configuration.cookieName = "swiftarr_session"
 
-		// Configures cookie value creation.
+		// Configures cookie value creation. Production servers are always HTTPS; development servers and instances may not be.
+		let isSecure = app.environment == .production
 		app.sessions.configuration.cookieFactory = { sessionID in
 			.init(
 				string: sessionID.string,
@@ -481,7 +499,7 @@ struct SwiftarrConfigurator {
 				maxAge: nil,
 				domain: nil,
 				path: "/",
-				isSecure: false,
+				isSecure: isSecure,
 				isHTTPOnly: true,
 				sameSite: .lax
 			)
@@ -665,10 +683,14 @@ struct SwiftarrConfigurator {
 		app.migrations.add(UpdateEventFavoriteSchema_Photographer(), to: .psql)
 		app.migrations.add(UpdateUserDiscordHandleMigration(), to: .psql)
 		app.migrations.add(AddPerformerAlternativeNamesMigration(), to: .psql)
+		app.migrations.add(AddEventPerformerManuallyLinkedMigration(), to: .psql)
 		app.migrations.add(AddFavoriteFieldToFezParticipantSchema(), to: .psql)
 		app.migrations.add(AddVisibilityFieldToFriendlyFezSchema(), to: .psql)
 		app.migrations.add(CreateClientAppSchema(), to: .psql)
 		app.migrations.add(UpdateEventSchema_AgeRating(), to: .psql)
+		app.migrations.add(CreateCommunitySupportReportSchema(), to: .psql)
+		app.migrations.add(CreateCommunitySupportActionSchema(), to: .psql)
+		app.migrations.add(AddCategoryDefaultSortSchema(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 
@@ -703,11 +725,15 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreatePerformanceIndexes(), to: .psql)
 		app.migrations.add(CreateSeamailSearchIndexes(), to: .psql)
 		app.migrations.add(RenameWhereAndWhen(), to: .psql)
+		app.migrations.add(SetSplashdotDefaultSort(), to: .psql)
+		app.migrations.add(SetEventCategoryDefaultSort(), to: .psql)
 		app.migrations.add(AddFoodDrinkCategory(), to: .psql)
 		app.migrations.add(CreateMicroKaraokeUser(), to: .psql)
 		app.migrations.add(RemoveCovidCategory(), to: .psql)
 		app.migrations.add(CreateQuartermasterSearchIndexes(), to: .psql)
 		app.migrations.add(CreatePerformerSearchIndexes(), to: .psql)
+		app.migrations.add(CreateCommunitySupportUser(), to: .psql)
+		app.migrations.add(AddCommunitySupportCategory(), to: .psql)
 
 		// DON'T add schema-modification migrations down here. Appending migrations that modify a table's schema at the end will
 		// break migrations that use Fluent to populate that table with data, as Fluent only models the current db schema.

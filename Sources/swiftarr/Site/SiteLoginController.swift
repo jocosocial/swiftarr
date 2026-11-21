@@ -329,7 +329,11 @@ struct SiteLoginController: SiteControllerUtils {
 				currentPassword: postStruct.currentPassword,
 				newPassword: postStruct.password
 			)
-			try await apiQuery(req, endpoint: "/user/password", method: .POST, encodeContent: userPwData)
+			let response = try await apiQuery(req, endpoint: "/user/password", method: .POST, encodeContent: userPwData)
+			// The password change revoked the old token, which logged out every session including this one.
+			// Log this session back in with the new token.
+			let tokenResponse = try response.content.decode(TokenStringData.self)
+			try await loginUser(with: tokenResponse, on: req)
 			var context = try await LoginPageContext(req, title: "Reset Password")
 			context.operationName = "Change Password"
 			context.operationSuccess = true

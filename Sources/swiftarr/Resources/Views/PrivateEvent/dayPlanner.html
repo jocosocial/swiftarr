@@ -69,7 +69,7 @@
 		</div>
 	</div>
 	<div class="container-fluid">
-		#if(!trunk.preregistrationApplies && !shutternautSharedSchedule):
+		#if(!shutternautSharedSchedule):
 			<div class="row justify-content-between mb-2">
 				<div class="col">
 					<a class="btn btn-primary btn-sm" href="/privateevent/list">Private Event List</a>
@@ -118,6 +118,12 @@
 				<li class="list-group-item bg-transparent">
 					Tap on an item to view more information about it.
 				</li>
+				#if(trunk.preregistrationApplies):
+				<li class="list-group-item bg-transparent">
+					Until we're on the ship, you can create your own LFGs and Private Events and see them here.
+					Chat, joining, and inviting others open up once we're on board.
+				</li>
+				#endif
 				<li class="list-group-item bg-transparent">
 					Private Events let you create a calendar item for yourself, plus you can invite others to join you. It can also create
 					a group chat for discussing your event. Everyone invited can see the event in their Day Planner.

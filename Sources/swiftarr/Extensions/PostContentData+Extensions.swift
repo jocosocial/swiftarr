@@ -10,6 +10,12 @@ extension PostContentData {
 				return ttUser
 			}
 		}
+		// Authorization here is a role, not an access level (TwitarrTeam and above also qualify, as they can read the shared mailbox).
+		if postAsCommunitySupport, actualAuthor.canAccessCommunitySupport,
+			let csUser = PrivilegedUser.CommunitySupport.cachedUser(on: req)
+		{
+			return csUser
+		}
 		return actualAuthor
 	}
 }

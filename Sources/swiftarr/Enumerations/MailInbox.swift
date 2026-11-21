@@ -12,6 +12,7 @@ enum MailInbox {
     case seamail
     case moderatorSeamail
     case twitarrTeamSeamail
+    case communitySupportSeamail
     case lfgMessages
     case privateEvent
 
@@ -37,6 +38,7 @@ enum MailInbox {
         case .seamail: return RedisKey("UnreadSeamails-\(userID)")
         case .moderatorSeamail: return RedisKey("UnreadModSeamails-\(userID)")
         case .twitarrTeamSeamail: return RedisKey("UnreadTTSeamails-\(userID)")
+        case .communitySupportSeamail: return RedisKey("UnreadCommunitySupportSeamails-\(userID)")
         case .lfgMessages: return RedisKey("UnreadLFGs-\(userID)")
         case .privateEvent: return RedisKey("UnreadPersonalEvents-\(userID)")
         }

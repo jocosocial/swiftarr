@@ -37,6 +37,15 @@ enum FezType: String, CaseIterable, Codable {
 		FezType.lfgTypes.contains(self)
 	}
 	
+	/// Types that restricted users may create, view and list during preregistration: LFGs and Personal/Private Events. Never Seamail.
+	static var preregistrationTypes: [FezType] {
+		lfgTypes + [.personalEvent, .privateEvent]
+	}
+
+	var isPreregistrationType: Bool {
+		FezType.preregistrationTypes.contains(self)
+	}
+
 	/// Types that are Seamails.
 	static var seamailTypes: [FezType] {
 		[.open, .closed]

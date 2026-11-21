@@ -4,16 +4,30 @@
     		<div class="row align-items-center justify-content-between mb-2">
     			<div class="col col-12">
 					<nav aria-label="breadcrumb">
-						<span class="swiftarr-breadcrumb-item"><a href="/events">Events</a></span>
+						<span class="swiftarr-breadcrumb-item">#if(event):<a href="/events">Events</a>#else:<a href="/">Today</a>#endif</span>
 						<span class="swiftarr-breadcrumb-item active" aria-current="page">Add/Edit Event Organizer</span>
 					</nav>
 				</div>
 			</div>
+			#if(event):
 			<p>This form is for the <b>organizer</b> of this event. If you want to <i>attend</i> this event this form is not for you.</p>
+			#else:
+			<p>This form is for <b>organizers</b> of events. If you want to <i>attend</i> an event this form is not for you.</p>
+			#endif
+			#if(event):
 			<p>This self-service form allows you, the organizer of a Shadow Event, to create a Bio page for yourself, attached to the event you'll
 			be running. This Bio page is not publicly linked to your Twitarr user. The intent of this feature is to let people
 			thinking of attending your session know a bit about you.</p>
-			#if(deleteAction && alreadyAttached):
+			#else:
+			<p>This self-service form allows you to create a Bio page for yourself without attaching it to an event. This Bio page is not
+			publicly linked to your Twitarr user. The Twitarr Team can attach your Bio to an event (for example, a workshop or office hours
+			on the official schedule), and you can attach it to Shadow Events yourself with the "Set Organizer" button on the event.</p>
+			#endif
+			#if(!event):
+				#if(deleteAction):
+					<p>You <b>already</b> have a profile set up. You can edit the profile fields and re-submit to update.</p>
+				#endif
+			#elseif(deleteAction && alreadyAttached):
 				<p>You <b>already</b> have a profile set up and attached to this event. You can edit the profile fields and re-submit to update,
 				and will stay listed as an organizer for:</p>
 			#elseif(deleteAction):
@@ -22,6 +36,7 @@
 			#else:
 				<p>The event you'll be running:</p>
 			#endif
+			#if(event):
 			<ul class="list-group">
 				<li class="list-group-item">
 					<div class="container-fluid">
@@ -46,6 +61,7 @@
 					</div>
 				</li>
 			</ul>
+			#endif
 			<div class="text-center">
 				<hr>
 				<h3 class="mt-2">The Unofficial Form</h3>
@@ -58,11 +74,13 @@
 				the Event card for your event in Twitarr's schedule.
 			</p>
 
-			<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST" data-successurl="/events">
+			<form class="ajax" action="#(formAction)" enctype="multipart/form-data" method="POST" data-successurl="#(successURL)">
 				#if(performer.header.id != nil):
 					<input type="hidden" name="performerID" id="performerID" value="#(performer.header.id)">
 				#endif
-				<input type="hidden" name="eventUID" id="eventUID" value="#(event.uid)">
+				#if(event):
+					<input type="hidden" name="eventUID" id="eventUID" value="#(event.uid)">
+				#endif
 				<div class="row mt-4">
     				<div class="col">
 						<label for="name" class="form-label">Your Name</label>
@@ -172,6 +190,7 @@
 				</div>
 				<div class="alert alert-danger mt-3 d-none" role="alert"></div>				
 			</form>
+			#if(event):
 			<div class="row mt-4 mb-2">
 				<div class="col">
 					If you're running multiple events: fill in your information and submit, then find the other events you're running and
@@ -179,10 +198,11 @@
 					Note that you can't have different bios for different events. 
 				</div>
 			</div>
+			#endif
 			
 			#if(deleteAction):
 				<hr>
-				<form class="ajax" action="#(deleteAction)" enctype="multipart/form-data" method="POST" data-successurl="/events">
+				<form class="ajax" action="#(deleteAction)" enctype="multipart/form-data" method="POST" data-successurl="#(successURL)">
 					<div class="row mt-2 justify-content-end">
 						<div class="col col-12">
 							If you've decided you don't want an event organizer page after all, tap "Delete Profile" to remove it. If you've accidentially

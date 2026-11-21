@@ -111,6 +111,10 @@ struct ForumController: APIRouteCollection {
 		}
 		let categories = try await categoryQuery.all()
 		let sortedCats = categories.sorted {
+			// Staff areas (the moderator forums, Community Support) come first, then everything else.
+			if $0.isStaffCategory != $1.isStaffCategory {
+				return $0.isStaffCategory
+			}
 			if $0.accessLevelToView != $1.accessLevelToView {
 				return $0.accessLevelToView > $1.accessLevelToView
 			}
@@ -140,7 +144,7 @@ struct ForumController: APIRouteCollection {
 	/// * `?sort=[create, update, title, event]` - Sort forums by `create` time, `update` time, or `title`, or the start time of their associated `Event`.
 	/// * `?order=[ascending, descending]` - Specify a sort order. Omit this parameter to use the default ordering for the category type.
 	/// Create and update return newest forums first. `event` is only valid for Event categories, is default for them, and returns forums in ascending event start time; secondary sort
-	/// is alpha on event title. `Update` is the default for non-event categories.
+	/// is alpha on event title. Categories may override the default with `defaultSort`.
 	/// * `?start=INT` - The index into the sorted list of forums to start returning results. 0 for first item, which is the default.
 	/// * `?limit=INT` - The max # of entries to return. Defaults to 50
 	///
@@ -153,7 +157,7 @@ struct ForumController: APIRouteCollection {
 	/// * `?afterdate=DATE` -
 	/// * `?beforedate=DATE` -
 	///
-	/// With no parameters, defaults to `?sort=update&start=0&limit=50`.
+	/// With no parameters, uses the category default sort, or event sorting for event categories and update sorting otherwise.
 	///
 	/// If you want to ensure you have all the threads in a category, you can sort by create time and ask for threads newer than
 	/// the last time you asked. If you want to update last post times and post counts, you can sort by update time and get the
@@ -200,21 +204,21 @@ struct ForumController: APIRouteCollection {
 		}
 		var dateFilterUsesUpdate = false
 		let orderDirection = req.orderDirection()
-		switch req.query[String.self, at: "sort"] {
-		case "create": _ = countQuery.sort(\.$createdAt, orderDirection ?? .descending)
-		case "title": _ = countQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
-		case "update":
+		let requestedSort = req.query[String.self, at: "sort"].flatMap(ForumSort.init(rawValue:))
+		let sort = requestedSort ?? category.defaultSort ?? (category.isEventCategory ? .event : .update)
+		switch sort {
+		case .create: _ = countQuery.sort(\.$createdAt, orderDirection ?? .descending)
+		case .title: _ = countQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
+		case .update:
 			_ = countQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 			dateFilterUsesUpdate = true
-		default:
-			if category.isEventCategory {
-				// Sort by event start time
-				_ = countQuery.sort(Event.self, \Event.$startTime, orderDirection ?? .ascending).sort(Event.self, \Event.$title, orderDirection ?? .ascending)
+		case .event:
+			guard category.isEventCategory else {
+				throw Abort(.badRequest, reason: "Event sorting is only available for event categories.")
 			}
-			else {
-				_ = countQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
-				dateFilterUsesUpdate = true
-			}
+			// Sort by event start time, then event title.
+			_ = countQuery.sort(Event.self, \Event.$startTime, orderDirection ?? .ascending)
+				.sort(Event.self, \Event.$title, orderDirection ?? .ascending)
 		}
 		if let beforeDate = req.query[Date.self, at: "beforedate"] {
 			if dateFilterUsesUpdate {
@@ -376,9 +380,9 @@ struct ForumController: APIRouteCollection {
 		let forumCount = try await countQuery.count()
 		let orderDirection = req.orderDirection();
 		let forumQuery = countQuery.copy().range(pagination.range).join(child: \.$scheduleEvent, method: .left)
-		switch req.query[String.self, at: "sort"] {
-			case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
-			case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
+		switch req.query[String.self, at: "sort"].flatMap(ForumSort.init(rawValue:)) {
+			case .create: _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
+			case .title: _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
 			default: _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 		}
 		let forums = try await forumQuery.all()
@@ -412,9 +416,9 @@ struct ForumController: APIRouteCollection {
 		let forumCount = try await countQuery.count()
 		let orderDirection = req.orderDirection();
 		let forumQuery = countQuery.copy().range(pagination.range).join(child: \.$scheduleEvent, method: .left)
-		switch req.query[String.self, at: "sort"] {
-		case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
-		case "update": _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
+		switch req.query[String.self, at: "sort"].flatMap(ForumSort.init(rawValue:)) {
+		case .create: _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
+		case .update: _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 		default: _ = forumQuery.sort(.custom("lower(forum.title)"), orderDirection ?? .ascending)
 		}
 		async let forums = try forumQuery.all()
@@ -451,9 +455,9 @@ struct ForumController: APIRouteCollection {
 		let forumCount = try await countQuery.count()
 		let orderDirection = req.orderDirection()
 		let forumQuery = countQuery.copy().range(pagination.range).join(child: \.$scheduleEvent, method: .left)
-		switch req.query[String.self, at: "sort"] {
-		case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
-		case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
+		switch req.query[String.self, at: "sort"].flatMap(ForumSort.init(rawValue:)) {
+		case .create: _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
+		case .title: _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
 		default: _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 		}
 		async let forums = try forumQuery.all()
@@ -490,9 +494,9 @@ struct ForumController: APIRouteCollection {
 		let forumCount = try await countQuery.count()
 		let orderDirection = req.orderDirection()
 		let forumQuery = countQuery.copy().range(pagination.range).join(child: \.$scheduleEvent, method: .left)
-		switch req.query[String.self, at: "sort"] {
-		case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
-		case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
+		switch req.query[String.self, at: "sort"].flatMap(ForumSort.init(rawValue:)) {
+		case .create: _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
+		case .title: _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
 		default: _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 		}
 		async let forums = try forumQuery.all()
@@ -547,9 +551,9 @@ struct ForumController: APIRouteCollection {
 		let forumCount = try await countQuery.count()
 		let orderDirection = req.orderDirection()
 		let forumQuery = countQuery.copy().range(pagination.range).join(child: \.$scheduleEvent, method: .left)
-		switch req.query[String.self, at: "sort"] {
-		case "create": _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
-		case "title": _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
+		switch req.query[String.self, at: "sort"].flatMap(ForumSort.init(rawValue:)) {
+		case .create: _ = forumQuery.sort(\.$createdAt, orderDirection ?? .descending)
+		case .title: _ = forumQuery.sort(.custom("lower(\"forum\".\"title\")"), orderDirection ?? .ascending)
 		default: _ = forumQuery.sort(\.$lastPostTime, orderDirection ?? .descending)
 		}
 		let forums = try await forumQuery.all()
@@ -842,11 +846,10 @@ struct ForumController: APIRouteCollection {
 			}
 			postFilterMentions = mentionName
 			query.filter(\.$text, .custom("ILIKE"), "%\(mentionName)%")
-			if mentionName.lowercased() == "@moderator" && cacheUser.accessLevel.hasAccess(.moderator) {
-				try await markNotificationViewed(user: cacheUser, type: .moderatorForumMention(0), on: req)
-			}
-			if mentionName.lowercased() == "@twitarrteam" && cacheUser.accessLevel.hasAccess(.twitarrteam) {
-				try await markNotificationViewed(user: cacheUser, type: .twitarrTeamForumMention(0), on: req)
+			// Looking at a mailbox's mentions clears that mailbox's unread mention count, for members of the mailbox.
+			for mailbox in PrivilegedMailbox.all
+			where mailbox.user.matches(String(mentionName.dropFirst())) && mailbox.isSatisfied(by: cacheUser) {
+				try await markNotificationViewed(user: cacheUser, type: mailbox.forumMentionType(0, nil), on: req)
 			}
 		}
 		if let byself = req.query[Bool.self, at: "byself"], byself == true {
@@ -1036,8 +1039,10 @@ struct ForumController: APIRouteCollection {
 			return .ok
 		}
 		forum.pinned = true;
-		try await forum.save(on: req.db)
-		try await forum.logIfModeratorAction(.pin, moderatorID: cacheUser.userID, on: req)
+		try await req.db.transaction { db in
+			try await forum.save(on: db)
+			try await forum.logIfModeratorAction(.pin, moderatorID: cacheUser.userID, on: db)
+		}
 		return .created
 	}
 
@@ -1059,8 +1064,10 @@ struct ForumController: APIRouteCollection {
 			return .ok
 		}
 		forum.pinned = false;
-		try await forum.save(on: req.db)
-		try await forum.logIfModeratorAction(.unpin, moderatorID: cacheUser.userID, on: req)
+		try await req.db.transaction { db in
+			try await forum.save(on: db)
+			try await forum.logIfModeratorAction(.unpin, moderatorID: cacheUser.userID, on: db)
+		}
 		return .noContent
 	}
 
@@ -1091,31 +1098,95 @@ struct ForumController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "users cannot create forums in category")
 		}
 		try guardUserCanAccessCategory(cacheUser, category: category)
-		// process images
-		let imageFilenames = try await self.processImages(data.firstPost.images, usage: .forumPost, maxImages: Settings.shared.getMaxForumPostImages(for: cacheUser), on: req)
-		// create forum
 		let effectiveAuthor = data.firstPost.effectiveAuthor(actualAuthor: cacheUser, on: req)
-		let forum = try Forum(title: data.title, category: category, creatorID: effectiveAuthor.userID, isLocked: false)
-		try await forum.save(on: req.db)
-		try await forum.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
+		let (forum, forumPost) = try await withProcessedImages(data.firstPost.images, usage: .forumPost,
+				maxImages: Settings.shared.getMaxForumPostImages(for: cacheUser), on: req) { imageFilenames in
+			try await createForum(
+				in: category,
+				title: data.title,
+				text: data.firstPost.text,
+				images: imageFilenames,
+				effectiveAuthor: effectiveAuthor,
+				actingUser: cacheUser,
+				on: req
+			)
+		}
+		let creatorHeader = effectiveAuthor.makeHeader()
+		let postData = try PostData(post: forumPost, author: creatorHeader, bookmarked: false, userLike: nil, likeCount: 0)
+		let forumData = try ForumData(forum: forum, creator: creatorHeader, isFavorite: false, isMuted: false, posts: [postData],
+				pager: Paginator(total: 1, start: 0, limit: 50))
+		return forumData
+	}
+
+	/// Creates a forum thread and its first post, and does the bookkeeping that goes with it: the forum's last-post fields, the category's
+	/// forum count, moderator-action logging, and mention/alertword/hashtag processing. Used by `forumCreateHandler`.
+	///
+	/// All the database writes happen in one transaction, and mention processing runs after it commits. Callers that need to write more
+	/// in the same transaction (such as a Community Support report's discussion thread, which links the new forum to the report) should
+	/// call `insertForum` inside their own transaction, then `publishForumPost`.
+	///
+	/// This does no permission checking--callers must already have checked that `actingUser` may create content in `category`.
+	///
+	/// - Parameters:
+	///   - category: The category to create the forum in.
+	///   - title: The forum title.
+	///   - text: The text of the first post.
+	///   - images: Filenames of already-processed images for the first post.
+	///   - effectiveAuthor: Who the forum and post appear to be from; usually `actingUser`, unless a moderator is posting as `moderator`/`TwitarrTeam`.
+	///   - actingUser: The user actually making the request. `req` must be authenticated as this user.
+	/// - Returns: The new forum and its first post.
+	func createForum(
+		in category: Category,
+		title: String,
+		text: String,
+		images: [String] = [],
+		effectiveAuthor: UserCacheData,
+		actingUser: UserCacheData,
+		on req: Request
+	) async throws -> (forum: Forum, post: ForumPost) {
+		let result = try await req.db.transaction { db in
+			try await insertForum(in: category, title: title, text: text, images: images, effectiveAuthor: effectiveAuthor,
+					actingUser: actingUser, on: db)
+		}
+		await publishForumPost(result.post, on: req)
+		return result
+	}
+
+	/// The database half of `createForum`. Every write goes through `db`, so call this inside a transaction, and call `publishForumPost`
+	/// for the first post after the transaction commits.
+	func insertForum(
+		in category: Category,
+		title: String,
+		text: String,
+		images: [String] = [],
+		effectiveAuthor: UserCacheData,
+		actingUser: UserCacheData,
+		on db: Database
+	) async throws -> (forum: Forum, post: ForumPost) {
+		// create forum
+		let forum = try Forum(title: title, category: category, creatorID: effectiveAuthor.userID, isLocked: false)
+		try await forum.save(on: db)
+		try await forum.logIfModeratorAction(.post, moderatorID: actingUser.userID, on: db)
 		// create first post
-		let forumPost = try ForumPost(forum: forum, authorID: effectiveAuthor.userID, text: data.firstPost.text, images: imageFilenames)
-		try await forumPost.save(on: req.db)
-		try await forumPost.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
+		let forumPost = try ForumPost(forum: forum, authorID: effectiveAuthor.userID, text: text, images: images)
+		try await forumPost.save(on: db)
+		try await forumPost.logIfModeratorAction(.post, moderatorID: actingUser.userID, on: db)
 		// Update the forum last post at
 		forum.lastPostTime = Date()
 		forum.lastPostID = forumPost.id
-		try await forum.save(on: req.db)
+		try await forum.save(on: db)
 		// Update the Category's cached count of forums
-		category.forumCount = try await Int32(category.$forums.query(on: req.db).count())
-		try await category.save(on: req.db)
-		// If the post @mentions anyone, update their mention counts
-		try await processForumMentions(post: forumPost, editedText: nil, isCreate: true, on: req)
-		let creatorHeader = effectiveAuthor.makeHeader()
-		let postData = try PostData(post: forumPost, author: creatorHeader, bookmarked: false, userLike: nil, likeCount: 0)
-		let forumData = try ForumData(forum: forum, creator: creatorHeader, isFavorite: false, isMuted: false, posts: [postData], 
-				pager: Paginator(total: 1, start: 0, limit: 50))
-		return forumData
+		category.forumCount = try await Int32(category.$forums.query(on: db).count())
+		try await category.save(on: db)
+		return (forum, forumPost)
+	}
+
+	/// The side-effect half of creating a forum post: if the post @mentions anyone, update their mention counts (and alertword/hashtag state).
+	/// Call after the transaction that inserted the post has committed.
+	func publishForumPost(_ post: ForumPost, on req: Request) async {
+		await dispatchEffect(on: req) {
+			try await processForumMentions(post: post, editedText: nil, isCreate: true, on: req)
+		}
 	}
 
 	/// `POST /api/v3/forum/ID/rename/:new_name`
@@ -1139,10 +1210,13 @@ struct ForumController: APIRouteCollection {
 		// must be forum owner or .moderator
 		try cacheUser.guardCanModifyContent(forum, customErrorString: "User cannot modify forum title.")
 		if forum.title != nameParameter {
-			try await ForumEdit(forum: forum, editorID: cacheUser.userID, categoryChanged: false).save(on: req.db)
+			let forumEdit = try ForumEdit(forum: forum, editorID: cacheUser.userID, categoryChanged: false)
 			forum.title = nameParameter
-			try await forum.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: req)
-			try await forum.save(on: req.db)
+			try await req.db.transaction { db in
+				try await forumEdit.save(on: db)
+				try await forum.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: db)
+				try await forum.save(on: db)
+			}
 		}
 		return .created
 	}
@@ -1226,15 +1300,19 @@ struct ForumController: APIRouteCollection {
 		}
 		let category = try await forum.$category.get(on: req.db)
 		try cacheUser.guardCanModifyContent(forum)
-		try await forum.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
 		let posts = try await ForumPost.query(on: req.db).filter(\.$forum.$id == forum.requireID()).all()
-		try await processThreadDeleteMentions(posts: posts, on: req)
-		try await posts.delete(on: req.db)
-		try await forum.delete(on: req.db)
-		// Update Category's cached forum count
-		let count = try await category.$forums.query(on: req.db).count()
-		category.forumCount = Int32(count)
-		try await category.save(on: req.db)
+		try await req.db.transaction { db in
+			try await forum.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: db)
+			try await posts.delete(on: db)
+			try await forum.delete(on: db)
+			// Update Category's cached forum count
+			let count = try await category.$forums.query(on: db).count()
+			category.forumCount = Int32(count)
+			try await category.save(on: db)
+		}
+		await dispatchEffect(on: req) {
+			try await processThreadDeleteMentions(posts: posts, on: req)
+		}
 		return .noContent
 	}
 
@@ -1264,23 +1342,26 @@ struct ForumController: APIRouteCollection {
 		guard !cacheUser.getBlocks().contains(forum.$creator.id) else {
 			throw Abort(.forbidden, reason: "user cannot post in forum")
 		}
-		// process images
-		let filenames = try await self.processImages(newPostData.images, usage: .forumPost, maxImages: Settings.shared.getMaxForumPostImages(for: cacheUser), on: req)
-		// create post
 		let effectiveAuthor = newPostData.effectiveAuthor(actualAuthor: cacheUser, on: req)
-		let forumPost = try ForumPost(
-			forum: forum,
-			authorID: effectiveAuthor.userID,
-			text: newPostData.text,
-			images: filenames
-		)
-		try await forumPost.save(on: req.db)
-		forum.lastPostTime = Date()
-		forum.lastPostID = forumPost.id
-		try await forum.save(on: req.db)
-		try await forumPost.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: req)
+		let forumPost = try await withProcessedImages(newPostData.images, usage: .forumPost,
+				maxImages: Settings.shared.getMaxForumPostImages(for: cacheUser), on: req) { filenames in
+			try await req.db.transaction { db in
+				let forumPost = try ForumPost(
+					forum: forum,
+					authorID: effectiveAuthor.userID,
+					text: newPostData.text,
+					images: filenames
+				)
+				try await forumPost.save(on: db)
+				forum.lastPostTime = Date()
+				forum.lastPostID = forumPost.id
+				try await forum.save(on: db)
+				try await forumPost.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: db)
+				return forumPost
+			}
+		}
 		// If the post @mentions anyone, update their mention counts
-		try await processForumMentions(post: forumPost, editedText: nil, isCreate: true, on: req)
+		await publishForumPost(forumPost, on: req)
 		// return as PostData, with 201 status
 		let response = Response(status: .created)
 		try response.content.encode(PostData(post: forumPost, author: effectiveAuthor.makeHeader()))
@@ -1306,9 +1387,13 @@ struct ForumController: APIRouteCollection {
 		}
 		try guardUserCanAccessCategory(cacheUser, category: post.forum.category)
 		try guardUserCanPostInForum(cacheUser, in: post.forum, editingPost: post)
-		try await post.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
-		try await processForumMentions(post: post, editedText: nil, on: req)
-		try await post.delete(on: req.db)
+		try await req.db.transaction { db in
+			try await post.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: db)
+			try await post.delete(on: db)
+		}
+		await dispatchEffect(on: req) {
+			try await processForumMentions(post: post, editedText: nil, on: req)
+		}
 		return .noContent
 	}
 
@@ -1447,20 +1532,32 @@ struct ForumController: APIRouteCollection {
 		try guardUserCanAccessCategory(cacheUser, category: post.forum.category)
 		// ensure user has write access, the post can be modified by them, and the forum isn't locked.
 		try guardUserCanPostInForum(cacheUser, in: post.forum, editingPost: post)
-		// process images
-		let filenames = try await self.processImages(newPostData.images, usage: .forumPost, maxImages: Settings.shared.getMaxForumPostImages(for: cacheUser), on: req)
-		// update if there are changes
 		let normalizedText = newPostData.text.replacingOccurrences(of: "\r\n", with: "\r")
-		if post.text != normalizedText || post.images != filenames {
-			// If the post @mentions anyone, update their mention counts
-			try await processForumMentions(post: post, editedText: normalizedText, on: req)
+		let previousPost: ForumPost? = try await withProcessedImages(newPostData.images, usage: .forumPost,
+				maxImages: Settings.shared.getMaxForumPostImages(for: cacheUser), on: req) { filenames in
+			// update if there are changes
+			guard post.text != normalizedText || post.images != filenames else {
+				return nil
+			}
 			// Save current contents into an Edit record first
 			let forumEdit = try ForumPostEdit(post: post, editorID: cacheUser.userID)
+			// Mention processing diffs the post's old text against the new text, and runs after the commit, so keep a copy of the old post for it.
+			let previousPost = try ForumPost(forum: post.forum, authorID: post.$author.id, text: post.text)
+			previousPost.id = post.id
 			post.text = normalizedText
 			post.images = filenames
-			try await post.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: req)
-			try await forumEdit.save(on: req.db)
-			try await post.save(on: req.db)
+			try await req.db.transaction { db in
+				try await post.logIfModeratorAction(.edit, moderatorID: cacheUser.userID, on: db)
+				try await forumEdit.save(on: db)
+				try await post.save(on: db)
+			}
+			return previousPost
+		}
+		if let previousPost = previousPost {
+			// If the post @mentions anyone, update their mention counts
+			await dispatchEffect(on: req) {
+				try await processForumMentions(post: previousPost, editedText: normalizedText, on: req)
+			}
 		}
 		// return updated post as PostData
 		let postDataArray = try await buildPostData([post], userID: cacheUser.userID, on: req)
@@ -1504,6 +1601,7 @@ struct ForumController: APIRouteCollection {
 				forum.with(\.$category)
 			}
 		}
+		try guardUserCanAccessCategory(cacheUser, category: post.forum.category)
 		// Only forum creator and moderators can pin posts within a forum.
 		try cacheUser.guardCanModifyContent(post, customErrorString: "User cannot pin posts in this forum.")
 		// But it becomes moderators only if the forum is locked.
@@ -1515,8 +1613,10 @@ struct ForumController: APIRouteCollection {
 			return .ok
 		}
 		post.pinned = true;
-		try await post.save(on: req.db)
-		try await post.logIfModeratorAction(.pin, moderatorID: cacheUser.userID, on: req)
+		try await req.db.transaction { db in
+			try await post.save(on: db)
+			try await post.logIfModeratorAction(.pin, moderatorID: cacheUser.userID, on: db)
+		}
 		return .created
 	}
 
@@ -1533,6 +1633,7 @@ struct ForumController: APIRouteCollection {
 				forum.with(\.$category)
 			}
 		}
+		try guardUserCanAccessCategory(cacheUser, category: post.forum.category)
 		// Only forum creator and moderators can pin posts within a forum.
 		try cacheUser.guardCanModifyContent(post, customErrorString: "User cannot pin posts in this forum.")
 		// But it becomes moderators only if the forum is locked.
@@ -1544,8 +1645,10 @@ struct ForumController: APIRouteCollection {
 			return .ok
 		}
 		post.pinned = false;
-		try await post.save(on: req.db)
-		try await post.logIfModeratorAction(.unpin, moderatorID: cacheUser.userID, on: req)
+		try await req.db.transaction { db in
+			try await post.save(on: db)
+			try await post.logIfModeratorAction(.unpin, moderatorID: cacheUser.userID, on: db)
+		}
 		return .noContent
 	}
 }
@@ -1906,16 +2009,12 @@ extension ForumController {
 				group.addTask {
 					try await subtractNotifications(users: subtractUUIDs, type: .forumMention(postID), on: req)
 				}
-				if subtracts.map({ $0.lowercased() }).contains("twitarrteam") {
-					let ttMembers = req.userCache.allUsersWithAccessLevel(.twitarrteam)
+				// Group mentions (@moderator, @twitarrteam, @communitysupport) notify every member of the mailbox.
+				let lowercasedSubtracts = subtracts.map { $0.lowercased() }
+				for mailbox in PrivilegedMailbox.all where lowercasedSubtracts.contains(mailbox.user.queryParam) {
+					let members = mailbox.members(on: req).filter { $0.userID != cacheUser.userID }.map { $0.userID }
 					group.addTask {
-						try await subtractNotifications(users: ttMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .twitarrTeamForumMention(postID), on: req)
-					}
-				}
-				if subtracts.map({ $0.lowercased()}).contains("moderator") {
-					let modMembers = req.userCache.allUsersWithAccessLevel(.moderator)
-					group.addTask {
-						try await subtractNotifications(users: modMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .moderatorForumMention(postID), on: req)
+						try await subtractNotifications(users: members, type: mailbox.forumMentionType(postID, nil), on: req)
 					}
 				}
 			}
@@ -1929,18 +2028,12 @@ extension ForumController {
 				group.addTask {
 					try await addNotifications(users: addUUIDs, type: .forumMention(postID, forumID), info: infoStr, on: req)
 				}
-				if adds.map({ $0.lowercased() }).contains("twitarrteam") {
-					let ttMembers = req.userCache.allUsersWithAccessLevel(.twitarrteam)
-					let infoStr = "\(authorText) wrote a forum post that @mentioned twitarrteam."
+				let lowercasedAdds = adds.map { $0.lowercased() }
+				for mailbox in PrivilegedMailbox.all where lowercasedAdds.contains(mailbox.user.queryParam) {
+					let members = mailbox.members(on: req).filter { $0.userID != cacheUser.userID }.map { $0.userID }
+					let infoStr = "\(authorText) wrote a forum post that @mentioned \(mailbox.user.queryParam)."
 					group.addTask {
-						try await addNotifications(users: ttMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .twitarrTeamForumMention(postID, forumID), info: infoStr, on: req)
-					}
-				}
-				if adds.map({ $0.lowercased()}).contains("moderator") {
-					let modMembers = req.userCache.allUsersWithAccessLevel(.moderator)
-					let infoStr = "\(authorText) wrote a forum post that @mentioned moderator."
-					group.addTask {
-						try await addNotifications(users: modMembers.filter({ $0.userID != cacheUser.userID}).map({ $0.userID }), type: .moderatorForumMention(postID, forumID), info: infoStr, on: req)
+						try await addNotifications(users: members, type: mailbox.forumMentionType(postID, forumID), info: infoStr, on: req)
 					}
 				}
 			}
@@ -1977,9 +2070,10 @@ extension ForumController {
 				}
 			}
 
-			// Hashtags
+			// Hashtags. The hashtag autocomplete set is global and served without authentication, so tags from posts in
+			// role-gated categories must never enter it.
 			let hashtags = post.getHashtags()
-			if !hashtags.isEmpty {
+			if !hashtags.isEmpty, role == nil {
 				group.addTask { try await req.redis.addHashtags(hashtags) }
 			}
 			// I believe this line is required to let subtasks propagate thrown errors by rethrowing.

@@ -144,4 +144,39 @@ class UsersControllerTests: XCTestCase, SwiftarrBaseTest {
 			}
 		}
 	}
+
+	// MARK: - Profiles during preregistration
+
+	func testPreregistrationUserCanViewOwnProfileButNotOthers() async throws {
+		try await withApp { app in
+			let savedPrereg = Settings.shared.enablePreregistration
+			let savedMinAccess = Settings.shared.minAccessLevel
+			defer {
+				Settings.shared.enablePreregistration = savedPrereg
+				Settings.shared.minAccessLevel = savedMinAccess
+			}
+			let suffix = UUID().uuidString.prefix(8).lowercased()
+			let me = try await makeUser(app, username: "prerege\(suffix)")
+			let other = try await makeUser(app, username: "preregother\(suffix)")
+			let staff = try await makeUser(app, username: "preregstaff\(suffix)")
+			staff.accessLevel = .twitarrteam
+			try await staff.save(on: app.db)
+			let myToken = try await makeToken(app, for: me)
+			let staffToken = try await makeToken(app, for: staff)
+			try await app.asyncBoot()
+			try await app.initializeUserCache(app)
+			Settings.shared.enablePreregistration = true
+			Settings.shared.minAccessLevel = .twitarrteam
+
+			try await app.test(.GET, "/api/v3/users/\(try me.requireID())/profile", headers: bearer(myToken)) { res async throws in
+				XCTAssertEqual(res.status, .ok, "a preregistration user can view their own profile by ID")
+			}
+			try await app.test(.GET, "/api/v3/users/\(try other.requireID())/profile", headers: bearer(myToken)) { res async throws in
+				XCTAssertEqual(res.status, .forbidden, "a preregistration user cannot view someone else's profile")
+			}
+			try await app.test(.GET, "/api/v3/users/\(try other.requireID())/profile", headers: bearer(staffToken)) { res async throws in
+				XCTAssertEqual(res.status, .ok, "staff at or above the minimum access level can still view other profiles")
+			}
+		}
+	}
 }

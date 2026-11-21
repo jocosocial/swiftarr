@@ -62,6 +62,8 @@ public struct BulkUserUpdateVerificationData: Content {
 	var dailyThemeCounts: BulkUserUpdateCounts
 	/// Counts for Hunt import. Includes Hunts and their child Puzzles as a single unit.
 	var huntCounts: BulkUserUpdateCounts
+	/// Counts for LFGs and Personal/Private Events created by users. Seamail is never imported.
+	var fezCounts: BulkUserUpdateCounts
 
 	/// Cases where the server has a registered user with the same regcode as the update file, but the usernames differ.
 	/// This may mean the user preregistered and then (somehow) registered on-boat with a different username before the bulk import happened.
@@ -84,6 +86,7 @@ extension BulkUserUpdateVerificationData {
 		needsPhotographerCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
 		dailyThemeCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
 		huntCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
+		fezCounts = BulkUserUpdateCounts(totalRecordsProcessed: 0, importedCount: 0, duplicateCount: 0, errorCount: 0)
 		regCodeConflicts = []
 		usernameConflicts = []
 		errorNotImported = []
@@ -700,6 +703,14 @@ public struct SettingsAppFeaturePair: Content {
 	var feature: String
 }
 
+/// Returned by: `POST /api/v3/admin/authratelimits/clear`
+///
+/// See `AdminController.clearAuthRateLimitsHandler()`.
+public struct AuthRateLimitClearData: Content {
+	/// The number of rate limit lockouts that were cleared.
+	var clearedCount: Int
+}
+
 /// Used to return the current `Settings` values. 
 ///
 /// Required by: `GET /api/v3/events/update`
@@ -719,6 +730,17 @@ public struct SettingsAdminData: Content {
 	var maxForumPostImages: Int
 	/// Minimum seconds a user must wait between photostream uploads. `0` disables the limit.
 	var photostreamUploadRateLimit: Int
+	/// Whether failed logins, password changes, recoveries, username lookups, and registration code attempts are rate limited.
+	var authRateLimitEnabled: Bool
+	/// Failed logins (or password changes) allowed per username, per client IP, in 15 minutes. `0` disables this limit.
+	var authRateLimitLoginFailures: Int
+	/// Failed logins (or password changes) allowed per username from all IPs combined, in an hour. `0` disables this limit.
+	var authRateLimitUsernameFailures: Int
+	/// Failed auth attempts of any kind allowed per client IP, in 15 minutes. `0` disables this limit.
+	var authRateLimitIPFailures: Int
+	/// Failed password recoveries allowed per username, and failed username lookups per registration code, in an hour.
+	/// `0` disables this limit.
+	var authRateLimitRecoveryFailures: Int
 	var forumAutoQuarantineThreshold: Int
 	var postAutoQuarantineThreshold: Int
 	var userAutoQuarantineThreshold: Int
@@ -726,7 +748,6 @@ public struct SettingsAdminData: Content {
 	/// Currently disabled app:feature pairs.
 	var disabledFeatures: [SettingsAppFeaturePair]
 	var shipWifiSSID: String?
-	var scheduleUpdateURL: String
 	var upcomingEventNotificationSeconds: Int
 	var upcomingEventNotificationSetting: EventNotificationSetting
 	var upcomingLFGNotificationSetting: EventNotificationSetting
@@ -744,6 +765,11 @@ extension SettingsAdminData {
 		self.maxImageSize = settings.maxImageSize
 		self.maxForumPostImages = settings.maxForumPostImages
 		self.photostreamUploadRateLimit = settings.photostreamUploadRateLimit
+		self.authRateLimitEnabled = settings.authRateLimitEnabled
+		self.authRateLimitLoginFailures = settings.authRateLimitLoginFailures
+		self.authRateLimitUsernameFailures = settings.authRateLimitUsernameFailures
+		self.authRateLimitIPFailures = settings.authRateLimitIPFailures
+		self.authRateLimitRecoveryFailures = settings.authRateLimitRecoveryFailures
 		self.forumAutoQuarantineThreshold = settings.forumAutoQuarantineThreshold
 		self.postAutoQuarantineThreshold = settings.postAutoQuarantineThreshold
 		self.userAutoQuarantineThreshold = settings.userAutoQuarantineThreshold
@@ -755,7 +781,6 @@ extension SettingsAdminData {
 			}
 		}
 		self.shipWifiSSID = settings.shipWifiSSID
-		self.scheduleUpdateURL = settings.scheduleUpdateURL
 		self.upcomingEventNotificationSeconds = Int(settings.upcomingEventNotificationSeconds)
 		self.upcomingEventNotificationSetting = settings.upcomingEventNotificationSetting
 		self.upcomingLFGNotificationSetting = settings.upcomingLFGNotificationSetting
@@ -780,6 +805,11 @@ public struct SettingsUpdateData: Content {
 	var maxForumPostImages: Int?
 	/// Minimum seconds a user must wait between photostream uploads. `0` disables the limit.
 	var photostreamUploadRateLimit: Int?
+	var authRateLimitEnabled: Bool?
+	var authRateLimitLoginFailures: Int?
+	var authRateLimitUsernameFailures: Int?
+	var authRateLimitIPFailures: Int?
+	var authRateLimitRecoveryFailures: Int?
 	var forumAutoQuarantineThreshold: Int?
 	var postAutoQuarantineThreshold: Int?
 	var userAutoQuarantineThreshold: Int?
@@ -791,8 +821,6 @@ public struct SettingsUpdateData: Content {
 	var disableFeatures: [SettingsAppFeaturePair]
 	/// The wifi name of the onboard wifi network
 	var shipWifiSSID: String?
-	/// The URL to use for automated schedule updates. The server polls this every hour to update the Events table.
-	var scheduleUpdateURL: String?
 	/// Number of seconds before an event to trigger the Soon notifications.
 	var upcomingEventNotificationSeconds: Int?
 	/// Upcoming event notification setting
@@ -878,12 +906,45 @@ struct UserSaveRestoreData: Content, Sendable {
 	let favoriteUsers: [String]
 	/// For shadow event organizers, their associated Performer data (which contains the event UIDs for the events 'they're running).
 	let performer: PerformerUploadData?
+	/// LFGs and Personal/Private Events this user created. Optional so that userfiles made before this field existed still decode.
+	let fezzes: [FezSaveRestoreData]?
 	// karaoke, game favorites?
+}
+
+/// An LFG or Personal/Private Event, stored under the user that owns it. Seamail, cancelled, and deleted fezzes are never saved. Times are the raw database values (port time),
+/// so no time conversion happens on import. Imported fezzes keep their IDs so links to them work on both servers; the owner is always the sole participant.
+struct FezSaveRestoreData: Content, Sendable {
+	/// The fez's ID on the exporting server. Optional so that userfiles made before this field existed still decode; those fezzes get new IDs.
+	let id: UUID?
+	let fezType: FezType
+	let visibility: FezVisibility
+	let title: String
+	let info: String
+	let location: String?
+	let startTime: Date?
+	let endTime: Date?
+	let minCapacity: Int
+	let maxCapacity: Int
+}
+
+extension FezSaveRestoreData {
+	init(_ fez: FriendlyFez) {
+		id = fez.id
+		fezType = fez.fezType
+		visibility = fez.visibility
+		title = fez.title
+		info = fez.info
+		location = fez.location
+		startTime = fez.startTime
+		endTime = fez.endTime
+		minCapacity = fez.minCapacity
+		maxCapacity = fez.maxCapacity
+	}
 }
 
 extension UserSaveRestoreData {
 	/// For this to work: Must use `.with(\.$roles).with(\.$favoriteEvents).with(\.$favorites).with(\.$performer).with(\.$performer.events)` in query
-	init?(user: User) {
+	init?(user: User, fezzes: [FriendlyFez] = []) {
 		guard let regCode = user.unspentVerification else {
 			return nil
 		}
@@ -911,6 +972,7 @@ extension UserSaveRestoreData {
 		favoriteEvents = user.$favoriteEvents.pivots.compactMap { $0.favorite ? $0.event.uid : nil }
 		photographerEvents = user.$favoriteEvents.pivots.compactMap { $0.photographer ? $0.event.uid : nil }
 		favoriteUsers = user.favorites.compactMap { $0.favorite.username }
+		self.fezzes = fezzes.map { FezSaveRestoreData($0) }
 		if let perf = user.performer {
 			performer = try? PerformerUploadData(perf)
 		}

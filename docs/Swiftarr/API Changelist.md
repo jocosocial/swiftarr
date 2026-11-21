@@ -349,3 +349,41 @@ additive; the existing count fields are unchanged and are now derived from these
 
 - `SocketNotificationData` gains an optional `notificationID` field.
 - New endpoint `GET /api/v3/notification/log` returns the logged-in user's notification history, paginated (`Paginated<NotificationLogData>`), most recent first.
+- Available during preregistration (owner-only, LFG/`personalEvent`/`privateEvent` types only, no `initialUsers` or `firstPost`): `GET /api/v3/fez/types`, `GET /api/v3/fez/owner`, `GET /api/v3/fez/:fez_ID`, `POST /api/v3/fez/create`, `POST /api/v3/fez/:fez_ID/update`, `POST /api/v3/fez/:fez_ID/cancel`, `POST /api/v3/fez/:fez_ID/delete`, `DELETE /api/v3/fez/:fez_ID`, and `GET /api/v3/users/:user_ID/profile` (own profile only).
+- `POST /api/v3/fez/:fez_ID/update` accepts `fezType: privateEvent` on a `personalEvent` (one-way conversion).
+- Admin: `UserSaveRestoreData` gains optional `fezzes: [FezSaveRestoreData]`; `BulkUserUpdateVerificationData` gains `fezCounts`.
+
+## Nov 02, 2026
+
+- Added TwitarrTeam endpoints to link a Performer (official or shadow) to any Event by hand: `POST /api/v3/admin/performer/:performer_ID/event/:event_ID`, and to remove a link: `DELETE /api/v3/admin/performer/:performer_ID/event/:event_ID`. Manual links are preserved when the performer spreadsheet is re-applied via `POST /api/v3/admin/performer/link/apply`.
+- Added `POST /api/v3/performer/self`, which lets users with the `performerselfeditor` role, and TwitarrTeam and above, create or update their Shadow Event Performer profile without attaching it to an event. TwitarrTeam can then attach the profile to any event using the new admin link endpoint.
+
+## Nov 06, 2026
+
+- New role `communitysupport` ("Community Support") and feature flag `communitySupport`.
+- New `/api/v3/communitysupport/*` controller for Community Support reports: `POST /report`, `GET /reports`, `GET /report/:report_id`, `POST /report/:report_id/status`, `POST /report/:report_id/discussion`, `GET /actionlog`, and `GET /export` (THO and above). Available to role holders, TwitarrTeam, and above; plain moderators have no access.
+- New shared mailbox user `@CommunitySupport` (`?foruser=communitysupport`). `FezContentData` gains `createdByCommunitySupport`; `PostContentData` gains `postAsCommunitySupport`.
+- `UserNotificationData` gains optional `communitySupportData`. New notification type `communitySupportForumMention`, with a matching `SocketNotificationData.NotificationTypeData` case.
+
+## Nov 12, 2026
+
+- `scheduleUpdateURL` has been removed from `SettingsAdminData` and `SettingsUpdateData`.
+- `ClientSettingsData` gains `schedBaseUrl`, the base URL of the sched.com site (e.g. `https://jococruise2026.sched.com`).
+
+## Nov 13, 2026
+
+- `POST /api/v3/user/password` now returns `TokenStringData` (still 201). A password change revokes the user's existing token on every device; clients must replace their stored token with the returned one.
+- `POST /api/v3/auth/recovery` now always returns a new token and revokes the old one, instead of returning the existing token. An unknown username now fails with the same 400 as a wrong recovery key.
+- Failed attempts on `POST /api/v3/auth/login`, `/auth/recovery`, `/auth/username`, `/user/create` (bad registration codes), and `/user/password` (wrong current password) are now rate limited per username/registration code and per client IP. Over the limit, these return 429 with a `Retry-After` header (seconds). The recovery and username lookup lockouts that used to return a permanent 403 are now this temporary 429.
+- Admin: `SettingsAdminData` and `SettingsUpdateData` gain `authRateLimitEnabled`, `authRateLimitLoginFailures`, `authRateLimitUsernameFailures`, `authRateLimitIPFailures`, and `authRateLimitRecoveryFailures`.
+- Admin: added `POST /api/v3/admin/authratelimits/clear` (TwitarrTeam and above), which clears all current auth rate limit lockouts and returns `AuthRateLimitClearData`.
+
+## Nov 11, 2026
+
+- The minimum password length for `/user/create`, `/user/password`, and `/auth/recovery` (`newPassword`) is now 8 characters, up from 6. Existing passwords still work.
+
+## Nov 14, 2026
+
+- `CategoryData` gains an optional `defaultSort` field to direct clients to the preferred thread sort for a category. Splashdot sets this to `create` (newest threads first).
+- Category thread requests now honor `CategoryData.defaultSort` when `sort` is omitted. Supported values are `create`, `title`, `update`, and `event`.
+- Event categories advertise `defaultSort: "event"`. Explicit `sort=event` requests for non-event categories return HTTP 400.

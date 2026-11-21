@@ -29,6 +29,9 @@ enum UserRoleType: String, CaseIterable, Codable {
 	case accountmanager
 	/// Hunt Managers can create and modify Puzzle Hunts.
 	case huntmanager
+	/// Community Support team members. They can file and review Community Support reports, read and post in the private Community Support forum category,
+	/// and read the shared @CommunitySupport seamail mailbox. TwitarrTeam and above have the same access without needing the role.
+	case communitysupport
 
 	/// `.label` returns consumer-friendly case names.
 	var label: String {
@@ -40,6 +43,7 @@ enum UserRoleType: String, CaseIterable, Codable {
 		case .performerselfeditor: return "\"Allowed to create/edit their Shadow Event Performer\""
 		case .accountmanager: return "Account Manager"
 		case .huntmanager: return "Hunt Manager"
+		case .communitysupport: return "Community Support"
 		}
 	}
 

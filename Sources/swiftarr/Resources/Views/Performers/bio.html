@@ -101,6 +101,40 @@
 						<a class="btn btn-outline-primary" href="/admin/performer/add?performer=#(performer.header.id)">Edit Performer</a>
 					</div>
 				</div>
+				#if(trunk.userIsTwitarrTeam && count(performer.events) > 0):
+					<div class="row my-2 mb-1">
+						<div class="col-12">
+							<b>Linked Events</b>
+							<ul class="list-group list-group-flush">
+								#for(event in performer.events):
+									<li class="list-group-item d-flex justify-content-between align-items-center px-0">
+										<span>#(event.title)</span>
+										<span class="btn-group btn-group-sm" role="group">
+											<a class="btn btn-outline-secondary" href="/admin/performer/event/#(event.eventID)">Manage</a>
+											<button type="button" class="btn btn-outline-danger unlink-event" data-eventid="#(event.eventID)">Unlink</button>
+										</span>
+									</li>
+								#endfor
+							</ul>
+						</div>
+					</div>
+					<script>
+						for (const button of document.querySelectorAll('.unlink-event')) {
+							button.addEventListener('click', async () => {
+								if (!confirm('Unlink this performer from the event?')) {
+									return;
+								}
+								const response = await fetch(`/admin/performer/#(performer.header.id)/event/${button.dataset.eventid}/unlink`, { method: 'POST' });
+								if (response.status < 300) {
+									location.reload();
+								}
+								else {
+									alert(`Could not unlink performer: ${response.status}`);
+								}
+							});
+						}
+					</script>
+				#endif
 			#endif
 		</div>
 	#endexport

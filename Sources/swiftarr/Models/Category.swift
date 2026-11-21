@@ -26,6 +26,10 @@ final class Category: Model, @unchecked Sendable {
 	/// TRUE if this category holds forums for Events.
 	@Field(key: "is_event_category") var isEventCategory: Bool
 
+	/// The default `sort` query parameter clients should use when requesting threads in this category.
+	/// Values match the forum category `sort` parameter (`create`, `update`, `title`, or `event`).
+	@OptionalField(key: "default_sort") var defaultSort: ForumSort?
+
 	/// Minimum access level to view posts in this category. Usually set to `.quarantined`. But, a category reserved for moderators only
 	/// could have this set to `.moderator`.
 	@Enum(key: "view_access_level") var accessLevelToView: UserAccessLevel
@@ -61,6 +65,12 @@ final class Category: Model, @unchecked Sendable {
 	// Used by Fluent
 	init() {}
 
+	/// True for categories that are staff areas: ones only moderators can see, and the Community Support category. The category list shows
+	/// these first, so the team's private areas sit together above the public ones.
+	var isStaffCategory: Bool {
+		accessLevelToView >= .moderator || requiredRole == .communitysupport
+	}
+
 	/// Initializes a new Category.
 	///
 	/// - Parameters:
@@ -72,6 +82,7 @@ final class Category: Model, @unchecked Sendable {
 		viewAccess: UserAccessLevel = .quarantined,
 		createForumAccess: UserAccessLevel = .verified,
 		isEventCategory: Bool = false,
+		defaultSort: ForumSort? = nil,
 		requiredRole: UserRoleType? = nil
 	) {
 		self.title = title
@@ -80,6 +91,7 @@ final class Category: Model, @unchecked Sendable {
 		self.accessLevelToCreate = createForumAccess
 		self.forumCount = 0
 		self.isEventCategory = isEventCategory
+		self.defaultSort = defaultSort
 		self.requiredRole = requiredRole
 	}
 }

@@ -11,16 +11,14 @@ class AdminAccountManagementTests: XCTestCase, SwiftarrBaseTest {
 		_ app: Application,
 		username: String,
 		accessLevel: UserAccessLevel,
-		verification: String? = nil,
-		recoveryAttempts: Int = 0
+		verification: String? = nil
 	) async throws -> User {
 		let user = User(
 			username: username,
 			password: try Bcrypt.hash("password1"),
 			recoveryKey: try Bcrypt.hash("recovery key"),
 			verification: verification,
-			accessLevel: accessLevel,
-			recoveryAttempts: recoveryAttempts
+			accessLevel: accessLevel
 		)
 		try await user.save(on: app.db)
 		return user
@@ -233,11 +231,23 @@ class AdminAccountManagementTests: XCTestCase, SwiftarrBaseTest {
 				app,
 				username: username,
 				accessLevel: .verified,
-				verification: "abc123",
-				recoveryAttempts: 5
+				verification: "abc123"
 			)
 			let staffToken = try await makeToken(app, for: staff)
 			try await bootCache(app)
+
+			for _ in 0..<5 {
+				try await app.test(
+					.POST,
+					"/api/v3/auth/recovery",
+					beforeRequest: { req async throws in
+						try req.content.encode(recoveryBody(username: username, key: "zzz999"))
+					},
+					afterResponse: { res async throws in
+						XCTAssertEqual(res.status, .badRequest)
+					}
+				)
+			}
 
 			try await app.test(
 				.POST,
@@ -246,7 +256,7 @@ class AdminAccountManagementTests: XCTestCase, SwiftarrBaseTest {
 					try req.content.encode(recoveryBody(username: username, key: "abc123"))
 				},
 				afterResponse: { res async throws in
-					XCTAssertEqual(res.status, .forbidden, "five failed recoveries must lock the account")
+					XCTAssertEqual(res.status, .tooManyRequests, "five failed recoveries must lock the account")
 				}
 			)
 

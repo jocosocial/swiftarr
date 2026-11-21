@@ -136,6 +136,8 @@ struct SocketNotificationData: Content {
 		case moderatorForumMention
 		/// A new or edited forum post that now @mentions @twitarrteam.
 		case twitarrTeamForumMention
+		/// A new or edited forum post that now @mentions @CommunitySupport.
+		case communitySupportForumMention
 		
 	}
 	/// The type of event that happened. See `SocketNotificationData.NotificationTypeData` for values.
@@ -190,6 +192,7 @@ extension SocketNotificationData.NotificationTypeData {
 		case .forumMention: self = .forumMention
 		case .moderatorForumMention: self = .moderatorForumMention
 		case .twitarrTeamForumMention: self = .twitarrTeamForumMention
+		case .communitySupportForumMention: self = .communitySupportForumMention
 
 		case .microKaraokeSongReady: self = .microKaraokeSongReady
 		}

@@ -4,6 +4,7 @@
 	<meta charset="utf-8">
 	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; connect-src *; img-src 'self' jococruise.com avatars.sched.co data: blob:; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noai, noimageai">
 	<script>
 		(function(){
 			var c = document.cookie.match(/(?:^|; )swiftarr_theme=(auto|light|dark)/);
@@ -66,7 +67,7 @@
 								</a>
 							</div>
 							<div class="col-auto px-0">
-								<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "lfg"): active#endif" #if(trunk.tab == "lfg"):aria-current="page"#endif href="/lfg">
+								<a class="nav-item nav-link link-light px-1 #if(trunk.tab == "lfg"): active#endif" #if(trunk.tab == "lfg"):aria-current="page"#endif href="#if(trunk.preregistrationApplies):/lfg/owned#else:/lfg#endif">
 									<span class="#if(trunk.alertCounts.newFezMessageCount > 0):border-bottom border-danger#endif">
 										LFG
 									</span>

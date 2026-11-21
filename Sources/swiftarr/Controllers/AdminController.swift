@@ -40,6 +40,7 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.get("rollup", use: serverRollupCounts)
 
 		ttAuthGroup.post("notifications", "reload", use: triggerConsistencyJobHandler)
+		ttAuthGroup.post("authratelimits", "clear", use: clearAuthRateLimitsHandler)
 
 		ttAuthGroup.on(.POST, "clients", "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: clientAppCreateHandler)
 		ttAuthGroup.on(.POST, "clients", clientAppIDParam, "update", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: clientAppUpdateHandler)
@@ -115,11 +116,13 @@ struct AdminController: APIRouteCollection {
 	/// - Returns: `HTTP 201 Created` with the new `ClientAppData`.
 	func clientAppCreateHandler(_ req: Request) async throws -> Response {
 		let data = try ValidatingJSONDecoder().decode(ClientAppUploadData.self, fromBodyOf: req)
-		let filenames = try await processImages(data.image.map { [$0] } ?? [], usage: .clientApp, maxImages: 1, on: req)
-		let app = ClientApp(name: data.name, description: data.description, image: filenames.first, developer: data.developer,
-				sortName: data.sortName?.isEmpty == false ? data.sortName : nil, links: data.links,
-				swiftarrClient: data.swiftarrClient)
-		try await app.save(on: req.db)
+		let app = try await withProcessedImages(data.image.map { [$0] } ?? [], usage: .clientApp, maxImages: 1, on: req) { filenames in
+			let app = ClientApp(name: data.name, description: data.description, image: filenames.first, developer: data.developer,
+					sortName: data.sortName?.isEmpty == false ? data.sortName : nil, links: data.links,
+					swiftarrClient: data.swiftarrClient)
+			try await app.save(on: req.db)
+			return app
+		}
 		let response = Response(status: .created)
 		try response.content.encode(try ClientAppData(app), as: .json)
 		return response
@@ -134,15 +137,16 @@ struct AdminController: APIRouteCollection {
 	func clientAppUpdateHandler(_ req: Request) async throws -> Response {
 		let data = try ValidatingJSONDecoder().decode(ClientAppUploadData.self, fromBodyOf: req)
 		let app = try await ClientApp.findFromParameter(clientAppIDParam, on: req)
-		let filenames = try await processImages(data.image.map { [$0] } ?? [], usage: .clientApp, maxImages: 1, on: req)
-		app.name = data.name
-		app.appDescription = data.description
-		app.image = filenames.first
-		app.developer = data.developer
-		app.sortName = data.sortName?.isEmpty == false ? data.sortName! : data.name
-		app.links = data.links
-		app.swiftarrClient = data.swiftarrClient
-		try await app.save(on: req.db)
+		try await withProcessedImages(data.image.map { [$0] } ?? [], usage: .clientApp, maxImages: 1, on: req) { filenames in
+			app.name = data.name
+			app.appDescription = data.description
+			app.image = filenames.first
+			app.developer = data.developer
+			app.sortName = data.sortName?.isEmpty == false ? data.sortName! : data.name
+			app.links = data.links
+			app.swiftarrClient = data.swiftarrClient
+			try await app.save(on: req.db)
+		}
 		let response = Response(status: .created)
 		try response.content.encode(try ClientAppData(app), as: .json)
 		return response
@@ -173,14 +177,15 @@ struct AdminController: APIRouteCollection {
 		try user.guardCanCreateContent(customErrorString: "user cannot add daily themes")
 		let data = try ValidatingJSONDecoder().decode(DailyThemeUploadData.self, fromBodyOf: req)
 		let imageArray = data.image != nil ? [data.image!] : []
-		let filenames = try await processImages(imageArray, usage: .dailyTheme, on: req)
-		let filename = filenames.isEmpty ? nil : filenames[0]
-		let dailyTheme = DailyTheme(title: data.title, info: data.info, image: filename, day: data.cruiseDay)
-		do {
-			try await dailyTheme.save(on: req.db)
-		}
-		catch let error as DatabaseError where error.isConstraintFailure {
-			throw Abort(.conflict, reason: "A daily theme for day \(data.cruiseDay) already exists. Edit the existing theme instead.")
+		try await withProcessedImages(imageArray, usage: .dailyTheme, on: req) { filenames in
+			let filename = filenames.isEmpty ? nil : filenames[0]
+			let dailyTheme = DailyTheme(title: data.title, info: data.info, image: filename, day: data.cruiseDay)
+			do {
+				try await dailyTheme.save(on: req.db)
+			}
+			catch let error as DatabaseError where error.isConstraintFailure {
+				throw Abort(.conflict, reason: "A daily theme for day \(data.cruiseDay) already exists. Edit the existing theme instead.")
+			}
 		}
 		return .created
 	}
@@ -199,17 +204,17 @@ struct AdminController: APIRouteCollection {
 		try user.guardCanCreateContent(customErrorString: "user cannot add daily themes")
 		let data = try ValidatingJSONDecoder().decode(DailyThemeUploadData.self, fromBodyOf: req)
 		let dailyTheme = try await DailyTheme.findFromParameter(dailyThemeIDParam, on: req)
-		// process images
-		let filenames = try await processImages(data.image != nil ? [data.image!] : [], usage: .dailyTheme, on: req)
-		dailyTheme.title = data.title
-		dailyTheme.info = data.info
-		dailyTheme.image = filenames.isEmpty ? nil : filenames[0]
-		dailyTheme.cruiseDay = data.cruiseDay
-		do {
-			try await dailyTheme.save(on: req.db)
-		}
-		catch let error as DatabaseError where error.isConstraintFailure {
-			throw Abort(.conflict, reason: "A daily theme for day \(data.cruiseDay) already exists.")
+		try await withProcessedImages(data.image != nil ? [data.image!] : [], usage: .dailyTheme, on: req) { filenames in
+			dailyTheme.title = data.title
+			dailyTheme.info = data.info
+			dailyTheme.image = filenames.isEmpty ? nil : filenames[0]
+			dailyTheme.cruiseDay = data.cruiseDay
+			do {
+				try await dailyTheme.save(on: req.db)
+			}
+			catch let error as DatabaseError where error.isConstraintFailure {
+				throw Abort(.conflict, reason: "A daily theme for day \(data.cruiseDay) already exists.")
+			}
 		}
 		return .created
 	}
@@ -315,6 +320,21 @@ struct AdminController: APIRouteCollection {
 		if let value = data.photostreamUploadRateLimit {
 			Settings.shared.photostreamUploadRateLimit = value
 		}
+		if let value = data.authRateLimitEnabled {
+			Settings.shared.authRateLimitEnabled = value
+		}
+		if let value = data.authRateLimitLoginFailures {
+			Settings.shared.authRateLimitLoginFailures = value
+		}
+		if let value = data.authRateLimitUsernameFailures {
+			Settings.shared.authRateLimitUsernameFailures = value
+		}
+		if let value = data.authRateLimitIPFailures {
+			Settings.shared.authRateLimitIPFailures = value
+		}
+		if let value = data.authRateLimitRecoveryFailures {
+			Settings.shared.authRateLimitRecoveryFailures = value
+		}
 		if let value = data.forumAutoQuarantineThreshold {
 			Settings.shared.forumAutoQuarantineThreshold = value
 		}
@@ -329,9 +349,6 @@ struct AdminController: APIRouteCollection {
 		}
 		if let value = data.shipWifiSSID {
 			Settings.shared.shipWifiSSID = value
-		}
-		if let value = data.scheduleUpdateURL {
-			Settings.shared.scheduleUpdateURL = value
 		}
 		if let value = data.upcomingEventNotificationSeconds {
 			Settings.shared.upcomingEventNotificationSeconds = Double(value)
@@ -483,8 +500,9 @@ struct AdminController: APIRouteCollection {
 	/// `POST /api/v3/admin/regcodes/unlock/:userID`
 	///
 	/// Re-enables one-time password recovery via registration code for the given user and all of their alt accounts.
-	/// Strips the '*' prefix from `User.verification` (see `AuthController.recoveryHandler`) and clears
-	/// `recoveryAttempts` so a lockout after 5 failed recoveries can be reset by staff.
+	/// Strips the '*' prefix from `User.verification` (see `AuthController.recoveryHandler`) and clears the accounts'
+	/// recovery, username lookup, and per-username login rate limits (see `AuthRateLimiter`), so a locked-out user can try again
+	/// right away. Per-IP limits are not cleared.
 	///
 	/// - Throws: 403 if the caller is not TwitarrTeam or an Account Manager. 400 if the userID is missing or unknown.
 	/// - Returns: Updated `RegistrationCodeUserData`.
@@ -495,8 +513,12 @@ struct AdminController: APIRouteCollection {
 		let allAccounts = try await user.allAccounts(on: req.db)
 		for account in allAccounts {
 			account.unlockVerification()
-			account.recoveryAttempts = 0
 			try await account.save(on: req.db)
+			var buckets: [AuthRateLimiter.Bucket] = [.recovery(account.username), .username(account.username)]
+			if let code = account.unspentVerification {
+				buckets.append(.usernameLookup(code))
+			}
+			await AuthRateLimiter.clear(buckets, on: req)
 		}
 		await user.logIfModeratorAction(.accountUnlocked, user: cacheUser, on: req)
 		let targetUserID = try user.requireID()
@@ -621,6 +643,8 @@ struct AdminController: APIRouteCollection {
 		targetUser.accessLevel = .verified
 		try await targetUser.save(on: req.db)
 		try await req.userCache.updateUser(targetUser.requireID())
+		// Moderator/TwitarrTeam access is what let them read the shared mailboxes.
+		try await FezController().removeStaleMailboxPivots(for: targetUser.requireID(), on: req)
 		await targetUser.logIfModeratorAction(.accessLevelVerified, user: moderator, on: req)
 		return .ok
 	}
@@ -768,6 +792,8 @@ struct AdminController: APIRouteCollection {
 		}
 		try await UserRole.query(on: req.db).filter(\.$role == role).filter(\.$user.$id == targetUserID).delete()
 		try await req.userCache.updateUser(targetUserID)
+		// The role may have been what let them read a shared mailbox (Community Support).
+		try await FezController().removeStaleMailboxPivots(for: targetUserID, on: req)
 		return .ok
 	}
 	
@@ -903,6 +929,20 @@ struct AdminController: APIRouteCollection {
 		return .ok
 	}
 	
+	/// `POST /api/v3/admin/authratelimits/clear`
+	///
+	/// Clears every current login rate limit lockout (see `AuthRateLimiter`): for usernames, registration codes, and client
+	/// IPs alike. Locked-out users can try again immediately, and their next lockout starts back at the shortest duration.
+	/// Failed attempts that haven't reached a limit yet keep counting.
+	///
+	/// - Returns: `AuthRateLimitClearData` with the number of lockouts cleared.
+	func clearAuthRateLimitsHandler(_ req: Request) async throws -> AuthRateLimitClearData {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let cleared = await AuthRateLimiter.clearAllLockouts(on: req)
+		req.logger.notice("User \(cacheUser.username) (\(cacheUser.userID)) cleared \(cleared) auth rate limit lockouts")
+		return AuthRateLimitClearData(clearedCount: cleared)
+	}
+
 	// MARK: - Bulk User Update
 	
 	/// `GET /api/v3/admin/bulkuserfile/download`
@@ -950,7 +990,14 @@ struct AdminController: APIRouteCollection {
 					performer.with(\.$events)
 				}
 				.all()
-		let userData = users.compactMap { UserSaveRestoreData(user: $0) }
+		// LFGs and Personal/Private Events travel with their owner. Seamail is never exported.
+		let ownedFezzes = try await FriendlyFez.query(on: req.db)
+				.filter(\.$fezType ~~ FezType.preregistrationTypes)
+				.filter(\.$cancelled == false)
+				.sort(\.$createdAt, .ascending)
+				.all()
+		let fezzesByOwner = Dictionary(grouping: ownedFezzes, by: { $0.$owner.id })
+		let userData = users.compactMap { UserSaveRestoreData(user: $0, fezzes: fezzesByOwner[$0.id ?? UUID()] ?? []) }
 		let performers = try await Performer.query(on: req.db).filter(\.$officialPerformer == true).with(\.$events).all()
 		let performerData = try performers.map { try PerformerUploadData($0) }
 		let needsPhotographerEvents = try await Event.query(on: req.db).filter(\.$needsPhotographer == true).all().map { $0.uid }
@@ -1084,6 +1131,9 @@ struct AdminController: APIRouteCollection {
 		for userToImport in importData.users {
 			await importUserFavorites(req, userToImport: userToImport, verifyOnly: verifyOnly, verification: &verification)
 		}
+		for userToImport in importData.users {
+			await importUserFezzes(req, userToImport: userToImport, verifyOnly: verifyOnly, verification: &verification)
+		}
 		for performer in importData.performers {
 			await importPerformer(req, performerData: performer, verifyOnly: verifyOnly, verification: &verification)
 		}
@@ -1135,6 +1185,9 @@ struct AdminController: APIRouteCollection {
 				if let _ = try await User.query(on: transaction).filter(\.$verification == userToImport.verification.lowercased())
 						.filter(\.$username == userToImport.username).first() {
 					return .duplicate
+				}
+				if PrivilegedUser.isReservedUsername(userToImport.username) {
+					return .errorNotImported("Username \"\(userToImport.username)\" is reserved")
 				}
 				if let dbUserNameMatch = try await User.query(on: transaction).filter(\.$username == userToImport.username).first() {
 					return .usernameConflict(dbUserNameMatch.username)
@@ -1298,6 +1351,98 @@ struct AdminController: APIRouteCollection {
 		}
 	}
 	
+	// Imports the LFGs and Personal/Private Events a user created. Must be called after the users have been imported.
+	// Fezzes are only attached to a DB user whose registration code matches the file's user, so a username or reg code conflict
+	// can't hand someone else's account these fezzes.
+	// Fezzes keep their exported IDs. Safe to re-run: a fez is skipped if the owner already has one with that ID (or, for older
+	// userfiles without IDs, one with the same type, title and start time). An ID that belongs to another user's fez is an error.
+	// If `verifyOnly` is set, no db changes occur, but `verification` gets filled in with the counts and any import errors.
+	func importUserFezzes(_ req: Request, userToImport: UserSaveRestoreData, verifyOnly: Bool, verification: inout BulkUserUpdateVerificationData) async {
+		guard let fezzesToImport = userToImport.fezzes, !fezzesToImport.isEmpty else {
+			return
+		}
+		let validFezzes = fezzesToImport.filter { $0.fezType.isPreregistrationType }
+		let invalidCount = fezzesToImport.count - validFezzes.count
+		verification.fezCounts.totalRecordsProcessed += fezzesToImport.count
+		if invalidCount > 0 {
+			verification.fezCounts.errorCount += invalidCount
+			verification.otherErrors.append("User \(userToImport.username) has \(invalidCount) chat(s) in the userfile that aren't LFGs or Personal/Private Events, which can't be imported.")
+		}
+		do {
+			let user = try await User.query(on: req.db).filter(\.$username == userToImport.username).first()
+			guard let user = user else {
+				if verifyOnly {
+					// The owner hasn't been created yet (verify doesn't save users), so there's nothing to dedupe against.
+					verification.fezCounts.importedCount += validFezzes.count
+				}
+				else {
+					verification.fezCounts.errorCount += validFezzes.count
+					verification.otherErrors.append("Couldn't import LFGs/events for \(userToImport.username): user was not imported.")
+				}
+				return
+			}
+			guard user.verification == userToImport.verification.lowercased() else {
+				verification.fezCounts.errorCount += validFezzes.count
+				verification.otherErrors.append("Couldn't import LFGs/events for \(userToImport.username): the account in the database has a different registration code.")
+				return
+			}
+			let userID = try user.requireID()
+			for fezData in validFezzes {
+				if let fezID = fezData.id {
+					// Includes deleted fezzes, since their IDs are still taken.
+					if let existing = try await FriendlyFez.query(on: req.db).withDeleted().filter(\.$id == fezID).first() {
+						if existing.$owner.id == userID {
+							verification.fezCounts.duplicateCount += 1
+						}
+						else {
+							verification.fezCounts.errorCount += 1
+							verification.otherErrors.append("Couldn't import \"\(fezData.title)\" for \(userToImport.username): its ID \(fezID) belongs to another user's chat.")
+						}
+						continue
+					}
+				}
+				else {
+					let existing = try await FriendlyFez.query(on: req.db)
+							.filter(\.$owner.$id == userID)
+							.filter(\.$fezType == fezData.fezType)
+							.filter(\.$title == fezData.title)
+							.filter(\.$startTime == fezData.startTime)
+							.first()
+					if existing != nil {
+						verification.fezCounts.duplicateCount += 1
+						continue
+					}
+				}
+				if !verifyOnly {
+					let fez = FriendlyFez(owner: userID, fezType: fezData.fezType, visibility: fezData.visibility, title: fezData.title,
+							info: fezData.info, location: fezData.location, startTime: nil, endTime: nil,
+							minCapacity: fezData.minCapacity, maxCapacity: fezData.maxCapacity)
+					// Keep the exporting server's ID so links to this fez work on both servers.
+					fez.id = fezData.id
+					// The exported times are already port time; set them directly rather than converting again.
+					fez.startTime = fezData.startTime
+					fez.endTime = fezData.endTime
+					fez.participantArray = [userID]
+					try await req.db.transaction { db in
+						try await fez.save(on: db)
+						try await fez.$participants.attach(user, on: db, {
+							$0.readCount = 0
+							$0.hiddenCount = 0
+						})
+					}
+					await dispatchEffect(on: req) {
+						try await storeNextJoinedAppointment(userID: userID, on: req)
+					}
+				}
+				verification.fezCounts.importedCount += 1
+			}
+		}
+		catch {
+			verification.fezCounts.errorCount += 1
+			verification.otherErrors.append("Error importing LFGs/events for \(userToImport.username): \(error.localizedDescription)")
+		}
+	}
+
 	// Imports a single performer into the Performer table. Works with both official and non-official (shadow) performers.
 	// For a shadow performer, you must set the userID of the Twitarr user that 'owns' the performer object.
 	// If `verifyOnly` is set, no db changes occur, but `verification` gets filled in with any import errors.
@@ -1340,25 +1485,38 @@ struct AdminController: APIRouteCollection {
 			try await PerformerController().buildPerformerFromUploadData(performer: &performer, uploadData: performerData, on: req)
 			performer.$user.id = userID
 			performer.$photo.value = copiedUserImage
+			// The performer and its event links are written together. Events that can't be found are reported, not fatal.
+			let performerToSave = performer
+			var missingEventErrors: [String] = []
 			if !verifyOnly {
-				try await performer.save(on: req.db)			// Updates or creates
-			}
-			for eventUID in performerData.eventUIDs {
-				guard let event = try await Event.query(on: req.db).filter(\.$uid == eventUID).first() else {
-					verification.otherErrors.append("Couldn't find Event that Performer \"\(performerData.name)\" is performing in: UID = \(eventUID)")
-					continue
+				missingEventErrors = try await req.db.transaction { db -> [String] in
+					try await performerToSave.save(on: db)			// Updates or creates
+					var errors: [String] = []
+					for eventUID in performerData.eventUIDs {
+						guard let event = try await Event.query(on: db).filter(\.$uid == eventUID).first() else {
+							errors.append("Couldn't find Event that Performer \"\(performerData.name)\" is performing in: UID = \(eventUID)")
+							continue
+						}
+						let attachedEvent = try await EventPerformer.query(on: db)
+								.filter(\.$performer.$id == performerToSave.requireID()).filter(\.$event.$id == event.requireID()).first()
+						if attachedEvent == nil {
+							let newEventPerformer = EventPerformer()
+							newEventPerformer.$performer.id = try performerToSave.requireID()
+							newEventPerformer.$event.id = try event.requireID()
+							try await newEventPerformer.save(on: db)
+						}
+					}
+					return errors
 				}
-				if !verifyOnly {
-					let attachedEvent = try await EventPerformer.query(on: req.db)
-							.filter(\.$performer.$id == performer.requireID()).filter(\.$event.$id == event.requireID()).first()
-					if attachedEvent == nil {
-						let newEventPerformer = EventPerformer()
-						newEventPerformer.$performer.id = try performer.requireID()
-						newEventPerformer.$event.id = try event.requireID()
-						try await newEventPerformer.save(on: req.db)
+			}
+			else {
+				for eventUID in performerData.eventUIDs {
+					if try await Event.query(on: req.db).filter(\.$uid == eventUID).first() == nil {
+						missingEventErrors.append("Couldn't find Event that Performer \"\(performerData.name)\" is performing in: UID = \(eventUID)")
 					}
 				}
 			}
+			verification.otherErrors.append(contentsOf: missingEventErrors)
 			verification.performerCounts.importedCount += 1
 		}
 		catch {

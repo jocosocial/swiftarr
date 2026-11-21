@@ -9,6 +9,59 @@ import Vapor
 /// used in production. If not set to proper values in `docker-compose.yml` (or whatever
 /// other environment of your choice), reminders are printed to console during startup.
 
+/// Creates the shared `@CommunitySupport` account, the phantom user behind the Community Support mailbox. Nobody can log in as it:
+/// its password and recovery key are random and immediately discarded.
+///
+/// If an ordinary user already holds the name (case-insensitively), that account is renamed first so the unique-username
+/// constraint doesn't fail the migration on a real database.
+struct CreateCommunitySupportUser: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		let name = PrivilegedUser.CommunitySupport.rawValue
+		let squatters = try await User.query(on: database).filter(\.$username, .custom("ILIKE"), name).all()
+		for squatter in squatters {
+			var newName = "\(name)-old"
+			var counter = 1
+			while try await User.query(on: database).filter(\.$username, .custom("ILIKE"), newName).first() != nil {
+				counter += 1
+				newName = "\(name)-old\(counter)"
+			}
+			// The owner isn't told, and their next login will use the old name in vain, so leave staff a trail to follow up on.
+			database.logger.warning(
+				"CreateCommunitySupportUser: renaming user \(squatter.id?.uuidString ?? "?") from \"\(squatter.username)\" to \"\(newName)\" to free the reserved name."
+			)
+			squatter.username = newName
+			squatter.buildUserSearchString()
+			try await squatter.save(on: database)
+		}
+		var password = ""
+		var recoveryKey = ""
+		for _ in 0...50 {
+			password.append(String(Unicode.Scalar(Int.random(in: 33...126))!))
+			recoveryKey.append(String(Unicode.Scalar(Int.random(in: 33...126))!))
+		}
+		guard let passwordHash = try? Bcrypt.hash(password), let recoveryHash = try? Bcrypt.hash(recoveryKey) else {
+			fatalError("CommunitySupport user creation failure: invalid password or recoveryKey")
+		}
+		let user = User(
+			username: name,
+			password: passwordHash,
+			recoveryKey: recoveryHash,
+			verification: "generated user",
+			parent: nil,
+			accessLevel: .verified
+		)
+		user.displayName = "Community Support"
+		// Makes the account findable in the seamail participant autocomplete by typing "community" or "support".
+		user.buildUserSearchString()
+		try await user.save(on: database)
+	}
+
+	/// Deletes only the CommunitySupport account. (Don't copy `CreateMicroKaraokeUser.revert`, which deletes the admin accounts.)
+	func revert(on database: Database) async throws {
+		try await User.query(on: database).filter(\.$username == PrivilegedUser.CommunitySupport.rawValue).delete()
+	}
+}
+
 struct CreateAdminUsers: AsyncMigration {
 	/// Required by `Migration` protocol. Creates the admin user after a bit of sanity
 	/// check caution.

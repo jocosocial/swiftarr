@@ -111,11 +111,16 @@
 									</div>
 								</div>
 								#if(isPrivateEvent):
-									#if(fez == nil):
+									#if(fez == nil || fezType == "personalEvent"):
 										<input type="checkbox" class="btn-check" name="inviteOthers" id="inviteOthersButton" autocomplete="off"  data-bs-toggle="collapse" data-bs-target="#userInviteCollapser" aria-expanded="false" aria-controls="userInviteCollapser">
-										<label class="btn btn-outline-primary mb-2" for="inviteOthersButton">Invite Others To Event</label>
+										<label class="btn btn-outline-primary mb-2" for="inviteOthersButton">#if(trunk.preregistrationApplies):Invite Others#else:Invite Others To Event#endif</label>
 										<div class="collapse" id="userInviteCollapser">
 											<div class="card card-body">
+												#if(trunk.preregistrationApplies):
+												<div class="row mb-2">
+													<div class="col"><i>You'll be able to invite others to this event once we're on board.</i></div>
+												</div>
+												#endif
 												<div class="row">
 													<div class="col"><b>Find Invitees:</b></div>
 												</div>
@@ -126,7 +131,7 @@
 																placeholder="Search for users here"
 																aria-label="participants" aria-describedby="basic-addon1"
 																autocapitalize="off" autocomplete="off"
-																data-nameusage="seamail">
+																data-nameusage="seamail"#if(trunk.preregistrationApplies): disabled#endif>
 													</div>
 												</div>
 												<div class="row">

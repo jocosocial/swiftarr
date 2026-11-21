@@ -84,6 +84,10 @@ Read about the official guests and performers that will be on-board with us.
 
 If you are hosting a shadow event, see below for more information specifically for you.
 
+### LFGs & Personal Events
+
+Create your own Looking For Group (LFG) events and Personal/Private Events ahead of time. No one else can see or join them until we're all on-board.
+
 ### Favorite Users
 
 Tricordarr only. Add the usernames of your friends to a quick access list. This also enables them to call you on-board using KrakenTalk™, the Twit-arr voice communication protocol.
@@ -97,3 +101,5 @@ Tricordarr only. Read about all the features that will be available within the a
 You can optionally create a separate performer profile that is linked to your shadow event. This may be displayed along with event information. Your Performer Profile is unique and unrelated to your User Profile (see information above). It is also not publicly linked to your User Profile. 
 
 The Performer Profile can only be created once the schedule has been released. If you are presenting a shadow event and we have the schedule: Use the web or Tricordarr to go to the Schedule page and find your event. Click on it then press *Set Organizer* (or long-press in the app) Fill out as much or as little as you’d like then press *Submit/Save*. If you are hosting multiple Shadow Events you can press *Set Organizer* on all of them to link to your Performer Profile. You can only have one Performer Profile for all events.
+
+If you are a cruise guest performing with an official event, contact THO or the TwitarrTeam about linking a Performer Profile to that event.

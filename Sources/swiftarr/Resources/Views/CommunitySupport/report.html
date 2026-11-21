@@ -1,0 +1,93 @@
+#extend("trunk"):
+	#export("body"):
+		<div class="container-md ms-0">
+			<div class="row justify-content-between align-items-center my-1">
+				<div class="col">
+					<nav aria-label="breadcrumb">
+						<ol class="breadcrumb">
+							<li class="breadcrumb-item"><a href="/communitysupport">Community Support</a></li>
+							<li class="breadcrumb-item"><a href="/communitysupport/reports">Reports</a></li>
+							<li class="breadcrumb-item active" aria-current="page">Report</li>
+						</ol>
+					</nav>
+				</div>
+			</div>
+
+			<div class="card mb-3">
+				<div class="card-header">
+					<b>#(report.title)</b> <span class="badge text-bg-secondary">#(report.statusLabel)</span>
+				</div>
+				<ul class="list-group list-group-flush">
+					<li class="list-group-item"><b>Filed:</b> #relativeTime(report.createdAt) by @#(report.author.username) (#(report.memberName))</li>
+					<li class="list-group-item"><b>When:</b> #(report.experienceTime)</li>
+					#if(report.reporterName || report.reporter || report.reporterHandleText):
+						<li class="list-group-item"><b>Reporter:</b> #(report.reporterName)
+							#if(report.reporter):<a href="/user/#(report.reporter.userID)">@#(report.reporter.username)</a>
+							#elseif(report.reporterHandleText):#(report.reporterHandleText)#endif
+						</li>
+					#endif
+					#if(report.reporterCabin):<li class="list-group-item"><b>Cabin:</b> #(report.reporterCabin)</li>#endif
+					#if(report.subject || report.subjectName):
+						<li class="list-group-item"><b>About:</b>
+							#if(report.subject):<a href="/user/#(report.subject.userID)">@#(report.subject.username)</a>#else:#(report.subjectName)#endif
+						</li>
+					#endif
+					<li class="list-group-item">
+						<b>Experienced:</b> #if(report.reporterExperienced):yes#else:no#endif,
+						<b>witnessed:</b> #if(report.reporterWitnessed):yes#else:no#endif
+					</li>
+					<li class="list-group-item">
+						<b>Wants:</b> #if(report.intent == "followUp"):follow-up#else:information only#endif;
+						<b>may contact:</b> #if(report.mayContact):yes#else:no#endif
+					</li>
+					<li class="list-group-item"><b>What happened:</b><br>#(report.experienceDescription)</li>
+					#if(report.preferredOutcome):<li class="list-group-item"><b>Preferred outcome:</b><br>#(report.preferredOutcome)</li>#endif
+					#if(report.livedExperiences):<li class="list-group-item"><b>Lived experiences:</b><br>#(report.livedExperiences)</li>#endif
+				</ul>
+			</div>
+
+			<div class="mb-3">
+				#if(report.forumID):
+					<a class="btn btn-primary" href="/forum/#(report.forumID)">Go to discussion</a>
+				#else:
+					<form class="ajax d-inline" action="/communitysupport/report/#(report.id)/discussion" method="POST" data-successurl="/communitysupport/report/#(report.id)">
+						<div class="alert alert-danger mt-3 d-none" role="alert"></div>
+						<button type="submit" class="btn btn-primary">Start discussion <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+					</form>
+				#endif
+			</div>
+
+			<h5>Change status</h5>
+			<form class="ajax mb-3" action="/communitysupport/report/#(report.id)/status" enctype="multipart/form-data" method="POST" data-successurl="/communitysupport/report/#(report.id)">
+				<div class="row g-2">
+					<div class="col col-auto">
+						<select class="form-select" name="status">
+							#for(choice in statuses):
+								<option value="#(choice.value)"#if(choice.selected): selected#endif>#(choice.label)</option>
+							#endfor
+						</select>
+					</div>
+					<div class="col">
+						<input type="text" class="form-control" name="note" maxlength="5000" placeholder="Note (optional)">
+					</div>
+					<div class="col col-auto">
+						<button type="submit" class="btn btn-outline-primary">Update <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span></button>
+					</div>
+				</div>
+				<div class="alert alert-danger mt-3 d-none" role="alert"></div>
+			</form>
+
+			<h5>Timeline</h5>
+			<ul class="list-group mb-3">
+				#for(action in report.actions):
+					<li class="list-group-item">
+						<b>#(action.actionLabel)</b>
+						#if(action.newStatus):<span class="badge text-bg-secondary">#(action.newStatus)</span>#endif
+						by @#(action.actor.username), #relativeTime(action.createdAt)
+						#if(action.note):<div class="small">#(action.note)</div>#endif
+					</li>
+				#endfor
+			</ul>
+		</div>
+	#endexport
+#endextend
