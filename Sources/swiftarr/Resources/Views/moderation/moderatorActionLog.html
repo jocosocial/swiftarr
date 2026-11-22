@@ -33,7 +33,7 @@
 						#for(report in log):
 							<tr>
 								<td>#userByline(report.moderator, "short")</td>
-								<td>#moderatorActionName(report.actionType)</td>
+								<td>#moderatorActionName(report.actionType, report.role)</td>
 								<td>
 									#if(report.contentType == "twarrt"):
 										<a href="/moderate/twarrt/#(report.contentID)">twarrt</a>

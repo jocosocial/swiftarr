@@ -70,10 +70,6 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.get("dailytheme", "schedule", "verify", use: dailyThemeScheduleVerifyHandler).setUsedForPreregistration()
 		ttAuthGroup.post("dailytheme", "schedule", "apply", use: dailyThemeScheduleApplyHandler).setUsedForPreregistration()
 
-		// endpoints available for THO and Admin only
-		let thoAuthGroup = adminRoutes.tokenRoutes(minAccess: .tho)
-
-
 		// Routes that only the Admin account can access
 		let adminAuthGroup = adminRoutes.tokenRoutes(minAccess: .admin)
 		adminAuthGroup.post("serversettings", "update", use: settingsUpdateHandler)
@@ -82,8 +78,6 @@ struct AdminController: APIRouteCollection {
 		adminAuthGroup.on(.POST, "bulkuserfile", "upload", body: .stream,  use: userfileUploadPostHandler)
 		adminAuthGroup.get("bulkuserfile", "verify", use: userfileVerificationHandler)
 		adminAuthGroup.get("bulkuserfile", "update", "apply", use: userfileApplyHandler)
-
-		// Only admin may promote to THO
 	}
 
 	// MARK: - Client Apps

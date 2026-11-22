@@ -767,16 +767,20 @@ struct CountZeroTag: LeafTag {
 /// Renders the human-readable name of a ModeratorActionType, e.g. "regCodeViewed" → "Viewed Registration Code".
 /// Unknown values are rendered as-is so old log rows never disappear from the moderator log.
 ///
+/// Role changes take the role as an optional second parameter and include its name, e.g. "Added User Role: Karaoke Manager".
+///
 /// Usage: #moderatorActionName(String) -> String
+/// Usage: #moderatorActionName(String, String?) -> String
 struct ModeratorActionNameTag: LeafTag {
 	func render(_ ctx: LeafContext) throws -> LeafData {
-		guard ctx.parameters.count == 1, let value = ctx.parameters[0].string else {
+		guard (1...2).contains(ctx.parameters.count), let value = ctx.parameters[0].string else {
 			throw "Leaf: ModeratorActionNameTag tag unable to get string value."
 		}
 		guard let actionType = ModeratorActionType(rawValue: value) else {
 			return LeafData.string(value)
 		}
-		return LeafData.string(actionType.visibleName())
+		let role = ctx.parameters.count == 2 ? ctx.parameters[1].string.flatMap { UserRoleType(fromString: $0) } : nil
+		return LeafData.string(actionType.visibleName(role: role))
 	}
 }
 

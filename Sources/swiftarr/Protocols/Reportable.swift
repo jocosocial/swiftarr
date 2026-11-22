@@ -64,7 +64,7 @@ extension Reportable {
 	/// If the change being made to the receiver is a mod exercising their mod powers, record the change in the ModeratorAction log.
 	/// If the change isn't the result of mod powers, do nothing. Most calls don't need to wait for completion, and can ignore the result.
 	/// Only call this function after you're sure the action is actually going to occur.
-	func logIfModeratorAction(_ action: ModeratorActionType, user: UserCacheData, on req: Request) async {
+	func logIfModeratorAction(_ action: ModeratorActionType, user: UserCacheData, role: UserRoleType? = nil, on req: Request) async {
 		// Only log actions where a mod has to use their mod powers. That is, if a mod deletes their own tweet, don't log it.
 		// I believe "mod powers" == any change to content where the user making the change isn't the user who created the content.
 		// But, there's edge cases, such as a mod editing @admin auto-generated content, or one mod updating a post made by another mod.
@@ -73,7 +73,7 @@ extension Reportable {
 				return
 			}
 			if let modUser = try await User.find(user.userID, on: req.db) {
-				let modAction = try ModeratorAction(content: self, action: action, moderator: modUser)
+				let modAction = try ModeratorAction(content: self, action: action, moderator: modUser, role: role)
 				try await modAction.save(on: req.db)
 			}
 		}

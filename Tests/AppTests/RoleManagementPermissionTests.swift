@@ -183,6 +183,20 @@ final class RoleManagementPermissionTests: XCTestCase, SwiftarrBaseTest {
 				"role changes should be logged"
 			)
 			XCTAssertEqual(logged.count, 2, "a no-op removal must not be logged")
+			XCTAssertEqual(Set(logged.map { $0.role }), [.karaokemanager], "role changes should record the role")
+			XCTAssertEqual(
+				ModeratorActionType.roleAdded.visibleName(role: .karaokemanager),
+				"Added User Role: Karaoke Manager"
+			)
+			XCTAssertEqual(ModeratorActionType.edit.visibleName(role: nil), "Edited")
+			// The moderator log API exposes the role.
+			var logRoles = [String]()
+			try await app.test(.GET, "/api/v3/mod/moderationlog?limit=50", headers: bearer(mod.token)) { res async throws in
+				XCTAssertEqual(res.status, .ok)
+				let data = try res.content.decode(ModeratorActionLogResponseData.self)
+				logRoles = data.actions.filter { $0.targetUser.userID == auditTarget }.compactMap { $0.role?.rawValue }
+			}
+			XCTAssertEqual(logRoles, ["karaokemanager", "karaokemanager"])
 		}
 	}
 }

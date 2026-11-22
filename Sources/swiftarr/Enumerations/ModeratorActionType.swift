@@ -77,6 +77,14 @@ enum ModeratorActionType: String, Codable {
 		}
 	}
 	
+	/// A human-readable name for this action that includes the role, if there is one, e.g. "Added User Role: Karaoke Manager".
+	func visibleName(role: UserRoleType?) -> String {
+		guard let role = role else {
+			return visibleName()
+		}
+		return "\(visibleName()): \(role.label)"
+	}
+
 	/// A human-readable name for this action, e.g. for display in the moderator log.
 	func visibleName() -> String {
 		switch self {

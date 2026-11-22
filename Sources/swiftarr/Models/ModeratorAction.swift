@@ -28,6 +28,9 @@ final class ModeratorAction: Model, @unchecked Sendable {
 	/// If the mod is in the process of handling reports when taking this action, this gets set to the reports' actionGroup, making it easier to correllate user reports amd mod actions.
 	@OptionalField(key: "action_group") var actionGroup: UUID?
 
+	/// For actions on a user's roles (`roleAdded`, `roleRemoved`), the role that was added or removed. nil for every other action.
+	@OptionalField(key: "role") var role: UserRoleType?
+
 	/// Timestamp of the model's creation, set automatically.
 	@Timestamp(key: "created_at", on: .create) var createdAt: Date?
 
@@ -47,9 +50,10 @@ final class ModeratorAction: Model, @unchecked Sendable {
 	/// Initializes a new ModeratorAction.
 	///
 	/// - Parameters:
-	///   - post: The Twarrt that will be edited.
-	init<T: Reportable>(content: T, action: ModeratorActionType, moderator: User) throws {
+	///   - role: For role changes, the role that was added or removed.
+	init<T: Reportable>(content: T, action: ModeratorActionType, moderator: User, role: UserRoleType? = nil) throws {
 		actionType = action
+		self.role = role
 		contentType = content.reportType
 		contentID = try content.reportableContentID()
 		$actor.id = try moderator.requireID()
@@ -75,5 +79,16 @@ struct CreateModeratorActionSchema: AsyncMigration {
 
 	func revert(on database: Database) async throws {
 		try await database.schema("moderator_action").delete()
+	}
+}
+
+/// Adds the `role` column, which records the role involved in a `roleAdded` or `roleRemoved` action.
+struct AddModeratorActionRole: AsyncMigration {
+	func prepare(on database: Database) async throws {
+		try await database.schema("moderator_action").field("role", .string).update()
+	}
+
+	func revert(on database: Database) async throws {
+		try await database.schema("moderator_action").deleteField("role").update()
 	}
 }

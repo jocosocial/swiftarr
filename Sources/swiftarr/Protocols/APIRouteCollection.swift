@@ -206,7 +206,7 @@ extension APIRouteCollection {
 		try await UserRole(user: targetUserID, role: role).create(on: req.db)
 		try await req.userCache.updateUser(targetUserID)
 		req.logger.notice("\(actor.username) added role \(role.rawValue) to \(targetUser.username).")
-		await targetUser.logIfModeratorAction(.roleAdded, user: actor, on: req)
+		await targetUser.logIfModeratorAction(.roleAdded, user: actor, role: role, on: req)
 	}
 
 	/// Removes `role` from `targetUser`'s role list and records the change in the moderator action log. Does nothing if the user doesn't have
@@ -222,7 +222,7 @@ extension APIRouteCollection {
 		// The role may have been what let them read a shared mailbox (Community Support).
 		try await FezController().removeStaleMailboxPivots(for: targetUserID, on: req)
 		req.logger.notice("\(actor.username) removed role \(role.rawValue) from \(targetUser.username).")
-		await targetUser.logIfModeratorAction(.roleRemoved, user: actor, on: req)
+		await targetUser.logIfModeratorAction(.roleRemoved, user: actor, role: role, on: req)
 	}
 
 	// MARK: - Post-commit Side Effects
