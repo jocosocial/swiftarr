@@ -398,3 +398,7 @@ additive; the existing count fields are unchanged and are now derived from these
 - Removed `GET /api/v3/mod/twarrt/:id` and `POST /api/v3/mod/twarrt/:id/setstate/:state`. The twarrt stream is gone. `ReportType` still includes `twarrt` so existing report rows decode.
 - `SwiftarrFeature.tweets` is deprecated but still accepted and emitted in `disabledFeatures`.
 - Removed notification types `twarrtMention` and `alertwordTwarrt` from `SocketNotificationData`. `UserNotificationData` still includes `twarrtMentionCount` and `newTwarrtMentionCount`.
+
+## Nov 22, 2026
+
+- `SocketNotificationData` gains an optional `author: UserHeader`, set for forum mention, alertword, and chat unread message notifications.

@@ -2021,19 +2021,22 @@ extension ForumController {
 			if !adds.isEmpty {
 				let addUUIDs = req.userCache.getUsers(usernames: adds).compactMap(canUserAccessCategory).filter(userDidntMentionSelf)
 				var authorText = "A user"
-				if let authorName = req.userCache.getUser(post.$author.id)?.username {
+				let authorHeader = req.userCache.getUser(post.$author.id)?.makeHeader()
+				if let authorName = authorHeader?.username {
 					authorText = "User @\(authorName)"
 				}
 				let infoStr = "\(authorText) wrote a forum post that @mentioned you."
 				group.addTask {
-					try await addNotifications(users: addUUIDs, type: .forumMention(postID, forumID), info: infoStr, on: req)
+					try await addNotifications(users: addUUIDs, type: .forumMention(postID, forumID), info: infoStr,
+							author: authorHeader, on: req)
 				}
 				let lowercasedAdds = adds.map { $0.lowercased() }
 				for mailbox in PrivilegedMailbox.all where lowercasedAdds.contains(mailbox.user.queryParam) {
 					let members = mailbox.members(on: req).filter { $0.userID != cacheUser.userID }.map { $0.userID }
 					let infoStr = "\(authorText) wrote a forum post that @mentioned \(mailbox.user.queryParam)."
 					group.addTask {
-						try await addNotifications(users: members, type: mailbox.forumMentionType(postID, forumID), info: infoStr, on: req)
+						try await addNotifications(users: members, type: mailbox.forumMentionType(postID, forumID), info: infoStr,
+								author: authorHeader, on: req)
 					}
 				}
 			}
@@ -2051,7 +2054,8 @@ extension ForumController {
 			}
 			if addingAlertWords.count > 0 {
 				var authorText = "A user"
-				if let authorName = req.userCache.getUser(post.$author.id)?.username {
+				let authorHeader = req.userCache.getUser(post.$author.id)?.makeHeader()
+				if let authorName = authorHeader?.username {
 					authorText = "User @\(authorName)"
 				}
 				addingAlertWords.forEach { word in
@@ -2064,6 +2068,7 @@ extension ForumController {
 							type: .alertwordPost(word, postID, forumID),
 							info: infoStr,
 							creatorID: post.$author.id,
+							author: authorHeader,
 							on: req
 						)
 					}

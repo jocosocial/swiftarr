@@ -221,7 +221,11 @@ extension APIRouteCollection {
 	// (mirroring how forum `@moderator`/`@TwitarrTeam` mentions expand to real members before ever calling this
 	// function; see `ForumController.processForumMentions`). For every other notification type, `stateChangeUsers`
 	// is left equal to `users`, so this has no effect outside the privileged-mailbox case.
-	func addNotifications(users: [UUID], type: NotificationType, info: String, creatorID: UUID? = nil, on req: Request)
+	//
+	// `author` is the user who wrote the content that triggered the notification, if there is one. It's sent to
+	// socket clients as `SocketNotificationData.author`; it isn't written to the notification log.
+	func addNotifications(users: [UUID], type: NotificationType, info: String, creatorID: UUID? = nil,
+			author: UserHeader? = nil, on req: Request)
 		async throws
 	{
 		try await withThrowingTaskGroup(of: Void.self) { group -> Void in
@@ -324,7 +328,8 @@ extension APIRouteCollection {
 					idList: socketUsers,
 					type: type,
 					info: info,
-					notificationID: notificationID
+					notificationID: notificationID,
+					author: author
 				)
 			}
 

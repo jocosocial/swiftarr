@@ -149,6 +149,9 @@ struct SocketNotificationData: Content {
 	/// Lets clients de-dupe a live push against a later fetch of the notification log. Nil for phone call signaling
 	/// messages, which aren't logged.
 	var notificationID: UUID?
+	/// The user who wrote the content that triggered this notification, for notifications about authored content such as
+	/// posts. For content posted as @moderator or @TwitarrTeam, this is that account. Nil when there's no author.
+	var author: UserHeader?
 	/// For .incomingPhoneCall notifications, the caller.
 	var caller: UserHeader?
 	/// For .incomingPhoneCall notification,s the caller's IP addresses. May be nil, in which case the receiver opens a server socket instead.
@@ -212,12 +215,13 @@ extension SocketNotificationData.NotificationTypeData {
 }
 
 extension SocketNotificationData {
-	init(_ type: NotificationType, info: String, id: String, notificationID: UUID? = nil) {
+	init(_ type: NotificationType, info: String, id: String, notificationID: UUID? = nil, author: UserHeader? = nil) {
 		self.type = NotificationTypeData(type)
 		self.info = info
 		self.contentID = id
 		self.secondaryContentID = type.secondaryObjectID()
 		self.notificationID = notificationID
+		self.author = author
 	}
 
 	// Creates an incoming phone call notification
