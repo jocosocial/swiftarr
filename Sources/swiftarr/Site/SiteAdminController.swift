@@ -102,6 +102,14 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.post("regcodes", "discord", "assign", use: assignRegCodeToDiscordUserResult)
 		
 
+		privateTTRoutes.get("mods", use: getModsHandler)
+		privateTTRoutes.get("twitarrteam", use: getTwitarrTeamHandler)
+		privateTTRoutes.get("tho", use: getTHOHandler)
+		privateTTRoutes.post("user", userIDParam, "twitarrteam", "promote", use: promoteUserLevel)
+		privateTTRoutes.post("user", userIDParam, "tho", "promote", use: promoteUserLevel)
+		privateTTRoutes.post("user", userIDParam, "moderator", "promote", use: promoteUserLevel)
+		privateTTRoutes.post("user", userIDParam, "verified", "demote", use: demoteToVerified)
+
 		privateTTRoutes.get("userroles", use: getUserRoleManagementHandler)
 		privateTTRoutes.get("userroles", userRoleParam, use: getUserRoleManagementHandler)
 		privateTTRoutes.post("userroles", userRoleParam, "addrole", userIDParam, use: addRoleToUser)
@@ -117,15 +125,8 @@ struct SiteAdminController: SiteControllerUtils {
 
 		// Mods, TwitarrTeam, and THO levels can all be promoted to, but they all demote back to Verified.
 		let privateTHORoutes = getPrivateRoutes(app, minAccess: .tho, path: "admin")
-		privateTHORoutes.get("mods", use: getModsHandler)
-		privateTHORoutes.get("twitarrteam", use: getTwitarrTeamHandler)
-		privateTHORoutes.get("tho", use: getTHOHandler)
-		privateTHORoutes.post("user", userIDParam, "moderator", "promote", use: promoteUserLevel)
-		privateTHORoutes.post("user", userIDParam, "twitarrteam", "promote", use: promoteUserLevel)
-		privateTHORoutes.post("user", userIDParam, "verified", "demote", use: demoteToVerified)
 
 		let privateAdminRoutes = getPrivateRoutes(app, minAccess: .admin, path: "admin")
-		privateAdminRoutes.post("user", userIDParam, "tho", "promote", use: promoteUserLevel)
 		privateAdminRoutes.get("karaoke", use: karaokeHandler)
 		privateAdminRoutes.post("karaoke", "reload", use: karaokePostHandler)
 		privateAdminRoutes.get("boardgames", use: boardGamesHandler)
@@ -169,14 +170,27 @@ struct SiteAdminController: SiteControllerUtils {
 		var searchResults: [UserHeader]?
 		var levelName: String
 		var targetLevel: String
+		var canManage: Bool  // Whether the viewer may promote users to, and demote users from, this level. Otherwise the page is read-only.
 
-		init(_ req: Request, current: [UserHeader], searchStr: String, searchResults: [UserHeader]?, levelName: String) throws {
+		init(
+			_ req: Request,
+			current: [UserHeader],
+			searchStr: String,
+			searchResults: [UserHeader]?,
+			levelName: String,
+			targetLevel: String
+		) throws {
 			trunk = .init(req, title: "Manage \(levelName)", tab: .admin)
 			self.currentMembers = current
 			self.userSearch = searchStr
 			self.searchResults = searchResults
 			self.levelName = levelName
-			targetLevel = ""
+			self.targetLevel = targetLevel
+			// The same rule the promote/demote API handlers enforce; the API remains the authority.
+			canManage =
+				req.auth.get(UserCacheData.self)?.accessLevel.canManageStaffLevel(
+					UserAccessLevel(fromRawString: targetLevel) ?? .admin
+				) ?? false
 		}
 	}
 
@@ -1345,7 +1359,7 @@ struct SiteAdminController: SiteControllerUtils {
 // MARK: - UserLevels and Roles
 	// GET /admin/mods
 	//
-	// Only THO and above--mods cannot make more mods.
+	// TwitarrTeam and above--mods cannot make more mods.
 	func getModsHandler(_ req: Request) async throws -> View {
 		var searchResults: [UserHeader]?
 		var searchStr = ""
@@ -1356,20 +1370,20 @@ struct SiteAdminController: SiteControllerUtils {
 		}
 		let response = try await apiQuery(req, endpoint: "/admin/moderators")
 		let currentMembers = try response.content.decode([UserHeader].self)
-		var ctx = try ManageUserLevelViewContext(
+		let ctx = try ManageUserLevelViewContext(
 			req,
 			current: currentMembers,
 			searchStr: searchStr,
 			searchResults: searchResults,
-			levelName: "Moderator"
+			levelName: "Moderator",
+			targetLevel: "moderator"
 		)
-		ctx.targetLevel = "moderator"
 		return try await req.view.render("admin/showModerators", ctx)
 	}
 
 	// GET /admin/twitarrteam
 	//
-	// Only THO and above may see this
+	// TwitarrTeam and above may see this. Promoting to/demoting from a level requires that access level or higher.
 	func getTwitarrTeamHandler(_ req: Request) async throws -> View {
 		var searchResults: [UserHeader]?
 		var searchStr = ""
@@ -1380,20 +1394,20 @@ struct SiteAdminController: SiteControllerUtils {
 		}
 		let response = try await apiQuery(req, endpoint: "/admin/twitarrteam")
 		let currentMembers = try response.content.decode([UserHeader].self)
-		var ctx = try ManageUserLevelViewContext(
+		let ctx = try ManageUserLevelViewContext(
 			req,
 			current: currentMembers,
 			searchStr: searchStr,
 			searchResults: searchResults,
-			levelName: "TwitarrTeam"
+			levelName: "TwitarrTeam",
+			targetLevel: "twitarrteam"
 		)
-		ctx.targetLevel = "twitarrteam"
 		return try await req.view.render("admin/showModerators", ctx)
 	}
 
 	// GET /admin/tho
 	//
-	// Only THO and above may see this
+	// TwitarrTeam and above may see this. Promoting to/demoting from a level requires that access level or higher.
 	func getTHOHandler(_ req: Request) async throws -> View {
 		var searchResults: [UserHeader]?
 		var searchStr = ""
@@ -1404,14 +1418,14 @@ struct SiteAdminController: SiteControllerUtils {
 		}
 		let response = try await apiQuery(req, endpoint: "/admin/tho")
 		let currentMembers = try response.content.decode([UserHeader].self)
-		var ctx = try ManageUserLevelViewContext(
+		let ctx = try ManageUserLevelViewContext(
 			req,
 			current: currentMembers,
 			searchStr: searchStr,
 			searchResults: searchResults,
-			levelName: "THO"
+			levelName: "THO",
+			targetLevel: "tho"
 		)
-		ctx.targetLevel = "tho"
 		return try await req.view.render("admin/showModerators", ctx)
 	}
 

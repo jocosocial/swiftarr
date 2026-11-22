@@ -39,6 +39,17 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.get("serversettings", use: settingsHandler)
 		ttAuthGroup.get("rollup", use: serverRollupCounts)
 
+		// Moderator management, TwitarrTeam and above. Note that there's several promote methods that promote to different
+		// access levels, but only one demote, that returns the user to Verified. The handlers enforce that callers can only promote
+		// to, or demote from, a staff level at or below their own (`UserAccessLevel.canManageStaffLevel`).
+		ttAuthGroup.get("moderators", use: getModeratorsHandler)
+		ttAuthGroup.get("twitarrteam", use: getTwitarrTeamHandler)
+		ttAuthGroup.get("tho", use: getTHOHandler)
+		ttAuthGroup.post("twitarrteam", "promote", userIDParam, use: makeTwitarrTeamHandler)
+		ttAuthGroup.post("tho", "promote", userIDParam, use: makeTHOHandler)
+		ttAuthGroup.post("moderator", "promote", userIDParam, use: makeModeratorHandler)
+		ttAuthGroup.post("user", "demote", userIDParam, use: demoteToVerifiedHandler)
+
 		// User Role management, TwitarrTeam and above
 		ttAuthGroup.get("userroles", userRoleParam, use: getUsersWithRole)
 		ttAuthGroup.post("userroles", userRoleParam, "addrole", userIDParam, use: addRoleForUser)
@@ -62,14 +73,6 @@ struct AdminController: APIRouteCollection {
 		// endpoints available for THO and Admin only
 		let thoAuthGroup = adminRoutes.tokenRoutes(minAccess: .tho)
 
-		// Note that there's several promote method that promote to different access levels, but
-		// only one demote, that returns the user to Verified.
-		thoAuthGroup.get("moderators", use: getModeratorsHandler)
-		thoAuthGroup.get("twitarrteam", use: getTwitarrTeamHandler)
-		thoAuthGroup.get("tho", use: getTHOHandler)
-		thoAuthGroup.post("moderator", "promote", userIDParam, use: makeModeratorHandler)
-		thoAuthGroup.post("twitarrteam", "promote", userIDParam, use: makeTwitarrTeamHandler)
-		thoAuthGroup.post("user", "demote", userIDParam, use: demoteToVerifiedHandler)
 
 		// Routes that only the Admin account can access
 		let adminAuthGroup = adminRoutes.tokenRoutes(minAccess: .admin)
@@ -81,7 +84,6 @@ struct AdminController: APIRouteCollection {
 		adminAuthGroup.get("bulkuserfile", "update", "apply", use: userfileApplyHandler)
 
 		// Only admin may promote to THO
-		adminAuthGroup.post("tho", "promote", userIDParam, use: makeTHOHandler)
 	}
 
 	// MARK: - Client Apps
@@ -582,7 +584,7 @@ struct AdminController: APIRouteCollection {
 	// MARK: - Promote/Demote
 	/// `GET /api/v3/admin/moderators`
 	///
-	///  Returns a list of all site moderators. Only THO and above may call this method.
+	///  Returns a list of all site moderators. Only TwitarrTeam and above may call this method.
 	///
 	/// - Returns: Array of `UserHeader`.
 	func getModeratorsHandler(_ req: Request) async throws -> [UserHeader] {
@@ -592,14 +594,15 @@ struct AdminController: APIRouteCollection {
 
 	/// `POST /api/v3/admin/moderator/promote/:user_id`
 	///
-	/// Makes the target user a moderator. Only admins may call this method. The user must have an access level of `.verified` and not
+	/// Makes the target user a moderator. Only TwitarrTeam and above may call this method. The user must have an access level of `.verified` and not
 	/// be temp-quarantined. Unlike the Moderator method that sets access levels, mod promotion only affects the requested account, not
 	/// other sub-accounts held by the same user.
 	///
-	/// - Throws: badRequest if the target user isn't verified, or if they're temp quarantined.
+	/// - Throws: forbidden if the caller's access level is below the level being granted; badRequest if the target user isn't verified, or if they're temp quarantined.
 	/// - Returns: 200 OK if the user was made a mod.
 	func makeModeratorHandler(_ req: Request) async throws -> HTTPStatus {
 		let moderator = try req.auth.require(UserCacheData.self)
+		try guardCanManageStaffLevel(moderator, .moderator)
 		let targetUser = try await User.findFromParameter(userIDParam, on: req)
 		try guardNotSpecialAccount(targetUser)
 		if targetUser.accessLevel == .moderator {
@@ -626,9 +629,10 @@ struct AdminController: APIRouteCollection {
 	/// `POST /api/v3/admin/user/demote/:user_id`
 	///
 	/// Sets the target user's accessLevel to `.verified` if it was `.moderator`, `.twitarrteam`, or `.tho`.
-	/// Must be THO or higher to call any of these; must be admin to demote THO users.
+	/// Must be TwitarrTeam or higher to call this. Callers may only demote users at or below their own access level, so TwitarrTeam
+	/// can demote moderators and TwitarrTeam members but not THO, and THO can demote THO.
 	///
-	/// - Throws: badRequest if the target user isn't a mod.
+	/// - Throws: forbidden if the target user's access level is above the caller's; badRequest if the target user isn't a mod.
 	/// - Returns: 200 OK if the user was demoted successfully.
 	func demoteToVerifiedHandler(_ req: Request) async throws -> HTTPStatus {
 		let moderator = try req.auth.require(UserCacheData.self)
@@ -639,6 +643,7 @@ struct AdminController: APIRouteCollection {
 				reason: "User is not at moderator/twitarrteam/THO level: cannot demote to verified."
 			)
 		}
+		try guardCanManageStaffLevel(moderator, targetUser.accessLevel)
 		try guardNotSpecialAccount(targetUser)
 		targetUser.accessLevel = .verified
 		try await targetUser.save(on: req.db)
@@ -651,7 +656,7 @@ struct AdminController: APIRouteCollection {
 
 	/// `GET /api/v3/admin/twitarrteam`
 	///
-	///  Returns a list of all TwitarrTeam members. Only THO and above may call this method.
+	///  Returns a list of all TwitarrTeam members. Only TwitarrTeam and above may call this method.
 	///
 	/// - Returns: Array of `UserHeader`.
 	func getTwitarrTeamHandler(_ req: Request) async throws -> [UserHeader] {
@@ -661,13 +666,14 @@ struct AdminController: APIRouteCollection {
 
 	/// `POST /api/v3/admin/twitarrteam/promote/:user_id`
 	///
-	/// Makes the target user a member of TwitarrTeam. Only admins may call this method. The user must have an access level of `.verified` and not
+	/// Makes the target user a member of TwitarrTeam. Only TwitarrTeam and above may call this method. The user must have an access level of `.verified` and not
 	/// be temp-quarantined.
 	///
-	/// - Throws: badRequest if the target user isn't verified, or if they're temp quarantined.
+	/// - Throws: forbidden if the caller's access level is below the level being granted; badRequest if the target user isn't verified, or if they're temp quarantined.
 	/// - Returns: 200 OK if the user was made a mod.
 	func makeTwitarrTeamHandler(_ req: Request) async throws -> HTTPStatus {
 		let moderator = try req.auth.require(UserCacheData.self)
+		try guardCanManageStaffLevel(moderator, .twitarrteam)
 		let targetUser = try await User.findFromParameter(userIDParam, on: req)
 		try guardNotSpecialAccount(targetUser)
 		if targetUser.accessLevel == .twitarrteam {
@@ -693,7 +699,7 @@ struct AdminController: APIRouteCollection {
 
 	/// `GET /api/v3/admin/tho`
 	///
-	///  Returns a list of all users with THO access level. Only THO and Admin may call this method.
+	///  Returns a list of all users with THO access level. Only TwitarrTeam and above may call this method.
 	///
 	///  THO access level lets users promote other users to Modaerator and TwitarrTeam access, and demote to Banned status. THO users can also post notifications
 	///  and set daily themes.
@@ -706,13 +712,14 @@ struct AdminController: APIRouteCollection {
 
 	/// `POST /api/v3/admin/tho/promote/:user_id`
 	///
-	/// Makes the target user a member of THO (The Home Office). Only admins may call this method. The user must have an access level of `.verified` and not
+	/// Makes the target user a member of THO (The Home Office). Only THO and above may call this method. The user must have an access level of `.verified` and not
 	/// be temp-quarantined.
 	///
-	/// - Throws: badRequest if the target user isn't verified, or if they're temp quarantined.
+	/// - Throws: forbidden if the caller's access level is below the level being granted; badRequest if the target user isn't verified, or if they're temp quarantined.
 	/// - Returns: 200 OK if the user was made a mod.
 	func makeTHOHandler(_ req: Request) async throws -> HTTPStatus {
 		let moderator = try req.auth.require(UserCacheData.self)
+		try guardCanManageStaffLevel(moderator, .tho)
 		let targetUser = try await User.findFromParameter(userIDParam, on: req)
 		try guardNotSpecialAccount(targetUser)
 		if targetUser.accessLevel == .tho {
@@ -742,10 +749,7 @@ struct AdminController: APIRouteCollection {
 	///
 	/// - Returns: Array of `UserHeader`.
 	func getUsersWithRole(_ req: Request) async throws -> [UserHeader] {
-		guard let parameter = req.parameters.get(userRoleParam.paramString) else {
-			throw Abort(.badRequest, reason: "No UserRoleType found in request.")
-		}
-		let role = try UserRoleType(fromAPIString: parameter)
+		let role = try userRoleFromParameter(req)
 		let userIDsWithRole = try await User.query(on: req.db).join(UserRole.self, on: \User.$id == \UserRole.$user.$id)
 			.filter(UserRole.self, \.$role == role).all(\.$id)
 		return req.userCache.getHeaders(userIDsWithRole)
@@ -755,22 +759,13 @@ struct AdminController: APIRouteCollection {
 	///
 	/// Adds the given role to the given user's role list. Only TwitarrTeam and above may call this method.
 	///
-	/// - Throws: badRequest if the target user already has the role.
+	/// - Throws: badRequest if the target user already has the role, or isn't a verified user.
 	/// - Returns: 200 OK if the user now has the given role.
 	func addRoleForUser(_ req: Request) async throws -> HTTPStatus {
+		let actor = try req.auth.require(UserCacheData.self)
 		let targetUser = try await User.findFromParameter(userIDParam, on: req)
-		guard let userRoleString = req.parameters.get(userRoleParam.paramString) else {
-			throw Abort(.badRequest, reason: "No UserRoleType found in request.")
-		}
-		let targetUserID = try targetUser.requireID()
-		let role = try UserRoleType(fromAPIString: userRoleString)
-		if let _ = try await UserRole.query(on: req.db).filter(\.$role == role).filter(\.$user.$id == targetUserID)
-			.first()
-		{
-			throw Abort(.badRequest, reason: "User \(targetUser.username) already has role of \(role.label)")
-		}
-		try await UserRole(user: targetUserID, role: role).create(on: req.db)
-		try await req.userCache.updateUser(targetUserID)
+		let role = try userRoleFromParameter(req)
+		try await addUserRole(role, to: targetUser, by: actor, on: req)
 		return .ok
 	}
 
@@ -778,21 +773,13 @@ struct AdminController: APIRouteCollection {
 	///
 	/// Removes the given role from the target user's role list. Only TwitarrTeam and above may call this method.
 	///
+	/// - Throws: notFound if the target user doesn't exist.
 	/// - Returns: 200 OK. Does not error if the target user doesn't have the role.
 	func removeRoleForUser(_ req: Request) async throws -> HTTPStatus {
-		guard let userRoleString = req.parameters.get(userRoleParam.paramString) else {
-			throw Abort(.badRequest, reason: "No UserRoleType found in request.")
-		}
-		let role = try UserRoleType(fromAPIString: userRoleString)
-		guard let targetUserIDStr = req.parameters.get(userIDParam.paramString),
-			let targetUserID = UUID(targetUserIDStr)
-		else {
-			throw Abort(.badRequest, reason: "Missing user ID parameter.")
-		}
-		try await UserRole.query(on: req.db).filter(\.$role == role).filter(\.$user.$id == targetUserID).delete()
-		try await req.userCache.updateUser(targetUserID)
-		// The role may have been what let them read a shared mailbox (Community Support).
-		try await FezController().removeStaleMailboxPivots(for: targetUserID, on: req)
+		let actor = try req.auth.require(UserCacheData.self)
+		let role = try userRoleFromParameter(req)
+		let targetUser = try await User.findFromParameter(userIDParam, on: req)
+		try await removeUserRole(role, from: targetUser, by: actor, on: req)
 		return .ok
 	}
 	

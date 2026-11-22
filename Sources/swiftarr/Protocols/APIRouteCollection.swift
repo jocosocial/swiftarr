@@ -149,24 +149,80 @@ extension APIRouteCollection {
 	// Throws an error if the given user is a 'special' account that cannot have its username or userAccessLevel changed.
 	func guardNotSpecialAccount(_ targetUser: User) throws {
 		guard targetUser.username != "moderator" else {
-			throw Abort(.badRequest, reason: "Cannot change name or access level of @moderator account.")
+			throw Abort(.forbidden, reason: "Cannot change name or access level of @moderator account.")
 		}
 		guard targetUser.username != "TwitarrTeam" else {
-			throw Abort(.badRequest, reason: "Cannot change name or  access level of @TwitarrTeam account.")
+			throw Abort(.forbidden, reason: "Cannot change name or  access level of @TwitarrTeam account.")
 		}
 		guard targetUser.username != "THO" else {
-			throw Abort(.badRequest, reason: "Cannot change name or  access level of @THO account.")
+			throw Abort(.forbidden, reason: "Cannot change name or  access level of @THO account.")
 		}
 		guard targetUser.username != PrivilegedUser.CommunitySupport.rawValue else {
-			throw Abort(.badRequest, reason: "Cannot change name or access level of @CommunitySupport account.")
+			throw Abort(.forbidden, reason: "Cannot change name or access level of @CommunitySupport account.")
 		}
 		guard targetUser.username != "admin" else {
-			throw Abort(.badRequest, reason: "Cannot change name or  access level of @admin account.")
+			throw Abort(.forbidden, reason: "Cannot change name or  access level of @admin account.")
 		}
 		// Can't change access level of Clients
 		guard targetUser.accessLevel != .client else {
-			throw Abort(.badRequest, reason: "Cannot change name or  access level of Client accounts.")
+			throw Abort(.forbidden, reason: "Cannot change name or  access level of Client accounts.")
 		}
+	}
+
+	/// Throws forbidden unless `actor` may promote someone to `level`, or demote someone from `level`. See `UserAccessLevel.canManageStaffLevel`.
+	func guardCanManageStaffLevel(_ actor: UserCacheData, _ level: UserAccessLevel) throws {
+		guard actor.accessLevel.canManageStaffLevel(level) else {
+			throw Abort(
+				.forbidden,
+				reason: "Your access level doesn't allow you to promote to or demote from \(level.visibleName())."
+			)
+		}
+	}
+
+	// MARK: - User Roles
+
+	/// Parses the `:user_role` path parameter of the current route.
+	///
+	/// - Throws: badRequest if the parameter is missing or isn't a known role.
+	func userRoleFromParameter(_ req: Request) throws -> UserRoleType {
+		guard let roleString = req.parameters.get(userRoleParam.paramString) else {
+			throw Abort(.badRequest, reason: "No UserRoleType found in request.")
+		}
+		return try UserRoleType(fromAPIString: roleString)
+	}
+
+	/// Adds `role` to `targetUser`'s role list and records the change in the moderator action log. Callers are responsible for checking that
+	/// the acting user may assign this role.
+	///
+	/// - Throws: badRequest if the target isn't a verified (or higher) user account, or already has the role.
+	func addUserRole(_ role: UserRoleType, to targetUser: User, by actor: UserCacheData, on req: Request) async throws {
+		let targetUserID = try targetUser.requireID()
+		guard targetUser.accessLevel >= .verified, targetUser.accessLevel != .client else {
+			throw Abort(.badRequest, reason: "User \(targetUser.username) must be a verified user to be given a role.")
+		}
+		if try await UserRole.query(on: req.db).filter(\.$role == role).filter(\.$user.$id == targetUserID).first() != nil {
+			throw Abort(.badRequest, reason: "User \(targetUser.username) already has role of \(role.label)")
+		}
+		try await UserRole(user: targetUserID, role: role).create(on: req.db)
+		try await req.userCache.updateUser(targetUserID)
+		req.logger.notice("\(actor.username) added role \(role.rawValue) to \(targetUser.username).")
+		await targetUser.logIfModeratorAction(.roleAdded, user: actor, on: req)
+	}
+
+	/// Removes `role` from `targetUser`'s role list and records the change in the moderator action log. Does nothing if the user doesn't have
+	/// the role. Callers are responsible for checking that the acting user may remove this role.
+	func removeUserRole(_ role: UserRoleType, from targetUser: User, by actor: UserCacheData, on req: Request) async throws {
+		let targetUserID = try targetUser.requireID()
+		guard let userRole = try await UserRole.query(on: req.db).filter(\.$role == role).filter(\.$user.$id == targetUserID).first()
+		else {
+			return
+		}
+		try await userRole.delete(on: req.db)
+		try await req.userCache.updateUser(targetUserID)
+		// The role may have been what let them read a shared mailbox (Community Support).
+		try await FezController().removeStaleMailboxPivots(for: targetUserID, on: req)
+		req.logger.notice("\(actor.username) removed role \(role.rawValue) from \(targetUser.username).")
+		await targetUser.logIfModeratorAction(.roleRemoved, user: actor, on: req)
 	}
 
 	// MARK: - Post-commit Side Effects

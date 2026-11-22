@@ -714,21 +714,11 @@ struct UsersController: APIRouteCollection {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		try cacheUser.guardCanManageShutternauts()
 		let targetUser = try await User.findFromParameter(userIDParam, on: req)
-		guard let userRoleString = req.parameters.get(userRoleParam.paramString) else {
-			throw Abort(.badRequest, reason: "No UserRoleType found in request.")
-		}
-		let targetUserID = try targetUser.requireID()
-		let role = try UserRoleType(fromAPIString: userRoleString)
+		let role = try userRoleFromParameter(req)
 		guard role == .shutternaut else {
 			throw Abort(.forbidden, reason: "This endpoint can only manage the shutternaut role.")
 		}
-		if let _ = try await UserRole.query(on: req.db).filter(\.$role == role).filter(\.$user.$id == targetUserID)
-			.first()
-		{
-			throw Abort(.badRequest, reason: "User \(targetUser.username) already has role of \(role.label)")
-		}
-		try await UserRole(user: targetUserID, role: role).create(on: req.db)
-		try await req.userCache.updateUser(targetUserID)
+		try await addUserRole(role, to: targetUser, by: cacheUser, on: req)
 		return .ok
 	}
 
@@ -737,25 +727,18 @@ struct UsersController: APIRouteCollection {
 	/// Removes the given role from the target user's role list. Caller must be TwitarrTeam or above, or have the `shutternautmanager` role, to call this, and can only
 	/// remove the `shutternaut` role from a user's role list.
 	///
-	/// - Throws: forbidden if the caller can't manage Shutternauts or the role isn't `shutternaut`. Does not error if the target user already doesn't have the role.
-	/// - Returns: 200 OK if the user was demoted successfully.
+	/// - Throws: forbidden if the caller can't manage Shutternauts or the role isn't `shutternaut`; notFound if the target user doesn't exist.
+	/// Does not error if the target user already doesn't have the role.
+	/// - Returns: 200 OK.
 	func removeRoleForUser(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		try cacheUser.guardCanManageShutternauts()
-		guard let userRoleString = req.parameters.get(userRoleParam.paramString) else {
-			throw Abort(.badRequest, reason: "No UserRoleType found in request.")
-		}
-		let role = try UserRoleType(fromAPIString: userRoleString)
+		let role = try userRoleFromParameter(req)
 		guard role == .shutternaut else {
 			throw Abort(.forbidden, reason: "This endpoint can only manage the shutternaut role.")
 		}
-		guard let targetUserIDStr = req.parameters.get(userIDParam.paramString),
-			let targetUserID = UUID(targetUserIDStr)
-		else {
-			throw Abort(.badRequest, reason: "Missing user ID parameter.")
-		}
-		try await UserRole.query(on: req.db).filter(\.$role == role).filter(\.$user.$id == targetUserID).delete()
-		try await req.userCache.updateUser(targetUserID)
+		let targetUser = try await User.findFromParameter(userIDParam, on: req)
+		try await removeUserRole(role, from: targetUser, by: cacheUser, on: req)
 		return .ok
 	}
 
