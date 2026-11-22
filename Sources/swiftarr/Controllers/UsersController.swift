@@ -44,7 +44,7 @@ struct UsersController: APIRouteCollection {
 		blockableAuthGroup.post(userIDParam, "unfavorite", use: favoriteRemoveHandler)
 		blockableAuthGroup.delete(userIDParam, "favorite", use: favoriteRemoveHandler)
 
-		// User Role Management for non-THO. Currently, this means the Shutternaut Manager managing the Shutternaut role
+		// Shutternaut role management for TwitarrTeam and above, and Shutternaut Managers. Limited to the Shutternaut role.
 		blockableAuthGroup.get("userrole", userRoleParam, use: getUsersWithRole)
 		blockableAuthGroup.post("userrole", userRoleParam, "addrole", userIDParam, use: addRoleForUser)
 		blockableAuthGroup.post("userrole", userRoleParam, "removerole", userIDParam, use: removeRoleForUser)
@@ -683,22 +683,20 @@ struct UsersController: APIRouteCollection {
 	// MARK: - User Role Management
 	/// `GET /api/v3/forum/userrole/:user_role`
 	///
-	///  Returns a list of all users that have the given role. Currently, caller must have the `shutternautmanager` role to call this, and can only
+	///  Returns a list of all users that have the given role. Caller must be TwitarrTeam or above, or have the `shutternautmanager` role, to call this, and can only
 	///  query the `shutternaut` role.
 	///
-	/// - Throws: badRequest if the caller isn't a shutternaut manager, or the user role param isn't `shutternaut`.
+	/// - Throws: forbidden if the caller can't manage Shutternauts, or the user role param isn't `shutternaut`.
 	/// - Returns: Array of `UserHeader`. Array may be empty if nobody has this role yet.
 	func getUsersWithRole(_ req: Request) async throws -> [UserHeader] {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		guard cacheUser.userRoles.contains(.shutternautmanager) else {
-			throw Abort(.badRequest, reason: "User cannot set any roles")
-		}
+		try cacheUser.guardCanManageShutternauts()
 		guard let roleString = req.parameters.get(userRoleParam.paramString) else {
 			throw Abort(.badRequest, reason: "No UserRoleType found in request.")
 		}
 		let role = try UserRoleType(fromAPIString: roleString)
 		guard role == .shutternaut else {
-			throw Abort(.badRequest, reason: "User cannot manage the \(roleString) role")
+			throw Abort(.forbidden, reason: "This endpoint can only manage the shutternaut role.")
 		}
 		let userIDsWithRole = try await User.query(on: req.db).join(UserRole.self, on: \User.$id == \UserRole.$user.$id)
 			.filter(UserRole.self, \.$role == role).all(\.$id)
@@ -707,16 +705,14 @@ struct UsersController: APIRouteCollection {
 
 	/// `POST /api/v3/forum/userrole/:user_role/addrole/:user_id`
 	///
-	/// Adds the given role to the given user's role list. Currently, caller must have the `shutternautmanager` role to call this, and can only
+	/// Adds the given role to the given user's role list. Caller must be TwitarrTeam or above, or have the `shutternautmanager` role, to call this, and can only
 	/// give a user the `shutternaut` role.
 	///
-	/// - Throws: badRequest if the target user already has the role, or if the caller role/role being set are invalid.
+	/// - Throws: forbidden if the caller can't manage Shutternauts or the role isn't `shutternaut`; badRequest if the target user already has the role.
 	/// - Returns: 200 OK if the user now has the given role.
 	func addRoleForUser(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		guard cacheUser.userRoles.contains(.shutternautmanager) else {
-			throw Abort(.badRequest, reason: "User cannot set any roles")
-		}
+		try cacheUser.guardCanManageShutternauts()
 		let targetUser = try await User.findFromParameter(userIDParam, on: req)
 		guard let userRoleString = req.parameters.get(userRoleParam.paramString) else {
 			throw Abort(.badRequest, reason: "No UserRoleType found in request.")
@@ -724,7 +720,7 @@ struct UsersController: APIRouteCollection {
 		let targetUserID = try targetUser.requireID()
 		let role = try UserRoleType(fromAPIString: userRoleString)
 		guard role == .shutternaut else {
-			throw Abort(.badRequest, reason: "User cannot manage the \(userRoleString) role")
+			throw Abort(.forbidden, reason: "This endpoint can only manage the shutternaut role.")
 		}
 		if let _ = try await UserRole.query(on: req.db).filter(\.$role == role).filter(\.$user.$id == targetUserID)
 			.first()
@@ -738,22 +734,20 @@ struct UsersController: APIRouteCollection {
 
 	/// `POST /api/v3/admin/userrole/:user_role/removerole/:user_id`
 	///
-	/// Removes the given role from the target user's role list. Currently, caller must have the `shutternautmanager` role to call this, and can only
+	/// Removes the given role from the target user's role list. Caller must be TwitarrTeam or above, or have the `shutternautmanager` role, to call this, and can only
 	/// remove the `shutternaut` role from a user's role list.
 	///
-	/// - Throws: badRequest if the target user isn't a Shutternaut Manager, the role being set isn't Shutternaut. Does not error if the target user already doesn't have the role.
+	/// - Throws: forbidden if the caller can't manage Shutternauts or the role isn't `shutternaut`. Does not error if the target user already doesn't have the role.
 	/// - Returns: 200 OK if the user was demoted successfully.
 	func removeRoleForUser(_ req: Request) async throws -> HTTPStatus {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		guard cacheUser.userRoles.contains(.shutternautmanager) else {
-			throw Abort(.badRequest, reason: "User cannot set any roles")
-		}
+		try cacheUser.guardCanManageShutternauts()
 		guard let userRoleString = req.parameters.get(userRoleParam.paramString) else {
 			throw Abort(.badRequest, reason: "No UserRoleType found in request.")
 		}
 		let role = try UserRoleType(fromAPIString: userRoleString)
 		guard role == .shutternaut else {
-			throw Abort(.badRequest, reason: "User cannot manage the \(userRoleString) role")
+			throw Abort(.forbidden, reason: "This endpoint can only manage the shutternaut role.")
 		}
 		guard let targetUserIDStr = req.parameters.get(userIDParam.paramString),
 			let targetUserID = UUID(targetUserIDStr)

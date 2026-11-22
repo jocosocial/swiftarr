@@ -39,6 +39,11 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.get("serversettings", use: settingsHandler)
 		ttAuthGroup.get("rollup", use: serverRollupCounts)
 
+		// User Role management, TwitarrTeam and above
+		ttAuthGroup.get("userroles", userRoleParam, use: getUsersWithRole)
+		ttAuthGroup.post("userroles", userRoleParam, "addrole", userIDParam, use: addRoleForUser)
+		ttAuthGroup.post("userroles", userRoleParam, "removerole", userIDParam, use: removeRoleForUser)
+
 		ttAuthGroup.post("notifications", "reload", use: triggerConsistencyJobHandler)
 		ttAuthGroup.post("authratelimits", "clear", use: clearAuthRateLimitsHandler)
 
@@ -65,11 +70,6 @@ struct AdminController: APIRouteCollection {
 		thoAuthGroup.post("moderator", "promote", userIDParam, use: makeModeratorHandler)
 		thoAuthGroup.post("twitarrteam", "promote", userIDParam, use: makeTwitarrTeamHandler)
 		thoAuthGroup.post("user", "demote", userIDParam, use: demoteToVerifiedHandler)
-
-		// User Role management
-		thoAuthGroup.get("userroles", userRoleParam, use: getUsersWithRole)
-		thoAuthGroup.post("userroles", userRoleParam, "addrole", userIDParam, use: addRoleForUser)
-		thoAuthGroup.post("userroles", userRoleParam, "removerole", userIDParam, use: removeRoleForUser)
 
 		// Routes that only the Admin account can access
 		let adminAuthGroup = adminRoutes.tokenRoutes(minAccess: .admin)
@@ -738,7 +738,7 @@ struct AdminController: APIRouteCollection {
 
 	/// `GET /api/v3/admin/userroles/:user_role`
 	///
-	///  Returns a list of all users that have the given role.
+	///  Returns a list of all users that have the given role. Only TwitarrTeam and above may call this method.
 	///
 	/// - Returns: Array of `UserHeader`.
 	func getUsersWithRole(_ req: Request) async throws -> [UserHeader] {
@@ -753,7 +753,7 @@ struct AdminController: APIRouteCollection {
 
 	/// `POST /api/v3/admin/userroles/:user_id/addrole/:user_role`
 	///
-	/// Adds the given role to the given user's role list. Only THO and above may call this method.
+	/// Adds the given role to the given user's role list. Only TwitarrTeam and above may call this method.
 	///
 	/// - Throws: badRequest if the target user already has the role.
 	/// - Returns: 200 OK if the user now has the given role.
@@ -776,10 +776,9 @@ struct AdminController: APIRouteCollection {
 
 	/// `POST /api/v3/admin/userroles/:user_id/removerole/:user_role`
 	///
-	/// Removes the given role from the target user's role list. Only THO and above may call this method.
+	/// Removes the given role from the target user's role list. Only TwitarrTeam and above may call this method.
 	///
-	/// - Throws: badRequest if the target user isn't a Karaoke Manager.
-	/// - Returns: 200 OK if the user was demoted successfully.
+	/// - Returns: 200 OK. Does not error if the target user doesn't have the role.
 	func removeRoleForUser(_ req: Request) async throws -> HTTPStatus {
 		guard let userRoleString = req.parameters.get(userRoleParam.paramString) else {
 			throw Abort(.badRequest, reason: "No UserRoleType found in request.")

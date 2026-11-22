@@ -57,6 +57,11 @@
 					<a class="list-group-item list-group-item-action" href="/admin/regcodes/discord/assign">
 						<b>Assign Reg Code</b>: Assign a reg code to a Discord user. Does not work on boat.
 					</a>
+					#if(trunk.userCanManageRoles):
+						<a class="list-group-item list-group-item-action" href="/admin/userroles">
+							<b>Manage User Roles</b>: View/Manage User Roles. Roles are specific capabilities granted to users; separate from the userLevel hierarchy.
+						</a>
+					#endif
 					#if(trunk.userIsTHO):
 						#if(trunk.username == "admin"):
 							<a class="list-group-item list-group-item-action" href="/admin/tho">
@@ -72,9 +77,6 @@
 						</a>
 						<a class="list-group-item list-group-item-action" href="/admin/mods">
 							<b>Manage Moderators</b>: View/Manage moderators.
-						</a>
-						<a class="list-group-item list-group-item-action" href="/admin/userroles">
-							<b>Manage User Roles</b>: View/Manage User Roles. Roles are specific capabilities granted to users; separate from the userLevel hierarchy.
 						</a>
 						<a class="list-group-item list-group-item-action" href="/admin/rollup">
 							<b>Show Table Counts</b>: Displays a table containing row counts for a bunch of database tables.

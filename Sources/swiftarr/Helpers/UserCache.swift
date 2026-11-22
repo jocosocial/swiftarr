@@ -83,6 +83,28 @@ public struct UserCacheData: Authenticatable, SessionAuthenticatable, Sendable {
 		}
 	}
 
+	/// TwitarrTeam and above (so THO and admin too) may assign and remove any user role.
+	var canManageRoles: Bool {
+		accessLevel.hasAccess(.twitarrteam)
+	}
+
+	/// TwitarrTeam and above, or users granted the Shutternaut Manager role, may assign and remove the Shutternaut role.
+	var canManageShutternauts: Bool {
+		canManageRoles || userRoles.contains(.shutternautmanager)
+	}
+
+	func guardCanManageRoles() throws {
+		guard canManageRoles else {
+			throw Abort(.forbidden, reason: "Access is restricted to TwitarrTeam or higher.")
+		}
+	}
+
+	func guardCanManageShutternauts() throws {
+		guard canManageShutternauts else {
+			throw Abort(.forbidden, reason: "Access is restricted to TwitarrTeam or Shutternaut Managers.")
+		}
+	}
+
 	func makeHeader() -> UserHeader {
 		return UserHeader(
 			userID: userID,

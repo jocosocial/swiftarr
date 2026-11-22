@@ -387,3 +387,9 @@ additive; the existing count fields are unchanged and are now derived from these
 - `CategoryData` gains an optional `defaultSort` field to direct clients to the preferred thread sort for a category. Splashdot sets this to `create` (newest threads first).
 - Category thread requests now honor `CategoryData.defaultSort` when `sort` is omitted. Supported values are `create`, `title`, `update`, and `event`.
 - Event categories advertise `defaultSort: "event"`. Explicit `sort=event` requests for non-event categories return HTTP 400.
+
+## Nov 21, 2026
+
+- User role management is now open to TwitarrTeam and above. `GET /api/v3/admin/userroles/:user_role`, `POST /api/v3/admin/userroles/:user_role/addrole/:user_id`, and `POST /api/v3/admin/userroles/:user_role/removerole/:user_id` previously required THO.
+- `/api/v3/users/userrole/:user_role` (list), `.../addrole/:user_id`, and `.../removerole/:user_id` are now also available to TwitarrTeam and above, in addition to Shutternaut Managers. Still limited to the `shutternaut` role.
+- Role management failures on the `/users/userrole` endpoints now return 403 instead of 400, both for callers who can't manage roles and for roles other than `shutternaut`.
