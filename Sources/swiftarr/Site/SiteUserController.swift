@@ -578,15 +578,13 @@ struct SiteUserController: SiteControllerUtils {
 
 	// `GET /userrole/shutternaut/manage`
 	//
-	//  Returns the list of users with the Shutternaut role. Must have the Shutternaut Manager role to use.
+	//  Returns the list of users with the Shutternaut role. Must be TwitarrTeam or above, or have the Shutternaut Manager role, to use.
 	//	This method is similar to the Admin-level method that manages user roles, but has different restrictions on
 	//	who can call it and what roles may be altered.
 	//
 	func getShutternautsHandler(_ req: Request) async throws -> View {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		guard cacheUser.userRoles.contains(.shutternautmanager) else {
-			throw Abort(.badRequest, reason: "User cannot set shutternaut roles")
-		}
+		try cacheUser.guardCanManageShutternauts()
 		var searchResults: [UserHeader]?
 		var searchStr = ""
 		if let str = req.query[String.self, at: "search"]?.percentEncodeFilePathEntry() {
@@ -621,7 +619,7 @@ struct SiteUserController: SiteControllerUtils {
 
 	/// `POST /userrole/shutternaut/add/:user_id`
 	///
-	/// Adds the given role to the given user's role list. Caller must have the Shutternaut Manager role. Currently limited to adding the 'shutternaut' role.
+	/// Adds the given role to the given user's role list. Caller must be TwitarrTeam or above, or have the Shutternaut Manager role. Currently limited to adding the 'shutternaut' role.
 	///
 	/// - Throws: badRequest if the target user already has the role.
 	/// - Returns: 200 OK if the user now has the given role.
@@ -639,7 +637,7 @@ struct SiteUserController: SiteControllerUtils {
 
 	/// `POST /userrole/shutternaut/remove/:user_id`
 	///
-	/// Removes the given role from the target user's role list. Caller must have the Shutternaut Manager role. Currently limited to removing the 'shutternaut' role.
+	/// Removes the given role from the target user's role list. Caller must be TwitarrTeam or above, or have the Shutternaut Manager role. Currently limited to removing the 'shutternaut' role.
 	///
 	/// - Returns: 200 OK if the user was demoted successfully.
 	func removeShutternautHandler(_ req: Request) async throws -> HTTPStatus {

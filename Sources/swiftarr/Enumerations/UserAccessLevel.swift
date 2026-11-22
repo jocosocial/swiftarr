@@ -84,11 +84,22 @@ extension UserAccessLevel {
 		return self >= UserAccessLevel.moderator
 	}
 
-	/// Returns TRUE if this user can change the access level of other users. The access level of Client users cannot be changed,
-	/// and only `admin` level users can set other users' access level to equal their own. For example `moderator` users can
-	/// change user levels FROM any of [unverified, banned, quarantined, verified] TO any of [unverified, banned, quarantined, verified].
+	/// Returns TRUE if this user can change the access level of other users. The access level of Client users cannot be changed.
+	/// For example `moderator` users can change user levels FROM any of [unverified, banned, quarantined, verified] TO any of
+	/// [unverified, banned, quarantined, verified]. Promoting users to, and demoting users from, the staff levels is a separate
+	/// capability; see `canManageStaffLevel(_:)`.
 	func canModerateUsers() -> Bool {
 		return self >= UserAccessLevel.moderator
+	}
+
+	/// The staff access levels that users can be promoted to or demoted from through the promote/demote endpoints, lowest to highest.
+	static let staffLevels: [UserAccessLevel] = [.moderator, .twitarrteam, .tho]
+
+	/// Returns TRUE if a user at this level may promote someone to `level`, or demote someone from `level` back to verified.
+	/// This is the single rule for staff level management: TwitarrTeam and above may manage users at their own level or below,
+	/// and never above it. Route groups, handlers, and templates should all defer to this method rather than restating it.
+	func canManageStaffLevel(_ level: UserAccessLevel) -> Bool {
+		return hasAccess(.twitarrteam) && Self.staffLevels.contains(level) && hasAccess(level)
 	}
 }
 

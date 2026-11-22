@@ -733,6 +733,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreatePerformerSearchIndexes(), to: .psql)
 		app.migrations.add(CreateCommunitySupportUser(), to: .psql)
 		app.migrations.add(AddCommunitySupportCategory(), to: .psql)
+		app.migrations.add(AddModeratorActionRole(), to: .psql)
 
 		// DON'T add schema-modification migrations down here. Appending migrations that modify a table's schema at the end will
 		// break migrations that use Fluent to populate that table with data, as Fluent only models the current db schema.

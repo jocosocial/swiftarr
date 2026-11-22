@@ -51,6 +51,10 @@ enum ModeratorActionType: String, Codable {
 	case regCodeViewed
 	/// An account manager re-enabled one-time registration-code password recovery (unlocked the account).
 	case accountUnlocked
+	/// A staff member added a user role (e.g. Karaoke Manager) to a user.
+	case roleAdded
+	/// A staff member removed a user role from a user.
+	case roleRemoved
 
 	static func setFromModerationStatus(_ status: ContentModerationStatus) -> Self {
 		switch status {
@@ -73,6 +77,14 @@ enum ModeratorActionType: String, Codable {
 		}
 	}
 	
+	/// A human-readable name for this action that includes the role, if there is one, e.g. "Added User Role: Karaoke Manager".
+	func visibleName(role: UserRoleType?) -> String {
+		guard let role = role else {
+			return visibleName()
+		}
+		return "\(visibleName()): \(role.label)"
+	}
+
 	/// A human-readable name for this action, e.g. for display in the moderator log.
 	func visibleName() -> String {
 		switch self {
@@ -98,6 +110,8 @@ enum ModeratorActionType: String, Codable {
 		case .regCodeSearched: return "Searched by Registration Code"
 		case .regCodeViewed: return "Viewed Registration Code"
 		case .accountUnlocked: return "Unlocked Account"
+		case .roleAdded: return "Added User Role"
+		case .roleRemoved: return "Removed User Role"
 		}
 	}
 }

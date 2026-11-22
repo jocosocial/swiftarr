@@ -387,3 +387,14 @@ additive; the existing count fields are unchanged and are now derived from these
 - `CategoryData` gains an optional `defaultSort` field to direct clients to the preferred thread sort for a category. Splashdot sets this to `create` (newest threads first).
 - Category thread requests now honor `CategoryData.defaultSort` when `sort` is omitted. Supported values are `create`, `title`, `update`, and `event`.
 - Event categories advertise `defaultSort: "event"`. Explicit `sort=event` requests for non-event categories return HTTP 400.
+
+## Nov 21, 2026
+
+- User role management is now open to TwitarrTeam and above. `GET /api/v3/admin/userroles/:user_role`, `POST /api/v3/admin/userroles/:user_role/addrole/:user_id`, and `POST /api/v3/admin/userroles/:user_role/removerole/:user_id` previously required THO.
+- `/api/v3/users/userrole/:user_role` (list), `.../addrole/:user_id`, and `.../removerole/:user_id` are now also available to TwitarrTeam and above, in addition to Shutternaut Managers. Still limited to the `shutternaut` role.
+- Role management failures on the `/users/userrole` endpoints now return 403 instead of 400, both for callers who can't manage roles and for roles other than `shutternaut`.
+- Moderator management is now open to TwitarrTeam and above: `GET /api/v3/admin/moderators`, `POST /api/v3/admin/moderator/promote/:user_id`, and `POST /api/v3/admin/user/demote/:user_id` previously required THO. Demoting requires an access level at or above the target's (403 otherwise).
+- `GET /api/v3/admin/twitarrteam` and `GET /api/v3/admin/tho` are now available to TwitarrTeam and above (read-only). `POST /api/v3/admin/twitarrteam/promote/:user_id` and `POST /api/v3/admin/tho/promote/:user_id` are also now TwitarrTeam and above, but a caller can only promote to a level at or below their own, so promoting to THO requires THO.
+- Added `ModeratorActionType` values `roleAdded` and `roleRemoved`, logged when a user role is added or removed. The moderator action log (`ModeratorActionLogData.actionType`) can now return these values, and `ModeratorActionLogData` gains an optional `role` (the `UserRoleType` that was added or removed; absent for other actions).
+- Adding a role now returns 400 if the target user isn't verified (or higher). Removing a role now returns 404 if the target user doesn't exist.
+- Attempts to change the name or access level of a special account (`@admin`, `@THO`, `@TwitarrTeam`, `@moderator`, `@CommunitySupport`, or a Client account) now return 403 instead of 400. Affects `POST /api/v3/user/username`, `POST /api/v3/user/:user_id/username`, `POST /api/v3/mod/user/:user_id/setaccesslevel/:access_level`, and the promote/demote endpoints.

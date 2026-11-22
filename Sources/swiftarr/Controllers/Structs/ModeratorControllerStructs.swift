@@ -183,6 +183,8 @@ public struct ModeratorActionLogData: Content {
 	var moderator: UserHeader
 	/// The original author of the content that was moderated.
 	var targetUser: UserHeader
+	/// For `roleAdded` and `roleRemoved` actions, the role that was added or removed. Absent for all other actions.
+	var role: UserRoleType?
 }
 
 extension ModeratorActionLogData {
@@ -194,6 +196,7 @@ extension ModeratorActionLogData {
 		timestamp = action.createdAt ?? Date()
 		moderator = try req.userCache.getHeader(action.$actor.id)
 		targetUser = try req.userCache.getHeader(action.$target.id)
+		role = action.role
 	}
 }
 

@@ -18,6 +18,7 @@ class ModeratorActionNameTests: XCTestCase {
 			.accessLevelModerator, .accessLevelTwitarrTeam, .accessLevelTHO,
 			.tempQuarantine, .tempQuarantineCleared,
 			.regCodeSearched, .regCodeViewed, .accountUnlocked,
+			.roleAdded, .roleRemoved,
 		]
 		XCTAssertEqual(Set(all).count, all.count, "test list should cover every ModeratorActionType case")
 		for action in all {
@@ -33,6 +34,7 @@ class ModeratorActionNameTests: XCTestCase {
 			.accessLevelModerator, .accessLevelTwitarrTeam, .accessLevelTHO,
 			.tempQuarantine, .tempQuarantineCleared,
 			.regCodeSearched, .regCodeViewed, .accountUnlocked,
+			.roleAdded, .roleRemoved,
 		]
 		let names = Set(all.map { $0.visibleName() })
 		XCTAssertEqual(names.count, all.count, "labels should be distinct: \(names.sorted())")
