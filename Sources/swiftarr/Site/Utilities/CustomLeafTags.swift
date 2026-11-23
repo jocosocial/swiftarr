@@ -56,8 +56,7 @@ struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 		"ship", "tropical-drink", "wangwang", "zombie",
 	]
 
-	/// The inline `<img>` tag used to render a jocomoji by name. Shared by the standalone
-	/// `addJocomoji` path and `FormatPostTextTag.rewriteInline` so the markup stays in one place.
+	/// The `<img>` tag for a jocomoji by name; shared by `addJocomoji` and `rewriteInline`.
 	static func imgTag(for emojiTag: String) -> String {
 		"<img src=\"/img/emoji/small/\(emojiTag).png\" width=18 height=18>"
 	}
@@ -97,8 +96,7 @@ struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 /// Usage: #formatFezText(String) -> String
 /// Usage: #formatSeamailText(String) -> String
 struct FormatPostTextTag: UnsafeUnescapedLeafTag {
-	/// Staff mentions render with `link-danger`. Sourced from `PrivilegedUser` so the
-	/// list of privileged usernames isn't duplicated in this file.
+	/// Privileged usernames (staff mentions → `link-danger`), sourced from `PrivilegedUser`.
 	static let staffUsernames: Set<String> = Set(PrivilegedUser.allCases.map { $0.queryParam })
 
 	func render(_ ctx: LeafContext) throws -> LeafData {
@@ -107,16 +105,10 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 			return LeafData.string("")
 		}
 
-		// Posts starting with the <Markdown> marker are rendered as Markdown via swift-markdown's
-		// cmark parser. The parser emits fenced and inline code content verbatim (it does not
-		// HTML-escape it), so a sample like `<Markdown>` in a code fence would otherwise leak a
-		// live tag into the page that the browser mis-parses or hides — so escape the code regions
-		// first. Then rewrite the forum's inline syntax (jocomoji, mentions, hashtags) into
-		// <img>/<a> HTML. Code and preformatted blocks are left untouched; inside existing links
-		// only jocomoji convert (an <img> is valid link text) while mentions/hashtags are skipped
-		// (nested links are invalid HTML). This is safe because cmark has already run, so the
-		// emitted tags are plain data to the browser rather than markdown to be re-parsed.
-		// Bare URLs are auto-linked by cmark's autolink extension.
+		// Posts starting with the <Markdown> marker render as Markdown: formatEscapedMarkdown
+		// parses it with swift-markdown and neutralizes typed raw HTML. The forum's inline syntax
+		// (jocomoji, mentions, hashtags) is then rewritten — skipping <code>/<pre>, and
+		// mentions/hashtags inside existing links — and dangerous link/image hrefs are defused.
 		if string.hasPrefix("<Markdown>") {
 			let cleaned = Self.stripMarkdownWrapper(string)
 			let html = Self.formatEscapedMarkdown(cleaned)
@@ -124,10 +116,8 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 			return LeafData.string("<div class=\"markdown-body\">\(styled)</div>")
 		}
 
-		// Sanitize first so any user-supplied raw HTML is neutralized (and the <img>/<a> tags we add
-		// next aren't escaped away). Then rewrite the forum's inline syntax (jocomoji, @mentions,
-		// #hashtags) into <img>/<a> HTML. We reuse the same rewriteInline the Markdown path uses, so
-		// both stay in lockstep: same regexes, same link markup, same case-insensitive staff coloring.
+		// Escape typed HTML first (neutralizes it, and keeps the <img>/<a> tags added next intact).
+		// rewriteInline is the same code the Markdown path uses, so both stay in lockstep.
 		string = Self.rewriteInline(string.htmlEscaped())
 
 		string = string.replacingOccurrences(of: "\r\n", with: "\n")
@@ -154,18 +144,14 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		// browsing at https://twitarr.com a Twitarr link should not take you to http://joco.hollandamerica.com.
 		// While it's not the end of the world it represents a poor experience for the user.
 
-		// Find all matches in the entire text string (range 0 to end), then substitute the matches.
-		// processUrlMatches masks neutralized (&lt;…&gt;) HTML regions first so the matcher can't
-		// reach into a typed tag (e.g. its href="…") and swallow it into a mangled live link.
+		// Auto-link bare URLs; typed (&lt;…&gt;) HTML is masked first so it stays inert.
 		Self.processUrlMatches(string: &string)
 
 		return LeafData.string(string)
 	}
 
-	/// Strips the `<Markdown>` wrapper tags that mark a post as Markdown. Only the leading
-	/// `<Markdown>` and the trailing `</Markdown>` are removed (they're our internal marker, not
-	/// part of the body); any other occurrences—e.g. a code span or fenced block documenting the
-	/// tag itself—are left alone so help text about the tag still renders.
+	/// Removes the leading `<Markdown>` and trailing `</Markdown>` markers (internal, not body
+	/// content); any other occurrences are left intact.
 	static func stripMarkdownWrapper(_ input: String) -> String {
 		var markdown = input
 		if markdown.hasPrefix("<Markdown>") {
@@ -177,17 +163,10 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		return markdown
 	}
 
-	/// Renders Markdown to HTML.
-	///
-	/// The pinned swift-markdown (commit ea1d88be) `HTMLFormatter` escapes text, code-block, and
-	/// inline-code content itself, so typed `<`/`>`/`&` are neutralized without double-escaping.
-	/// It does, however, emit two things verbatim: a `HTMLBlock`/`InlineHTML` node (a raw `<script>`,
-	/// `<svg>`, `<img ...>`, or `<a href="...">` typed by the author) as live markup, and a fenced
-	/// block's `class="language-…"` attribute unescaped (a malicious info string can break out of it).
-	/// We neutralize both in the AST *before* formatting: raw HTML nodes are rewritten to inert text
-	/// (the formatter then escapes them to `&lt;…&gt;`), and code-block languages are restricted to a
-	/// safe character set. Markdown link/image `href`/`src` are the one residual vector the caller's
-	/// `neutralizeDangerousSchemes` pass still has to handle.
+	/// Renders Markdown to HTML. `RawHTMLNeutralizer` neutralizes typed raw HTML and fenced-code
+	/// languages before formatting, so the formatter's `&<>` escaping covers the rest. The one
+	/// residual vector — a Markdown link/image `href`/`src` — is handled by the caller's
+	/// `neutralizeDangerousSchemes` pass.
 	static func formatEscapedMarkdown(_ markdown: String) -> String {
 		let document = Markdown.Document(parsing: markdown)
 		var rewriter = RawHTMLNeutralizer()
@@ -195,10 +174,8 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		return HTMLFormatter.format(safeDocument)
 	}
 
-	/// Rewrites the AST so no raw markup can reach the formatter as a live tag: `HTMLBlock` and
-	/// `InlineHTML` nodes become inert text (escaped by `HTMLFormatter.visitText`), and fenced
-	/// code-block languages are restricted to `[A-Za-z0-9_+-]` so they cannot break out of the
-	/// `class="language-…"` attribute. Everything else is left untouched.
+	/// Rewrites raw `HTMLBlock`/`InlineHTML` to inert text and restricts fenced-code languages to
+	/// `[A-Za-z0-9_+-]`, so nothing can break out of the `class="language-…"` attribute.
 	private struct RawHTMLNeutralizer: MarkupRewriter {
 		func visitHTMLBlock(_ html: HTMLBlock) -> Markup? {
 			return Text(html.rawHTML)
@@ -220,12 +197,9 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		}
 	}
 
-	/// Neutralizes `javascript:` / `data:` / `vbscript:` URL schemes in `href`/`src` attributes so
-	/// a Markdown link like `[click](javascript:alert(1))` cannot trigger click-based script
-	/// execution. This is the one residual vector left after the up-front input escape: raw HTML
-	/// is already inert, but Markdown link/image *syntax* can still emit a live dangerous `href`.
-	/// The match is case-insensitive and tolerates the embedded whitespace/newlines obfuscators
-	/// rely on; it replaces the whole scheme-prefixed URL with an inert `about:blank`.
+	/// Rewrites `javascript:`/`data:`/`vbscript:` in `href`/`src` to `about:blank`. This catches
+	/// the one thing the raw-HTML neutralizer can't: a Markdown link/image whose `href`/`src` is
+	/// a dangerous scheme.
 	static func neutralizeDangerousSchemes(_ html: String) -> String {
 		let pattern = "(?i)\\b(href|src)\\s*=\\s*[\"']\\s*(?:javascript|data|vbscript)\\s*:?[^\"']*"
 		guard let re = try? NSRegularExpression(pattern: pattern) else {
@@ -236,13 +210,8 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 	}
 
 	/// Rewrites the forum's inline syntax (jocomoji, mentions, hashtags) into `<img>`/`<a>` HTML
-	/// in cmark's output, leaving code blocks and preformatted blocks untouched. Mentions and
-	/// hashtags are also left alone inside existing links (nested links are invalid HTML), but
-	/// jocomoji still convert there because an inline image is valid link text.
-	///
-	/// Running this *after* cmark is what lets us skip code: at this point the text between tags
-	/// is plain prose, and `<code>`, `<pre>`, and `<a>` delimit the regions we must not touch.
-	/// The emitted tags are safe to insert because cmark has already run.
+	/// in the (already-parsed) Markdown output. Skips `<code>`/`<pre>`; inside an `<a>` it
+	/// converts jocomoji (valid link text) but not mentions/hashtags (nested links are invalid).
 	static func applyInlineRewrites(_ html: String) -> String {
 		let skipTags: Set<String> = ["code", "pre", "a"]
 		let tagRegex = try! NSRegularExpression(pattern: "<[^>]*>")
@@ -293,10 +262,8 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		return result
 	}
 
-	/// Rewrites a prose chunk based on which skip region it's currently inside (from the
-	/// tag stack). Code/pre suppress all rewrites; a link suppresses mentions/hashtags but
-	/// still converts jocomoji. `skipStack` holds the open skip tags (code/pre/a).
-	///
+	/// Rewrites one prose chunk per the open skip-region stack: code/pre suppress all rewrites;
+	/// a link suppresses mentions/hashtags but still converts jocomoji.
 	static func rewriteChunk(_ textChunk: String, skipStack: [String]) -> String {
 		if skipStack.contains("code") || skipStack.contains("pre") {
 			return textChunk
@@ -304,12 +271,9 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		return Self.rewriteInline(textChunk, insideLink: skipStack.contains("a"))
 	}
 
-	/// Applies the jocomoji/mention/hashtag rewrites to a single chunk of prose (text between tags).
-	/// Collects every match first, then substitutes right-to-left so the ranges stay valid.
-	///
-	/// When `insideLink` is true (the chunk is the text of an existing `<a>`), mentions and
-	/// hashtags are skipped because nesting links is invalid HTML; jocomoji still convert,
-	/// since an inline image is valid link text.
+	/// Applies the jocomoji/mention/hashtag rewrites to one chunk of prose. Collects all matches,
+	/// then substitutes right-to-left so the ranges stay valid. With `insideLink`, mentions/hashtags
+	/// are skipped (nested links are invalid HTML) but jocomoji still convert (valid link text).
 	static func rewriteInline(_ text: String, insideLink: Bool = false) -> String {
 		struct Rewrite {
 			let range: NSRange
@@ -366,10 +330,9 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 
 		rewrites.sort { $0.range.location < $1.range.location }
 
-		// Drop any rewrite that overlaps an earlier (lower-location) one. Two jocomoji that
-		// share a colon (e.g. ":die:ship:") otherwise both match, and applying both corrupts
-		// the output into broken HTML. Keeping the earliest-starting match mirrors the
-		// plain-text path, where sequential replacement makes the second one unfindable.
+		// Drop any rewrite overlapping an earlier one: two jocomoji sharing a colon (":die:ship:")
+		// would otherwise both match and corrupt the output. Keeping the earliest-starting one
+		// mirrors the plain-text path, where sequential replacement makes the second unfindable.
 		var kept: [Rewrite] = []
 		for rewrite in rewrites {
 			if let last = kept.last, rewrite.range.location < last.range.location + last.range.length {
@@ -387,9 +350,8 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		return result
 	}
 
-	/// Post-process cmark HTML to add Bootstrap link color classes to mention and hashtag links.
-	/// Staff mentions get `link-danger`; regular mentions and hashtags get `link-primary`.
-	/// This makes the coloring independent of URL case (unlike CSS href attribute selectors).
+	/// Adds Bootstrap link-color classes to mention/hashtag links: `link-danger` for staff,
+	/// `link-primary` otherwise — so the coloring is independent of URL case.
 	static func addMentionLinkClasses(_ html: String) -> String {
 		let staffUsernames = Self.staffUsernames
 		var result = html
@@ -425,12 +387,10 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 
 	/// Finds bare URLs in the (already neutralized) string and turns them into clickable links.
 	///
-	/// The string at this point is the result of `htmlEscaped()`, so any HTML the user typed is
-	/// present as escaped entities (`&lt;a href=&quot;…&quot;&gt;…&lt;/a&gt;`). Those escaped tag regions are
-	/// masked with unique placeholders before matching so the URL regex cannot reach into a tag's
-	/// `href="…"` (or an `img`'s `src="…"`) and swallow the trailing `&quot;&gt;…` into one mangled,
-	/// double-nested link with a stray `;`. Only the bare, untagged URLs that remain are linked; the
-	/// typed HTML is restored verbatim and therefore renders as inert literal text.
+	/// Typed HTML is present as escaped entities (`&lt;…&gt;`), so those regions are masked with
+	/// placeholders first: otherwise the URL regex would reach into a tag's `href`/`src` and
+	/// swallow the trailing `&quot;&gt;…` into one mangled, double-nested link. Only the remaining
+	/// bare URLs are linked; the masked HTML is then restored verbatim as inert text.
 	///
 	/// Pass by ref can kinda be voodoo.
 	/// https://stackoverflow.com/questions/27364117/is-swift-pass-by-value-or-pass-by-reference
@@ -438,28 +398,19 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 	/// - Parameter string: Reference to the Leaf string that is the HTML content to return to the user.
 	///
 	static func processUrlMatches(string: inout String) {
-		// Mask every neutralized `&lt;…&gt;` region with a unique placeholder so the URL matcher below
-		// can't reach into a typed tag (e.g. its href="…") and swallow the trailing &quot;&gt;… into the
-		// "URL". The URL body class [^\s()<>{}\[\]]+ happily consumes &, ; and letters, which is exactly
-		// what produced the mangled link. Only the ESCAPED regions (&lt;/&gt;) are masked; the raw <img>/<a>
-		// tags that rewriteInline added use a real '<' and are left alone. Placeholders are \u{0001}N\u{0001}
-		// tokens: not whitespace and ending in a non-alphanumeric, so the URL regex (which must end in
-		// [a-zA-Z0-9]) never matches one.
+		// Mask each escaped `&lt;…&gt;` region with a "[MASK <n>]" placeholder so the URL matcher
+		// can't reach into a typed tag's href="…"/src="…" and swallow the trailing &quot;&gt;… into a
+		// mangled link. The body class [^\s()<>{}\[\]]+ happily eats & and ; — that's what caused
+		// it. (Only the escaped regions are masked; the raw <img>/<a> tags rewriteInline added use
+		// a real '<' and are left alone.)
 		let escapedTagRegex = try! NSRegularExpression(pattern: "&lt;.*?&gt;")
 		let maskLimit = NSRange(string.startIndex..., in: string)
 		let maskedRegions = escapedTagRegex.matches(in: string, range: maskLimit)
 		var stringWithMask = string
-		// Map each placeholder index -> the original escaped-tag text, for the restore pass below.
-		//
-		// The placeholder is "[MASK <n>]" (NOT a bare \u{0001}n\u{0001} token). The URL body class
-		// [^\s()<>{}\[\]]+ happily consumes \u{0001}, so a bare-URL immediately adjacent to a typed tag
-		// (e.g. "https://x.com/page<img …>") would swallow a \u{0001}-delimited token into the match and
-		// mangle it. The '[' breaks the URL body cleanly, so the URL stops before the placeholder. The
-		// placeholder is also inert to the matcher itself (no http(s):// or canonical host to start on).
-		// Substitute RIGHT-TO-LEFT: all regions' ranges were computed against the untouched string, so
-		// replacing the rightmost region first never shifts the ranges of the regions still to its left.
-		// (Left-to-right replacement would invalidate every earlier range, which is why the second typed
-		// tag in a post was historically left unmasked and its href got swallowed by the URL matcher.)
+		// "[MASK <n>]" is inert to the URL matcher (no scheme/canonical host to start a match on),
+		// and if a bare URL sits directly against a tag, the '[' stops the URL body so the match
+		// ends before the placeholder. Substituting right-to-left keeps the not-yet-replaced
+		// regions' ranges valid (all were computed against the untouched string).
 		var masked: [Int: String] = [:]
 		for (originalIndex, tagMatch) in maskedRegions.enumerated().reversed() {
 			guard let tagRange = Range(tagMatch.range, in: stringWithMask) else { continue }
@@ -616,8 +567,8 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 	}
 }
 
-/// Wraps `MarkdownTag` (cmark) output in a `<div class="markdown-body">` so that
-/// site CSS can scope mention-link colors and jocomoji sizing to Markdown content.
+/// Renders `formatEscapedMarkdown`'s Markdown output inside a `<div class="markdown-body">` so
+/// site CSS can style the Markdown-specific elements (headings, tables) distinctly.
 ///
 /// Usage: #markdownTextTag(String) -> String
 struct MarkdownBodyTag: UnsafeUnescapedLeafTag {
