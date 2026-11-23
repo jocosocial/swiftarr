@@ -1,6 +1,49 @@
 import FluentSQL
 import Vapor
 
+/// A resource with a well-known page on this server that can be linked to or shared as a QR code.
+/// Conforming types only supply the path; `shareURL` is built from the canonical server URL, not the request's host.
+protocol Shareable {
+	/// Absolute path of the resource's page on this server, e.g. `/lfg/<id>`.
+	var sharePath: String { get }
+}
+
+extension Shareable {
+	var shareURL: String? {
+		var components = Settings.shared.canonicalServerURLComponents
+		components.path = sharePath
+		return components.string
+	}
+}
+
+/// Leaf data for the shareButton/shareModal partials, made from any `Shareable`.
+/// Add a `share: ShareContext?` to a page's context, then `#extend("shareButton")` and `#extend("shareModal")` in its template.
+struct ShareContext: Encodable {
+	private(set) var url: String
+	/// Server-relative URL of a QR code image encoding `url`. See `qrCodeImageURL(encoding:)`.
+	private(set) var qrCodeURL: String
+
+	init?(_ item: some Shareable) {
+		guard let url = item.shareURL, let qrCodeURL = Self.qrCodeImageURL(encoding: url) else {
+			return nil
+		}
+		self.url = url
+		self.qrCodeURL = qrCodeURL
+	}
+
+	/// Builds the URL of an image of a QR code that encodes `string`, for use in an `<img>` tag. The URL is relative so the image
+	/// loads from whatever host served the page, even if that isn't the canonical host (dev instances, tunnels, LAN addresses).
+	/// `string` is what the QR code contains, and should be built from the canonical server URL.
+	static func qrCodeImageURL(encoding string: String) -> String? {
+		var imageComponents = URLComponents()
+		imageComponents.path = "/api/v3/image/qrcode"
+		imageComponents.queryItems = [URLQueryItem(name: "string", value: string)]
+		// URLQueryItem leaves '+' alone, but the server decodes a bare '+' in a query as a space.
+		imageComponents.percentEncodedQuery = imageComponents.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+		return imageComponents.string
+	}
+}
+
 // Leaf data used by all views. Mostly this is stuff in the navbar.
 struct TrunkContext: Encodable {
 	var title: String

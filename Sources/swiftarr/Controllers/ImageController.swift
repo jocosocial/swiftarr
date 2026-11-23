@@ -1,7 +1,6 @@
 import FluentSQL
 import Foundation
 import Vapor
-import QRCodeSwift
 
 struct ImageController: APIRouteCollection {
 
@@ -167,32 +166,12 @@ struct ImageController: APIRouteCollection {
 	/// **URL Query Parameters:**
 	/// - string=STRING		String to encode as the QR Code's value.
 	/// 
-	/// - Returns: A 400x400 pixel PNG file of a QR Code.
+	/// - Returns: A PNG file of a QR Code, rendered by `QRCodeRenderer`. Size depends on the encoded string; scale it with CSS.
 	func generateQRCode(_ req: Request) async throws -> Response {
 		guard let urlString = (req.query[String.self, at: "string"]) else {
 			throw Abort(.badRequest, reason: "QR Generation requires a string to generate in the 'string' query parameter.")
 		}
-		let code = try QRCode(urlString)
-		let xSize = code.imageCodes[0].count
-		let ySize = code.imageCodes.count
-
-		// Build an RGB pixel buffer from the QR code matrix
-		var pixels = [UInt8](repeating: 0, count: xSize * ySize * 3)
-		for y in 0..<ySize {
-			for x in 0..<xSize {
-				let offset = (y * xSize + x) * 3
-				let value: UInt8 = code.imageCodes[y][x] ? 0x00 : 0xFF
-				pixels[offset] = value
-				pixels[offset + 1] = value
-				pixels[offset + 2] = value
-			}
-		}
-
-		let srcImage = try SwiftarrImage(width: xSize, height: ySize, pixels: pixels)
-		guard let dstImage = srcImage.resizedToNearest(width: 400, height: 400) else {
-			throw Abort(.internalServerError, reason: "Could not resize QR Code image.")
-		}
-		let pngData = try dstImage.exportAsPNG()
+		let pngData = try QRCodeRenderer(rounded: true, icon: true).render(urlString).png
 		var headers: HTTPHeaders = [:]
 		// Check if file has been cached already and return NotModified response if the etags match
 		headers.replaceOrAdd(name: .eTag, value: "W/\"1\"")

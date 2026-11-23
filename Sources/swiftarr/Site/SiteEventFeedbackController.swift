@@ -330,7 +330,7 @@ struct SiteEventFeedbackController: SiteControllerUtils {
 	/// 
 	/// Each sheet contains a QR Code, and the URL encoded in that QR code has the form 
 	/// "https://twitarr.com/eventfeedback?room=Rolling+Stone+Lounge", but with appropriate room names. The URL encoded in the QR Code
-	/// is always twitarr.com no matter what the current hostname is.
+	/// always uses the canonical server URL (SWIFTARR_EXTERNAL_URL) no matter what the current hostname is.
 	func printRoomPosters(_ req: Request) async throws -> View {
 		struct RoomPosterForm: Content {
 			var roomNames: String
@@ -367,26 +367,19 @@ struct SiteEventFeedbackController: SiteControllerUtils {
 		
 		// Takes the name of a room on the ship where Shadow Events will be held.
 		//
-		// In this function:
-		// 		urlInQRComponents is the URL encoded in the QR Code--the thing you decode using your phone camera
-		//		imageLinkComponents is the URL to the image of the QR Code--designed to be used e.g. in an <img> tag.
+		// The URL encoded in the QR Code--the thing you decode using your phone camera--is built from the canonical server URL.
+		// The URL of the QR Code's image is relative to whatever host is serving this page.
 		init(name: String) throws {
 			self.name = name
-			guard var urlInQRComponents = URLComponents(string: "https://twitarr.com/eventfeedback") else {
-				throw Abort(.internalServerError, reason: "Couldn't create URLComponents from static string.")
-			}
+			var urlInQRComponents = Settings.shared.canonicalServerURLComponents
+			urlInQRComponents.path = "/eventfeedback"
 			urlInQRComponents.queryItems = [URLQueryItem(name: "room", value: name)]
-			guard let urlInQRCode = urlInQRComponents.string else {
-				throw Abort(.internalServerError, reason: "Couldn't create URL from components.")
-			}
-			var imageLinkComponents = Settings.shared.canonicalServerURLComponents
-			imageLinkComponents.path = "/api/v3/image/qrcode"
-			imageLinkComponents.queryItems = [URLQueryItem(name: "string", 
-					value: urlInQRCode.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!)]
-			guard let urlToQRCode = imageLinkComponents.string else {
+			guard let urlInQRCode = urlInQRComponents.string,
+				let urlToQRCode = ShareContext.qrCodeImageURL(encoding: urlInQRCode)
+			else {
 				throw Abort(.internalServerError, reason: "Couldn't create URL to QR Code image from components.")
 			}
-			self.qrCodeURL = urlToQRCode		
+			self.qrCodeURL = urlToQRCode
 		}
 	}
 	
