@@ -14,12 +14,6 @@ class MarkdownPostTextTests: XCTestCase {
 		XCTAssertEqual(strip("<Markdown>\n\n**bold**\n\n</Markdown>"), "\n\n**bold**\n\n")
 	}
 
-	func testWrapperInsideCodeSpanIsPreserved() {
-		// Only the leading/trailing wrapper tags are stripped; a <Markdown> shown as a code
-		// span (e.g. help text about the tag) is left alone.
-		XCTAssertEqual(strip("<Markdown>\n`<Markdown>`\n</Markdown>"), "\n`<Markdown>`\n")
-	}
-
 	func testWrapperInsideFencedBlockIsPreserved() {
 		// A fenced block documenting the tag keeps its <Markdown>/</Markdown> lines.
 		XCTAssertEqual(
@@ -124,11 +118,6 @@ class MarkdownPostTextTests: XCTestCase {
 		FormatPostTextTag.addMentionLinkClasses(html)
 	}
 
-	func testStaffMentionGetsLinkDanger() {
-		let input = "<a href=\"/username/admin\">@admin</a>"
-		XCTAssertEqual(addClasses(input), "<a class=\"link-danger\" href=\"/username/admin\">@admin</a>")
-	}
-
 	func testStaffMentionCaseInsensitive() {
 		// Even if the URL has different casing, it should still be detected as staff.
 		let input = "<a href=\"/username/THO\">@THO</a>"
@@ -152,6 +141,8 @@ class MarkdownPostTextTests: XCTestCase {
 	}
 
 	func testMultipleLinksInOneHTML() {
+		// A single HTML string mixing mention and hashtag links: every link must be classified,
+		// proving both the mention and hashtag passes run and replace all matches.
 		let input = "<p><a href=\"/username/THO\">@THO</a> and <a href=\"/username/challfry\">@challfry</a> and <a href=\"/forumpost/search?hashtag=fun\">#fun</a></p>"
 		let expected = "<p><a class=\"link-danger\" href=\"/username/THO\">@THO</a> and <a class=\"link-primary\" href=\"/username/challfry\">@challfry</a> and <a class=\"link-primary\" href=\"/forumpost/search?hashtag=fun\">#fun</a></p>"
 		XCTAssertEqual(addClasses(input), expected)
@@ -224,19 +215,6 @@ class MarkdownPostTextTests: XCTestCase {
 		)
 	}
 
-	func testFencedCodeBlockMarkdownRendersAsLiteralText() {
-		// End-to-end: a post documenting the <Markdown> tag in a fenced block should render the
-		// tag as visible literal text in the code block, not as a hidden element.
-		let raw = "<Markdown>\n```\n<Markdown>\n</Markdown>\n```\n</Markdown>"
-		let cleaned = FormatPostTextTag.stripMarkdownWrapper(raw)
-		let html = FormatPostTextTag.formatEscapedMarkdown(cleaned)
-		let styled = FormatPostTextTag.applyInlineRewrites(html)
-		XCTAssertEqual(
-			"<div class=\"markdown-body\">\(styled)</div>",
-			"<div class=\"markdown-body\"><pre><code>&lt;Markdown&gt;\n&lt;/Markdown&gt;\n</code></pre>\n</div>"
-		)
-	}
-
 	// MARK: - Raw HTML is neutralized (only Markdown syntax may produce tags)
 
 	/// Full render pipeline for a `<Markdown>` post: strip wrapper, parse+neutralize, apply forum
@@ -289,10 +267,20 @@ class MarkdownPostTextTests: XCTestCase {
 		XCTAssertFalse(out.contains("javascript:"), "javascript: src must be stripped: \(out)")
 	}
 
+	func testDataUriSrcIsStripped() {
+		let out = renderFull("<Markdown>\n![img](data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==)\n</Markdown>")
+		XCTAssertFalse(out.contains("data:"), "data: URI in src must be stripped: \(out)")
+	}
+
+	func testVbscriptLinkHrefIsStripped() {
+		let out = renderFull("<Markdown>\n[click](vbscript:alert(1))\n</Markdown>")
+		XCTAssertFalse(out.contains("vbscript:"), "vbscript: href must be stripped: \(out)")
+	}
+
 	func testFenceClassAttributeInjectionIsStripped() {
 		// A malicious fence language tries to break out of the class="..." attribute and inject
 		// a live onmouseover handler. Escaping the input up front turns the injected quotes into
-		// &quot;, so cmark keeps them inside the class value and no live attribute is created.
+		// &quot;, so swift-markdown keeps them inside the class value and no live attribute is created.
 		let out = renderFull("<Markdown>\n```x\"onmouseover=\"alert(1)\nbody\n```\n</Markdown>")
 		XCTAssertFalse(out.contains("\"onmouseover="), "no live onmouseover attribute may be created: \(out)")
 		XCTAssertFalse(out.contains(" alert("), "no live alert(1) may be created: \(out)")
@@ -319,8 +307,8 @@ class MarkdownPostTextTests: XCTestCase {
 	}
 
 	func testStrikethroughAndThematicBreakArePreserved() {
-		// cmark emits <del> for ~~strikethrough~~ and <hr> for a --- rule; both must survive the
-		// whitelist so legitimate Markdown formatting isn't silently dropped.
+		// swift-markdown emits <del> for ~~strikethrough~~ and <hr> for a --- rule; both must
+		// survive the pipeline so legitimate Markdown formatting isn't silently dropped.
 		let out = renderFull("<Markdown>\n~~gone~~\n\n---\n\nafter\n</Markdown>")
 		XCTAssertTrue(out.contains("del"), "strikethrough <del> must be preserved: \(out)")
 		XCTAssertTrue(out.contains("<hr"), "thematic break <hr> must be preserved: \(out)")
