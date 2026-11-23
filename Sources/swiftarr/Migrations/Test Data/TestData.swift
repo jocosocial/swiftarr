@@ -6,7 +6,6 @@ import Vapor
 struct CreateTestData: AsyncMigration {
 
 	func prepare(on database: Database) async throws {
-		try await createTestTwarrts(on: database)
 		try await createTestForumPosts(on: database)
 		try await createTestLargeForumPosts(on: database)
 		try await createTestLargeSeamailThread(on: database)
@@ -14,7 +13,6 @@ struct CreateTestData: AsyncMigration {
 	}
 
 	func revert(on database: Database) async throws {
-		try await Twarrt.query(on: database).delete()
 		try await QuartermasterItem.query(on: database).delete()
 		guard let category = try await Category.query(on: database).filter(\.$title == "General").first() else {
 			throw Abort(.internalServerError, reason: "No category found.")
@@ -26,15 +24,6 @@ struct CreateTestData: AsyncMigration {
 			try await forum.edits.delete(on: database)
 			try await forum.delete(on: database)
 		}
-	}
-
-	// Makes a single tweet by admin.
-	func createTestTwarrts(on database: Database) async throws {
-		guard let admin = try await User.query(on: database).filter(\.$username == "admin").first() else {
-			throw Abort(.internalServerError, reason: "Could not find admin user.")
-		}
-		let twarrt = try Twarrt(authorID: admin.requireID(), text: "The one that is the first one.")
-		try await twarrt.save(on: database)
 	}
 
 	// Creates a forum in General, adds 6 posts to it

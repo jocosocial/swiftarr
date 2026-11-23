@@ -24,7 +24,7 @@ account is created (the key is 3 words, nothing cryptic)
     - all forums belong to a category
     - a category can be restricted ("official") or not (users can create forums therein)
     - categories are created, and forums may be re-categorized, by Moderators
-    - forum posts can be reacted to with the same laugh/like/love options as twitarr twarrts
+    - forum posts can be reacted to with laugh, like, and love
     - forum posts can be bookmarked (this is private to the bookmarking user)
     - forum posts can filtered by boomarks, liked posts
     - get notified when your name is @mentioned in a post, or when an alertword is posted
@@ -32,10 +32,6 @@ account is created (the key is 3 words, nothing cryptic)
     - each event on the schedule can have an "official" associated forum
     - 'follow' events you want to attend, then filter on followed events to see your own personal schedule
     - download individual events as .ics files for import into calendar apps
-* Twitarr
-    - twarrts can be bookmarked (this is private to the bookmarking user)
-    - can be filtered by a user's barrels (lists of users), bookmarks, liked twarrts
-    - get notified when your name is @mentioned, or when someone posts a twarrt containing an alertword
 * Looking For Group
     - users can create Looking For Group requests for... gaming, dining companions, meetups, activities, anything?
     - LFGs can have a maximum capacity, with a waiting list, or an open-ended number of participants
@@ -60,7 +56,7 @@ considered ephemeral and only ever be used to *attempt* to obtain an ID  (`api/v
     1. "welcome!"
     2. username/password ---> recovery key
     3. the user is **strongly** encouraged to screenshot/notes app/write down recovery key before proceeding
-    4. "user can now edit profile, read twitarr or forums – if they want to *create* content and Agree to Stuff" then...
+    4. "user can now edit profile, read forums – if they want to *create* content and Agree to Stuff" then...
     5. registration code --- Basic auth ---> token (user is now logged in)
     6. use token in Bearer auth until token no longer works
 * When a token no longer works (401 error response):
@@ -77,19 +73,17 @@ The API is a bunch of HTTP endpoints, all of which start with the `/api/v3` pref
 
 Most endpoints are REST-like, in that they act like there's a resource there and you use `GET .../resource` to get the resource, `POST .../resource/update` to modify it, and `DELETE .../resource` to delete it. Endpoints that fetch a list of things tend to have a fair number of URL query parameters that filter the list of things are returned. This is to facilitate filter combinations. For example:
 
-`GET /api/v3/twitarr`
+`GET /api/v3/forum/:forum_ID`
 
-returns an array of tweets. With no query params, it returns the 50 most recent tweets from any poster. You may add query parameters to filter the results, like this:
+returns a forum and its posts. With no query params, it returns the first page of posts (default size 50). You may add query parameters to page through the posts, like this:
 
-`GET /api/v3/twitarr?hashtag=wangwang&byUsername=thepope&start=50&limit=10`
+`GET /api/v3/forum/:forum_ID?start=50&limit=10`
 
-This request will select only tweets made by user `thepope` that include the hashtag `#wangwang`, put them in an array where item 0 in the array is the most recently posted matching tweet, and then return items 50 through 59 in that array.
-
-If you also add `&before=<tweet_ID>` in the request query, you will get a (mostly) stable result set. Set the before value to the largest tweetID you're aware of (their IDs are numbered sequentially), then make multiple requests with different start and limit values, (but the same value for `before`) and you'll get results that don't drift as new matching tweets are posted.
+This request returns posts 50 through 59 in that forum. Item 0 of the returned posts is the post at index 50.
 
 ### Errors
 
-All endpoints return valid HTTPStatus values. Endpoints that create a thing will generally return `201 Created` on success. Deletes usually return `204 No Content`. Most other endpoints return `200 OK` on success. When returning errors, calls will return the appropriate 400/500 level error; except we never return `404 Not Found` when the endpoint itself was valid. That is, if `POST /api/v3/tweet/1003/edit` is a valid endpoint (in Vapor terms, one that resolves to a route handler) but tweet #1003 does not exist, we'll return another 400 level error (usually `401 Bad Request`). This way, a `404 Not Found` error can be assured to mean, "There's no handler registered to respond to that URL path" and never "A handler was found and it ran but the database lookup returned 0 records".
+All endpoints return valid HTTPStatus values. Endpoints that create a thing will generally return `201 Created` on success. Deletes usually return `204 No Content`. Most other endpoints return `200 OK` on success. When returning errors, calls will return the appropriate 400/500 level error; except we never return `404 Not Found` when the endpoint itself was valid. That is, if `POST /api/v3/forum/post/1003/update` is a valid endpoint (in Vapor terms, one that resolves to a route handler) but post #1003 does not exist, we'll return another 400 level error (usually `401 Bad Request`). This way, a `404 Not Found` error can be assured to mean, "There's no handler registered to respond to that URL path" and never "A handler was found and it ran but the database lookup returned 0 records".
 
 A 400-500 error response may not have any content, but if it does, the content will be a JSON-encoded [ErrorResponse](ErrorResponse). The `reason` field of this response will contain a user-facing description of the error(s) that occurred, and in some cases the fieldErrors field will contain individual errors linked to fields in the JSON request payload. The `reason` field will always contain all errors in one big string, so you only need to parse fieldErrors if you want to attach errors to specific UI elements.
 
@@ -101,11 +95,11 @@ IDs, IDs everywhere. Most objects in Swiftarr are referenced by their ID. IDs ar
 
 Users are generally referred to by their ID, which is a UUID. A user may change their username, so don't rely on that.
 
-When a route requires an ID as part of the route path, the docs will indicate this as `/api/v3/twitter/:twarrt_id` where `:twarrt_id` is the ID of a twarrt, e.g. `1003`.
+When a route requires an ID as part of the route path, the docs will indicate this as `/api/v3/forum/:forum_id` where `:forum_id` is the ID of a forum, e.g. `1003`.
 
 ### Controllers
 
-A Controller is a group of HTTP endpoints that are related in function. For instance, here's the [Summary](TwitarrControllerSummary) page for the Twitarr Controller. The links from the Summary page go to generated doc pages for each endpoint; unfortunately the auto-generated docs think they're describing the handler *function* instead of the URL endpoint where the function is registered.
+A Controller is a group of HTTP endpoints that are related in function. For instance, here's the [Summary](ForumControllerSummary) page for the Forum Controller. The links from the Summary page go to generated doc pages for each endpoint; unfortunately the auto-generated docs think they're describing the handler *function* instead of the URL endpoint where the function is registered.
 
 ### Controller Structs (DTOs)
 

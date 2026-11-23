@@ -88,6 +88,7 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.get("scheduleupload", "complete", use: scheduleUpdateCompleteViewtHandler)
 		privateTTRoutes.get("schedulelogview", scheduleLogIDParam, use: scheduleLogEntryViewer)
 		privateTTRoutes.post("schedulereload", use: scheduleReloadHandler)
+		privateTTRoutes.post("schedulefetch", use: scheduleFetchHandler)
 		privateTTRoutes.post("notificationcheck", use: notificationConsistencyCheckHandler)
 
 		
@@ -1044,6 +1045,14 @@ struct SiteAdminController: SiteControllerUtils {
 		return .ok
 	}
 
+	// POST /admin/schedulefetch
+	//
+	// Has the server fetch the schedule from the Sched API and stage it, as if it were uploaded. See scheduleVerifyViewHandler().
+	func scheduleFetchHandler(_ req: Request) async throws -> HTTPStatus {
+		let _ = try await apiQuery(req, endpoint: "/admin/schedule/fetch", method: .POST)
+		return .ok
+	}
+
 	func notificationConsistencyCheckHandler(_ req: Request) async throws -> HTTPStatus {
 		let _ = try await apiQuery(req, endpoint: "/admin/notifications/reload", method: .POST)
 		return .ok
@@ -1067,16 +1076,14 @@ struct SiteAdminController: SiteControllerUtils {
 	// 	 time or location, you could make a .ics that only contains that event and upload/apply that file. Without this
 	// 	 option, that one event would be considered an exhaustive list of events for the week, and all other events would be deleted.
 	func scheduleVerifyPostHandler(_ req: Request) async throws -> HTTPStatus {
-		struct ScheduleVerifyData: Content {
-			var addForumPosts: String?
-			var ignoreDeletes: String?
-		}
-		let formData = try req.content.decode(ScheduleVerifyData.self)
+		// Read each checkbox separately; with both unchecked the form body is empty and decoding a struct from it fails.
+		let addForumPosts = (try? req.content.get(String.self, at: "addForumPosts")) == "on"
+		let ignoreDeletes = (try? req.content.get(String.self, at: "ignoreDeletes")) == "on"
 		var query = [URLQueryItem]()
-		if formData.addForumPosts == "on" {
+		if addForumPosts {
 			query.append(URLQueryItem(name: "forumPosts", value: "true"))
 		}
-		if formData.ignoreDeletes != "on" {
+		if !ignoreDeletes {
 			query.append(URLQueryItem(name: "processDeletes", value: "true"))
 		}
 		var components = URLComponents()

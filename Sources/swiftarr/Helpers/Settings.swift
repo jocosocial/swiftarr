@@ -91,13 +91,14 @@ final class Settings: Encodable, @unchecked Sendable {
 	/// The maximum number of alt accounts per primary user account.
 	@StoredSettingsValue("maxAlternateAccounts", defaultValue: 6) var maxAlternateAccounts: Int
 
-	/// The maximum number of twartts allowed per request.
+	/// The maximum number of items allowed per paginated request. Named for the removed twarrt stream, but it has since
+	/// been re-used as the page-size cap in many other controllers. The name, stored key, and API field are preserved as-is.
 	@StoredSettingsValue("maximumTwarrts", defaultValue: 200) var maximumTwarrts: Int
 
-	/// The maximum number of twartts allowed per request.
+	/// The maximum number of items allowed per request.
 	@StoredSettingsValue("maximumForums", defaultValue: 200) var maximumForums: Int
 
-	/// The maximum number of twartts allowed per request.
+	/// The maximum number of items allowed per request.
 	@StoredSettingsValue("maximumForumPosts", defaultValue: 200) var maximumForumPosts: Int
 
 	/// Largest image we allow to be uploaded, in bytes.

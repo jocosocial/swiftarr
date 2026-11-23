@@ -384,6 +384,17 @@ additive; the existing count fields are unchanged and are now derived from these
 
 ## Nov 14, 2026
 
+- Admin: added `POST /api/v3/admin/schedule/upload`, which takes the raw sched.com `GET /api/session/export?format=json` response as the request body and stages it for `GET /admin/schedule/verify` and `POST /admin/schedule/update/apply`, the same as an `.ics` upload. Added `POST /api/v3/admin/schedule/fetch`, which has the server pull the export from the Sched API itself and stage it. Both are TwitarrTeam and above.
+- Admin: `EventUpdateDifferenceData` gains optional `minorChanges` (`[EventMinorChangeData]`), listing the old and new values of each changed field for the events in `minorChangeEvents`.
+- Admin: added `POST /api/v3/admin/performer/bulk/sched/upload`, which takes the raw sched.com `GET /api/role/export?role=speaker&format=json&fields=username,name,about,url,avatar,company,position,sessions` response and stages it for `performer/bulk/verify` and `performer/bulk/apply`. Added `POST /api/v3/admin/performer/bulk/sched/fetch`, which has the server pull the speakers from the Sched API itself. Both are TwitarrTeam and above.
+- Admin: `GET /api/v3/admin/performer/bulk/verify` and `POST /api/v3/admin/performer/bulk/apply` take `?overwrite=true`. Without it, apply now merges: profile fields that are nil or blank in the upload keep their existing values, and years attended are added to existing years.
+- `ScrapedPerformerEventReferenceData.startTime` is now optional.
 - `CategoryData` gains an optional `defaultSort` field to direct clients to the preferred thread sort for a category. Splashdot sets this to `create` (newest threads first).
 - Category thread requests now honor `CategoryData.defaultSort` when `sort` is omitted. Supported values are `create`, `title`, `update`, and `event`.
 - Event categories advertise `defaultSort: "event"`. Explicit `sort=event` requests for non-event categories return HTTP 400.
+
+## Nov 15, 2026
+
+- Removed `GET /api/v3/mod/twarrt/:id` and `POST /api/v3/mod/twarrt/:id/setstate/:state`. The twarrt stream is gone. `ReportType` still includes `twarrt` so existing report rows decode.
+- `SwiftarrFeature.tweets` is deprecated but still accepted and emitted in `disabledFeatures`.
+- Removed notification types `twarrtMention` and `alertwordTwarrt` from `SocketNotificationData`. `UserNotificationData` still includes `twarrtMentionCount` and `newTwarrtMentionCount`.

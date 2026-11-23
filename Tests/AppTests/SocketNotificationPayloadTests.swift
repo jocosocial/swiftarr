@@ -46,18 +46,6 @@ class SocketNotificationPayloadTests: XCTestCase {
 
 	// MARK: - Other events are unchanged
 
-	func testTwarrtMention_HasNoSecondaryContentID() throws {
-		let json = try payload(.twarrtMention(7))
-		XCTAssertEqual(json["contentID"] as? String, "7")
-		XCTAssertNil(json["secondaryContentID"])
-	}
-
-	func testAlertwordTwarrt_HasNoSecondaryContentID() throws {
-		let json = try payload(.alertwordTwarrt("kraken", 7))
-		XCTAssertEqual(json["contentID"] as? String, "7")
-		XCTAssertNil(json["secondaryContentID"])
-	}
-
 	func testChatUnreadMsg_HasNoSecondaryContentID() throws {
 		let fezID = UUID()
 		let json = try payload(.chatUnreadMsg(fezID, .open))
@@ -95,14 +83,14 @@ class SocketNotificationPayloadTests: XCTestCase {
 
 	func testNotificationID_WhenProvided_IsIncludedInPayload() throws {
 		let notificationID = UUID()
-		let msg = SocketNotificationData(.twarrtMention(7), info: "info", id: "7", notificationID: notificationID)
+		let msg = SocketNotificationData(.forumMention(7), info: "info", id: "7", notificationID: notificationID)
 		let data = try JSONEncoder().encode(msg)
 		let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
 		XCTAssertEqual(json["notificationID"] as? String, notificationID.uuidString)
 	}
 
 	func testNotificationID_WhenOmitted_IsNotInPayload() throws {
-		let json = try payload(.twarrtMention(7))
+		let json = try payload(.forumMention(7))
 		XCTAssertNil(json["notificationID"])
 	}
 

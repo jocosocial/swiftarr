@@ -639,7 +639,7 @@ struct UserController: APIRouteCollection {
 		guard let parameter = req.parameters.get(alertwordParam.paramString)?.lowercased() else {
 			throw Abort(.badRequest, reason: "No alert word to add found in request.")
 		}
-		let cleanedParams = Twarrt.buildCleanWordsArray(parameter)
+		let cleanedParams = ForumPost.buildCleanWordsArray(parameter)
 		guard cleanedParams.count <= 1 else {
 			throw Abort(.badRequest, reason: "Can only add one new alert word at a time.")
 		}
@@ -722,7 +722,7 @@ struct UserController: APIRouteCollection {
 		guard let parameter = req.parameters.get(mutewordParam.paramString)?.lowercased() else {
 			throw Abort(.badRequest, reason: "No mute word to add found in request.")
 		}
-		let cleanedParams = Twarrt.buildCleanWordsArray(parameter)
+		let cleanedParams = ForumPost.buildCleanWordsArray(parameter)
 		guard cleanedParams.count <= 1 else {
 			throw Abort(.badRequest, reason: "Can only add one new mute word at a time.")
 		}
@@ -767,7 +767,7 @@ struct UserController: APIRouteCollection {
 		guard let parameter = req.parameters.get(mutewordParam.paramString)?.lowercased() else {
 			throw Abort(.badRequest, reason: "No mute word to remove found in request.")
 		}
-		let cleanedParams = Twarrt.buildCleanWordsArray(parameter)
+		let cleanedParams = ForumPost.buildCleanWordsArray(parameter)
 		guard cleanedParams.count <= 1, let cleanParam = cleanedParams.first else {
 			throw Abort(.badRequest, reason: "Can only remove one mute word at a time.")
 		}

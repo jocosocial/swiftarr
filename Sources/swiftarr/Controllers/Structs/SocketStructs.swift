@@ -110,12 +110,8 @@ struct SocketNotificationData: Content {
 		case personalEventStarting
 
 // @mentions and Alertwords
-		/// A user has posted a Twarrt that contains a word this user has set as an alertword.
-		case alertwordTwarrt
 		/// A user has posted a Forum Post that contains a word this user has set as an alertword.
 		case alertwordPost
-		/// A user has posted a Twarrt that @mentions this user.
-		case twarrtMention
 		/// A user has posted a Forum Post that @mentions this user.
 		case forumMention
 		
@@ -186,9 +182,7 @@ extension SocketNotificationData.NotificationTypeData {
 		case .joinedLFGStarting: self = .joinedLFGStarting
 		case .personalEventStarting: self = .personalEventStarting
 
-		case .alertwordTwarrt: self = .alertwordTwarrt
 		case .alertwordPost: self = .alertwordPost
-		case .twarrtMention: self = .twarrtMention
 		case .forumMention: self = .forumMention
 		case .moderatorForumMention: self = .moderatorForumMention
 		case .twitarrTeamForumMention: self = .twitarrTeamForumMention

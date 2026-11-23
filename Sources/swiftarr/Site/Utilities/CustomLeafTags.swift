@@ -106,7 +106,6 @@ struct MarkdownTextTag: UnsafeUnescapedLeafTag {
 /// Runs the element sanitizer on the given string, converts Jocomoji (specific string tags with the form :tag:)
 /// into inline images, and then converts substrings of the forum "@username"  and "#hashtag" into links.
 ///
-/// Usage: #formatTwarrtText(String) -> String
 /// Usage: #formatPostText(String) -> String
 /// Usage: #formatFezText(String) -> String
 /// Usage: #formatSeamailText(String) -> String
@@ -334,7 +333,6 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 	}
 
 	enum Usage {
-		case twarrt
 		case forumpost
 		case fez
 		case seamail
