@@ -10,40 +10,6 @@ import Leaf
 import Markdown
 import Vapor
 
-/// This tag should output-sanitize all string values in self, replacing existing values.
-/// For each string, it should encode the chars &<>"'/ into their HTML entities, preventing them from being interpreted as HTML
-/// commands when Leaf inserts them into HTML Element contexts. For inserting into other contexts, other sanitizing should be done.
-/// See https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
-///
-/// Usage: #elem(String) -> String
-//struct ElementSanitizerTag: LeafTag {
-//	static func sanitize(_ str: String) -> String {
-//		var string = str
-//		// This isn't ~optimized~, but I think it optimizes for the case where no changes need to be made to the string.
-//		for ch in string.indices.reversed() {
-//			switch string[ch] {
-//			case "&": string.replaceSubrange(ch..<string.index(after:ch), with: "&amp;")
-//			case "<": string.replaceSubrange(ch..<string.index(after:ch), with: "&lt;")
-//			case ">": string.replaceSubrange(ch..<string.index(after:ch), with: "&gt;")
-//			case "'": string.replaceSubrange(ch..<string.index(after:ch), with: "&#x27;")
-//			case "\"": string.replaceSubrange(ch..<string.index(after:ch), with: "&quot;")
-//			case "/": string.replaceSubrange(ch..<string.index(after:ch), with: "&#x2F;")
-//			default: continue
-//			}
-//		}
-//
-//		return string
-//	}
-//
-//	func render(_ ctx: LeafContext) throws -> LeafData {
-//		try ctx.requireParameterCount(1)
-//		guard let string = ctx.parameters[0].string else {
-//			return LeafData.string("")
-//		}
-//		return LeafData.string(ElementSanitizerTag.sanitize(string))
-//	}
-//}
-
 // MARK: - Tags for Styling Posts, Announcements, Daily Themes
 
 /// Runs the element sanitizer on the given string, and then converts Jocomoji (specific string tags with the form :tag:)
@@ -96,8 +62,20 @@ struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 /// Usage: #formatFezText(String) -> String
 /// Usage: #formatSeamailText(String) -> String
 struct FormatPostTextTag: UnsafeUnescapedLeafTag {
+	enum Usage {
+		case twarrt
+		case forumpost
+		case fez
+		case seamail
+	}
+	let usage: Usage
+
 	/// Privileged usernames (staff mentions → `link-danger`), sourced from `PrivilegedUser`.
 	static let staffUsernames: Set<String> = Set(PrivilegedUser.allCases.map { $0.queryParam })
+
+	init(_ forUsage: Usage) {
+		usage = forUsage
+	}
 
 	func render(_ ctx: LeafContext) throws -> LeafData {
 		try ctx.requireParameterCount(1)
@@ -123,14 +101,8 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		string = string.replacingOccurrences(of: "\r\n", with: "\n")
 		string = string.replacingOccurrences(of: "\r", with: "\n")
 
-		// Also convert newlines to HTML breaks. Do this before link conversion due to a dumb bug with the regex parser
-		// where \r\n sequences that appear before the regex match have their reported match length reduced.
-		//
-		// Note the replacement of "\r\n" and "\r" above. Dunno if that matters with the Markdown parser.
-		//
-		// I can't begin to comprehend the number of hours I wasted figuring out that Swift's print()
-		// basically does a buffer overflow with newlines and prints the same content to the same line in-place
-		// on the terminal.
+		// Normalize newlines to \n (above) and turn them into <br> breaks before auto-linking, so the
+		// URL matcher sees a consistent single-line string.
 		string = string.replacingOccurrences(of: "\n", with: "<br>")
 
 		// Links in posts should be automatically clickable. Similarly, we desire to shorten Twitarr
@@ -537,14 +509,6 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		}
 	}
 
-	enum Usage {
-		case twarrt
-		case forumpost
-		case fez
-		case seamail
-	}
-	let usage: Usage
-
 	/// The regex that finds bare URLs in post text, built once from the canonical hostnames. Static so
 	/// `processUrlMatches` can be exercised directly from tests without instantiating the Leaf tag.
 	static let genericUrlRegex: NSRegularExpression = {
@@ -561,10 +525,6 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 			"(?i)\\b((?:https?:(?:/{1,3}|[a-z0-9%])|\(escapedCanonicalHostnames)/)(?:[^\\s()<>{}\\[\\]]+|\\([^\\s()]*?\\([^\\s()]+\\)[^\\s()]*?\\)|\\([^\\s]+?\\))+(?:\\([^\\s()]*?\\([^\\s()]+\\)[^\\s()]*?\\)|\\([^\\s]+?\\)|[^\\s`!()\\[\\]{};:'\".,<>?«»“”‘’])|(?:(?<!@)\(escapedCanonicalHostnames)\\b/?(?!@)))"
 		return try! NSRegularExpression(pattern: genericUrlRegexStr, options: .caseInsensitive)
 	}()
-
-	init(_ forUsage: Usage) {
-		usage = forUsage
-	}
 }
 
 /// Renders `formatEscapedMarkdown`'s Markdown output inside a `<div class="markdown-body">` so
