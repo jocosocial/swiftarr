@@ -57,13 +57,11 @@ struct AddJocomojiTag: UnsafeUnescapedLeafTag {
 /// Runs the element sanitizer on the given string, converts Jocomoji (specific string tags with the form :tag:)
 /// into inline images, and then converts substrings of the forum "@username"  and "#hashtag" into links.
 ///
-/// Usage: #formatTwarrtText(String) -> String
 /// Usage: #formatPostText(String) -> String
 /// Usage: #formatFezText(String) -> String
 /// Usage: #formatSeamailText(String) -> String
 struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 	enum Usage {
-		case twarrt
 		case forumpost
 		case fez
 		case seamail
@@ -81,7 +79,23 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 	static let hashtagHrefRegex = try! NSRegularExpression(pattern: "<a href=\"(/forumpost/search\\?hashtag=[^\"]+)\">")
 	static let escapedTagRegex = try! NSRegularExpression(pattern: "&lt;.*?&gt;")
 	static let dangerousSchemeRegex = try! NSRegularExpression(pattern: "(?i)\\b(href|src)\\s*=\\s*[\"']\\s*(?:javascript|data|vbscript)\\s*:?[^\"]*")
-
+	/// The regex that finds bare URLs in post text, built once from the canonical hostnames. Static so
+	/// `processUrlMatches` can be exercised directly from tests without instantiating the Leaf tag.
+	static let genericUrlRegex: NSRegularExpression = {
+		// Let https://regex101.com/ be your guide on this spiritual journey.
+		// This regex matches any URL starting in http:// or https://.
+		// Certain browsers (looking at you Safari on iOS) do not prefix the scheme in pasted links from the linkbar.
+		// These will not be caught by this regex but instead by the canonical names one below.
+		// To be at least a little bit safe we replace all hostname dots (twittar.com) with regex-escaped literal dots.
+		// The canonicalNamesRegexStr has both http and https seperated because lookbacks must be of fixed length.
+		// So https?:// is unavailable which makes me sad.
+		let escapedCanonicalHostnames = Settings.shared.canonicalHostnames.joined(separator: "|")
+			.replacingOccurrences(of: ".", with: "\\.")
+		let genericUrlRegexStr =
+			"(?i)\\b((?:https?:(?:/{1,3}|[a-z0-9%])|\(escapedCanonicalHostnames)/)(?:[^\\s()<>{}\\[\\]]+|\\([^\\s()]*?\\([^\\s()]+\\)[^\\s()]*?\\)|\\([^\\s]+?\\))+(?:\\([^\\s()]*?\\([^\\s()]+\\)[^\\s()]*?\\)|\\([^\\s]+?\\)|[^\\s`!()\\[\\]{};:'\".,<>?«»“”‘’])|(?:(?<!@)\(escapedCanonicalHostnames)\\b/?(?!@)))"
+		return try! NSRegularExpression(pattern: genericUrlRegexStr, options: .caseInsensitive)
+	}()
+	
 	init(_ forUsage: Usage) {
 		usage = forUsage
 	}
@@ -493,23 +507,6 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		default: return "[Twitarr Link]"
 		}
 	}
-
-	/// The regex that finds bare URLs in post text, built once from the canonical hostnames. Static so
-	/// `processUrlMatches` can be exercised directly from tests without instantiating the Leaf tag.
-	static let genericUrlRegex: NSRegularExpression = {
-		// Let https://regex101.com/ be your guide on this spiritual journey.
-		// This regex matches any URL starting in http:// or https://.
-		// Certain browsers (looking at you Safari on iOS) do not prefix the scheme in pasted links from the linkbar.
-		// These will not be caught by this regex but instead by the canonical names one below.
-		// To be at least a little bit safe we replace all hostname dots (twittar.com) with regex-escaped literal dots.
-		// The canonicalNamesRegexStr has both http and https seperated because lookbacks must be of fixed length.
-		// So https?:// is unavailable which makes me sad.
-		let escapedCanonicalHostnames = Settings.shared.canonicalHostnames.joined(separator: "|")
-			.replacingOccurrences(of: ".", with: "\\.")
-		let genericUrlRegexStr =
-			"(?i)\\b((?:https?:(?:/{1,3}|[a-z0-9%])|\(escapedCanonicalHostnames)/)(?:[^\\s()<>{}\\[\\]]+|\\([^\\s()]*?\\([^\\s()]+\\)[^\\s()]*?\\)|\\([^\\s]+?\\))+(?:\\([^\\s()]*?\\([^\\s()]+\\)[^\\s()]*?\\)|\\([^\\s]+?\\)|[^\\s`!()\\[\\]{};:'\".,<>?«»“”‘’])|(?:(?<!@)\(escapedCanonicalHostnames)\\b/?(?!@)))"
-		return try! NSRegularExpression(pattern: genericUrlRegexStr, options: .caseInsensitive)
-	}()
 }
 
 /// Renders `formatEscapedMarkdown`'s Markdown output inside a `<div class="markdown-body">` so

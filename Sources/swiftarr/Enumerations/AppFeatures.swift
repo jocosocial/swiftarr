@@ -34,7 +34,9 @@ enum SwiftarrClientApp: String, Content, CaseIterable {
 /// Functional areas of the Swiftarr API. Used in the `SettingsAppFeaturePair` struct.
 /// Clients: Be sure to anticipate server values not listed here.
 public enum SwiftarrFeature: String, Content, CaseIterable, Sendable {
-	case tweets  // Tweet stream; perma-disabled
+	/// Deprecated: the tweet stream has been removed. Kept so admins can still list it in `disabledFeatures`, which is how
+	/// clients such as Kraken know to hide their stream tab.
+	case tweets
 	case forums
 	case seamail  // Chat. Includes group chats and 'open' chats that allow membership changes after creation
 	case schedule

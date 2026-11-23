@@ -45,8 +45,6 @@ struct SiteModController: SiteControllerUtils {
 		modRoutes.get("moderator", "log", use: moderatorLogPageHandler).destination("the moderator log")
 		modRoutes.get("moderator", "seamail", use: moderatorSeamailPageHandler).destination("seamails to @moderator")
 
-		modRoutes.get("moderate", "twarrt", twarrtIDParam, use: moderateTwarrtContentPageHandler)
-			.destination("the moderation page for this twarrt")
 		modRoutes.get("moderate", "forumpost", postIDParam, use: moderateForumPostContentPageHandler)
 			.destination("the moderation page for this forum post")
 		modRoutes.get("moderate", "forum", forumIDParam, use: moderateForumContentPageHandler)
@@ -74,13 +72,6 @@ struct SiteModController: SiteControllerUtils {
 		let modPrivateRoutes = getPrivateRoutes(app).grouped(SiteRequireModeratorMiddleware())
 		modPrivateRoutes.get("archivedimage", imageIDParam, use: archivedImageHandler)
 
-		modPrivateRoutes.post(
-			"twarrt",
-			twarrtIDParam,
-			"setstate",
-			modStateParam,
-			use: setTwarrtModerationStatePostHandler
-		)
 		modPrivateRoutes.post(
 			"forumpost",
 			postIDParam,
@@ -262,62 +253,6 @@ struct SiteModController: SiteControllerUtils {
 	// `/seamail?foruser=moderator` is the mailbox UI.
 	func moderatorSeamailPageHandler(_ req: Request) throws -> Response {
 		req.redirect(to: "/seamail?foruser=\(PrivilegedUser.moderator.queryParam)")
-	}
-
-	///	`GET /moderate/twarrt/ID`
-	///
-	/// This shows a view that focuses on the *content* that was reported, showing:
-	/// * The twarrt that was reported
-	/// * All reports made against this content
-	/// * All previous versions of this content
-	/// * (hopefully) Mod actions taken against this content already
-	func moderateTwarrtContentPageHandler(_ req: Request) async throws -> View {
-		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw Abort(.badRequest, reason: "Missing search parameter.")
-		}
-		let response = try await apiQuery(req, endpoint: "/mod/twarrt/\(twarrtID)")
-		let modData = try response.content.decode(TwarrtModerationData.self)
-		struct ReportContext: Encodable {
-			var trunk: TrunkContext
-			var modData: TwarrtModerationData
-			var firstReport: ReportModerationData?
-			var finalEditAuthor: UserHeader?
-
-			init(_ req: Request, modData: TwarrtModerationData) throws {
-				trunk = .init(req, title: "Reports", tab: .moderator)
-				self.modData = modData
-				firstReport = modData.reports.count > 0 ? modData.reports[0] : nil
-				finalEditAuthor = modData.edits.last?.author
-				if self.modData.edits.count > 1 {
-					for index in (0...self.modData.edits.count - 2).reversed() {
-						self.modData.edits[index + 1].author = self.modData.edits[index].author
-						self.modData.edits[index + 1].author.username =
-							"\(self.modData.edits[index + 1].author.username) edited to:"
-					}
-				}
-				if self.modData.edits.count > 0 {
-					self.modData.edits[0].author = modData.twarrt.author
-					self.modData.edits[0].author.username = "\(self.modData.edits[0].author.username) initially wrote:"
-
-				}
-			}
-		}
-		let ctx = try ReportContext(req, modData: modData)
-		return try await req.view.render("moderation/twarrtView", ctx)
-	}
-
-	///	`POST /moderate/twarrt/ID/setstate/STRING`
-	///
-	/// Sets the moderation state of the given twarrt. Moderation states include "locked" and "quarantined", as well as a few others.
-	func setTwarrtModerationStatePostHandler(_ req: Request) async throws -> HTTPStatus {
-		guard let twarrtID = req.parameters.get(twarrtIDParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw Abort(.badRequest, reason: "Missing search parameter.")
-		}
-		guard let modState = req.parameters.get(modStateParam.paramString)?.percentEncodeFilePathEntry() else {
-			throw Abort(.badRequest, reason: "Missing search parameter.")
-		}
-		let response = try await apiQuery(req, endpoint: "/mod/twarrt/\(twarrtID)/setstate/\(modState)", method: .POST)
-		return response.status
 	}
 
 	/// `GET /moderate/forumpost/:post_ID`
@@ -980,7 +915,7 @@ func generateContentGroups(from reports: [ReportModerationData]) -> [ReportConte
 
 		var contentURL: String
 		switch report.type {
-		case .twarrt: contentURL = "/moderate/twarrt/\(report.reportedID)"
+		case .twarrt: contentURL = "/"
 		case .forumPost: contentURL = "/moderate/forumpost/\(report.reportedID)"
 		case .forum: contentURL = "/moderate/forum/\(report.reportedID)"
 		case .fez: contentURL = "/moderate/lfg/\(report.reportedID)"

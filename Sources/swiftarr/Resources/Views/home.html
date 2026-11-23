@@ -22,7 +22,7 @@
 							</span>
 						</div>
 						<div class="card-body bg-light">
-							#formatTwarrtText(dailyTheme.info)
+							#formatPostText(dailyTheme.info)
 						</div>
 						#if(dailyTheme.image):
 							<img class="card-img-bottom" src="/api/v3/image/full/#(dailyTheme.image)" alt="Daily Theme Image">
@@ -71,7 +71,7 @@
 							</span>
 						</div>
 						<div class="card-body bg-light">
-							#formatTwarrtText(ann.text)<br>
+							#formatPostText(ann.text)<br>
 							<span class="text-muted"><i>Display Until #staticTime(ann.displayUntil)</i></span>
 						</div>
 					</div>
@@ -79,7 +79,7 @@
 			#endif
 						
 			#if(!trunk.preregistrationApplies):
-				#if(trunk.alertCounts.newTwarrtMentionCount > 0 || trunk.alertCounts.newForumMentionCount > 0 || trunk.alertCounts.addedToSeamailCount > 0 || trunk.alertCounts.newSeamailMessageCount > 0 || trunk.alertCounts.addedToLFGCount > 0 || trunk.alertCounts.newFezMessageCount > 0 || trunk.alertCounts.addedToPrivateEventCount > 0 || trunk.alertCounts.newPrivateEventMessageCount > 0):
+				#if(trunk.alertCounts.newForumMentionCount > 0 || trunk.alertCounts.addedToSeamailCount > 0 || trunk.alertCounts.newSeamailMessageCount > 0 || trunk.alertCounts.addedToLFGCount > 0 || trunk.alertCounts.newFezMessageCount > 0 || trunk.alertCounts.addedToPrivateEventCount > 0 || trunk.alertCounts.newPrivateEventMessageCount > 0):
 					<ul class="list-group mb-2">
 						<li class="list-group-item active"><b>Notifications</b></li>
 						#if(trunk.alertCounts.newForumMentionCount > 0):
@@ -381,7 +381,7 @@
 						<b>You are currently logged out</b>
 					</li>
 					<li class="list-group-item">
-						<p>Use the links below to log in or create an account.</p><p>While logged out, Tweets, Forums, Seamail, and Looking For Group will not be available.</p>
+						<p>Use the links below to log in or create an account.</p><p>While logged out, Forums, Seamail, and Looking For Group will not be available.</p>
 						<a class="btn btn-outline-primary" href="/login">Login</a>
 						<a class="btn btn-outline-primary" href="/conductAgree">Create Account</a>
 					</li>

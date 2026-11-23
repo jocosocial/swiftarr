@@ -530,7 +530,6 @@ struct SwiftarrConfigurator {
 
 		// Custom Leaf tags
 		app.leaf.tags["addJocomoji"] = AddJocomojiTag()
-		app.leaf.tags["formatTwarrtText"] = FormatPostTextTag(.twarrt)
 		app.leaf.tags["formatPostText"] = FormatPostTextTag(.forumpost)
 		app.leaf.tags["formatFezText"] = FormatPostTextTag(.fez)
 		app.leaf.tags["formatSeamailText"] = FormatPostTextTag(.seamail)
@@ -636,9 +635,6 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreatePostLikesSchema(), to: .psql)
 		app.migrations.add(CreateEventSchema(), to: .psql)
 		app.migrations.add(CreateEventFavoriteSchema(), to: .psql)
-		app.migrations.add(CreateTwarrtSchema(), to: .psql)
-		app.migrations.add(CreateTwarrtEditSchema(), to: .psql)
-		app.migrations.add(CreateTwarrtLikesSchema(), to: .psql)
 		app.migrations.add(CreateFriendlyFezSchema(), to: .psql)
 		app.migrations.add(CreateFezParticipantSchema(), to: .psql)
 		app.migrations.add(CreateFezPostSchema(), to: .psql)

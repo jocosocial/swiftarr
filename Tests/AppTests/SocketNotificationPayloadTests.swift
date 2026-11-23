@@ -46,18 +46,6 @@ class SocketNotificationPayloadTests: XCTestCase {
 
 	// MARK: - Other events are unchanged
 
-	func testTwarrtMention_HasNoSecondaryContentID() throws {
-		let json = try payload(.twarrtMention(7))
-		XCTAssertEqual(json["contentID"] as? String, "7")
-		XCTAssertNil(json["secondaryContentID"])
-	}
-
-	func testAlertwordTwarrt_HasNoSecondaryContentID() throws {
-		let json = try payload(.alertwordTwarrt("kraken", 7))
-		XCTAssertEqual(json["contentID"] as? String, "7")
-		XCTAssertNil(json["secondaryContentID"])
-	}
-
 	func testChatUnreadMsg_HasNoSecondaryContentID() throws {
 		let fezID = UUID()
 		let json = try payload(.chatUnreadMsg(fezID, .open))
@@ -95,15 +83,34 @@ class SocketNotificationPayloadTests: XCTestCase {
 
 	func testNotificationID_WhenProvided_IsIncludedInPayload() throws {
 		let notificationID = UUID()
-		let msg = SocketNotificationData(.twarrtMention(7), info: "info", id: "7", notificationID: notificationID)
+		let msg = SocketNotificationData(.forumMention(7), info: "info", id: "7", notificationID: notificationID)
 		let data = try JSONEncoder().encode(msg)
 		let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
 		XCTAssertEqual(json["notificationID"] as? String, notificationID.uuidString)
 	}
 
 	func testNotificationID_WhenOmitted_IsNotInPayload() throws {
-		let json = try payload(.twarrtMention(7))
+		let json = try payload(.forumMention(7))
 		XCTAssertNil(json["notificationID"])
+	}
+
+	// MARK: - author
+
+	func testAuthor_WhenProvided_IsIncludedInPayload() throws {
+		let header = UserHeader(userID: UUID(), username: "kraken", displayName: "The Kraken", userImage: nil,
+				preferredPronoun: nil)
+		let msg = SocketNotificationData(.forumMention(42, forumID), info: "info", id: "42", author: header)
+		let data = try JSONEncoder().encode(msg)
+		let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+		let author = try XCTUnwrap(json["author"] as? [String: Any])
+		XCTAssertEqual(author["userID"] as? String, header.userID.uuidString)
+		XCTAssertEqual(author["username"] as? String, "kraken")
+		XCTAssertEqual(author["displayName"] as? String, "The Kraken")
+	}
+
+	func testAuthor_WhenOmitted_IsNotInPayload() throws {
+		let json = try payload(.followedEventStarting(UUID()))
+		XCTAssertNil(json["author"])
 	}
 
 	func testPhoneCall_HasNoNotificationID() throws {

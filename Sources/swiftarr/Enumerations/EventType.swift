@@ -44,3 +44,36 @@ enum EventType: String, Codable {
 		}
 	}
 }
+
+extension EventType {
+	/// Maps a sched.com event category (the `.ics` `CATEGORIES` value, or the API's `event_type`) to an `EventType`.
+	/// Matching is case-insensitive; unrecognized categories become `.general`.
+	init(schedCategory: String) {
+		switch schedCategory.trimmingCharacters(in: .whitespaces).uppercased() {
+		case "GAMING":
+			self = .gaming
+		case "LIVE PODCAST":
+			self = .livePodcast
+		case "MAIN CONCERT":
+			self = .mainConcert
+		case "OFFICE HOURS":
+			self = .officeHours
+		case "PARTY":
+			self = .party
+		case "Q&A / PANEL", "Q&A", "PANEL":						// "Q&A" and "PANEL" are not canonical
+			self = .qaPanel
+		case "READING / PERFORMANCE", "READING", "PERFORMANCE": // "READING" and "PERFORMANCE" are not canonical
+			self = .readingPerformance
+		case "SHADOW CRUISE":
+			self = .shadow
+		case "SIGNING":
+			self = .signing
+		case "WORKSHOP":
+			self = .workshop
+		case "DINING":
+			self = .dining
+		default:
+			self = .general
+		}
+	}
+}

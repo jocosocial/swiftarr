@@ -91,10 +91,6 @@ extension RedisClient {
 		_ = try await hincrby(incAmount, field: field.redisFieldName(), in: userHashRedisKey(userID: userID)).get()
 	}
 
-	func incrementAlertwordTwarrtInUserHash(word: String, userID: UUID, incAmount: Int = 1) async throws {
-		_ = try await hincrby(incAmount, field: "alertwordTweet-\(word)", in: userHashRedisKey(userID: userID)).get()
-	}
-
 	func incrementAlertwordPostInUserHash(word: String, userID: UUID, incAmount: Int = 1) async throws {
 		_ = try await hincrby(incAmount, field: "alertwordPost-\(word)", in: userHashRedisKey(userID: userID)).get()
 	}

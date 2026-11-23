@@ -164,6 +164,28 @@ public struct EventUpdateDifferenceData: Content {
 	var timeChangeEvents: [EventData] = []
 	var locationChangeEvents: [EventData] = []
 	var minorChangeEvents: [EventData] = []
+	/// The same events as `minorChangeEvents`, each with the fields that changed and their old and new values.
+	/// Nil in schedule log entries saved before this field existed.
+	var minorChanges: [EventMinorChangeData]? = []
+}
+
+/// One event's minor (title, description, type, age rating) changes in a schedule update.
+///
+/// Part of: `EventUpdateDifferenceData`
+public struct EventMinorChangeData: Content {
+	/// The event, with its updated values.
+	var event: EventData
+	/// The fields that changed.
+	var changedFields: [EventFieldChangeData]
+}
+
+public struct EventFieldChangeData: Content {
+	/// Human-readable field label, e.g. "Description".
+	var fieldName: String
+	/// The value currently in the database.
+	var oldValue: String
+	/// The value in the schedule update.
+	var newValue: String
 }
 
 /// Used to return the results of comparing a bulk-scraped set of performers against the performers already in the database.
