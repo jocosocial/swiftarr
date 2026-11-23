@@ -73,6 +73,15 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 	/// Privileged usernames (staff mentions → `link-danger`), sourced from `PrivilegedUser`.
 	static let staffUsernames: Set<String> = Set(PrivilegedUser.allCases.map { $0.queryParam })
 
+	// Patterns are compiled once and shared across renders (NSRegularExpression construction is not free).
+	static let inlineTagRegex = try! NSRegularExpression(pattern: "<[^>]*>")
+	static let inlineMentionRegex = try! NSRegularExpression(pattern: "(?<!\\S)(@[A-Za-z0-9]+(?:[-.+_][A-Za-z0-9]+)*)")
+	static let inlineHashtagRegex = try! NSRegularExpression(pattern: "(?<!\\S)(#[A-Za-z0-9]+)(?!\\S)")
+	static let mentionHrefRegex = try! NSRegularExpression(pattern: "<a href=\"/username/([^\"]+)\">")
+	static let hashtagHrefRegex = try! NSRegularExpression(pattern: "<a href=\"(/forumpost/search\\?hashtag=[^\"]+)\">")
+	static let escapedTagRegex = try! NSRegularExpression(pattern: "&lt;.*?&gt;")
+	static let dangerousSchemeRegex = try! NSRegularExpression(pattern: "(?i)\\b(href|src)\\s*=\\s*[\"']\\s*(?:javascript|data|vbscript)\\s*:?[^\"]*")
+
 	init(_ forUsage: Usage) {
 		usage = forUsage
 	}
@@ -173,12 +182,8 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 	/// the one thing the raw-HTML neutralizer can't: a Markdown link/image whose `href`/`src` is
 	/// a dangerous scheme.
 	static func neutralizeDangerousSchemes(_ html: String) -> String {
-		let pattern = "(?i)\\b(href|src)\\s*=\\s*[\"']\\s*(?:javascript|data|vbscript)\\s*:?[^\"']*"
-		guard let re = try? NSRegularExpression(pattern: pattern) else {
-			return html
-		}
 		let range = NSRange(html.startIndex..., in: html)
-		return re.stringByReplacingMatches(in: html, range: range, withTemplate: "$1=\"about:blank\"")
+		return dangerousSchemeRegex.stringByReplacingMatches(in: html, range: range, withTemplate: "$1=\"about:blank\"")
 	}
 
 	/// Rewrites the forum's inline syntax (jocomoji, mentions, hashtags) into `<img>`/`<a>` HTML
@@ -186,8 +191,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 	/// converts jocomoji (valid link text) but not mentions/hashtags (nested links are invalid).
 	static func applyInlineRewrites(_ html: String) -> String {
 		let skipTags: Set<String> = ["code", "pre", "a"]
-		let tagRegex = try! NSRegularExpression(pattern: "<[^>]*>")
-		let matches = tagRegex.matches(in: html, options: [], range: NSRange(html.startIndex..<html.endIndex, in: html))
+		let matches = inlineTagRegex.matches(in: html, options: [], range: NSRange(html.startIndex..<html.endIndex, in: html))
 
 		var result = ""
 		var skipStack: [String] = []
@@ -275,8 +279,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		if !insideLink {
 			// Mentions: @username -> <a class="..." href="/username/username">@username</a>
 			let staffUsernames = Self.staffUsernames
-			let mentionRegex = try! NSRegularExpression(pattern: "(?<!\\S)(@[A-Za-z0-9]+(?:[-.+_][A-Za-z0-9]+)*)")
-			for match in mentionRegex.matches(in: text, options: [], range: fullRange) {
+			for match in inlineMentionRegex.matches(in: text, options: [], range: fullRange) {
 				guard let range = Range(match.range(at: 0), in: text) else { continue }
 				let mention = String(text[range])
 				let username = String(mention.dropFirst())
@@ -288,8 +291,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 			}
 
 			// Hashtags: #tag -> <a class="link-primary" href="/forumpost/search?hashtag=tag">#tag</a>
-			let hashtagRegex = try! NSRegularExpression(pattern: "(?<!\\S)(#[A-Za-z0-9]+)(?!\\S)")
-			for match in hashtagRegex.matches(in: text, options: [], range: fullRange) {
+			for match in inlineHashtagRegex.matches(in: text, options: [], range: fullRange) {
 				guard let range = Range(match.range(at: 0), in: text) else { continue }
 				let hashtag = String(text[range])
 				let tag = String(hashtag.dropFirst())
@@ -329,10 +331,8 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		var result = html
 
 		// Mention links: <a href="/username/...">
-		let mentionPattern = "<a href=\"/username/([^\"]+)\">"
-		let mentionRegex = try! NSRegularExpression(pattern: mentionPattern)
 		let fullRange = NSRange(result.startIndex..<result.endIndex, in: result)
-		let matches = mentionRegex.matches(in: result, options: [], range: fullRange)
+		let matches = mentionHrefRegex.matches(in: result, options: [], range: fullRange)
 		for match in matches.reversed() {
 			guard let fullMatchRange = Range(match.range(at: 0), in: result),
 			      let usernameRange = Range(match.range(at: 1), in: result) else { continue }
@@ -343,10 +343,8 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		}
 
 		// Hashtag links: <a href="/forumpost/search?hashtag=...">
-		let hashtagPattern = "<a href=\"(/forumpost/search\\?hashtag=[^\"]+)\">"
-		let hashtagRegex = try! NSRegularExpression(pattern: hashtagPattern)
 		let hRange = NSRange(result.startIndex..<result.endIndex, in: result)
-		let hMatches = hashtagRegex.matches(in: result, options: [], range: hRange)
+		let hMatches = hashtagHrefRegex.matches(in: result, options: [], range: hRange)
 		for match in hMatches.reversed() {
 			guard let fullMatchRange = Range(match.range(at: 0), in: result),
 			      let hrefRange = Range(match.range(at: 1), in: result) else { continue }
@@ -375,7 +373,6 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		// mangled link. The body class [^\s()<>{}\[\]]+ happily eats & and ; — that's what caused
 		// it. (Only the escaped regions are masked; the raw <img>/<a> tags rewriteInline added use
 		// a real '<' and are left alone.)
-		let escapedTagRegex = try! NSRegularExpression(pattern: "&lt;.*?&gt;")
 		let maskLimit = NSRange(string.startIndex..., in: string)
 		let maskedRegions = escapedTagRegex.matches(in: string, range: maskLimit)
 		var stringWithMask = string
@@ -460,13 +457,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		guard pathComponents.count > 1, pathComponents[0] == "/" else { return nil }
 		switch pathComponents[1] {
 		case "tweets": return "[Twitarr Tweet Link]"
-		case "forums":
-			if pathComponents.count == 2 {
-				return "[Forum Categories Link]"
-			}
-			else {
-				return "[Forum Category Link]"
-			}
+		case "forums": return pathComponents.count == 2 ? "[Forum Categories Link]" : "[Forum Category Link]"
 		case "forum": return "[Forum Link]"
 		case "seamail": return "[Seamail Link]"
 		case "fez", "lfg":
@@ -483,13 +474,7 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 			}
 		case "events": return "[Events Link]"
 		case "user", "profile": return "[User Link]"
-		case "boardgames":
-			if pathComponents.count > 2 {
-				return "[Boardgame Link]"
-			}
-			else {
-				return "[Boardgames Link]"
-			}
+		case "boardgames": return pathComponents.count > 2 ? "[Boardgame Link]" : "[Boardgames Link]"
 		case "karaoke": return "[Karaoke Link]"
 		case "communitysupport":
 			return pathComponents.count > 3 && pathComponents[2] == "report" ? "[Community Support Report Link]" : "[Community Support Link]"
