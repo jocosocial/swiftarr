@@ -21,7 +21,7 @@ let package = Package(
 		// Prometheus is a monitoring package
 		.package(url: "https://github.com/swift-server/swift-prometheus.git", from: "2.0.0"),
 		// swift-markdown is a Markdown parser that can output HTML.
-		.package(url: "https://github.com/swiftlang/swift-markdown.git", from: "0.9.0"),
+		.package(url: "https://github.com/swiftlang/swift-markdown.git", revision: "ea1d88be47afe8a731b3971d7b3fb7a3a6db1a5a"),
 		// Zip compress/decompress
 		.package(url: "https://github.com/weichsel/ZIPFoundation.git", .upToNextMajor(from: "0.9.0")),
 		// Excel file parser. I forked this repo from /CoreOffice to fix a few bugs.

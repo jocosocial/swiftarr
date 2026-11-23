@@ -14,6 +14,20 @@ class MarkdownPostTextTests: XCTestCase {
 		XCTAssertEqual(strip("<Markdown>\n\n**bold**\n\n</Markdown>"), "\n\n**bold**\n\n")
 	}
 
+	func testWrapperInsideCodeSpanIsPreserved() {
+		// Only the leading/trailing wrapper tags are stripped; a <Markdown> shown as a code
+		// span (e.g. help text about the tag) is left alone.
+		XCTAssertEqual(strip("<Markdown>\n`<Markdown>`\n</Markdown>"), "\n`<Markdown>`\n")
+	}
+
+	func testWrapperInsideFencedBlockIsPreserved() {
+		// A fenced block documenting the tag keeps its <Markdown>/</Markdown> lines.
+		XCTAssertEqual(
+			strip("<Markdown>\n```\n<Markdown>\n</Markdown>\n```\n</Markdown>"),
+			"\n```\n<Markdown>\n</Markdown>\n```\n"
+		)
+	}
+
 	// MARK: - applyInlineRewrites
 
 	private func rewrite(_ html: String) -> String {
@@ -82,6 +96,28 @@ class MarkdownPostTextTests: XCTestCase {
 		XCTAssertEqual(rewrite(input), input)
 	}
 
+	func testJocomojiInsideLinkBecomeImages() {
+		// Unlike mentions/hashtags, a jocomoji <img> is valid link text, so it still converts
+		// inside an existing <a>.
+		XCTAssertEqual(
+			rewrite("<p><a href=\"https://x.com\">hi :pirate: there</a></p>"),
+			"<p><a href=\"https://x.com\">hi <img src=\"/img/emoji/small/pirate.png\" width=18 height=18> there</a></p>"
+		)
+	}
+
+	func testOverlappingJocomojiDontProduceBrokenHTML() {
+		// Two jocomoji that share a colon (":die:ship:") overlap; only the earlier one is
+		// applied so we don't emit a stray "img src=..." fragment.
+		XCTAssertEqual(
+			rewrite("<p>:die:ship:</p>"),
+			"<p><img src=\"/img/emoji/small/die.png\" width=18 height=18>ship:</p>"
+		)
+		XCTAssertEqual(
+			rewrite("<p>:arr:pirate:</p>"),
+			"<p><img src=\"/img/emoji/small/arr.png\" width=18 height=18>pirate:</p>"
+		)
+	}
+
 	// MARK: - addMentionLinkClasses tests
 
 	private func addClasses(_ html: String) -> String {
@@ -124,5 +160,169 @@ class MarkdownPostTextTests: XCTestCase {
 	func testUnrelatedLinksUntouched() {
 		let input = "<a href=\"/forums/12\">Forum</a>"
 		XCTAssertEqual(addClasses(input), input)
+	}
+
+	// MARK: - formatEscapedMarkdown (AST-level code escaping)
+
+	private func render(_ markdown: String) -> String {
+		FormatPostTextTag.formatEscapedMarkdown(markdown)
+	}
+
+	func testFencedCodeBlockContentIsEscaped() {
+		// The <Markdown> sample inside a fenced block must be escaped so the browser renders it
+		// as literal text instead of parsing it as a (hidden) element.
+		XCTAssertEqual(
+			render("```\n<Markdown>\n```"),
+			"<pre><code>&lt;Markdown&gt;\n</code></pre>\n"
+		)
+	}
+
+	func testInlineCodeContentIsEscaped() {
+		// The same leak happens with inline code spans; escape those too.
+		XCTAssertEqual(
+			render("use `<Markdown>` here"),
+			"<p>use <code>&lt;Markdown&gt;</code> here</p>\n"
+		)
+	}
+
+	func testCodeOperatorsAndAmpersandAreEscaped() {
+		// `<`, `>`, and `&` in a code sample all need escaping for correct rendering.
+		XCTAssertEqual(
+			render("```\nif (a < b && c > d) { }\n```"),
+			"<pre><code>if (a &lt; b &amp;&amp; c &gt; d) { }\n</code></pre>\n"
+		)
+	}
+
+	func testCodeRegionTagsArePreserved() {
+		// Only the content between the code tags is escaped; the tags and language class stay intact.
+		// Note the quotes stay live (`"x"`): the formatter escapes `&`/`<`/`>` in code but not quotes.
+		// That's safe because the `<`/`>` are escaped (so this is text, not a live tag) and renders
+		// identically in the browser to the `&quot;` form.
+		XCTAssertEqual(
+			render("```html\n<a href=\"x\">y</a>\n```"),
+			"<pre><code class=\"language-html\">&lt;a href=\"x\"&gt;y&lt;/a&gt;\n</code></pre>\n"
+		)
+	}
+
+	func testNonCodeRegionsAreUntouched() {
+		// Content outside code regions (e.g. real links) is left alone.
+		XCTAssertEqual(render("[Forum](/forums/12)"), "<p><a href=\"/forums/12\">Forum</a></p>\n")
+	}
+
+	func testFencedBlockContainingLiteralCodeTagsDoesNotCloseEarly() {
+		// The reported regression: a sample that itself contains a literal <code>…</code> must be
+		// escaped as a single unit. The inner </code> must NOT be treated as the real closing tag
+		// (the old string-scan let it close the block early and re-open live markup after it).
+		// The @mention inside the block also stays literal, because the block is now correctly
+		// recognized as a single skip region.
+		let input = "```\nthis is some <Markdown> <code>hi</code> and it mentions @admin\n```"
+		let html = FormatPostTextTag.formatEscapedMarkdown(input)
+		let styled = FormatPostTextTag.applyInlineRewrites(html)
+		XCTAssertEqual(
+			"<div class=\"markdown-body\">\(styled)</div>",
+			"<div class=\"markdown-body\"><pre><code>this is some &lt;Markdown&gt; &lt;code&gt;hi&lt;/code&gt; and it mentions @admin\n</code></pre>\n</div>"
+		)
+	}
+
+	func testFencedCodeBlockMarkdownRendersAsLiteralText() {
+		// End-to-end: a post documenting the <Markdown> tag in a fenced block should render the
+		// tag as visible literal text in the code block, not as a hidden element.
+		let raw = "<Markdown>\n```\n<Markdown>\n</Markdown>\n```\n</Markdown>"
+		let cleaned = FormatPostTextTag.stripMarkdownWrapper(raw)
+		let html = FormatPostTextTag.formatEscapedMarkdown(cleaned)
+		let styled = FormatPostTextTag.applyInlineRewrites(html)
+		XCTAssertEqual(
+			"<div class=\"markdown-body\">\(styled)</div>",
+			"<div class=\"markdown-body\"><pre><code>&lt;Markdown&gt;\n&lt;/Markdown&gt;\n</code></pre>\n</div>"
+		)
+	}
+
+	// MARK: - Raw HTML is neutralized (only Markdown syntax may produce tags)
+
+	/// Full render pipeline for a `<Markdown>` post: strip wrapper, parse+neutralize, apply forum
+	/// rewrites, then neutralize dangerous URL schemes. Mirrors `FormatPostTextTag`'s Markdown branch exactly.
+	private func renderFull(_ markdown: String) -> String {
+		let cleaned = FormatPostTextTag.stripMarkdownWrapper(markdown)
+		let html = FormatPostTextTag.formatEscapedMarkdown(cleaned)
+		let styled = FormatPostTextTag.neutralizeDangerousSchemes(FormatPostTextTag.applyInlineRewrites(html))
+		return "<div class=\"markdown-body\">\(styled)</div>"
+	}
+
+	func testScriptBlockIsNeutralized() {
+		// A block-level <script> must render as inert literal text, never as a live tag.
+		let out = renderFull("<Markdown>\n<script>alert('xss')</script>\n</Markdown>")
+		XCTAssertTrue(out.contains("&lt;script&gt;"), "raw <script> should be shown as escaped text: \(out)")
+		XCTAssertFalse(out.contains("<script"), "no live <script> tag may be rendered: \(out)")
+	}
+
+	func testInlineHTMLIsNeutralized() {
+		// Inline raw HTML with an event handler must render as inert text, never as a live element.
+		let out = renderFull("<Markdown>\nhi <img src=x onerror=alert(1)> there\n</Markdown>")
+		XCTAssertTrue(out.contains("&lt;img"), "raw <img> should be shown as escaped text: \(out)")
+		XCTAssertFalse(out.contains("<img"), "no live <img> tag may be rendered: \(out)")
+	}
+
+	func testSvgInlineIsNeutralized() {
+		let out = renderFull("<Markdown>\nhi <svg onload=alert(1)> there\n</Markdown>")
+		XCTAssertFalse(out.contains("<svg"), "no live <svg> tag may be rendered: \(out)")
+	}
+
+	func testRawHTMLEnterTagIsNotRendered() {
+		// The exact case the requirement targets: a raw <a> typed by the user must not become a
+		// live link — only a Markdown [text](url) link may produce an <a>.
+		let rawA = renderFull("<Markdown>\n<a href=\"/evil\">click me</a>\n</Markdown>")
+		XCTAssertFalse(rawA.contains("<a href=\"/evil\""), "a raw <a> must not render as a live link: \(rawA)")
+		XCTAssertTrue(rawA.contains("&lt;a href=\"/evil\"&gt;"), "a raw <a> should show as escaped text: \(rawA)")
+		let mdA = renderFull("<Markdown>\n[click me](/forums/12)\n</Markdown>")
+		XCTAssertTrue(mdA.contains("<a href=\"/forums/12\""), "a Markdown link must still render as a live link: \(mdA)")
+	}
+
+	// MARK: - Sanitization (URLs & attributes on Markdown-generated tags)
+
+	func testJavaScriptLinkHrefIsStripped() {
+		let out = renderFull("<Markdown>\n[click](javascript:alert(1))\n</Markdown>")
+		XCTAssertFalse(out.contains("javascript:"), "javascript: href must be stripped: \(out)")
+	}
+
+	func testJavaScriptImageSrcIsStripped() {
+		let out = renderFull("<Markdown>\n![img](javascript:alert(1))\n</Markdown>")
+		XCTAssertFalse(out.contains("javascript:"), "javascript: src must be stripped: \(out)")
+	}
+
+	func testFenceClassAttributeInjectionIsStripped() {
+		// A malicious fence language tries to break out of the class="..." attribute and inject
+		// a live onmouseover handler. Escaping the input up front turns the injected quotes into
+		// &quot;, so cmark keeps them inside the class value and no live attribute is created.
+		let out = renderFull("<Markdown>\n```x\"onmouseover=\"alert(1)\nbody\n```\n</Markdown>")
+		XCTAssertFalse(out.contains("\"onmouseover="), "no live onmouseover attribute may be created: \(out)")
+		XCTAssertFalse(out.contains(" alert("), "no live alert(1) may be created: \(out)")
+		XCTAssertTrue(out.contains("language-x"), "the fence must still render as a code block: \(out)")
+	}
+
+	// MARK: - Sanitization preserves legitimate forum markup
+
+	func testCodeBlockLanguageClassIsPreserved() {
+		let out = renderFull("<Markdown>\n```js\nlet a = 1;\n```\n</Markdown>")
+		XCTAssertTrue(out.contains("language-js"), "code language class must be preserved: \(out)")
+	}
+
+	func testMentionLinkAndJocomojiArePreserved() {
+		let out = renderFull("<Markdown>\n@staffuser and :arr:\n</Markdown>")
+		XCTAssertTrue(out.contains("/username/staffuser"), "mention link must be preserved: \(out)")
+		XCTAssertTrue(out.contains("/img/emoji/small/arr.png"), "jocomoji image must be preserved: \(out)")
+	}
+
+	func testRelativeAndAbsoluteLinksArePreserved() {
+		let out = renderFull("<Markdown>\n[forum](/forums/12) and [ext](https://example.com)\n</Markdown>")
+		XCTAssertTrue(out.contains("/forums/12"), "relative link must be preserved: \(out)")
+		XCTAssertTrue(out.contains("https://example.com"), "absolute link must be preserved: \(out)")
+	}
+
+	func testStrikethroughAndThematicBreakArePreserved() {
+		// cmark emits <del> for ~~strikethrough~~ and <hr> for a --- rule; both must survive the
+		// whitelist so legitimate Markdown formatting isn't silently dropped.
+		let out = renderFull("<Markdown>\n~~gone~~\n\n---\n\nafter\n</Markdown>")
+		XCTAssertTrue(out.contains("del"), "strikethrough <del> must be preserved: \(out)")
+		XCTAssertTrue(out.contains("<hr"), "thematic break <hr> must be preserved: \(out)")
 	}
 }

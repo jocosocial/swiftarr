@@ -530,10 +530,10 @@ struct SwiftarrConfigurator {
 
 		// Custom Leaf tags
 		app.leaf.tags["addJocomoji"] = AddJocomojiTag()
-		app.leaf.tags["formatTwarrtText"] = try FormatPostTextTag(.twarrt)
-		app.leaf.tags["formatPostText"] = try FormatPostTextTag(.forumpost)
-		app.leaf.tags["formatFezText"] = try FormatPostTextTag(.fez)
-		app.leaf.tags["formatSeamailText"] = try FormatPostTextTag(.seamail)
+		app.leaf.tags["formatTwarrtText"] = FormatPostTextTag(.twarrt)
+		app.leaf.tags["formatPostText"] = FormatPostTextTag(.forumpost)
+		app.leaf.tags["formatFezText"] = FormatPostTextTag(.fez)
+		app.leaf.tags["formatSeamailText"] = FormatPostTextTag(.seamail)
 		app.leaf.tags["relativeTime"] = RelativeTimeTag()
 		app.leaf.tags["eventTime"] = EventTimeTag()
 		app.leaf.tags["staticTime"] = StaticTimeTag()
