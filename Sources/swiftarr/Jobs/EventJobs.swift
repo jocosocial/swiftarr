@@ -12,28 +12,23 @@ class UpdateScheduleJobBase {
 	static func execute(context: QueueContext) async throws {
 		do {
 			context.logger.notice("Starting UpdateScheduleJob")
-			let scheduleURLString = Settings.shared.scheduleUpdateURL
-			guard !scheduleURLString.isEmpty else {
-				return
+			let updateEvents: [Event]
+			let updatesAgeRating: Bool
+			if !Settings.shared.schedApiKey.isEmpty {
+				updateEvents = try await SchedClient(client: context.application.client).exportSessions()
+					.compactMap { try $0.makeEvent() }
+				updatesAgeRating = true
 			}
-			let scheduleURL = URI(string: Settings.shared.scheduleUpdateURL)
-			let userAgent =
-				"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-			let response = try await context.application.client.get(scheduleURL, headers: ["User-Agent": userAgent])
-			guard response.status == .ok else {
-				throw Abort(
-					.internalServerError,
-					reason:
-						"Failed to GET schedule data from \(String(reflecting: scheduleURL)) got response \(response.status.code)"
-				)
-			}
-			guard let fileLen = response.body?.readableBytes,
-				let scheduleFileStr = response.body?.getString(at: 0, length: fileLen)
 			else {
-				throw Abort(.badRequest, reason: "Could not read schedule data.")
+				guard let events = try await fetchICSEvents(context: context) else {
+					return
+				}
+				updateEvents = events
+				updatesAgeRating = false
 			}
-			// Parse and validate, throw if >50 events deleted (require manual in this case)
-			let differences = try await EventParser().validateEventsInICS(scheduleFileStr, on: context.application.db)
+			// Validate, throw if >50 events deleted (require manual in this case)
+			let differences = try await EventParser().validateEvents(updateEvents, updatesAgeRating: updatesAgeRating,
+					on: context.application.db)
 			if differences.deletedEvents.count > 50 {
 				throw Abort(
 					.badRequest,
@@ -59,8 +54,8 @@ class UpdateScheduleJobBase {
 						reason: "Could not find admin user when running schedule updater."
 					)
 				}
-				try await EventParser()
-					.updateDatabaseFromICS(scheduleFileStr, on: context.application.db, forumAuthor: forumAuthor)
+				try await EventParser().updateDatabase(from: updateEvents, updatesAgeRating: updatesAgeRating,
+						on: context.application.db, forumAuthor: forumAuthor)
 				try await ScheduleLog(diff: differences, isAutomatic: true).save(on: context.application.db)
 				context.logger.notice("UpdateScheduleJob completed successfully--there were updates to apply.")
 			}
@@ -69,6 +64,32 @@ class UpdateScheduleJobBase {
 			context.logger.notice("UpdateScheduleJob failed. \(String(reflecting: error))")
 			try await ScheduleLog(error: error).save(on: context.application.db)
 		}
+	}
+
+	/// Gets the schedule from sched.com's `.ics` export. Used when there's no Sched API key.
+	/// Returns nil if there's no schedule URL to fetch from.
+	private static func fetchICSEvents(context: QueueContext) async throws -> [Event]? {
+		let scheduleURLString = Settings.shared.scheduleUpdateURL
+		guard !scheduleURLString.isEmpty else {
+			return nil
+		}
+		let scheduleURL = URI(string: scheduleURLString)
+		let userAgent =
+			"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+		let response = try await context.application.client.get(scheduleURL, headers: ["User-Agent": userAgent])
+		guard response.status == .ok else {
+			throw Abort(
+				.internalServerError,
+				reason:
+					"Failed to GET schedule data from \(String(reflecting: scheduleURL)) got response \(response.status.code)"
+			)
+		}
+		guard let fileLen = response.body?.readableBytes,
+			let scheduleFileStr = response.body?.getString(at: 0, length: fileLen)
+		else {
+			throw Abort(.badRequest, reason: "Could not read schedule data.")
+		}
+		return try EventParser().parse(scheduleFileStr)
 	}
 }
 

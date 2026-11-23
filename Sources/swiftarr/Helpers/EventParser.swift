@@ -109,34 +109,8 @@ final class EventParser {
 				case "LOCATION":
 					location = unescapedTextValue(value)
 				case "CATEGORIES":
-					var firstCat = (value.split(separator: ",").first ?? "").trimmingCharacters(in: .whitespaces).uppercased()
-					firstCat = unescapedTextValue(firstCat)
-					switch firstCat {
-					case "GAMING":
-						eventType = .gaming
-					case "LIVE PODCAST":
-						eventType = .livePodcast
-					case "MAIN CONCERT":
-						eventType = .mainConcert
-					case "OFFICE HOURS":
-						eventType = .officeHours
-					case "PARTY":
-						eventType = .party
-					case "Q&A / PANEL", "Q&A", "PANEL":						// "Q&A" and "PANEL" are not canonical
-						eventType = .qaPanel
-					case "READING / PERFORMANCE", "READING", "PERFORMANCE": // "READING" and "PERFORMANCE" are not canonical
-						eventType = .readingPerformance
-					case "SHADOW CRUISE":
-						eventType = .shadow
-					case "SIGNING":
-						eventType = .signing
-					case "WORKSHOP":
-						eventType = .workshop
-					case "DINING":
-						eventType = .dining
-					default:
-						eventType = .general
-					}
+					let firstCat = (value.split(separator: ",").first ?? "").trimmingCharacters(in: .whitespaces)
+					eventType = EventType(schedCategory: unescapedTextValue(firstCat))
 				case "UID":
 					uid = value
 				default:
@@ -223,16 +197,17 @@ final class EventParser {
 
 // MARK: Validation
 
-	/// Takes an .ics Schedule file and compares it against  the db. Returns a summary of what would change if the schedule is applied. Shows deleted events, added events,
+	/// Takes a set of schedule events and compares it against  the db. Returns a summary of what would change if the schedule is applied. Shows deleted events, added events,
 	/// events with modified times, events with changes to their title or description text).
 	///
 	/// - Parameters:
-	///   - scheduleFileStr: The contents of an ICS file; usually a sched.com `.ics` export. Conforms to RFC 5545.
+	///   - updateEvents: The new schedule, from `parse()` on a sched.com `.ics` export or from `SchedSession.makeEvent()`.
+	///   - updatesAgeRating: TRUE if the source carries age ratings (the Sched API does, the `.ics` export doesn't). If FALSE, age ratings
+	///   	are ignored when looking for changes.
 	///   - db: The connection to a database.
 	///
 	/// - Returns: `EventUpdateDifferenceData` with info on the events that were modified/added/removed .
-	func validateEventsInICS(_ scheduleFileStr: String, on db: Database) async throws -> EventUpdateDifferenceData {
-		let updateEvents = try parse(scheduleFileStr)
+	func validateEvents(_ updateEvents: [Event], updatesAgeRating: Bool, on db: Database) async throws -> EventUpdateDifferenceData {
 		let existingEvents = try await Event.query(on: db).all()
 		// Convert to dictionaries, keyed by uid of the events
 		let existingEventDict = Dictionary(existingEvents.map { ($0.uid, $0) }) { first, _ in first }
@@ -309,10 +284,24 @@ final class EventParser {
 				if existing.location != updated.location {
 					responseData.locationChangeEvents.append(eventData)
 				}
-				if existing.title != updated.title || existing.info != updated.info
-					|| existing.eventType != updated.eventType
-				{
+				var changedFields: [EventFieldChangeData] = []
+				if existing.title != updated.title {
+					changedFields.append(.init(fieldName: "Title", oldValue: existing.title, newValue: updated.title))
+				}
+				if existing.info != updated.info {
+					changedFields.append(.init(fieldName: "Description", oldValue: existing.info, newValue: updated.info))
+				}
+				if existing.eventType != updated.eventType {
+					changedFields.append(.init(fieldName: "Event Type", oldValue: existing.eventType.label,
+							newValue: updated.eventType.label))
+				}
+				if updatesAgeRating && existing.ageRating != updated.ageRating {
+					changedFields.append(.init(fieldName: "Age Rating", oldValue: existing.ageRating?.label ?? "None",
+							newValue: updated.ageRating?.label ?? "None"))
+				}
+				if !changedFields.isEmpty {
 					responseData.minorChangeEvents.append(eventData)
+					responseData.minorChanges?.append(.init(event: eventData, changedFields: changedFields))
 				}
 			}
 		}
@@ -320,20 +309,20 @@ final class EventParser {
 		return responseData
 	}
 
-	/// Takes an .ics Schedule file, updates the db with new info from the schedule. Returns a summary of what changed and how (deleted events, added events,
+	/// Takes a set of schedule events, updates the db with new info from the schedule. Returns a summary of what changed and how (deleted events, added events,
 	/// events with modified times, events with changes to their title or description text).
 	///
 	/// - Parameters:
-	///   - scheduleFileStr: The contents of an ICS file; usually a sched.com `.ics` export. Conforms to RFC 5545.
+	///   - updateEvents: The new schedule, from `parse()` on a sched.com `.ics` export or from `SchedSession.makeEvent()`.
+	///   - updatesAgeRating: TRUE if the source carries age ratings. If FALSE, existing events keep their age ratings.
 	///   - db: The connection to a database.
 	///   - forumAuthor: If there are changes and `makeForumPosts` is TRUE, the user to use as the author of the relevant forum posts.
 	///   - processDeletes: If TRUE (the default) events in the db but not in `scheduleFileStr` will be deleted from the db. Set to FALSE if you are applying a schedule
 	///   	patch (e.g. a schedule file with a single new event).
 	///   - makeForumPosts: Adds forum posts to each Event forum's thread announcing the changes that were made to the event.
 	///
-	func updateDatabaseFromICS(_ scheduleFileStr: String, on db: Database, forumAuthor: UserHeader,
+	func updateDatabase(from updateEvents: [Event], updatesAgeRating: Bool, on db: Database, forumAuthor: UserHeader,
 			processDeletes: Bool = true, makeForumPosts: Bool = true) async throws {
-		let updateEvents = try parse(scheduleFileStr)
 		let officialCategory = try await Category.query(on: db).filter(\.$title, .custom("ILIKE"), "event%").first()
 		let shadowCategory = try await Category.query(on: db).filter(\.$title, .custom("ILIKE"), "shadow%").first()
 		// https://github.com/vapor/fluent-kit/issues/375
@@ -434,11 +423,15 @@ final class EventParser {
 					}
 					if existing.title != updated.title || existing.info != updated.info
 						|| existing.eventType != updated.eventType
+						|| (updatesAgeRating && existing.ageRating != updated.ageRating)
 					{
 						changes.insert(.info)
 						existing.title = updated.title
 						existing.info = updated.info
 						existing.eventType = updated.eventType
+						if updatesAgeRating {
+							existing.ageRating = updated.ageRating
+						}
 					}
 					if !changes.isEmpty {
 						try await existing.save(on: database)
