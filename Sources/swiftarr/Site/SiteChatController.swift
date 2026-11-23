@@ -176,6 +176,10 @@ struct FezListPageContext: Encodable {
 	}
 }
 
+extension FezData: Shareable {
+	var sharePath: String { "/lfg/\(fezID)" }
+}
+
 struct SiteFriendlyFezController: SiteControllerUtils {
 
 	func registerRoutes(_ app: Application) throws {
@@ -368,7 +372,8 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 			var newPosts: [SocketFezPostData]  // Posts user hasn't read.
 			var post: MessagePostContext  // New post area
 			var paginator: PaginatorContext  // For > 50 posts in thread.
-			var breadcrumbLink: String		
+			var breadcrumbLink: String
+			var share: ShareContext?  // Only set for the owner.
 
 			init(_ req: Request, fez: FezData) throws {
 				let cacheUser = try req.auth.require(UserCacheData.self)
@@ -387,6 +392,9 @@ struct SiteFriendlyFezController: SiteControllerUtils {
 				oldPosts = []
 				newPosts = []
 				showDivider = false
+				if fez.owner.userID == cacheUser.userID, fez.fezType != .personalEvent {
+					share = ShareContext(fez)
+				}
 				post = .init(forType: .fezPost(fez), foruser: req.query[String.self, at: "foruser"])
 				paginator = PaginatorContext(
 					start: 0,

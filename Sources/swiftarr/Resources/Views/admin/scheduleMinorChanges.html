@@ -1,0 +1,54 @@
+#if(diff.minorChanges):
+	#for(change in diff.minorChanges):
+		<li class="list-group-item bg-transparent">
+			<div class="container-fluid">
+				<div class="row">
+					<div class="col">
+						<b>#(change.event.title)</b>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-sm">
+						<span class="text-secondary"><i>#eventTime(change.event.startTime, change.event.endTime)</i></span>
+					</div>
+					<div class="col-sm text-sm-end">
+						#(change.event.location)
+					</div>
+				</div>
+				#for(field in change.changedFields):
+					<div class="row mt-2">
+						<div class="col-12 col-md-2 fw-bold">#(field.fieldName)</div>
+						<div class="col-12 col-md">
+							<small class="text-secondary">Was:</small>
+							<div class="text-secondary" style="white-space: pre-wrap;">#(field.oldValue)</div>
+						</div>
+						<div class="col-12 col-md">
+							<small class="text-secondary">Now:</small>
+							<div style="white-space: pre-wrap;">#(field.newValue)</div>
+						</div>
+					</div>
+				#endfor
+			</div>
+		</li>
+	#endfor
+#else:
+	#for(event in diff.minorChangeEvents):
+		<li class="list-group-item bg-transparent">
+			<div class="container-fluid">
+				<div class="row">
+					<div class="col">
+						<b>#(event.title)</b>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-sm">
+						<span class="text-secondary"><i>#eventTime(event.startTime, event.endTime)</i></span>
+					</div>
+					<div class="col-sm text-sm-end">
+						#(event.location)
+					</div>
+				</div>
+			</div>
+		</li>
+	#endfor
+#endif

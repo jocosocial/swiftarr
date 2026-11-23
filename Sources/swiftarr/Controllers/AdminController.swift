@@ -28,6 +28,8 @@ struct AdminController: APIRouteCollection {
 		// endpoints available to TwitarrTeam and above
 		let ttAuthGroup = adminRoutes.tokenRoutes(minAccess: .twitarrteam)
 		ttAuthGroup.post("schedule", "update", use: scheduleUploadPostHandler)
+		ttAuthGroup.post("schedule", "upload", use: schedSessionUploadPostHandler)
+		ttAuthGroup.post("schedule", "fetch", use: schedSessionFetchHandler)
 		ttAuthGroup.get("schedule", "verify", use: scheduleChangeVerificationHandler)
 		ttAuthGroup.post("schedule", "update", "apply", use: scheduleChangeApplyHandler)
 		ttAuthGroup.get("schedule", "viewlog", use: scheduleChangeLogHandler)
@@ -817,11 +819,42 @@ struct AdminController: APIRouteCollection {
 		if schedule.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
 			schedule = emptySchedulePayload
 		}
-		let filepath = try uploadSchedulePath()
-		// If we attempt an upload, it's important we end up with the uploaded file or nothing at the filepath.
-		// Leaving the previous file there would be bad.
-		try? FileManager.default.removeItem(at: filepath)
-		try await req.fileio.writeFile(ByteBuffer(string: schedule), at: filepath.path)
+		try await stageSchedule(ByteBuffer(string: schedule), at: uploadSchedulePath(), on: req)
+		return .ok
+	}
+
+	/// `POST /api/v3/admin/schedule/upload`
+	///
+	/// Handles the POST of a new schedule in sched.com API format: the raw JSON response from sched.com's
+	/// `GET /api/session/export?format=json` endpoint. For servers that can't reach sched.com themselves; another machine
+	/// can fetch the export and pass it along. Replaces any previously uploaded schedule, including `.ics` uploads.
+	/// Like an `.ics` upload, this only stages the schedule; use `GET /api/v3/admin/schedule/verify` and
+	/// `POST /api/v3/admin/schedule/update/apply` to review and apply it.
+	///
+	/// - Parameter requestBody: JSON array of Sched sessions.
+	/// - Throws: 400 error if the body isn't valid Sched session data.
+	/// - Returns: `HTTP 200 OK`
+	func schedSessionUploadPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let body = req.body.data else {
+			throw Abort(.badRequest, reason: "No schedule data in request.")
+		}
+		// Make sure the data is usable before staging it.
+		_ = try SchedSession.decodeSessions(from: body).compactMap { try $0.makeEvent() }
+		try await stageSchedule(body, at: uploadScheduleJSONPath(), on: req)
+		return .ok
+	}
+
+	/// `POST /api/v3/admin/schedule/fetch`
+	///
+	/// Gets the current schedule from the sched.com API and stages it, as if it had been uploaded with
+	/// `POST /api/v3/admin/schedule/upload`. Requires the server to have a Sched API key and access to sched.com.
+	///
+	/// - Throws: 400 or 5xx error if the Sched API couldn't be reached or returned bad data.
+	/// - Returns: `HTTP 200 OK`
+	func schedSessionFetchHandler(_ req: Request) async throws -> HTTPStatus {
+		let sessions = try await SchedClient(client: req.client).exportSessions()
+		_ = try sessions.compactMap { try $0.makeEvent() }
+		try await stageSchedule(ByteBuffer(data: try JSONEncoder().encode(sessions)), at: uploadScheduleJSONPath(), on: req)
 		return .ok
 	}
 
@@ -835,18 +868,13 @@ struct AdminController: APIRouteCollection {
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `EventUpdateDifferenceData`
 	func scheduleChangeVerificationHandler(_ req: Request) async throws -> EventUpdateDifferenceData {
-		let filepath = try uploadSchedulePath()
-		let buffer = try await req.fileio.collectFile(at: filepath.path)
-		guard let scheduleFileStr = buffer.getString(at: 0, length: buffer.readableBytes) else {
-			throw Abort(.badRequest, reason: "Could not read schedule file.")
-		}
-		let result =  try await EventParser().validateEventsInICS(scheduleFileStr, on: req.db)
-		return result
+		let staged = try await loadStagedSchedule(on: req)
+		return try await EventParser().validateEvents(staged.events, updatesAgeRating: staged.updatesAgeRating, on: req.db)
 	}
 
 	/// `POST /api/v3/admin/schedule/update/apply`
 	///
-	/// Applies schedule changes to the schedule. Reads in a previously uploaded schedule file from `/admin/uploadschedule.ics` and creates,
+	/// Applies schedule changes to the schedule. Reads in a previously uploaded schedule (`.ics` or Sched API format) and creates,
 	/// deletes, and updates Event objects as necessary. If `forumPosts` is `true`, creates posts in Event forums notifying users of the schedule
 	/// change. Whether `forumPosts` is true or not, forums are created for new Events, and forum titles and initial posts are updated to match
 	/// the updated event info.
@@ -864,14 +892,11 @@ struct AdminController: APIRouteCollection {
 		let user = try req.auth.require(UserCacheData.self)
 		let processDeletes = req.query[String.self, at: "processDeletes"]?.lowercased() == "true"
 		let makeForumPosts = req.query[String.self, at: "forumPosts"]?.lowercased() == "true"
-		let filepath = try uploadSchedulePath()
-		let buffer = try await req.fileio.collectFile(at: filepath.path)
-		guard let scheduleFileStr = buffer.getString(at: 0, length: buffer.readableBytes) else {
-			throw Abort(.badRequest, reason: "Could not read schedule file.")
-		}
-		let differences =  try await EventParser().validateEventsInICS(scheduleFileStr, on: req.db)
-		try await EventParser().updateDatabaseFromICS(scheduleFileStr, on: req.db, forumAuthor: user.makeHeader(), 
-				processDeletes: processDeletes, makeForumPosts: makeForumPosts)
+		let staged = try await loadStagedSchedule(on: req)
+		let differences =  try await EventParser().validateEvents(staged.events, updatesAgeRating: staged.updatesAgeRating,
+				on: req.db)
+		try await EventParser().updateDatabase(from: staged.events, updatesAgeRating: staged.updatesAgeRating, on: req.db,
+				forumAuthor: user.makeHeader(), processDeletes: processDeletes, makeForumPosts: makeForumPosts)
 		try await ScheduleLog(diff: differences, isAutomatic: false).save(on: req.db)
 		return .ok
 	}
@@ -1643,6 +1668,36 @@ struct AdminController: APIRouteCollection {
 	func uploadSchedulePath() throws -> URL {
 		let filePath = Settings.shared.adminDirectoryPath.appendingPathComponent("uploadschedule.ics")
 		return filePath
+	}
+
+	// Gets the path where an uploaded schedule in Sched API (JSON) format is kept. At most one of this and
+	// `uploadSchedulePath()` holds a file at any time.
+	func uploadScheduleJSONPath() throws -> URL {
+		return Settings.shared.adminDirectoryPath.appendingPathComponent("uploadschedule.json")
+	}
+
+	// Writes an uploaded schedule to `filepath`, first removing any previously uploaded schedule in either format.
+	// If we attempt an upload, it's important we end up with the uploaded file or nothing in the hopper.
+	// Leaving the previous file there would be bad.
+	private func stageSchedule(_ data: ByteBuffer, at filepath: URL, on req: Request) async throws {
+		try? FileManager.default.removeItem(at: uploadSchedulePath())
+		try? FileManager.default.removeItem(at: uploadScheduleJSONPath())
+		try await req.fileio.writeFile(data, at: filepath.path)
+	}
+
+	// Reads the uploaded schedule, in whichever format it was uploaded.
+	private func loadStagedSchedule(on req: Request) async throws -> (events: [Event], updatesAgeRating: Bool) {
+		let jsonPath = try uploadScheduleJSONPath()
+		if FileManager.default.fileExists(atPath: jsonPath.path) {
+			let buffer = try await req.fileio.collectFile(at: jsonPath.path)
+			let events = try SchedSession.decodeSessions(from: buffer).compactMap { try $0.makeEvent() }
+			return (events, true)
+		}
+		let buffer = try await req.fileio.collectFile(at: uploadSchedulePath().path)
+		guard let scheduleFileStr = buffer.getString(at: 0, length: buffer.readableBytes) else {
+			throw Abort(.badRequest, reason: "Could not read schedule file.")
+		}
+		return (try EventParser().parse(scheduleFileStr), false)
 	}
 
 	private var emptySchedulePayload: String {
