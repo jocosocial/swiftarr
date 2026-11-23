@@ -2105,15 +2105,12 @@ struct PhotostreamUploadData: Content {
 	var locationName: String?
 }
 
-/// Used to create or update a `ForumPost`, `Twarrt`, or `FezPost`.
+/// Used to create or update a `ForumPost` or `FezPost`.
 ///
 /// Required by:
 /// * `POST /api/v3/forum/ID/create`
 /// * `POST /api/v3/forum/post/ID`
 /// * `POST /api/v3/forum/post/ID/update`
-/// * `POST /api/v3/twitarr/create`
-/// * `POST /api/v3/twitarr/ID/reply`
-/// * `POST /api/v3/twitarr/ID/update`
 /// * `POST /api/v3/fez/ID/post`
 ///
 /// See `ForumController.postUpdateHandler(_:data:)`.
@@ -2456,112 +2453,6 @@ public struct TokenStringData: Content {
 	}
 }
 
-/// Used to return a `Twarrt`'s data.
-///
-/// Returned by:
-/// * `POST /api/v3/twitarr/create`
-/// * `POST /api/v3/twitarr/ID/update`
-/// * `POST /api/v3/twitarr/ID/image`
-/// * `POST /api/v3/twitarr/ID/image/remove`
-/// * `POST /api/v3/twitarr/ID/laugh`
-/// * `POST /api/v3/twitarr/ID/like`
-/// * `POST /api/v3/twitarr/ID/love`
-/// * `POST /api/v3/twitarr/ID/unreact`
-/// * `POST /api/v3/twitarr/ID/reply`
-/// * `GET /api/v3/twitarr/bookmarks`
-/// * `GET /api/v3/twitarr/likes`
-/// * `GET /api/v3/twitarr/mentions`
-/// * `GET /api/v3/twitarr/`
-/// * `GET /api/v3/twitarr/barrel/ID`
-/// * `GET /api/v3/twitarr/hashtag/#STRING`
-/// * `GET /api/v3/twitarr/search/STRING`
-/// * `GET /api/v3/twitarr/user`
-/// * `GET /api/v3/twitarr/user/ID`
-///
-/// See `TwitarrController.twarrtCreateHandler(_:data:)`, `TwitarrController.twarrtUpdateHandler(_:data:)`
-/// `TwitarrController. imageHandler(_:data:)`, `TwitarrController.imageRemoveHandler(_:)`
-/// `TwitarrController.twarrtLaughHandler(_:)`, `TwitarrController.twarrtLikeHandler(_:)`,
-/// `TwitarrController.twarrtLoveHandler(_:)`, `TwitarrController.twarrtUnreactHandler(_:)`,
-/// `TwitarrController.replyHandler(_:data:)`, `TwitarrController.bookmarksHandler(_:)`,
-/// `TwitarrController.likesHandler(_:)`, `TwitarrController.mentionsHandler(_:)`,
-/// `TwitarrController.twarrtsHandler(_:)`, `TwitarrController.twarrtsBarrelHandler(_:)`,
-/// `TwitarrController.twarrtsHashtagHandler(_:)`, `TwitarrController.twarrtsSearchHandler(_:)`,
-/// `TwitarrController.twarrtsUserHandler(_:)`, `TwitarrController.userHandler(_:)`.
-public struct TwarrtData: Content {
-	/// The ID of the twarrt.
-	var twarrtID: Int
-	/// The timestamp of the twarrt.
-	var createdAt: Date
-	/// The twarrt's author.
-	var author: UserHeader
-	/// The text of the twarrt.
-	var text: String
-	/// The filenames of the twarrt's optional images.
-	var images: [String]?
-	/// If this twarrt is part of a Reply Group, the ID of the group. If replyGroupID == twarrtID, this twarrt is the start of a Reply Group. If nil, there are no replies to this twarrt.
-	var replyGroupID: Int?
-	/// Whether the current user has bookmarked the twarrt.
-	var isBookmarked: Bool
-	/// The current user's `LikeType` reaction on the twarrt.
-	var userLike: LikeType?
-	/// The total number of `LikeType` reactions on the twarrt.
-	var likeCount: Int
-}
-
-extension TwarrtData {
-	init(
-		twarrt: Twarrt,
-		creator: UserHeader,
-		isBookmarked: Bool,
-		userLike: LikeType?,
-		likeCount: Int,
-		overrideQuarantine: Bool = false
-	) throws {
-		guard creator.userID == twarrt.$author.id else {
-			throw Abort(.internalServerError, reason: "Internal server error--Twarrt's creator does not match.")
-		}
-		twarrtID = try twarrt.requireID()
-		createdAt = twarrt.createdAt ?? Date()
-		self.author = creator
-		text = twarrt.isQuarantined && !overrideQuarantine ? "This post is under moderator review." : twarrt.text
-		images = twarrt.isQuarantined && !overrideQuarantine ? nil : twarrt.images
-		replyGroupID = twarrt.$replyGroup.id
-		self.isBookmarked = isBookmarked
-		self.userLike = userLike
-		self.likeCount = likeCount
-	}
-}
-
-/// Used to return a `Twarrt`'s data with full user `LikeType` info.
-///
-/// Returned by: `GET /api/v3/twitarr/ID`
-///
-/// See `TwitarrController.twarrtHandler(_:)`.
-public struct TwarrtDetailData: Content {
-	/// The ID of the post/twarrt.
-	var postID: Int
-	/// The timestamp of the post/twarrt.
-	var createdAt: Date
-	/// The twarrt's author.
-	var author: UserHeader
-	/// The text of the forum post or twarrt.
-	var text: String
-	/// The filenames of the post/twarrt's optional images.
-	var images: [String]?
-	/// The ID of the twarrt to which this twarrt is a reply.
-	var replyGroupID: Int?
-	/// Whether the current user has bookmarked the post.
-	var isBookmarked: Bool
-	/// The current user's `LikeType` reaction on the twarrt.
-	var userLike: LikeType?
-	/// The users with "laugh" reactions on the post/twarrt.
-	var laughs: [UserHeader]
-	/// The users with "like" reactions on the post/twarrt.
-	var likes: [UserHeader]
-	/// The users with "love" reactions on the post/twarrt.
-	var loves: [UserHeader]
-}
-
 /// A bool, wrapped in a struct. Used for the results of user capability queries.
 ///
 /// Required by:
@@ -2654,16 +2545,14 @@ extension UserHeader {
 	}
 }
 
-/// Returns status about a single Alertword, for either Twarrts of ForumPost hits on that word.
+/// Returns status about a single Alertword. Forum hits are counted; the twarrt counts stay at zero.
 /// Used inside UserNotificationData.
 public struct UserNotificationAlertwordData: Content {
 	/// Will be one of the user's current alert keywords.
 	var alertword: String
-	/// The total number of twarrts that include this word since the first time anyone added this alertword. We record alert word hits in
-	/// a single global list that unions all users' alert word lists. A search for this alertword may return more hits than this number indicates.
+	/// Retained so existing clients keep decoding the notification poll. The twarrt stream no longer produces new hits.
 	var twarrtMentionCount: Int
-	/// The number of twarrts that include this alertword that the user has not yet seen. Calls to view twarrts with a "?search=" parameter that matches the
-	/// alertword will mark all twarrts containing this alertword as viewed.
+	/// Retained so existing clients keep decoding the notification poll. The twarrt stream no longer produces new hits.
 	var newTwarrtMentionCount: Int
 	/// The total number of forum posts that include this word since the first time anyone added this alertword.
 	var forumMentionCount: Int
@@ -2709,9 +2598,9 @@ public struct UserNotificationData: Content {
 	/// Count of announcements the user has not yet seen. 0 if not logged in.
 	var newAnnouncementCount: Int
 
-	/// Number of twarrts that @mention the user. 0 if not logged in.
+	/// Retained so existing clients keep decoding the notification poll. The twarrt stream no longer produces new mentions. 0 if not logged in.
 	var twarrtMentionCount: Int
-	/// Number of twarrt @mentions that the user has not read (by visiting the twarrt mentions endpoint; reading twarrts in the regular feed doesn't count). 0 if not logged in.
+	/// Retained so existing clients keep decoding the notification poll. The twarrt stream no longer produces new mentions. 0 if not logged in.
 	var newTwarrtMentionCount: Int
 
 	/// Number of forum posts that @mention the user. 0 if not logged in.

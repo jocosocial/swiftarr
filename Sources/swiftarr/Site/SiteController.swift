@@ -52,7 +52,6 @@ struct TrunkContext: Encodable {
 
 	// current nav item
 	enum Tab: String, Codable {
-		case twarrts
 		case forums
 		case seamail
 		case events
@@ -96,7 +95,6 @@ struct TrunkContext: Encodable {
 
 	var alertCounts: UserNotificationData
 	var eventStartingSoon: Bool
-	var newTweetAlertwords: Bool
 	var newForumAlertwords: Bool
 
 	/// Theme preference: "auto" | "light" | "dark". Read from the swiftarr_theme cookie.
@@ -168,7 +166,6 @@ struct TrunkContext: Encodable {
 		self.tab = tab
 		self.inTwitarrSubmenu = [.home, .lfg, .games, .karaoke, .moderator, .communitySupport, .admin].contains(tab)
 
-		newTweetAlertwords = alertCounts.alertWords.contains { $0.newTwarrtMentionCount > 0 }
 		newForumAlertwords = alertCounts.alertWords.contains { $0.newForumMentionCount > 0 }
 		theme = Self.resolveTheme(from: req.cookies["swiftarr_theme"]?.string)
 	}
@@ -262,9 +259,6 @@ struct MessagePostContext: Encodable {
 
 	// Used as an parameter to the initializer
 	enum InitType {
-		case tweet
-		case tweetReply(Int)  // replyGroup ID, or TwarrtID
-		case tweetEdit(TwarrtDetailData)
 		case forum(String)  // Category ID
 		case forumEdit(ForumData)
 		case forumPost(String)  // Forum ID
@@ -311,27 +305,6 @@ struct MessagePostContext: Encodable {
 			maxImages = Settings.shared.maxForumPostImages
 		}
 		switch forType {
-		// For creating a new tweet
-		case .tweet:
-			formAction = "/tweets/create"
-			postSuccessURL = "/tweets"
-			showModPostOptions = true
-		// For replying to a tweet
-		case .tweetReply(let replyGroup):
-			formAction = "/tweets/reply/\(replyGroup)"
-			postSuccessURL = "/tweets?replyGroup=\(replyGroup)"
-			showModPostOptions = true
-		// For editing a tweet
-		case .tweetEdit(let tweet):
-			messageText = tweet.text
-			photoFilenames = tweet.images ?? []
-			// Tweets also have a limit of 4 images (hardcoded for now)
-			while photoFilenames.count < 4 {
-				photoFilenames.append("")
-			}
-			formAction = "/tweets/edit/\(tweet.postID)"
-			postSuccessURL = "/tweets"
-			isEdit = true
 		// For creating a new forum in a category
 		case .forum(let catID):
 			formAction = "/forums/\(catID)/createForum"
@@ -507,14 +480,6 @@ struct ReportPageContext: Encodable {
 	var reportTitle: String
 	var reportFormAction: String
 	var reportSuccessURL: String
-
-	// For reporting a twarrt
-	init(_ req: Request, twarrtID: String) throws {
-		trunk = .init(req, title: "Report Twarrt", tab: .twarrts)
-		reportTitle = "Report a Twarrt"
-		reportFormAction = "/tweets/report/\(twarrtID)"
-		reportSuccessURL = req.headers.first(name: "Referer") ?? "/tweets"
-	}
 
 	// For reporting a forum post
 	init(_ req: Request, postID: String) throws {
@@ -796,7 +761,6 @@ protocol SiteControllerUtils {
 extension SiteControllerUtils {
 
 	var categoryIDParam: PathComponent { PathComponent(":category_id") }
-	var twarrtIDParam: PathComponent { PathComponent(":twarrt_id") }
 	var forumIDParam: PathComponent { PathComponent(":forum_id") }
 	var postIDParam: PathComponent { PathComponent(":post_id") }
 	var fezIDParam: PathComponent { PathComponent(":fez_id") }

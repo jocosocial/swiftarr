@@ -213,16 +213,12 @@ struct PhotostreamModerationData: Content {
 	var reports: [ReportModerationData]
 }
 
-/// Used to return a `TwarrtEdit` or `ForumPost`'s data for moderators. The two models use the same data structure, as all the fields happen to be the same.
+/// Used to return a `ForumPost`'s previous contents for moderators.
 ///
 ///	Included in:
 ///	* `ForumPostModerationData`
-///	* `TwarrtModerationData`
-///
-/// Returned by:
-/// * `GET /api/v3/mod/twarrt/id`
 public struct PostEditLogData: Content {
-	/// The ID of the post. Depending on context, could be a twarrtID or a forumPostID.
+	/// The ID of the forum post.
 	var postID: Int
 	/// The ID of the edit.
 	var editID: UUID
@@ -233,20 +229,11 @@ public struct PostEditLogData: Content {
 	var author: UserHeader
 	/// The text of the forum post.
 	var text: String
-	/// The filenames of the twarrt's optional images.
+	/// The filenames of the post's optional images.
 	var images: [String]?
 }
 
 extension PostEditLogData {
-	init(edit: TwarrtEdit, editor: UserHeader) throws {
-		postID = edit.$twarrt.id
-		editID = try edit.requireID()
-		createdAt = edit.createdAt ?? Date()
-		author = editor
-		text = edit.text
-		images = edit.images
-	}
-
 	init(edit: ForumPostEdit, editor: UserHeader) throws {
 		postID = edit.$post.id
 		editID = try edit.requireID()
@@ -329,20 +316,6 @@ extension ReportModerationData {
 			handledBy = try req.userCache.getHeader(modID)
 		}
 	}
-}
-
-/// Used to return data a moderator needs to moderate a twarrt.
-///
-/// Returned by:
-/// * `GET /api/v3/mod/twarrt/id`
-///
-/// See `ModerationController.twarrtModerationHandler(_:)`
-public struct TwarrtModerationData: Content {
-	var twarrt: TwarrtData
-	var isDeleted: Bool
-	var moderationStatus: ContentModerationStatus
-	var edits: [PostEditLogData]
-	var reports: [ReportModerationData]
 }
 
 /// Used to return data a moderator needs to moderate a user.

@@ -15,8 +15,6 @@ struct CreatePerformanceIndexes: AsyncMigration {
 		try await create_index(on: sqlDatabase, tableName: "muteword", columnName: "user")
 		try await create_index(on: sqlDatabase, tableName: "profileedit", columnName: "user")
 		try await create_index(on: sqlDatabase, tableName: "token", columnName: "user")
-		try await create_index(on: sqlDatabase, tableName: "twarrt", columnName: "reply_group")
-		try await create_index(on: sqlDatabase, tableName: "twarrtedit", columnName: "twarrt")
 		try await create_index(on: sqlDatabase, tableName: "usernote", columnName: "note_subject")
 	}
 
@@ -34,8 +32,6 @@ struct CreatePerformanceIndexes: AsyncMigration {
 		try await drop_index(on: sqlDatabase, tableName: "muteword", columnName: "user")
 		try await drop_index(on: sqlDatabase, tableName: "profileedit", columnName: "user")
 		try await drop_index(on: sqlDatabase, tableName: "token", columnName: "user")
-		try await drop_index(on: sqlDatabase, tableName: "twarrt", columnName: "reply_group")
-		try await drop_index(on: sqlDatabase, tableName: "twarrtedit", columnName: "twarrt")
 		try await drop_index(on: sqlDatabase, tableName: "usernote", columnName: "note_subject")
 	}
 

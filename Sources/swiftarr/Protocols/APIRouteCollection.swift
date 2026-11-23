@@ -77,7 +77,6 @@ protocol APIRouteCollection: APICollection {
 extension APIRouteCollection {
 
 	var categoryIDParam: PathComponent { PathComponent(":category_id") }
-	var twarrtIDParam: PathComponent { PathComponent(":twarrt_id") }
 	var forumIDParam: PathComponent { PathComponent(":forum_id") }
 	var postIDParam: PathComponent { PathComponent(":post_id") }
 	var fezIDParam: PathComponent { PathComponent(":fez_id") }
@@ -195,7 +194,7 @@ extension APIRouteCollection {
 
 	// MARK: - Notification Management
 
-	// When an event happens that could change notification counts for someone (e.g. a user posts a Twarrt with an @mention)
+	// When an event happens that could change notification counts for someone (e.g. a user posts a forum post with an @mention)
 	// call this method to do the notification bookkeeping.
 	//
 	// The users array should be pre-filtered to include only those who can actually see the new content (that is, not
@@ -269,12 +268,6 @@ extension APIRouteCollection {
 					}
 				}
 				forwardToSockets = false
-			case .alertwordTwarrt(let alertword, _):
-				for userID in users {
-					group.addTask {
-						try await req.redis.incrementAlertwordTwarrtInUserHash(word: alertword, userID: userID)
-					}
-				}
 			case .alertwordPost(let alertword, let postID, _):
 				for userID in users {
 					group.addTask {
@@ -289,10 +282,6 @@ extension APIRouteCollection {
 						}
 						try await req.redis.incrementAlertwordPostInUserHash(word: alertword, userID: userID)
 					}
-				}
-			case .twarrtMention(_):
-				for userID in users {
-					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
 			case .forumMention, .twitarrTeamForumMention, .moderatorForumMention, .communitySupportForumMention:
 				for userID in users {
@@ -408,7 +397,7 @@ extension APIRouteCollection {
 		return updateCountsUsers
 	}
 
-	// When an event happens that could reduce notification counts for someone (e.g. a user deletes a Twarrt with an @mention)
+	// When an event happens that could reduce notification counts for someone (e.g. a user deletes a forum post with an @mention)
 	// call this method to do the notification bookkeeping. DON'T call this to mark notifications as "seen".
 	func subtractNotifications(users: [UUID], type: NotificationType, subtractCount: Int = 1, on req: Request)
 		async throws
@@ -441,16 +430,6 @@ extension APIRouteCollection {
 					}
 				}
 
-			case .twarrtMention(_):
-				for userID in users {
-					group.addTask {
-						try await req.redis.incrementIntInUserHash(
-							field: type,
-							userID: userID,
-							incAmount: 0 - subtractCount
-						)
-					}
-				}
 			case .forumMention, .twitarrTeamForumMention, .moderatorForumMention, .communitySupportForumMention:
 				for userID in users {
 					group.addTask {
@@ -460,14 +439,6 @@ extension APIRouteCollection {
 							incAmount: 0 - subtractCount
 						)
 					}
-				}
-			case .alertwordTwarrt(let word, _):
-				for userID in users {
-					try await req.redis.incrementAlertwordTwarrtInUserHash(
-						word: word,
-						userID: userID,
-						incAmount: 0 - subtractCount
-					)
 				}
 			case .alertwordPost(let word, _, _):
 				for userID in users {
@@ -523,7 +494,7 @@ extension APIRouteCollection {
 				try await req.redis.markChatRead(type: type, in: mailbox.inbox, userID: user.userID)
 			}
 
-		case .twarrtMention, .forumMention, .alertwordTwarrt, .alertwordPost:
+		case .forumMention, .alertwordPost:
 			try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)
 		case .moderatorForumMention:
 			if user.accessLevel.hasAccess(.moderator) {

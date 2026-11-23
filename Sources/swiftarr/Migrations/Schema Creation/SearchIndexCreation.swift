@@ -5,7 +5,6 @@ struct CreateSearchIndexes: AsyncMigration {
 		let sqlDatabase = (database as! SQLDatabase)
 		try await sqlDatabase.raw("CREATE EXTENSION IF NOT EXISTS pg_trgm").run()
 
-		try await sqlDatabase.addFullTextSearchColumn(tableName: "twarrt", tsvectorExpression: "to_tsvector('english', text)")
 		try await sqlDatabase.addFullTextSearchColumn(tableName: "forum", tsvectorExpression: "to_tsvector('english', title)")
 		try await sqlDatabase.addFullTextSearchColumn(tableName: "forumpost", tsvectorExpression: "to_tsvector('english', text)")
 		try await sqlDatabase.addFullTextSearchColumn(
@@ -22,7 +21,6 @@ struct CreateSearchIndexes: AsyncMigration {
 	func revert(on database: Database) async throws {
 		let sqlDatabase = (database as! SQLDatabase)
 
-		try await sqlDatabase.dropSearchIndexAndColumn(tableName: "twarrt")
 		try await sqlDatabase.dropSearchIndexAndColumn(tableName: "forum")
 		try await sqlDatabase.dropSearchIndexAndColumn(tableName: "forumpost")
 		try await sqlDatabase.dropSearchIndexAndColumn(tableName: "event")

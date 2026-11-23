@@ -7,8 +7,8 @@ import Vapor
 /// 	a privileged nature, including contents of user reports, edit histories of user content, and log data about moderation actions.
 ///
 /// 	Note that some moderation actions aren't in this file. Most such endpoints have a handler method allowing a user
-/// 	to operate on their own content, but also allowing a mod to operate on other users' content. For example, `twarrtUpdateHandler` lets
-/// 	a user edit a twarrt they wrote, but also lets mods edit any user's twarrt.
+/// 	to operate on their own content, but also allowing a mod to operate on other users' content. For example, a forum
+/// 	post update lets a user edit a post they wrote, and also lets mods edit any user's post.
 ///
 /// 	The routes in this controller that return data on various Reportable content types are designed to return everything a Mod might need
 /// 	to make moderation decisions, all in one call. In many cases that means calls return multiple array types with no paging or array limits.
@@ -27,15 +27,6 @@ struct ModerationController: APIRouteCollection {
 		moderatorAuthGroup.post("reports", ":report_id", "handleall", use: beginProcessingReportsHandler)
 		moderatorAuthGroup.post("reports", ":report_id", "closeall", use: closeReportsHandler)
 		moderatorAuthGroup.get("moderationlog", use: moderatorActionLogHandler)
-
-		moderatorAuthGroup.get("twarrt", twarrtIDParam, use: twarrtModerationHandler)
-		moderatorAuthGroup.post(
-			"twarrt",
-			twarrtIDParam,
-			"setstate",
-			modStateParam,
-			use: twarrtSetModerationStateHandler
-		)
 
 		moderatorAuthGroup.get("forumpost", postIDParam, use: forumPostModerationHandler)
 		moderatorAuthGroup.post(
@@ -209,82 +200,6 @@ struct ModerationController: APIRouteCollection {
 			paginator: Paginator(total: totalActionCount, start: pagination.start, limit: pagination.limit)
 		)
 		return response
-	}
-
-	/// `GET /api/v3/mod/twarrt/ID`
-	///
-	/// Moderator only. Returns info admins and moderators need to review a twarrt. Works if twarrt has been deleted. Shows
-	/// twarrt's quarantine and reviewed states.
-	///
-	/// The `TwarrtModerationData` contains:
-	/// * The current twarrt contents, even if its deleted
-	/// * Previous edits of the twarrt
-	/// * Reports against the twarrt
-	/// * The twarrt's current deletion and moderation status.
-	///
-	/// - Parameter twarrtID: in URL path.
-	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `TwarrtModerationData` containing a bunch of data pertinient to moderating the twarrt.
-	func twarrtModerationHandler(_ req: Request) async throws -> TwarrtModerationData {
-		guard let paramVal = req.parameters.get(twarrtIDParam.paramString), let twarrtID = Int(paramVal) else {
-			throw Abort(.badRequest, reason: "Request parameter \(twarrtIDParam.paramString) is missing.")
-		}
-		guard let twarrt = try await Twarrt.query(on: req.db).filter(\._$id == twarrtID).withDeleted().first() else {
-			throw Abort(.notFound, reason: "no value found for identifier '\(paramVal)'")
-		}
-		let reports = try await Report.query(on: req.db).filter(\.$reportType == .twarrt)
-			.filter(\.$reportedID == paramVal)
-			.sort(\.$createdAt, .descending).all()
-		let edits = try await twarrt.$edits.query(on: req.db).sort(\.$createdAt, .ascending).all()
-		let authorHeader = try req.userCache.getHeader(twarrt.$author.id)
-		let twarrtData = try TwarrtData(
-			twarrt: twarrt,
-			creator: authorHeader,
-			isBookmarked: false,
-			userLike: nil,
-			likeCount: 0,
-			overrideQuarantine: true
-		)
-		let editData: [PostEditLogData] = try edits.map {
-			let editAuthorHeader = try req.userCache.getHeader($0.$editor.id)
-			return try PostEditLogData(edit: $0, editor: editAuthorHeader)
-		}
-		let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
-		let modData = TwarrtModerationData(
-			twarrt: twarrtData,
-			isDeleted: twarrt.deletedAt != nil,
-			moderationStatus: twarrt.moderationStatus,
-			edits: editData,
-			reports: reportData
-		)
-		return modData
-	}
-
-	/// `POST /api/v3/mod/twarrt/ID/setstate/STRING`
-	///
-	/// Moderator only. Sets the moderation state enum on the twarrt identified by ID to the `ContentModerationStatus` in STRING.
-	/// Logs the action to the moderator log unless the user owns the twarrt.
-	///
-	/// - Parameter twarrtID: in URL path.
-	/// - Parameter moderationState: in URL path. Value must match a `ContentModerationStatus` rawValue.
-	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `HTTPStatus` .ok if the requested moderation status was set.
-	func twarrtSetModerationStateHandler(_ req: Request) async throws -> HTTPStatus {
-		let user = try req.auth.require(UserCacheData.self)
-		guard let modState = req.parameters.get(modStateParam.paramString) else {
-			throw Abort(.badRequest, reason: "Request parameter `Moderation_State` is missing.")
-		}
-		let twarrt = try await Twarrt.findFromParameter(twarrtIDParam, on: req)
-		try twarrt.moderationStatus.setFromParameterString(modState)
-		try await req.db.transaction { db in
-			try await twarrt.logIfModeratorAction(
-				ModeratorActionType.setFromModerationStatus(twarrt.moderationStatus),
-				user: user,
-				on: db
-			)
-			try await twarrt.save(on: db)
-		}
-		return .ok
 	}
 
 	/// `GET /api/v3/mod/forumpost/ID`

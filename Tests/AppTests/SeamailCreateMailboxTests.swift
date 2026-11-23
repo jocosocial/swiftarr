@@ -116,15 +116,15 @@ class SeamailCreateMailboxTests: XCTestCase {
 	}
 
 	func testMessagePostContextRadiosFollowForuser() {
-		let asModerator = MessagePostContext(forType: .tweet, foruser: "moderator")
+		let asModerator = MessagePostContext(forType: .seamail, foruser: "moderator")
 		XCTAssertTrue(asModerator.postAsModerator)
 		XCTAssertFalse(asModerator.postAsTwitarrTeam)
 
-		let asTwitarrTeam = MessagePostContext(forType: .tweet, foruser: "twitarrteam")
+		let asTwitarrTeam = MessagePostContext(forType: .seamail, foruser: "twitarrteam")
 		XCTAssertFalse(asTwitarrTeam.postAsModerator)
 		XCTAssertTrue(asTwitarrTeam.postAsTwitarrTeam)
 
-		let asSelf = MessagePostContext(forType: .tweet)
+		let asSelf = MessagePostContext(forType: .seamail)
 		XCTAssertFalse(asSelf.postAsModerator)
 		XCTAssertFalse(asSelf.postAsTwitarrTeam)
 	}
