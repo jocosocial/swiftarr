@@ -94,6 +94,25 @@ class SocketNotificationPayloadTests: XCTestCase {
 		XCTAssertNil(json["notificationID"])
 	}
 
+	// MARK: - author
+
+	func testAuthor_WhenProvided_IsIncludedInPayload() throws {
+		let header = UserHeader(userID: UUID(), username: "kraken", displayName: "The Kraken", userImage: nil,
+				preferredPronoun: nil)
+		let msg = SocketNotificationData(.forumMention(42, forumID), info: "info", id: "42", author: header)
+		let data = try JSONEncoder().encode(msg)
+		let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+		let author = try XCTUnwrap(json["author"] as? [String: Any])
+		XCTAssertEqual(author["userID"] as? String, header.userID.uuidString)
+		XCTAssertEqual(author["username"] as? String, "kraken")
+		XCTAssertEqual(author["displayName"] as? String, "The Kraken")
+	}
+
+	func testAuthor_WhenOmitted_IsNotInPayload() throws {
+		let json = try payload(.followedEventStarting(UUID()))
+		XCTAssertNil(json["author"])
+	}
+
 	func testPhoneCall_HasNoNotificationID() throws {
 		let data = try JSONEncoder().encode(SocketNotificationData(forCallAnswered: UUID()))
 		let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])

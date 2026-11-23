@@ -696,7 +696,7 @@ struct FezController: APIRouteCollection {
 			on: req,
 			{
 				try await addNotifications(users: inserted.notifyList, type: .chatUnreadMsg(fez.requireID(), fez.fezType), info: infoStr,
-						creatorID: cacheUser.userID, on: req)
+						creatorID: cacheUser.userID, author: inserted.author.makeHeader(), on: req)
 			},
 			{ try await forwardPostToSockets(fez, inserted.post, on: req) }
 		)

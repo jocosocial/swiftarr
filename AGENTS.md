@@ -11,6 +11,12 @@ Notes for AI coding agents (Claude Code, Codex, etc.) working on swiftarr contri
   when an external format or C API requires it. The database column width doesn't matter;
   Fluent converts between `Int` and the column type.
 - **Match existing indentation.** This codebase uses tabs (see `.swift-format`).
+- **Don't enumerate callers or cases in field/parameter doc comments.** Describe what a field means and when it's
+  nil, not every enum case, notification type, or call site that sets it (e.g. "the author of the content that
+  triggered this notification", not "set for `.forumMention`, `.twarrtMention`, ..."). Such lists go stale as
+  soon as a new case or caller is added.
+  - Exception: a DTO's type-level doc comment may list the endpoints that use it, in the existing standardized
+    form: `Required by:` / `Returned by:` / `See:` followed by the routes (e.g. `` `POST /api/v3/user/add` ``).
 
 ## Access levels
 
