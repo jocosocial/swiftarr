@@ -26,31 +26,52 @@ extension Debouncable {
     static var idempotencyKeyFieldKey: FieldKey { Self().idempotencyKeyProperty.keys.first! }
 
     /// Attempts to create the given model instance. If it succeeds, return true.
-    /// If it fails because of the idempotency key constraint, set the instance to the existing row from the table and return false.
+    /// If it fails because of the idempotency key constraint, throws AlreadyExistsError. The creator will be eagerly fetched.
     /// If it fails for any other reason, rethrow the error.
-    /// This has to be a static method because we can't overwrite self within a mutating method.
-    static func createOrReturnDebounced(_ model: inout Self, on database: Database) async throws -> Bool {
-        do {
-            try await model.create(on: database)
-            return true
-        } catch let error as PSQLError where error.serverInfo?[.sqlState] == "23505" && error.serverInfo?[.constraintName] == Self.constraint {
-            
-            // Fetch the existing record that caused the collision
+    func createDebounced(on database: Database) async throws {
+        guard let sql = database as? SQLDatabase else {
+            throw Abort(.internalServerError, reason: "Database doesn't support SQL")
+        }
+        // touchTimestamps is internal, so do what it does manually.
+        let date = Date()
+        for property in self.properties {
+            if let timestamp = property as? any Touchable, [.create, .update].contains(timestamp.trigger) {
+                timestamp.touch(date: date)
+            }
+        }
+        guard let insert = try await sql.insert(into: Self.schema).fluentModel(self)
+            .ignoringConflicts(with: [Self.creatorFieldKey.description, Self.idempotencyKeyFieldKey.description])
+            .returning("*")
+            .first(decodingFluent: Self.self) else {
+                // Fetch the existing record that caused the collision
             guard let existingRecord = try await Self.query(on: database)
-                .filter(Self.creatorKeyPath.appending(path: \.$id) == model.creatorProperty.id)
-                .filter(Self.idempotencyKeyKeyPath == model.idempotencyKeyProperty.wrappedValue)
+                .filter(Self.creatorKeyPath.appending(path: \.$id) == self.creatorProperty.id)
+                .filter(Self.idempotencyKeyKeyPath == self.idempotencyKeyProperty.wrappedValue)
                 .first() else {
                 // Weird that it wouldn't be there, but what else would we do?
-                throw Abort(.conflict, reason: "Debounced \(self.schema).")
+                throw Abort(.conflict, reason: "Debounced \(Self.schema).")
             }
-
-            model = existingRecord
-            return false
-        } catch {
-            throw error
+            throw AlreadyExistsError(existing: existingRecord)
         }
+        self.id = insert.id
+        self._$idExists = true
     }
 }
+
+struct AlreadyExistsError<T: Debouncable>: Error {
+    let existing: T
+
+    init(existing: T) {
+        self.existing = existing
+    }
+}
+
+protocol Touchable {
+    func touch(date: Date?)
+    var trigger: TimestampTrigger { get }
+}
+
+extension TimestampProperty: Touchable {}
 
 /// The migration to add the necessary columns and indexes when you make a model Debouncable.
 struct AddDebounceConstraint<T: Debouncable> : AsyncMigration {
