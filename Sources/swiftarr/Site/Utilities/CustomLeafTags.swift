@@ -192,12 +192,12 @@ struct FormatPostTextTag: UnsafeUnescapedLeafTag {
 		}
 	}
 
-	/// Rewrites `javascript:`/`data:`/`vbscript:` in `href`/`src` to `about:blank`. This catches
-	/// the one thing the raw-HTML neutralizer can't: a Markdown link/image whose `href`/`src` is
-	/// a dangerous scheme.
+	/// Rewrites `javascript:`/`data:`/`vbscript:` in `href`/`src` to `javsscript:void(0)`. This
+	/// catches the one thing the raw-HTML neutralizer can't: a Markdown link/image whose 
+	/// `href`/`src` is a dangerous scheme. void(0) does absolutely nothing.
 	static func neutralizeDangerousSchemes(_ html: String) -> String {
 		let range = NSRange(html.startIndex..., in: html)
-		return dangerousSchemeRegex.stringByReplacingMatches(in: html, range: range, withTemplate: "$1=\"about:blank\"")
+		return dangerousSchemeRegex.stringByReplacingMatches(in: html, range: range, withTemplate: "$1=\"javascript:void(0)\"")
 	}
 
 	/// Rewrites the forum's inline syntax (jocomoji, mentions, hashtags) into `<img>`/`<a>` HTML
