@@ -257,24 +257,28 @@ class MarkdownPostTextTests: XCTestCase {
 
 	// MARK: - Sanitization (URLs & attributes on Markdown-generated tags)
 
-	func testJavaScriptLinkHrefIsStripped() {
+	func testJavaScriptLinkHrefIsNoOpped() {
 		let out = renderFull("<Markdown>\n[click](javascript:alert(1))\n</Markdown>")
-		XCTAssertFalse(out.contains("javascript:"), "javascript: href must be stripped: \(out)")
+		XCTAssertFalse(out.contains("alert(1)"), "the javascript: payload must be stripped: \(out)")
+		XCTAssertTrue(out.contains("href=\"javascript:void(0)\""), "the href must be no-opped to javascript:void(0): \(out)")
 	}
 
-	func testJavaScriptImageSrcIsStripped() {
+	func testJavaScriptImageSrcIsNoOpped() {
 		let out = renderFull("<Markdown>\n![img](javascript:alert(1))\n</Markdown>")
-		XCTAssertFalse(out.contains("javascript:"), "javascript: src must be stripped: \(out)")
+		XCTAssertFalse(out.contains("alert(1)"), "the javascript: src payload must be stripped: \(out)")
+		XCTAssertTrue(out.contains("src=\"javascript:void(0)\""), "the src must be no-opped to javascript:void(0): \(out)")
 	}
 
-	func testDataUriSrcIsStripped() {
+	func testDataUriSrcIsNoOpped() {
 		let out = renderFull("<Markdown>\n![img](data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==)\n</Markdown>")
-		XCTAssertFalse(out.contains("data:"), "data: URI in src must be stripped: \(out)")
+		XCTAssertFalse(out.contains("data:"), "the data: URI must be stripped: \(out)")
+		XCTAssertTrue(out.contains("src=\"javascript:void(0)\""), "the src must be no-opped to javascript:void(0): \(out)")
 	}
 
-	func testVbscriptLinkHrefIsStripped() {
+	func testVbscriptLinkHrefIsNoOpped() {
 		let out = renderFull("<Markdown>\n[click](vbscript:alert(1))\n</Markdown>")
-		XCTAssertFalse(out.contains("vbscript:"), "vbscript: href must be stripped: \(out)")
+		XCTAssertFalse(out.contains("vbscript:"), "the vbscript: href must be stripped: \(out)")
+		XCTAssertTrue(out.contains("href=\"javascript:void(0)\""), "the href must be no-opped to javascript:void(0): \(out)")
 	}
 
 	func testFenceClassAttributeInjectionIsStripped() {
