@@ -193,9 +193,39 @@ duration-select:focus {
   }
 }
 
-.InkMarkdown h2 {
+.markdown-body h2 {
 	margin-top: 20px;
 	margin-bottom: 20px;
+}
+
+/* Markdown mention links — colors are applied via Bootstrap link-danger/link-primary
+   classes added by FormatPostTextTag.addMentionLinkClasses (case-insensitive match). */
+
+/* Markdown tables — cmark emits bare <table> elements with no classes,
+   so we apply Bootstrap-style borders and cell padding. */
+.markdown-body table {
+	width: 100%;
+	margin-bottom: 1rem;
+	border-collapse: collapse;
+}
+.markdown-body th,
+.markdown-body td {
+	padding: 0.5rem 0.75rem;
+	border: 1px solid var(--bs-border-color);
+	vertical-align: top;
+}
+.markdown-body thead th {
+	background-color: var(--bs-tertiary-bg);
+}
+
+/* Markdown jocomoji — sized and aligned to match surrounding text exactly.
+   1.5em matches the body line-height (1.5) so the selection highlight box
+   on the emoji is pixel-identical in height and position to adjacent text.
+   Applies to both Markdown-rendered and plain-text jocomoji. */
+img[src^="/img/emoji/small/"] {
+	width: 1.5em !important;
+	height: 1.5em !important;
+	vertical-align: -0.28em;
 }
 
 /* Body background — themed */
