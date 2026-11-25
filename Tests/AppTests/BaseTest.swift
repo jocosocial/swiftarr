@@ -1,4 +1,5 @@
 import XCTVapor
+@testable import swiftarr
 
 protocol SwiftarrBaseTest {}
 
@@ -15,5 +16,10 @@ extension SwiftarrBaseTest {
             throw error
         }
         try await app.asyncShutdown()
+    }
+
+    /// The number of attempts currently counted against an `AuthRateLimiter` bucket.
+    func authRateLimitCount(_ app: Application, _ bucket: AuthRateLimiter.Bucket) async -> Int {
+        await app.authRateLimitStore.count(bucket.key)
     }
 }

@@ -170,7 +170,7 @@ struct ClientController: APIRouteCollection {
 		let data = try ValidatingJSONDecoder().decode(AlertmanagerWebhookPayload.self, fromBodyOf: req)
 
 		// Locate the source user, which is a prometheus service account we create on database initialization.
-		guard let sourceUserHeader = req.userCache.getHeader("prometheus") else {
+		guard let sourceUser = req.userCache.getUser(username: "prometheus") else {
 			throw Abort(.internalServerError, reason: "User prometheus not found.")
 		}
 
@@ -195,15 +195,21 @@ struct ClientController: APIRouteCollection {
 			}
 			let alertSubject = "Prometheus Alert: \(alert.getName()) is now \(alert.status)."
 			req.logger.warning("\(alertSubject)")
-			// I speak Python, and "list comprehension" is not nearly as easy here. Fortunately the toUserIDs magic
-			// was adapted from https://stackoverflow.com/questions/24003584/list-comprehension-in-swift
-			try await sendSimpleSeamail(
-				req,
-				fromUserID: sourceUserHeader.userID,
-				toUserIDs: destinationUserHeaders.map { $0.userID },
-				subject: alertSubject,
-				initialMessage: alert.getSummary()
+			// The Seamail is created by the prometheus service account, not the registered client that called us.
+			req.auth.login(sourceUser)
+			let fezContent = FezContentData(
+				fezType: .closed,
+				title: alertSubject,
+				info: "",
+				startTime: nil,
+				endTime: nil,
+				location: nil,
+				minCapacity: 0,
+				maxCapacity: 0,
+				initialUsers: destinationUserHeaders.map { $0.userID },
+				firstPost: PostContentData(text: alert.getSummary(), images: [])
 			)
+			_ = try await FezController().createChat(req, data: fezContent)
 		}
 
 		// It's possible that Alertmanager could do something with the information
@@ -249,7 +255,3 @@ struct ClientController: APIRouteCollection {
 	}
 }
 
-extension ClientController: FezProtocol {
-	/// This page intentionally left blank. In case we have extra things to add later on
-	/// I'm keeping it seperate even though this could be done above.
-}

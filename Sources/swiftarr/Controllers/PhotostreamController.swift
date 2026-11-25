@@ -175,12 +175,15 @@ struct PhotostreamController: APIRouteCollection {
 		if boatLocation == nil && matchingEvent == nil {
 			boatLocation = .onBoat
 		}
-		guard let filename = try await self.processImage(data: newPostData.image, usage: .photostream, on: req) else {
-			throw Abort(.badRequest, reason: "Unable to process uploaded photo.")
+		let streamPhoto = try await withProcessedImages([ImageUploadData(nil, newPostData.image)], usage: .photostream, maxImages: 1, on: req) { filenames in
+			guard let filename = filenames.first else {
+				throw Abort(.badRequest, reason: "Unable to process uploaded photo.")
+			}
+			let streamPhoto = StreamPhoto(image: filename, captureTime: newPostData.createdAt, user: user, atEvent: matchingEvent,
+					boatLocation: boatLocation)
+			try await streamPhoto.save(on: req.db)
+			return streamPhoto
 		}
-		let streamPhoto = StreamPhoto(image: filename, captureTime: newPostData.createdAt, user: user, atEvent: matchingEvent,
-				boatLocation: boatLocation)
-		try await streamPhoto.save(on: req.db)
 		let photoData = try PhotostreamImageData(streamPhoto: streamPhoto, author: user.makeHeader())
 		return try makeUploadResponse(photo: photoData, rateLimit: TimeInterval(Settings.shared.photostreamUploadRateLimit))
 	}
@@ -272,8 +275,10 @@ struct PhotostreamController: APIRouteCollection {
 		let user = try req.auth.require(UserCacheData.self)
 		let photo = try await StreamPhoto.findFromParameter(streamPhotoIDParam, on: req)
 		try user.guardCanModifyContent(photo, customErrorString: "User cannot edit/moderate photo.")
-		try await photo.delete(on: req.db)
-		try await photo.logIfModeratorAction(.delete, moderatorID: user.userID, on: req)
+		try await req.db.transaction { db in
+			try await photo.delete(on: db)
+			try await photo.logIfModeratorAction(.delete, moderatorID: user.userID, on: db)
+		}
 		return .ok
 	}
 	

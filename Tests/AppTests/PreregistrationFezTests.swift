@@ -370,8 +370,10 @@ class PreregistrationFezTests: XCTestCase, SwiftarrBaseTest {
 			try await bootCache(app)
 			setPreregistration(true)
 
-			let lfg = try await createFezID(app, token: token, fezData(type: .activity, title: "Visible To Staff"))
-			let open = try await get(app, "/api/v3/fez/open?hidePast=false", token: ttToken)
+			// Every test here creates LFGs at the same start time and passing tests leave their rows behind, so the plain open list's first
+			// page fills up over time. Search for this run's own title so the test doesn't depend on where it falls in that list.
+			let lfg = try await createFezID(app, token: token, fezData(type: .activity, title: "Visible To Staff \(suffix)"))
+			let open = try await get(app, "/api/v3/fez/open?hidePast=false&search=\(suffix)", token: ttToken)
 			XCTAssertEqual(open.status, .ok, String(buffer: open.body))
 			XCTAssertTrue(try open.decode(FezListData.self).fezzes.contains { $0.fezID == lfg })
 			let single = try await get(app, "/api/v3/fez/\(lfg)", token: ttToken)

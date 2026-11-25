@@ -164,6 +164,28 @@ public struct EventUpdateDifferenceData: Content {
 	var timeChangeEvents: [EventData] = []
 	var locationChangeEvents: [EventData] = []
 	var minorChangeEvents: [EventData] = []
+	/// The same events as `minorChangeEvents`, each with the fields that changed and their old and new values.
+	/// Nil in schedule log entries saved before this field existed.
+	var minorChanges: [EventMinorChangeData]? = []
+}
+
+/// One event's minor (title, description, type, age rating) changes in a schedule update.
+///
+/// Part of: `EventUpdateDifferenceData`
+public struct EventMinorChangeData: Content {
+	/// The event, with its updated values.
+	var event: EventData
+	/// The fields that changed.
+	var changedFields: [EventFieldChangeData]
+}
+
+public struct EventFieldChangeData: Content {
+	/// Human-readable field label, e.g. "Description".
+	var fieldName: String
+	/// The value currently in the database.
+	var oldValue: String
+	/// The value in the schedule update.
+	var newValue: String
 }
 
 /// Used to return the results of comparing a bulk-scraped set of performers against the performers already in the database.
@@ -703,6 +725,14 @@ public struct SettingsAppFeaturePair: Content {
 	var feature: String
 }
 
+/// Returned by: `POST /api/v3/admin/authratelimits/clear`
+///
+/// See `AdminController.clearAuthRateLimitsHandler()`.
+public struct AuthRateLimitClearData: Content {
+	/// The number of rate limit lockouts that were cleared.
+	var clearedCount: Int
+}
+
 /// Used to return the current `Settings` values. 
 ///
 /// Required by: `GET /api/v3/events/update`
@@ -722,6 +752,17 @@ public struct SettingsAdminData: Content {
 	var maxForumPostImages: Int
 	/// Minimum seconds a user must wait between photostream uploads. `0` disables the limit.
 	var photostreamUploadRateLimit: Int
+	/// Whether failed logins, password changes, recoveries, username lookups, and registration code attempts are rate limited.
+	var authRateLimitEnabled: Bool
+	/// Failed logins (or password changes) allowed per username, per client IP, in 15 minutes. `0` disables this limit.
+	var authRateLimitLoginFailures: Int
+	/// Failed logins (or password changes) allowed per username from all IPs combined, in an hour. `0` disables this limit.
+	var authRateLimitUsernameFailures: Int
+	/// Failed auth attempts of any kind allowed per client IP, in 15 minutes. `0` disables this limit.
+	var authRateLimitIPFailures: Int
+	/// Failed password recoveries allowed per username, and failed username lookups per registration code, in an hour.
+	/// `0` disables this limit.
+	var authRateLimitRecoveryFailures: Int
 	var forumAutoQuarantineThreshold: Int
 	var postAutoQuarantineThreshold: Int
 	var userAutoQuarantineThreshold: Int
@@ -729,7 +770,6 @@ public struct SettingsAdminData: Content {
 	/// Currently disabled app:feature pairs.
 	var disabledFeatures: [SettingsAppFeaturePair]
 	var shipWifiSSID: String?
-	var scheduleUpdateURL: String
 	var upcomingEventNotificationSeconds: Int
 	var upcomingEventNotificationSetting: EventNotificationSetting
 	var upcomingLFGNotificationSetting: EventNotificationSetting
@@ -747,6 +787,11 @@ extension SettingsAdminData {
 		self.maxImageSize = settings.maxImageSize
 		self.maxForumPostImages = settings.maxForumPostImages
 		self.photostreamUploadRateLimit = settings.photostreamUploadRateLimit
+		self.authRateLimitEnabled = settings.authRateLimitEnabled
+		self.authRateLimitLoginFailures = settings.authRateLimitLoginFailures
+		self.authRateLimitUsernameFailures = settings.authRateLimitUsernameFailures
+		self.authRateLimitIPFailures = settings.authRateLimitIPFailures
+		self.authRateLimitRecoveryFailures = settings.authRateLimitRecoveryFailures
 		self.forumAutoQuarantineThreshold = settings.forumAutoQuarantineThreshold
 		self.postAutoQuarantineThreshold = settings.postAutoQuarantineThreshold
 		self.userAutoQuarantineThreshold = settings.userAutoQuarantineThreshold
@@ -758,7 +803,6 @@ extension SettingsAdminData {
 			}
 		}
 		self.shipWifiSSID = settings.shipWifiSSID
-		self.scheduleUpdateURL = settings.scheduleUpdateURL
 		self.upcomingEventNotificationSeconds = Int(settings.upcomingEventNotificationSeconds)
 		self.upcomingEventNotificationSetting = settings.upcomingEventNotificationSetting
 		self.upcomingLFGNotificationSetting = settings.upcomingLFGNotificationSetting
@@ -783,6 +827,11 @@ public struct SettingsUpdateData: Content {
 	var maxForumPostImages: Int?
 	/// Minimum seconds a user must wait between photostream uploads. `0` disables the limit.
 	var photostreamUploadRateLimit: Int?
+	var authRateLimitEnabled: Bool?
+	var authRateLimitLoginFailures: Int?
+	var authRateLimitUsernameFailures: Int?
+	var authRateLimitIPFailures: Int?
+	var authRateLimitRecoveryFailures: Int?
 	var forumAutoQuarantineThreshold: Int?
 	var postAutoQuarantineThreshold: Int?
 	var userAutoQuarantineThreshold: Int?
@@ -794,8 +843,6 @@ public struct SettingsUpdateData: Content {
 	var disableFeatures: [SettingsAppFeaturePair]
 	/// The wifi name of the onboard wifi network
 	var shipWifiSSID: String?
-	/// The URL to use for automated schedule updates. The server polls this every hour to update the Events table.
-	var scheduleUpdateURL: String?
 	/// Number of seconds before an event to trigger the Soon notifications.
 	var upcomingEventNotificationSeconds: Int?
 	/// Upcoming event notification setting

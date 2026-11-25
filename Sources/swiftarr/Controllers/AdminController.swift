@@ -28,6 +28,8 @@ struct AdminController: APIRouteCollection {
 		// endpoints available to TwitarrTeam and above
 		let ttAuthGroup = adminRoutes.tokenRoutes(minAccess: .twitarrteam)
 		ttAuthGroup.post("schedule", "update", use: scheduleUploadPostHandler)
+		ttAuthGroup.post("schedule", "upload", use: schedSessionUploadPostHandler)
+		ttAuthGroup.post("schedule", "fetch", use: schedSessionFetchHandler)
 		ttAuthGroup.get("schedule", "verify", use: scheduleChangeVerificationHandler)
 		ttAuthGroup.post("schedule", "update", "apply", use: scheduleChangeApplyHandler)
 		ttAuthGroup.get("schedule", "viewlog", use: scheduleChangeLogHandler)
@@ -40,6 +42,7 @@ struct AdminController: APIRouteCollection {
 		ttAuthGroup.get("rollup", use: serverRollupCounts)
 
 		ttAuthGroup.post("notifications", "reload", use: triggerConsistencyJobHandler)
+		ttAuthGroup.post("authratelimits", "clear", use: clearAuthRateLimitsHandler)
 
 		ttAuthGroup.on(.POST, "clients", "create", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: clientAppCreateHandler)
 		ttAuthGroup.on(.POST, "clients", clientAppIDParam, "update", body: .collect(maxSize: ByteCount(value: Settings.shared.imageMaxBodySize)), use: clientAppUpdateHandler)
@@ -115,11 +118,13 @@ struct AdminController: APIRouteCollection {
 	/// - Returns: `HTTP 201 Created` with the new `ClientAppData`.
 	func clientAppCreateHandler(_ req: Request) async throws -> Response {
 		let data = try ValidatingJSONDecoder().decode(ClientAppUploadData.self, fromBodyOf: req)
-		let filenames = try await processImages(data.image.map { [$0] } ?? [], usage: .clientApp, maxImages: 1, on: req)
-		let app = ClientApp(name: data.name, description: data.description, image: filenames.first, developer: data.developer,
-				sortName: data.sortName?.isEmpty == false ? data.sortName : nil, links: data.links,
-				swiftarrClient: data.swiftarrClient)
-		try await app.save(on: req.db)
+		let app = try await withProcessedImages(data.image.map { [$0] } ?? [], usage: .clientApp, maxImages: 1, on: req) { filenames in
+			let app = ClientApp(name: data.name, description: data.description, image: filenames.first, developer: data.developer,
+					sortName: data.sortName?.isEmpty == false ? data.sortName : nil, links: data.links,
+					swiftarrClient: data.swiftarrClient)
+			try await app.save(on: req.db)
+			return app
+		}
 		let response = Response(status: .created)
 		try response.content.encode(try ClientAppData(app), as: .json)
 		return response
@@ -134,15 +139,16 @@ struct AdminController: APIRouteCollection {
 	func clientAppUpdateHandler(_ req: Request) async throws -> Response {
 		let data = try ValidatingJSONDecoder().decode(ClientAppUploadData.self, fromBodyOf: req)
 		let app = try await ClientApp.findFromParameter(clientAppIDParam, on: req)
-		let filenames = try await processImages(data.image.map { [$0] } ?? [], usage: .clientApp, maxImages: 1, on: req)
-		app.name = data.name
-		app.appDescription = data.description
-		app.image = filenames.first
-		app.developer = data.developer
-		app.sortName = data.sortName?.isEmpty == false ? data.sortName! : data.name
-		app.links = data.links
-		app.swiftarrClient = data.swiftarrClient
-		try await app.save(on: req.db)
+		try await withProcessedImages(data.image.map { [$0] } ?? [], usage: .clientApp, maxImages: 1, on: req) { filenames in
+			app.name = data.name
+			app.appDescription = data.description
+			app.image = filenames.first
+			app.developer = data.developer
+			app.sortName = data.sortName?.isEmpty == false ? data.sortName! : data.name
+			app.links = data.links
+			app.swiftarrClient = data.swiftarrClient
+			try await app.save(on: req.db)
+		}
 		let response = Response(status: .created)
 		try response.content.encode(try ClientAppData(app), as: .json)
 		return response
@@ -173,14 +179,15 @@ struct AdminController: APIRouteCollection {
 		try user.guardCanCreateContent(customErrorString: "user cannot add daily themes")
 		let data = try ValidatingJSONDecoder().decode(DailyThemeUploadData.self, fromBodyOf: req)
 		let imageArray = data.image != nil ? [data.image!] : []
-		let filenames = try await processImages(imageArray, usage: .dailyTheme, on: req)
-		let filename = filenames.isEmpty ? nil : filenames[0]
-		let dailyTheme = DailyTheme(title: data.title, info: data.info, image: filename, day: data.cruiseDay)
-		do {
-			try await dailyTheme.save(on: req.db)
-		}
-		catch let error as DatabaseError where error.isConstraintFailure {
-			throw Abort(.conflict, reason: "A daily theme for day \(data.cruiseDay) already exists. Edit the existing theme instead.")
+		try await withProcessedImages(imageArray, usage: .dailyTheme, on: req) { filenames in
+			let filename = filenames.isEmpty ? nil : filenames[0]
+			let dailyTheme = DailyTheme(title: data.title, info: data.info, image: filename, day: data.cruiseDay)
+			do {
+				try await dailyTheme.save(on: req.db)
+			}
+			catch let error as DatabaseError where error.isConstraintFailure {
+				throw Abort(.conflict, reason: "A daily theme for day \(data.cruiseDay) already exists. Edit the existing theme instead.")
+			}
 		}
 		return .created
 	}
@@ -199,17 +206,17 @@ struct AdminController: APIRouteCollection {
 		try user.guardCanCreateContent(customErrorString: "user cannot add daily themes")
 		let data = try ValidatingJSONDecoder().decode(DailyThemeUploadData.self, fromBodyOf: req)
 		let dailyTheme = try await DailyTheme.findFromParameter(dailyThemeIDParam, on: req)
-		// process images
-		let filenames = try await processImages(data.image != nil ? [data.image!] : [], usage: .dailyTheme, on: req)
-		dailyTheme.title = data.title
-		dailyTheme.info = data.info
-		dailyTheme.image = filenames.isEmpty ? nil : filenames[0]
-		dailyTheme.cruiseDay = data.cruiseDay
-		do {
-			try await dailyTheme.save(on: req.db)
-		}
-		catch let error as DatabaseError where error.isConstraintFailure {
-			throw Abort(.conflict, reason: "A daily theme for day \(data.cruiseDay) already exists.")
+		try await withProcessedImages(data.image != nil ? [data.image!] : [], usage: .dailyTheme, on: req) { filenames in
+			dailyTheme.title = data.title
+			dailyTheme.info = data.info
+			dailyTheme.image = filenames.isEmpty ? nil : filenames[0]
+			dailyTheme.cruiseDay = data.cruiseDay
+			do {
+				try await dailyTheme.save(on: req.db)
+			}
+			catch let error as DatabaseError where error.isConstraintFailure {
+				throw Abort(.conflict, reason: "A daily theme for day \(data.cruiseDay) already exists.")
+			}
 		}
 		return .created
 	}
@@ -315,6 +322,21 @@ struct AdminController: APIRouteCollection {
 		if let value = data.photostreamUploadRateLimit {
 			Settings.shared.photostreamUploadRateLimit = value
 		}
+		if let value = data.authRateLimitEnabled {
+			Settings.shared.authRateLimitEnabled = value
+		}
+		if let value = data.authRateLimitLoginFailures {
+			Settings.shared.authRateLimitLoginFailures = value
+		}
+		if let value = data.authRateLimitUsernameFailures {
+			Settings.shared.authRateLimitUsernameFailures = value
+		}
+		if let value = data.authRateLimitIPFailures {
+			Settings.shared.authRateLimitIPFailures = value
+		}
+		if let value = data.authRateLimitRecoveryFailures {
+			Settings.shared.authRateLimitRecoveryFailures = value
+		}
 		if let value = data.forumAutoQuarantineThreshold {
 			Settings.shared.forumAutoQuarantineThreshold = value
 		}
@@ -329,9 +351,6 @@ struct AdminController: APIRouteCollection {
 		}
 		if let value = data.shipWifiSSID {
 			Settings.shared.shipWifiSSID = value
-		}
-		if let value = data.scheduleUpdateURL {
-			Settings.shared.scheduleUpdateURL = value
 		}
 		if let value = data.upcomingEventNotificationSeconds {
 			Settings.shared.upcomingEventNotificationSeconds = Double(value)
@@ -483,8 +502,9 @@ struct AdminController: APIRouteCollection {
 	/// `POST /api/v3/admin/regcodes/unlock/:userID`
 	///
 	/// Re-enables one-time password recovery via registration code for the given user and all of their alt accounts.
-	/// Strips the '*' prefix from `User.verification` (see `AuthController.recoveryHandler`) and clears
-	/// `recoveryAttempts` so a lockout after 5 failed recoveries can be reset by staff.
+	/// Strips the '*' prefix from `User.verification` (see `AuthController.recoveryHandler`) and clears the accounts'
+	/// recovery, username lookup, and per-username login rate limits (see `AuthRateLimiter`), so a locked-out user can try again
+	/// right away. Per-IP limits are not cleared.
 	///
 	/// - Throws: 403 if the caller is not TwitarrTeam or an Account Manager. 400 if the userID is missing or unknown.
 	/// - Returns: Updated `RegistrationCodeUserData`.
@@ -495,8 +515,12 @@ struct AdminController: APIRouteCollection {
 		let allAccounts = try await user.allAccounts(on: req.db)
 		for account in allAccounts {
 			account.unlockVerification()
-			account.recoveryAttempts = 0
 			try await account.save(on: req.db)
+			var buckets: [AuthRateLimiter.Bucket] = [.recovery(account.username), .username(account.username)]
+			if let code = account.unspentVerification {
+				buckets.append(.usernameLookup(code))
+			}
+			await AuthRateLimiter.clear(buckets, on: req)
 		}
 		await user.logIfModeratorAction(.accountUnlocked, user: cacheUser, on: req)
 		let targetUserID = try user.requireID()
@@ -795,11 +819,42 @@ struct AdminController: APIRouteCollection {
 		if schedule.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
 			schedule = emptySchedulePayload
 		}
-		let filepath = try uploadSchedulePath()
-		// If we attempt an upload, it's important we end up with the uploaded file or nothing at the filepath.
-		// Leaving the previous file there would be bad.
-		try? FileManager.default.removeItem(at: filepath)
-		try await req.fileio.writeFile(ByteBuffer(string: schedule), at: filepath.path)
+		try await stageSchedule(ByteBuffer(string: schedule), at: uploadSchedulePath(), on: req)
+		return .ok
+	}
+
+	/// `POST /api/v3/admin/schedule/upload`
+	///
+	/// Handles the POST of a new schedule in sched.com API format: the raw JSON response from sched.com's
+	/// `GET /api/session/export?format=json` endpoint. For servers that can't reach sched.com themselves; another machine
+	/// can fetch the export and pass it along. Replaces any previously uploaded schedule, including `.ics` uploads.
+	/// Like an `.ics` upload, this only stages the schedule; use `GET /api/v3/admin/schedule/verify` and
+	/// `POST /api/v3/admin/schedule/update/apply` to review and apply it.
+	///
+	/// - Parameter requestBody: JSON array of Sched sessions.
+	/// - Throws: 400 error if the body isn't valid Sched session data.
+	/// - Returns: `HTTP 200 OK`
+	func schedSessionUploadPostHandler(_ req: Request) async throws -> HTTPStatus {
+		guard let body = req.body.data else {
+			throw Abort(.badRequest, reason: "No schedule data in request.")
+		}
+		// Make sure the data is usable before staging it.
+		_ = try SchedSession.decodeSessions(from: body).compactMap { try $0.makeEvent() }
+		try await stageSchedule(body, at: uploadScheduleJSONPath(), on: req)
+		return .ok
+	}
+
+	/// `POST /api/v3/admin/schedule/fetch`
+	///
+	/// Gets the current schedule from the sched.com API and stages it, as if it had been uploaded with
+	/// `POST /api/v3/admin/schedule/upload`. Requires the server to have a Sched API key and access to sched.com.
+	///
+	/// - Throws: 400 or 5xx error if the Sched API couldn't be reached or returned bad data.
+	/// - Returns: `HTTP 200 OK`
+	func schedSessionFetchHandler(_ req: Request) async throws -> HTTPStatus {
+		let sessions = try await SchedClient(client: req.client).exportSessions()
+		_ = try sessions.compactMap { try $0.makeEvent() }
+		try await stageSchedule(ByteBuffer(data: try JSONEncoder().encode(sessions)), at: uploadScheduleJSONPath(), on: req)
 		return .ok
 	}
 
@@ -813,18 +868,13 @@ struct AdminController: APIRouteCollection {
 	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
 	/// - Returns: `EventUpdateDifferenceData`
 	func scheduleChangeVerificationHandler(_ req: Request) async throws -> EventUpdateDifferenceData {
-		let filepath = try uploadSchedulePath()
-		let buffer = try await req.fileio.collectFile(at: filepath.path)
-		guard let scheduleFileStr = buffer.getString(at: 0, length: buffer.readableBytes) else {
-			throw Abort(.badRequest, reason: "Could not read schedule file.")
-		}
-		let result =  try await EventParser().validateEventsInICS(scheduleFileStr, on: req.db)
-		return result
+		let staged = try await loadStagedSchedule(on: req)
+		return try await EventParser().validateEvents(staged.events, updatesAgeRating: staged.updatesAgeRating, on: req.db)
 	}
 
 	/// `POST /api/v3/admin/schedule/update/apply`
 	///
-	/// Applies schedule changes to the schedule. Reads in a previously uploaded schedule file from `/admin/uploadschedule.ics` and creates,
+	/// Applies schedule changes to the schedule. Reads in a previously uploaded schedule (`.ics` or Sched API format) and creates,
 	/// deletes, and updates Event objects as necessary. If `forumPosts` is `true`, creates posts in Event forums notifying users of the schedule
 	/// change. Whether `forumPosts` is true or not, forums are created for new Events, and forum titles and initial posts are updated to match
 	/// the updated event info.
@@ -842,14 +892,11 @@ struct AdminController: APIRouteCollection {
 		let user = try req.auth.require(UserCacheData.self)
 		let processDeletes = req.query[String.self, at: "processDeletes"]?.lowercased() == "true"
 		let makeForumPosts = req.query[String.self, at: "forumPosts"]?.lowercased() == "true"
-		let filepath = try uploadSchedulePath()
-		let buffer = try await req.fileio.collectFile(at: filepath.path)
-		guard let scheduleFileStr = buffer.getString(at: 0, length: buffer.readableBytes) else {
-			throw Abort(.badRequest, reason: "Could not read schedule file.")
-		}
-		let differences =  try await EventParser().validateEventsInICS(scheduleFileStr, on: req.db)
-		try await EventParser().updateDatabaseFromICS(scheduleFileStr, on: req.db, forumAuthor: user.makeHeader(), 
-				processDeletes: processDeletes, makeForumPosts: makeForumPosts)
+		let staged = try await loadStagedSchedule(on: req)
+		let differences =  try await EventParser().validateEvents(staged.events, updatesAgeRating: staged.updatesAgeRating,
+				on: req.db)
+		try await EventParser().updateDatabase(from: staged.events, updatesAgeRating: staged.updatesAgeRating, on: req.db,
+				forumAuthor: user.makeHeader(), processDeletes: processDeletes, makeForumPosts: makeForumPosts)
 		try await ScheduleLog(diff: differences, isAutomatic: false).save(on: req.db)
 		return .ok
 	}
@@ -907,6 +954,20 @@ struct AdminController: APIRouteCollection {
 		return .ok
 	}
 	
+	/// `POST /api/v3/admin/authratelimits/clear`
+	///
+	/// Clears every current login rate limit lockout (see `AuthRateLimiter`): for usernames, registration codes, and client
+	/// IPs alike. Locked-out users can try again immediately, and their next lockout starts back at the shortest duration.
+	/// Failed attempts that haven't reached a limit yet keep counting.
+	///
+	/// - Returns: `AuthRateLimitClearData` with the number of lockouts cleared.
+	func clearAuthRateLimitsHandler(_ req: Request) async throws -> AuthRateLimitClearData {
+		let cacheUser = try req.auth.require(UserCacheData.self)
+		let cleared = await AuthRateLimiter.clearAllLockouts(on: req)
+		req.logger.notice("User \(cacheUser.username) (\(cacheUser.userID)) cleared \(cleared) auth rate limit lockouts")
+		return AuthRateLimitClearData(clearedCount: cleared)
+	}
+
 	// MARK: - Bulk User Update
 	
 	/// `GET /api/v3/admin/bulkuserfile/download`
@@ -1387,12 +1448,16 @@ struct AdminController: APIRouteCollection {
 					fez.startTime = fezData.startTime
 					fez.endTime = fezData.endTime
 					fez.participantArray = [userID]
-					try await fez.save(on: req.db)
-					try await fez.$participants.attach(user, on: req.db, {
-						$0.readCount = 0
-						$0.hiddenCount = 0
-					})
-					_ = try await storeNextJoinedAppointment(userID: userID, on: req)
+					try await req.db.transaction { db in
+						try await fez.save(on: db)
+						try await fez.$participants.attach(user, on: db, {
+							$0.readCount = 0
+							$0.hiddenCount = 0
+						})
+					}
+					await dispatchEffect(on: req) {
+						try await storeNextJoinedAppointment(userID: userID, on: req)
+					}
 				}
 				verification.fezCounts.importedCount += 1
 			}
@@ -1445,25 +1510,38 @@ struct AdminController: APIRouteCollection {
 			try await PerformerController().buildPerformerFromUploadData(performer: &performer, uploadData: performerData, on: req)
 			performer.$user.id = userID
 			performer.$photo.value = copiedUserImage
+			// The performer and its event links are written together. Events that can't be found are reported, not fatal.
+			let performerToSave = performer
+			var missingEventErrors: [String] = []
 			if !verifyOnly {
-				try await performer.save(on: req.db)			// Updates or creates
-			}
-			for eventUID in performerData.eventUIDs {
-				guard let event = try await Event.query(on: req.db).filter(\.$uid == eventUID).first() else {
-					verification.otherErrors.append("Couldn't find Event that Performer \"\(performerData.name)\" is performing in: UID = \(eventUID)")
-					continue
+				missingEventErrors = try await req.db.transaction { db -> [String] in
+					try await performerToSave.save(on: db)			// Updates or creates
+					var errors: [String] = []
+					for eventUID in performerData.eventUIDs {
+						guard let event = try await Event.query(on: db).filter(\.$uid == eventUID).first() else {
+							errors.append("Couldn't find Event that Performer \"\(performerData.name)\" is performing in: UID = \(eventUID)")
+							continue
+						}
+						let attachedEvent = try await EventPerformer.query(on: db)
+								.filter(\.$performer.$id == performerToSave.requireID()).filter(\.$event.$id == event.requireID()).first()
+						if attachedEvent == nil {
+							let newEventPerformer = EventPerformer()
+							newEventPerformer.$performer.id = try performerToSave.requireID()
+							newEventPerformer.$event.id = try event.requireID()
+							try await newEventPerformer.save(on: db)
+						}
+					}
+					return errors
 				}
-				if !verifyOnly {
-					let attachedEvent = try await EventPerformer.query(on: req.db)
-							.filter(\.$performer.$id == performer.requireID()).filter(\.$event.$id == event.requireID()).first()
-					if attachedEvent == nil {
-						let newEventPerformer = EventPerformer()
-						newEventPerformer.$performer.id = try performer.requireID()
-						newEventPerformer.$event.id = try event.requireID()
-						try await newEventPerformer.save(on: req.db)
+			}
+			else {
+				for eventUID in performerData.eventUIDs {
+					if try await Event.query(on: req.db).filter(\.$uid == eventUID).first() == nil {
+						missingEventErrors.append("Couldn't find Event that Performer \"\(performerData.name)\" is performing in: UID = \(eventUID)")
 					}
 				}
 			}
+			verification.otherErrors.append(contentsOf: missingEventErrors)
 			verification.performerCounts.importedCount += 1
 		}
 		catch {
@@ -1590,6 +1668,36 @@ struct AdminController: APIRouteCollection {
 	func uploadSchedulePath() throws -> URL {
 		let filePath = Settings.shared.adminDirectoryPath.appendingPathComponent("uploadschedule.ics")
 		return filePath
+	}
+
+	// Gets the path where an uploaded schedule in Sched API (JSON) format is kept. At most one of this and
+	// `uploadSchedulePath()` holds a file at any time.
+	func uploadScheduleJSONPath() throws -> URL {
+		return Settings.shared.adminDirectoryPath.appendingPathComponent("uploadschedule.json")
+	}
+
+	// Writes an uploaded schedule to `filepath`, first removing any previously uploaded schedule in either format.
+	// If we attempt an upload, it's important we end up with the uploaded file or nothing in the hopper.
+	// Leaving the previous file there would be bad.
+	private func stageSchedule(_ data: ByteBuffer, at filepath: URL, on req: Request) async throws {
+		try? FileManager.default.removeItem(at: uploadSchedulePath())
+		try? FileManager.default.removeItem(at: uploadScheduleJSONPath())
+		try await req.fileio.writeFile(data, at: filepath.path)
+	}
+
+	// Reads the uploaded schedule, in whichever format it was uploaded.
+	private func loadStagedSchedule(on req: Request) async throws -> (events: [Event], updatesAgeRating: Bool) {
+		let jsonPath = try uploadScheduleJSONPath()
+		if FileManager.default.fileExists(atPath: jsonPath.path) {
+			let buffer = try await req.fileio.collectFile(at: jsonPath.path)
+			let events = try SchedSession.decodeSessions(from: buffer).compactMap { try $0.makeEvent() }
+			return (events, true)
+		}
+		let buffer = try await req.fileio.collectFile(at: uploadSchedulePath().path)
+		guard let scheduleFileStr = buffer.getString(at: 0, length: buffer.readableBytes) else {
+			throw Abort(.badRequest, reason: "Could not read schedule file.")
+		}
+		return (try EventParser().parse(scheduleFileStr), false)
 	}
 
 	private var emptySchedulePayload: String {

@@ -124,11 +124,6 @@ struct AlertController: APIRouteCollection {
 			nextLFG: nextLFG?.1,
 			microKaraokeFinishedSongCount: finishedSongCount
 		)
-		result.twarrtMentionCount = try await req.redis.getIntFromUserHash(userHash, field: .twarrtMention(0))
-		result.newTwarrtMentionCount = try await max(
-			result.twarrtMentionCount - req.redis.getIntFromUserHash(userHash, field: .twarrtMention(0), viewed: true),
-			0
-		)
 		result.forumMentionCount = try await req.redis.getIntFromUserHash(userHash, field: .forumMention(0))
 		result.newForumMentionCount = try await max(
 			result.forumMentionCount - req.redis.getIntFromUserHash(userHash, field: .forumMention(0), viewed: true),
@@ -198,31 +193,14 @@ struct AlertController: APIRouteCollection {
 		//	let hash = try await req.redis.hgetall(from: NotificationType.redisHashKeyForUser(userID), as: Int.self)
 		var resultDict: [String: UserNotificationAlertwordData] = [:]
 		hash.forEach { (key, value) in
-			if key.hasSuffix("_viewed") {
+			if key.hasSuffix("_viewed") || !key.hasPrefix("alertwordPost-") {
 				return
 			}
-			var word: String
-			var isTweet = true
-			if key.hasPrefix("alertwordTweet-") {
-				word = String(key.dropFirst("alertwordTweet-".count))
-			}
-			else if key.hasPrefix("alertwordPost-") {
-				word = String(key.dropFirst("alertwordPost-".count))
-				isTweet = false
-			}
-			else {
-				return
-			}
+			let word = String(key.dropFirst("alertwordPost-".count))
 			let viewedCount = hash[key + "_viewed"]?.int ?? 0
 			var entry = resultDict[word] ?? UserNotificationAlertwordData(word)
-			if isTweet {
-				entry.twarrtMentionCount = value.int ?? 0
-				entry.newTwarrtMentionCount = max(0, entry.twarrtMentionCount - viewedCount)
-			}
-			else {
-				entry.forumMentionCount = value.int ?? 0
-				entry.newForumMentionCount = max(0, entry.forumMentionCount - viewedCount)
-			}
+			entry.forumMentionCount = value.int ?? 0
+			entry.newForumMentionCount = max(0, entry.forumMentionCount - viewedCount)
 			resultDict[word] = entry
 		}
 		return Array(resultDict.values)

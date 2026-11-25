@@ -23,6 +23,15 @@ These routes do not require any authorization header to access.
 | GET    | /clients?platform=android | Lists the suggested client apps available for Android, with download links. The link encoded in the Android QR code from THO.                                                                                                                                |
 | GET    | /clients?platform=ios     | Lists the suggested client apps available for iOS, with download links. The link encoded in the iOS QR code from THO.                                                                                                                                        |
 
+## Well-Known Routes
+
+These routes do not require any authorization header to access. Unlike the other canonical routes, they return JSON instead of HTML. They exist for the operating system to read when deciding which apps can open Twitarr links, so clients shouldn't need to call them directly.
+
+Method | Route | Notes
+--- | --- | ---
+| GET | /.well-known/apple-app-site-association | Lists the iOS apps that can open Twitarr links (Universal Links), and which paths each app handles.
+| GET | /.well-known/assetlinks.json | Lists the Android apps that can open Twitarr links (App Links), and their signing certificates. The paths are set in each app's manifest.
+
 ## Token Access Routes
 
 These routes may be used with Bearer Authentication, where you provide a Token to auth to the server. See `/api/v3/login`. However, these routes will respond with a session cookie, and (most browser clients) use the cookie to perform Session auth for future requests.
@@ -33,8 +42,6 @@ Method | Route | Notes
 --- | --- | ---
 | GET | /logout | This GETs a page that has a logout button. Probably not a great user experience to open a web view just so the user can click the button and logout.
 | GET | /createAltAccount | Lets the current user create an alternate account. 
-| GET | /tweets | Shows tweets from the tweet stream. Supports a bunch of query options.
-| GET | /tweets/:twarrt_id | Shows a thread in the tweet stream. Supports a bunch of query options.
 | GET | /forums | Shows forum categories.
 | GET | /forums/:category_id | Shows forum threads in a category
 | GET | /forum/:forum_id | Shows an individual forum thread.

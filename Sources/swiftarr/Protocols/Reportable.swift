@@ -85,6 +85,9 @@ extension Reportable {
 	/// If the change being made to the receiver is a mod exercising their mod powers, record the change in the ModeratorAction log.
 	/// If the change isn't the result of mod powers, do nothing. Most calls don't need to wait for completion, and can ignore the result.
 	/// Only call this function after you're sure the action is actually going to occur.
+	///
+	/// This form is best-effort: it writes through `req.db` and swallows write errors. Don't use it for a change made inside a transaction;
+	/// use `logIfModeratorAction(_:moderatorID:on: Database)` with the transaction's database so the log entry is part of the transaction.
 	func logIfModeratorAction(_ action: ModeratorActionType, moderatorID: UUID, on req: Request) async throws {
 		// Only log actions where a mod has to use their mod powers. That is, if a mod deletes their own tweet, don't log it.
 		// I believe "mod powers" == any change to content where the user making the change isn't the user who created the content.
@@ -101,6 +104,29 @@ extension Reportable {
 		catch {
 			req.logger.report(error: error)
 		}
+	}
+
+	/// Transaction-aware form of `logIfModeratorAction(_:moderatorID:on:)`. Writes through `db` and propagates errors rather than logging them.
+	///
+	/// This is a deliberate design choice: the moderator action log is the accountability record for mod powers, so a log entry is part of the
+	/// change it records, not a side effect of it. Call this inside the same transaction as the change; the action and its log entry then
+	/// succeed or fail together, and a failed log write fails the request instead of leaving a moderator action with no record. (Swallowing
+	/// the error, as the `Request` forms do, can't make the log best-effort here anyway: in Postgres a failed statement aborts the whole
+	/// transaction, so the next statement would fail and the commit would roll back.) Don't move this call after the commit.
+	func logIfModeratorAction(_ action: ModeratorActionType, moderatorID: UUID, on db: Database) async throws {
+		guard authorUUID != moderatorID else {
+			return
+		}
+		if let moderator = try await User.find(moderatorID, on: db) {
+			let modAction = try ModeratorAction(content: self, action: action, moderator: moderator)
+			try await modAction.save(on: db)
+		}
+	}
+
+	/// Transaction-aware form of `logIfModeratorAction(_:user:on:)`. The log entry is deliberately part of the transaction; see
+	/// `logIfModeratorAction(_:moderatorID:on: Database)`.
+	func logIfModeratorAction(_ action: ModeratorActionType, user: UserCacheData, on db: Database) async throws {
+		try await logIfModeratorAction(action, moderatorID: user.userID, on: db)
 	}
 }
 

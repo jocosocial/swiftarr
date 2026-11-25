@@ -1,3 +1,4 @@
+import Fluent
 import Testing
 import XCTVapor
 
@@ -60,6 +61,8 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 				},
 				afterResponse: { res async throws in
 					XCTAssertEqual(res.status, .badRequest, "a spent registration code must not recover the account")
+					let error = try res.content.decode(ErrorResponse.self)
+					XCTAssertEqual(error.reason, "account must be recovered using the recovery key or an account manager")
 				}
 			)
 			try await user.delete(on: app.db)
@@ -171,6 +174,209 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 					XCTAssertEqual(res.status, .badRequest, "a spent spaced registration code must not recover the account")
 				}
 			)
+			try await user.delete(on: app.db)
+		}
+	}
+
+	// A spent code that doesn't match the account gets the generic failure and counts as an attempt; only a caller
+	// who submitted the right code learns that it was already spent.
+	func testRecovery_WrongCodeOnSpentAccount_IsGenericAndCounted() async throws {
+		try await withApp { app in
+			let username = "recovery-spent-wrong-\(UUID().uuidString.prefix(8))"
+			let user = try await makeRecoveryUser(app, username: username, verification: "*abc123")
+
+			try await app.test(
+				.POST,
+				"/api/v3/auth/recovery",
+				beforeRequest: { req async throws in
+					try req.content.encode(recoveryBody(username: username, key: "zzz999"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .badRequest)
+					let error = try res.content.decode(ErrorResponse.self)
+					XCTAssertEqual(error.reason, "no match for supplied recovery key")
+				}
+			)
+
+			let attempts = await authRateLimitCount(app, .recovery(username))
+			XCTAssertEqual(attempts, 1)
+			try await user.delete(on: app.db)
+		}
+	}
+
+	// MARK: - Recovery: username existence
+
+	// An unknown username must fail exactly like a wrong key on a real account.
+	func testRecovery_UnknownUsername_MatchesWrongKeyResponse() async throws {
+		try await withApp { app in
+			let username = "recovery-known-\(UUID().uuidString.prefix(8))"
+			let user = try await makeRecoveryUser(app, username: username, verification: "abc123")
+			var wrongKeyReason: String?
+
+			try await app.test(
+				.POST,
+				"/api/v3/auth/recovery",
+				beforeRequest: { req async throws in
+					try req.content.encode(recoveryBody(username: username, key: "not the key"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .badRequest)
+					wrongKeyReason = try res.content.decode(ErrorResponse.self).reason
+				}
+			)
+			for key in ["not the key", "zzz999"] {
+				try await app.test(
+					.POST,
+					"/api/v3/auth/recovery",
+					beforeRequest: { req async throws in
+						try req.content.encode(recoveryBody(username: "nobody-\(UUID().uuidString.prefix(8))", key: key))
+					},
+					afterResponse: { res async throws in
+						XCTAssertEqual(res.status, .badRequest)
+						let error = try res.content.decode(ErrorResponse.self)
+						XCTAssertEqual(error.reason, wrongKeyReason, "unknown usernames must not be distinguishable")
+					}
+				)
+			}
+			try await user.delete(on: app.db)
+		}
+	}
+
+	// A banned account must not reveal its ban to a caller who doesn't hold the credentials.
+	func testRecovery_BannedUserWrongKey_IsGeneric() async throws {
+		try await withApp { app in
+			let username = "recovery-banned-\(UUID().uuidString.prefix(8))"
+			let user = try await makeRecoveryUser(app, username: username, verification: "abc123")
+			user.accessLevel = .banned
+			try await user.save(on: app.db)
+
+			try await app.test(
+				.POST,
+				"/api/v3/auth/recovery",
+				beforeRequest: { req async throws in
+					try req.content.encode(recoveryBody(username: username, key: "not the key"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .badRequest)
+				}
+			)
+			try await user.delete(on: app.db)
+		}
+	}
+
+	// Correct credentials on a banned account are still refused, and the password is left unchanged.
+	func testRecovery_BannedUserRightKey_IsForbidden() async throws {
+		try await withApp { app in
+			let username = "recovery-banned-ok-\(UUID().uuidString.prefix(8))"
+			let user = try await makeRecoveryUser(app, username: username, verification: "abc123")
+			user.accessLevel = .banned
+			try await user.save(on: app.db)
+
+			try await app.test(
+				.POST,
+				"/api/v3/auth/recovery",
+				beforeRequest: { req async throws in
+					try req.content.encode(recoveryBody(username: username, key: "password1"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .forbidden)
+				}
+			)
+
+			let reloaded = try await User.find(user.requireID(), on: app.db)
+			XCTAssertTrue(try Bcrypt.verify("password1", created: reloaded?.password ?? ""))
+			XCTAssertEqual(reloaded?.verification, "abc123", "a refused recovery must not spend the code")
+			try await user.delete(on: app.db)
+		}
+	}
+
+	// MARK: - Token revocation
+
+	private func bootCache(_ app: Application) async throws {
+		try await app.asyncBoot()
+		try await app.initializeUserCache(app)
+	}
+
+	private func makeToken(_ app: Application, for user: User) async throws -> String {
+		let token = try Token.generate(for: user)
+		try await token.save(on: app.db)
+		return token.token
+	}
+
+	private func tokens(for user: User, on app: Application) async throws -> [String] {
+		try await Token.query(on: app.db).filter(\.$user.$id == user.requireID()).all().map(\.token)
+	}
+
+	// Recovery must log out whoever holds the old token, and hand back a different one.
+	func testRecovery_RevokesExistingToken() async throws {
+		try await withApp { app in
+			let username = "recovery-revoke-\(UUID().uuidString.prefix(8))"
+			let user = try await makeRecoveryUser(app, username: username, verification: "abc123")
+			let oldToken = try await makeToken(app, for: user)
+			try await bootCache(app)
+
+			try await app.test(
+				.POST,
+				"/api/v3/auth/recovery",
+				beforeRequest: { req async throws in
+					try req.content.encode(recoveryBody(username: username, key: "password1"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .ok)
+					let tokenData = try res.content.decode(TokenStringData.self)
+					XCTAssertNotEqual(tokenData.token, oldToken)
+					let stored = try await tokens(for: user, on: app)
+					XCTAssertEqual(stored, [tokenData.token], "only the new token may remain")
+				}
+			)
+
+			var headers = HTTPHeaders()
+			headers.bearerAuthorization = BearerAuthorization(token: oldToken)
+			try await app.test(.GET, "/api/v3/user/whoami", headers: headers) { res async throws in
+				XCTAssertEqual(res.status, .unauthorized, "the old token must stop working")
+			}
+			try await Token.query(on: app.db).filter(\.$user.$id == user.requireID()).delete()
+			try await user.delete(on: app.db)
+		}
+	}
+
+	// A password change revokes the old token and returns a new one that works.
+	func testPasswordChange_RotatesToken() async throws {
+		try await withApp { app in
+			let username = "pwchange-\(UUID().uuidString.prefix(8))"
+			let user = try await makeRecoveryUser(app, username: username, verification: "abc123")
+			let oldToken = try await makeToken(app, for: user)
+			try await bootCache(app)
+			var oldHeaders = HTTPHeaders()
+			oldHeaders.bearerAuthorization = BearerAuthorization(token: oldToken)
+			var newToken: String?
+
+			try await app.test(
+				.POST,
+				"/api/v3/user/password",
+				headers: oldHeaders,
+				beforeRequest: { req async throws in
+					try req.content.encode(UserPasswordData(currentPassword: "password1", newPassword: "newpassword1"))
+				},
+				afterResponse: { res async throws in
+					XCTAssertEqual(res.status, .created)
+					let tokenData = try res.content.decode(TokenStringData.self)
+					XCTAssertNotEqual(tokenData.token, oldToken)
+					newToken = tokenData.token
+				}
+			)
+
+			try await app.test(.GET, "/api/v3/user/whoami", headers: oldHeaders) { res async throws in
+				XCTAssertEqual(res.status, .unauthorized, "the old token must stop working")
+			}
+			var newHeaders = HTTPHeaders()
+			newHeaders.bearerAuthorization = BearerAuthorization(token: try XCTUnwrap(newToken))
+			try await app.test(.GET, "/api/v3/user/whoami", headers: newHeaders) { res async throws in
+				XCTAssertEqual(res.status, .ok, "the new token must work")
+			}
+			let reloaded = try await User.find(user.requireID(), on: app.db)
+			XCTAssertTrue(try Bcrypt.verify("newpassword1", created: reloaded?.password ?? ""))
+			try await Token.query(on: app.db).filter(\.$user.$id == user.requireID()).delete()
 			try await user.delete(on: app.db)
 		}
 	}
@@ -326,8 +532,8 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 				}
 			)
 
-			let reloaded = try await User.find(user.requireID(), on: app.db)
-			XCTAssertEqual(reloaded?.recoveryAttempts, 1)
+			let attempts = await authRateLimitCount(app, .usernameLookup(code))
+			XCTAssertEqual(attempts, 1)
 			try await user.delete(on: app.db)
 		}
 	}
@@ -424,8 +630,18 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 			let username = "lookup-keep-\(UUID().uuidString.prefix(8))"
 			let code = uniqueRegCode()
 			let user = try await makeLookupUser(app, username: username, verification: code)
-			user.recoveryAttempts = 2
-			try await user.save(on: app.db)
+			for _ in 0..<2 {
+				try await app.test(
+					.POST,
+					"/api/v3/auth/username",
+					beforeRequest: { req async throws in
+						try req.content.encode(lookupBody(code: code, key: "not-the-password"))
+					},
+					afterResponse: { res async throws in
+						XCTAssertEqual(res.status, .badRequest)
+					}
+				)
+			}
 
 			try await app.test(
 				.POST,
@@ -438,8 +654,8 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 				}
 			)
 
-			let reloaded = try await User.find(user.requireID(), on: app.db)
-			XCTAssertEqual(reloaded?.recoveryAttempts, 2)
+			let attempts = await authRateLimitCount(app, .usernameLookup(code))
+			XCTAssertEqual(attempts, 2, "a successful lookup must not count, or clear earlier failures")
 			try await user.delete(on: app.db)
 		}
 	}
@@ -449,9 +665,20 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 			let username = "lookup-lock-\(UUID().uuidString.prefix(8))"
 			let code = uniqueRegCode()
 			let user = try await makeLookupUser(app, username: username, verification: code)
-			user.recoveryAttempts = 5
-			try await user.save(on: app.db)
+			for _ in 0..<5 {
+				try await app.test(
+					.POST,
+					"/api/v3/auth/username",
+					beforeRequest: { req async throws in
+						try req.content.encode(lookupBody(code: code, key: "not-the-password"))
+					},
+					afterResponse: { res async throws in
+						XCTAssertEqual(res.status, .badRequest)
+					}
+				)
+			}
 
+			// Even the right password is refused while the code is locked out.
 			try await app.test(
 				.POST,
 				"/api/v3/auth/username",
@@ -459,7 +686,8 @@ class AuthControllerTests: XCTestCase, SwiftarrBaseTest {
 					try req.content.encode(lookupBody(code: code, key: "password1"))
 				},
 				afterResponse: { res async throws in
-					XCTAssertEqual(res.status, .forbidden)
+					XCTAssertEqual(res.status, .tooManyRequests)
+					XCTAssertNotNil(res.headers.first(name: "Retry-After"))
 				}
 			)
 			try await user.delete(on: app.db)

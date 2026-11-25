@@ -364,3 +364,41 @@ additive; the existing count fields are unchanged and are now derived from these
 - New `/api/v3/communitysupport/*` controller for Community Support reports: `POST /report`, `GET /reports`, `GET /report/:report_id`, `POST /report/:report_id/status`, `POST /report/:report_id/discussion`, `GET /actionlog`, and `GET /export` (THO and above). Available to role holders, TwitarrTeam, and above; plain moderators have no access.
 - New shared mailbox user `@CommunitySupport` (`?foruser=communitysupport`). `FezContentData` gains `createdByCommunitySupport`; `PostContentData` gains `postAsCommunitySupport`.
 - `UserNotificationData` gains optional `communitySupportData`. New notification type `communitySupportForumMention`, with a matching `SocketNotificationData.NotificationTypeData` case.
+
+## Nov 12, 2026
+
+- `scheduleUpdateURL` has been removed from `SettingsAdminData` and `SettingsUpdateData`.
+- `ClientSettingsData` gains `schedBaseUrl`, the base URL of the sched.com site (e.g. `https://jococruise2026.sched.com`).
+
+## Nov 13, 2026
+
+- `POST /api/v3/user/password` now returns `TokenStringData` (still 201). A password change revokes the user's existing token on every device; clients must replace their stored token with the returned one.
+- `POST /api/v3/auth/recovery` now always returns a new token and revokes the old one, instead of returning the existing token. An unknown username now fails with the same 400 as a wrong recovery key.
+- Failed attempts on `POST /api/v3/auth/login`, `/auth/recovery`, `/auth/username`, `/user/create` (bad registration codes), and `/user/password` (wrong current password) are now rate limited per username/registration code and per client IP. Over the limit, these return 429 with a `Retry-After` header (seconds). The recovery and username lookup lockouts that used to return a permanent 403 are now this temporary 429.
+- Admin: `SettingsAdminData` and `SettingsUpdateData` gain `authRateLimitEnabled`, `authRateLimitLoginFailures`, `authRateLimitUsernameFailures`, `authRateLimitIPFailures`, and `authRateLimitRecoveryFailures`.
+- Admin: added `POST /api/v3/admin/authratelimits/clear` (TwitarrTeam and above), which clears all current auth rate limit lockouts and returns `AuthRateLimitClearData`.
+
+## Nov 11, 2026
+
+- The minimum password length for `/user/create`, `/user/password`, and `/auth/recovery` (`newPassword`) is now 8 characters, up from 6. Existing passwords still work.
+
+## Nov 14, 2026
+
+- Admin: added `POST /api/v3/admin/schedule/upload`, which takes the raw sched.com `GET /api/session/export?format=json` response as the request body and stages it for `GET /admin/schedule/verify` and `POST /admin/schedule/update/apply`, the same as an `.ics` upload. Added `POST /api/v3/admin/schedule/fetch`, which has the server pull the export from the Sched API itself and stage it. Both are TwitarrTeam and above.
+- Admin: `EventUpdateDifferenceData` gains optional `minorChanges` (`[EventMinorChangeData]`), listing the old and new values of each changed field for the events in `minorChangeEvents`.
+- Admin: added `POST /api/v3/admin/performer/bulk/sched/upload`, which takes the raw sched.com `GET /api/role/export?role=speaker&format=json&fields=username,name,about,url,avatar,company,position,sessions` response and stages it for `performer/bulk/verify` and `performer/bulk/apply`. Added `POST /api/v3/admin/performer/bulk/sched/fetch`, which has the server pull the speakers from the Sched API itself. Both are TwitarrTeam and above.
+- Admin: `GET /api/v3/admin/performer/bulk/verify` and `POST /api/v3/admin/performer/bulk/apply` take `?overwrite=true`. Without it, apply now merges: profile fields that are nil or blank in the upload keep their existing values, and years attended are added to existing years.
+- `ScrapedPerformerEventReferenceData.startTime` is now optional.
+- `CategoryData` gains an optional `defaultSort` field to direct clients to the preferred thread sort for a category. Splashdot sets this to `create` (newest threads first).
+- Category thread requests now honor `CategoryData.defaultSort` when `sort` is omitted. Supported values are `create`, `title`, `update`, and `event`.
+- Event categories advertise `defaultSort: "event"`. Explicit `sort=event` requests for non-event categories return HTTP 400.
+
+## Nov 15, 2026
+
+- Removed `GET /api/v3/mod/twarrt/:id` and `POST /api/v3/mod/twarrt/:id/setstate/:state`. The twarrt stream is gone. `ReportType` still includes `twarrt` so existing report rows decode.
+- `SwiftarrFeature.tweets` is deprecated but still accepted and emitted in `disabledFeatures`.
+- Removed notification types `twarrtMention` and `alertwordTwarrt` from `SocketNotificationData`. `UserNotificationData` still includes `twarrtMentionCount` and `newTwarrtMentionCount`.
+
+## Nov 22, 2026
+
+- `SocketNotificationData` gains an optional `author: UserHeader`, set for forum mention, alertword, and chat unread message notifications.

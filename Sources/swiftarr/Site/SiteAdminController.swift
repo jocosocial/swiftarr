@@ -79,6 +79,7 @@ struct SiteAdminController: SiteControllerUtils {
 
 		privateTTRoutes.get("timezonechanges", use: timeZonesViewHandler)
 		privateTTRoutes.post("serversettings", "reloadtzfile", use: settingsReloadTZFilePostHandler)
+		privateTTRoutes.post("authratelimits", "clear", use: clearAuthRateLimitsPostHandler)
 
 		privateTTRoutes.get("schedule", use: scheduleManagerViewHandler)
 		privateTTRoutes.post("scheduleupload", use: scheduleUploadPostHandler)
@@ -87,6 +88,7 @@ struct SiteAdminController: SiteControllerUtils {
 		privateTTRoutes.get("scheduleupload", "complete", use: scheduleUpdateCompleteViewtHandler)
 		privateTTRoutes.get("schedulelogview", scheduleLogIDParam, use: scheduleLogEntryViewer)
 		privateTTRoutes.post("schedulereload", use: scheduleReloadHandler)
+		privateTTRoutes.post("schedulefetch", use: scheduleFetchHandler)
 		privateTTRoutes.post("notificationcheck", use: notificationConsistencyCheckHandler)
 
 		
@@ -663,11 +665,15 @@ struct SiteAdminController: SiteControllerUtils {
 			var maxImageSize: Int
 			var maxForumPostImages: Int
 			var photostreamUploadRateLimit: Int
+			var authRateLimitEnabled: String?
+			var authRateLimitLoginFailures: Int
+			var authRateLimitUsernameFailures: Int
+			var authRateLimitIPFailures: Int
+			var authRateLimitRecoveryFailures: Int
 			var forumAutoQuarantineThreshold: Int
 			var postAutoQuarantineThreshold: Int
 			var userAutoQuarantineThreshold: Int
 			var shipWifiSSID: String?
-			var scheduleUpdateURL: String?
 			var allowAnimatedImages: String?
 			var disableAppName: String
 			var disableFeatureName: String
@@ -708,6 +714,11 @@ struct SiteAdminController: SiteControllerUtils {
 			maxImageSize: postStruct.maxImageSize * 1_048_576,
 			maxForumPostImages: postStruct.maxForumPostImages,
 			photostreamUploadRateLimit: postStruct.photostreamUploadRateLimit,
+			authRateLimitEnabled: postStruct.authRateLimitEnabled == "on",
+			authRateLimitLoginFailures: postStruct.authRateLimitLoginFailures,
+			authRateLimitUsernameFailures: postStruct.authRateLimitUsernameFailures,
+			authRateLimitIPFailures: postStruct.authRateLimitIPFailures,
+			authRateLimitRecoveryFailures: postStruct.authRateLimitRecoveryFailures,
 			forumAutoQuarantineThreshold: postStruct.forumAutoQuarantineThreshold,
 			postAutoQuarantineThreshold: postStruct.postAutoQuarantineThreshold,
 			userAutoQuarantineThreshold: postStruct.userAutoQuarantineThreshold,
@@ -715,7 +726,6 @@ struct SiteAdminController: SiteControllerUtils {
 			enableFeatures: enablePairs,
 			disableFeatures: disablePairs,
 			shipWifiSSID: postStruct.shipWifiSSID,
-			scheduleUpdateURL: postStruct.scheduleUpdateURL,
 			upcomingEventNotificationSeconds: postStruct.upcomingEventNotificationSeconds,
 			upcomingEventNotificationSetting: postStruct.upcomingEventNotificationSetting,
 			upcomingLFGNotificationSetting: postStruct.upcomingLFGNotificationSetting,
@@ -1035,9 +1045,25 @@ struct SiteAdminController: SiteControllerUtils {
 		return .ok
 	}
 
+	// POST /admin/schedulefetch
+	//
+	// Has the server fetch the schedule from the Sched API and stage it, as if it were uploaded. See scheduleVerifyViewHandler().
+	func scheduleFetchHandler(_ req: Request) async throws -> HTTPStatus {
+		let _ = try await apiQuery(req, endpoint: "/admin/schedule/fetch", method: .POST)
+		return .ok
+	}
+
 	func notificationConsistencyCheckHandler(_ req: Request) async throws -> HTTPStatus {
 		let _ = try await apiQuery(req, endpoint: "/admin/notifications/reload", method: .POST)
 		return .ok
+	}
+
+	// POST /admin/authratelimits/clear
+	//
+	// Clears every current login rate limit lockout. Returns JSON so the settings page can show how many were cleared.
+	func clearAuthRateLimitsPostHandler(_ req: Request) async throws -> AuthRateLimitClearData {
+		let response = try await apiQuery(req, endpoint: "/admin/authratelimits/clear", method: .POST)
+		return try response.content.decode(AuthRateLimitClearData.self)
 	}
 
 	// POST /admin/scheduleverify
@@ -1050,16 +1076,14 @@ struct SiteAdminController: SiteControllerUtils {
 	// 	 time or location, you could make a .ics that only contains that event and upload/apply that file. Without this
 	// 	 option, that one event would be considered an exhaustive list of events for the week, and all other events would be deleted.
 	func scheduleVerifyPostHandler(_ req: Request) async throws -> HTTPStatus {
-		struct ScheduleVerifyData: Content {
-			var addForumPosts: String?
-			var ignoreDeletes: String?
-		}
-		let formData = try req.content.decode(ScheduleVerifyData.self)
+		// Read each checkbox separately; with both unchecked the form body is empty and decoding a struct from it fails.
+		let addForumPosts = (try? req.content.get(String.self, at: "addForumPosts")) == "on"
+		let ignoreDeletes = (try? req.content.get(String.self, at: "ignoreDeletes")) == "on"
 		var query = [URLQueryItem]()
-		if formData.addForumPosts == "on" {
+		if addForumPosts {
 			query.append(URLQueryItem(name: "forumPosts", value: "true"))
 		}
-		if formData.ignoreDeletes != "on" {
+		if !ignoreDeletes {
 			query.append(URLQueryItem(name: "processDeletes", value: "true"))
 		}
 		var components = URLComponents()

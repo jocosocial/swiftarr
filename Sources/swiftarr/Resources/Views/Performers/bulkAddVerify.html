@@ -19,6 +19,22 @@
 				To update a performer's image, edit them individually via the <a href="/admin/performer/add">Add Performer</a> form.
 			</div>
 
+			<div class="row mb-3 align-items-center">
+				<div class="col col-auto">
+					<div class="btn-group btn-group-sm" role="group" aria-label="Apply mode">
+						<a href="/admin/performer/bulk/verify" class="btn #if(overwrite):btn-outline-primary#else:btn-primary#endif"#if(!overwrite): aria-current="true"#endif>Merge</a>
+						<a href="/admin/performer/bulk/verify?overwrite=true" class="btn #if(overwrite):btn-primary#else:btn-outline-primary#endif"#if(overwrite): aria-current="true"#endif>Overwrite</a>
+					</div>
+				</div>
+				<div class="col">
+					#if(overwrite):
+						<small>Overwrite: every profile field of an existing performer is replaced with the imported value, including blanks.</small>
+					#else:
+						<small>Merge: imported values replace existing ones, but fields this source doesn't have are left alone. Years attended are added to existing years.</small>
+					#endif
+				</div>
+			</div>
+
 			<div class="accordion mb-2" id="performerDiffAccordion">
 				<div class="accordion-item">
 					<h2 class="accordion-header" id="newPerformersHeader">
@@ -178,6 +194,7 @@
 			</div>
 
 			<form class="ajax" action="/admin/performer/bulk/apply" method="POST" data-successurl="/admin/performer/bulk/complete" id="bulkApplyForm">
+				<input type="hidden" name="overwrite" value="#(overwrite)">
 				<div class="row mb-2">
 					<div class="col">
 						<input type="checkbox" id="linkEvents" name="linkEvents" checked>

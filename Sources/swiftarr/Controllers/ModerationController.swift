@@ -7,8 +7,8 @@ import Vapor
 /// 	a privileged nature, including contents of user reports, edit histories of user content, and log data about moderation actions.
 ///
 /// 	Note that some moderation actions aren't in this file. Most such endpoints have a handler method allowing a user
-/// 	to operate on their own content, but also allowing a mod to operate on other users' content. For example, `twarrtUpdateHandler` lets
-/// 	a user edit a twarrt they wrote, but also lets mods edit any user's twarrt.
+/// 	to operate on their own content, but also allowing a mod to operate on other users' content. For example, a forum
+/// 	post update lets a user edit a post they wrote, and also lets mods edit any user's post.
 ///
 /// 	The routes in this controller that return data on various Reportable content types are designed to return everything a Mod might need
 /// 	to make moderation decisions, all in one call. In many cases that means calls return multiple array types with no paging or array limits.
@@ -27,15 +27,6 @@ struct ModerationController: APIRouteCollection {
 		moderatorAuthGroup.post("reports", ":report_id", "handleall", use: beginProcessingReportsHandler)
 		moderatorAuthGroup.post("reports", ":report_id", "closeall", use: closeReportsHandler)
 		moderatorAuthGroup.get("moderationlog", use: moderatorActionLogHandler)
-
-		moderatorAuthGroup.get("twarrt", twarrtIDParam, use: twarrtModerationHandler)
-		moderatorAuthGroup.post(
-			"twarrt",
-			twarrtIDParam,
-			"setstate",
-			modStateParam,
-			use: twarrtSetModerationStateHandler
-		)
 
 		moderatorAuthGroup.get("forumpost", postIDParam, use: forumPostModerationHandler)
 		moderatorAuthGroup.post(
@@ -140,16 +131,18 @@ struct ModerationController: APIRouteCollection {
 		}
 		let report = try await Report.findFromParameter("report_id", on: req)
 		let groupID = UUID()
-		try await Report.query(on: req.db)
-			.filter(\.$reportType == report.reportType)
-			.filter(\.$reportedID == report.reportedID)
-			.filter(\.$isClosed == false)
-			.set(\.$handledBy.$id, to: cacheUser.userID)
-			.set(\.$actionGroup, to: groupID)
-			.update()
-		if let user = try await User.find(cacheUser.userID, on: req.db) {
-			user.actionGroup = groupID
-			try await user.save(on: req.db)
+		try await req.db.transaction { db in
+			try await Report.query(on: db)
+				.filter(\.$reportType == report.reportType)
+				.filter(\.$reportedID == report.reportedID)
+				.filter(\.$isClosed == false)
+				.set(\.$handledBy.$id, to: cacheUser.userID)
+				.set(\.$actionGroup, to: groupID)
+				.update()
+			if let user = try await User.find(cacheUser.userID, on: db) {
+				user.actionGroup = groupID
+				try await user.save(on: db)
+			}
 		}
 		return .ok
 	}
@@ -168,15 +161,17 @@ struct ModerationController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "Moderators only")
 		}
 		let report = try await Report.findFromParameter("report_id", on: req)
-		try await Report.query(on: req.db)
-			.filter(\.$reportType == report.reportType)
-			.filter(\.$reportedID == report.reportedID)
-			.filter(\.$isClosed == false)
-			.set(\.$isClosed, to: true)
-			.update()
-		if let user = try await User.find(cacheUser.userID, on: req.db) {
-			user.actionGroup = nil
-			try await user.save(on: req.db)
+		try await req.db.transaction { db in
+			try await Report.query(on: db)
+				.filter(\.$reportType == report.reportType)
+				.filter(\.$reportedID == report.reportedID)
+				.filter(\.$isClosed == false)
+				.set(\.$isClosed, to: true)
+				.update()
+			if let user = try await User.find(cacheUser.userID, on: db) {
+				user.actionGroup = nil
+				try await user.save(on: db)
+			}
 		}
 		return .ok
 	}
@@ -205,80 +200,6 @@ struct ModerationController: APIRouteCollection {
 			paginator: Paginator(total: totalActionCount, start: pagination.start, limit: pagination.limit)
 		)
 		return response
-	}
-
-	/// `GET /api/v3/mod/twarrt/ID`
-	///
-	/// Moderator only. Returns info admins and moderators need to review a twarrt. Works if twarrt has been deleted. Shows
-	/// twarrt's quarantine and reviewed states.
-	///
-	/// The `TwarrtModerationData` contains:
-	/// * The current twarrt contents, even if its deleted
-	/// * Previous edits of the twarrt
-	/// * Reports against the twarrt
-	/// * The twarrt's current deletion and moderation status.
-	///
-	/// - Parameter twarrtID: in URL path.
-	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `TwarrtModerationData` containing a bunch of data pertinient to moderating the twarrt.
-	func twarrtModerationHandler(_ req: Request) async throws -> TwarrtModerationData {
-		guard let paramVal = req.parameters.get(twarrtIDParam.paramString), let twarrtID = Int(paramVal) else {
-			throw Abort(.badRequest, reason: "Request parameter \(twarrtIDParam.paramString) is missing.")
-		}
-		guard let twarrt = try await Twarrt.query(on: req.db).filter(\._$id == twarrtID).withDeleted().first() else {
-			throw Abort(.notFound, reason: "no value found for identifier '\(paramVal)'")
-		}
-		let reports = try await Report.query(on: req.db).filter(\.$reportType == .twarrt)
-			.filter(\.$reportedID == paramVal)
-			.sort(\.$createdAt, .descending).all()
-		let edits = try await twarrt.$edits.query(on: req.db).sort(\.$createdAt, .ascending).all()
-		let authorHeader = try req.userCache.getHeader(twarrt.$author.id)
-		let twarrtData = try TwarrtData(
-			twarrt: twarrt,
-			creator: authorHeader,
-			isBookmarked: false,
-			userLike: nil,
-			likeCount: 0,
-			overrideQuarantine: true
-		)
-		let editData: [PostEditLogData] = try edits.map {
-			let editAuthorHeader = try req.userCache.getHeader($0.$editor.id)
-			return try PostEditLogData(edit: $0, editor: editAuthorHeader)
-		}
-		let reportData = try reports.map { try ReportModerationData.init(req: req, report: $0) }
-		let modData = TwarrtModerationData(
-			twarrt: twarrtData,
-			isDeleted: twarrt.deletedAt != nil,
-			moderationStatus: twarrt.moderationStatus,
-			edits: editData,
-			reports: reportData
-		)
-		return modData
-	}
-
-	/// `POST /api/v3/mod/twarrt/ID/setstate/STRING`
-	///
-	/// Moderator only. Sets the moderation state enum on the twarrt identified by ID to the `ContentModerationStatus` in STRING.
-	/// Logs the action to the moderator log unless the user owns the twarrt.
-	///
-	/// - Parameter twarrtID: in URL path.
-	/// - Parameter moderationState: in URL path. Value must match a `ContentModerationStatus` rawValue.
-	/// - Throws: A 5xx response should be reported as a likely bug, please and thank you.
-	/// - Returns: `HTTPStatus` .ok if the requested moderation status was set.
-	func twarrtSetModerationStateHandler(_ req: Request) async throws -> HTTPStatus {
-		let user = try req.auth.require(UserCacheData.self)
-		guard let modState = req.parameters.get(modStateParam.paramString) else {
-			throw Abort(.badRequest, reason: "Request parameter `Moderation_State` is missing.")
-		}
-		let twarrt = try await Twarrt.findFromParameter(twarrtIDParam, on: req)
-		try twarrt.moderationStatus.setFromParameterString(modState)
-		await twarrt.logIfModeratorAction(
-			ModeratorActionType.setFromModerationStatus(twarrt.moderationStatus),
-			user: user,
-			on: req
-		)
-		try await twarrt.save(on: req.db)
-		return .ok
 	}
 
 	/// `GET /api/v3/mod/forumpost/ID`
@@ -340,12 +261,14 @@ struct ModerationController: APIRouteCollection {
 		}
 		let forumPost = try await ForumPost.findFromParameter(postIDParam, on: req)
 		try forumPost.moderationStatus.setFromParameterString(modState)
-		await forumPost.logIfModeratorAction(
-			ModeratorActionType.setFromModerationStatus(forumPost.moderationStatus),
-			user: user,
-			on: req
-		)
-		try await forumPost.save(on: req.db)
+		try await req.db.transaction { db in
+			try await forumPost.logIfModeratorAction(
+				ModeratorActionType.setFromModerationStatus(forumPost.moderationStatus),
+				user: user,
+				on: db
+			)
+			try await forumPost.save(on: db)
+		}
 		return .ok
 	}
 
@@ -400,12 +323,14 @@ struct ModerationController: APIRouteCollection {
 		}
 		let forum = try await Forum.findFromParameter(forumIDParam, on: req)
 		try forum.moderationStatus.setFromParameterString(modState)
-		await forum.logIfModeratorAction(
-			ModeratorActionType.setFromModerationStatus(forum.moderationStatus),
-			user: user,
-			on: req
-		)
-		try await forum.save(on: req.db)
+		try await req.db.transaction { db in
+			try await forum.logIfModeratorAction(
+				ModeratorActionType.setFromModerationStatus(forum.moderationStatus),
+				user: user,
+				on: db
+			)
+			try await forum.save(on: db)
+		}
 		return .ok
 	}
 
@@ -423,14 +348,15 @@ struct ModerationController: APIRouteCollection {
 		oldCategory.forumCount -= 1
 		newCategory.forumCount += 1
 		// Set forum's new parent, also update the forum's accessLevelToView.
-		try await ForumEdit(forum: forum, editorID: user.userID, categoryChanged: true).save(on: req.db)
+		let forumEdit = try ForumEdit(forum: forum, editorID: user.userID, categoryChanged: true)
 		forum.$category.id = try newCategory.requireID()
 		forum.$category.value = newCategory
 		try await req.db.transaction { db in
+			try await forumEdit.save(on: db)
 			try await forum.save(on: db)
 			try await oldCategory.save(on: db)
 			try await newCategory.save(on: db)
-			await forum.logIfModeratorAction(.move, user: user, on: req)
+			try await forum.logIfModeratorAction(.move, user: user, on: db)
 		}
 		return .ok
 	}
@@ -494,12 +420,14 @@ struct ModerationController: APIRouteCollection {
 		}
 		let lfg = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
 		try lfg.moderationStatus.setFromParameterString(modState)
-		await lfg.logIfModeratorAction(
-			ModeratorActionType.setFromModerationStatus(lfg.moderationStatus),
-			user: user,
-			on: req
-		)
-		try await lfg.save(on: req.db)
+		try await req.db.transaction { db in
+			try await lfg.logIfModeratorAction(
+				ModeratorActionType.setFromModerationStatus(lfg.moderationStatus),
+				user: user,
+				on: db
+			)
+			try await lfg.save(on: db)
+		}
 		return .ok
 	}
 
@@ -559,12 +487,14 @@ struct ModerationController: APIRouteCollection {
 		}
 		let lfgPost = try await FezPost.findFromParameter(fezPostIDParam, on: req)
 		try lfgPost.moderationStatus.setFromParameterString(modState)
-		await lfgPost.logIfModeratorAction(
-			ModeratorActionType.setFromModerationStatus(lfgPost.moderationStatus),
-			user: user,
-			on: req
-		)
-		try await lfgPost.save(on: req.db)
+		try await req.db.transaction { db in
+			try await lfgPost.logIfModeratorAction(
+				ModeratorActionType.setFromModerationStatus(lfgPost.moderationStatus),
+				user: user,
+				on: db
+			)
+			try await lfgPost.save(on: db)
+		}
 		return .ok
 	}
 
@@ -624,12 +554,14 @@ struct ModerationController: APIRouteCollection {
 		}
 		let item = try await QuartermasterItem.findFromParameter(quartermasterIDParam, on: req)
 		try item.moderationStatus.setFromParameterString(modState)
-		await item.logIfModeratorAction(
-			ModeratorActionType.setFromModerationStatus(item.moderationStatus),
-			user: user,
-			on: req
-		)
-		try await item.save(on: req.db)
+		try await req.db.transaction { db in
+			try await item.logIfModeratorAction(
+				ModeratorActionType.setFromModerationStatus(item.moderationStatus),
+				user: user,
+				on: db
+			)
+			try await item.save(on: db)
+		}
 		return .ok
 	}
 
@@ -692,12 +624,14 @@ struct ModerationController: APIRouteCollection {
 		}
 		let targetUser = try await User.findFromParameter(userIDParam, on: req)
 		try targetUser.moderationStatus.setFromParameterString(modState)
-		await targetUser.logIfModeratorAction(
-			ModeratorActionType.setFromModerationStatus(targetUser.moderationStatus),
-			user: user,
-			on: req
-		)
-		try await targetUser.save(on: req.db)
+		try await req.db.transaction { db in
+			try await targetUser.logIfModeratorAction(
+				ModeratorActionType.setFromModerationStatus(targetUser.moderationStatus),
+				user: user,
+				on: db
+			)
+			try await targetUser.save(on: db)
+		}
 		return .ok
 	}
 
@@ -788,20 +722,22 @@ struct ModerationController: APIRouteCollection {
 				}
 			}
 		}
-		// Log the action against the parent account.
-		if let modSettableAccessLevel = ModeratorActionType.setFromAccessLevel(targetAccessLevel) {
-			await allAccounts[0].logIfModeratorAction(modSettableAccessLevel, user: user, on: req)
-		}
-		for targetUserAccount in allAccounts {
-			if targetUserAccount.accessLevel <= .verified {
-				targetUserAccount.accessLevel = targetAccessLevel
+		// Change every account's access level, delete their login tokens, and log the action against the parent account, all or nothing.
+		try await req.db.transaction { db in
+			if let modSettableAccessLevel = ModeratorActionType.setFromAccessLevel(targetAccessLevel) {
+				try await allAccounts[0].logIfModeratorAction(modSettableAccessLevel, user: user, on: db)
 			}
-			try await targetUserAccount.save(on: req.db)
-			// Close any open sockets, keep going if we get an error. Then, delete the user's login token
-			// and refresh the user cache.
-			try? await req.webSocketStore.handleUserLogout(targetUserAccount.requireID())
-			try await Token.query(on: req.db).filter(\.$user.$id == targetUserAccount.requireID()).delete()
-			try await req.userCache.updateUser(targetUserAccount.requireID())
+			for targetUserAccount in allAccounts {
+				if targetUserAccount.accessLevel <= .verified {
+					targetUserAccount.accessLevel = targetAccessLevel
+				}
+				try await targetUserAccount.save(on: db)
+				try await Token.query(on: db).filter(\.$user.$id == targetUserAccount.requireID()).delete()
+			}
+		}
+		// Once that's committed: close any open sockets, clear web sessions, and refresh the user cache.
+		for targetUserAccount in allAccounts {
+			try await AuthController.revokeLogins(forUserID: targetUserAccount.requireID(), on: req)
 		}
 		return .ok
 	}
@@ -834,20 +770,27 @@ struct ModerationController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "You cannot temp quarantine Target user.")
 		}
 		let allAccounts = try await targetUser.allAccounts(on: req.db)
+		var logAction: ModeratorActionType? = nil
 		if quarantineHours == 0 {
 			if targetUser.tempQuarantineUntil != nil {
 				allAccounts.forEach { $0.tempQuarantineUntil = nil }
-				await allAccounts[0].logIfModeratorAction(.tempQuarantineCleared, user: user, on: req)
+				logAction = .tempQuarantineCleared
 			}
 		}
 		else {
 			allAccounts.forEach { $0.tempQuarantineUntil = Date() + Double(quarantineHours) * 60.0 * 60.0 }
 			// Note: If user was previously quarantined, and this action changes the length of time, we still
 			// log the quarantine action.
-			await allAccounts[0].logIfModeratorAction(.tempQuarantine, user: user, on: req)
+			logAction = .tempQuarantine
 		}
-		for targetUserAccount in allAccounts {
-			try await targetUserAccount.save(on: req.db)
+		let moderatorActionToLog = logAction
+		try await req.db.transaction { db in
+			if let moderatorActionToLog = moderatorActionToLog {
+				try await allAccounts[0].logIfModeratorAction(moderatorActionToLog, user: user, on: db)
+			}
+			for targetUserAccount in allAccounts {
+				try await targetUserAccount.save(on: db)
+			}
 		}
 		let allAccountIDs = try allAccounts.map { try $0.requireID() }
 		try await req.userCache.updateUsers(allAccountIDs)
@@ -939,9 +882,11 @@ struct ModerationController: APIRouteCollection {
 		if let snippet = try await MKSnippet.query(on: req.db).filter(\.$id == snippetID).with(\.$song).first() {
 			snippet.song.isComplete = false
 			snippet.song.modApproved = false
-			try await snippet.song.save(on: req.db)
-			try await snippet.delete(on: req.db)
-			try await snippet.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: req)
+			try await req.db.transaction { db in
+				try await snippet.song.save(on: db)
+				try await snippet.delete(on: db)
+				try await snippet.logIfModeratorAction(.delete, moderatorID: cacheUser.userID, on: db)
+			}
 		}
 		return .ok
 	}
@@ -970,8 +915,10 @@ struct ModerationController: APIRouteCollection {
 			throw Abort(.badRequest, reason: "Can't approve yet. Song isn't complete.")
 		}
 		song.modApproved = true
-		try await song.save(on: req.db)
-		try await song.logIfModeratorAction(.markReviewed, moderatorID: cacheUser.userID, on: req)
+		try await req.db.transaction { db in
+			try await song.save(on: db)
+			try await song.logIfModeratorAction(.markReviewed, moderatorID: cacheUser.userID, on: db)
+		}
 
 		// Notify song participants that their song is ready for viewing
 		let snippets = try await MKSnippet.query(on: req.db).filter(\.$song.$id == songID).all()

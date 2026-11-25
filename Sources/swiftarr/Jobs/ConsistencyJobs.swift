@@ -137,7 +137,7 @@ struct UpdateRedisJobBase: APICollection {
 		// Next Event
 		context.logger.debug("Updating Followed Event")
 		let _ = try await storeNextFollowedEvent(userID: userID, on: context.application)
-		let _ = try await storeNextJoinedAppointment(userID: userID, on: context.application)
+		try await storeNextJoinedAppointment(userID: userID, on: context.application)
 	}
 
 	// Resolves the UUID of each mailbox's phantom account from `phantomUsers`. A mailbox whose phantom

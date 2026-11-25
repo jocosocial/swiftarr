@@ -1,6 +1,49 @@
 import FluentSQL
 import Vapor
 
+/// A resource with a well-known page on this server that can be linked to or shared as a QR code.
+/// Conforming types only supply the path; `shareURL` is built from the canonical server URL, not the request's host.
+protocol Shareable {
+	/// Absolute path of the resource's page on this server, e.g. `/lfg/<id>`.
+	var sharePath: String { get }
+}
+
+extension Shareable {
+	var shareURL: String? {
+		var components = Settings.shared.canonicalServerURLComponents
+		components.path = sharePath
+		return components.string
+	}
+}
+
+/// Leaf data for the shareButton/shareModal partials, made from any `Shareable`.
+/// Add a `share: ShareContext?` to a page's context, then `#extend("shareButton")` and `#extend("shareModal")` in its template.
+struct ShareContext: Encodable {
+	private(set) var url: String
+	/// Server-relative URL of a QR code image encoding `url`. See `qrCodeImageURL(encoding:)`.
+	private(set) var qrCodeURL: String
+
+	init?(_ item: some Shareable) {
+		guard let url = item.shareURL, let qrCodeURL = Self.qrCodeImageURL(encoding: url) else {
+			return nil
+		}
+		self.url = url
+		self.qrCodeURL = qrCodeURL
+	}
+
+	/// Builds the URL of an image of a QR code that encodes `string`, for use in an `<img>` tag. The URL is relative so the image
+	/// loads from whatever host served the page, even if that isn't the canonical host (dev instances, tunnels, LAN addresses).
+	/// `string` is what the QR code contains, and should be built from the canonical server URL.
+	static func qrCodeImageURL(encoding string: String) -> String? {
+		var imageComponents = URLComponents()
+		imageComponents.path = "/api/v3/image/qrcode"
+		imageComponents.queryItems = [URLQueryItem(name: "string", value: string)]
+		// URLQueryItem leaves '+' alone, but the server decodes a bare '+' in a query as a space.
+		imageComponents.percentEncodedQuery = imageComponents.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+		return imageComponents.string
+	}
+}
+
 // Leaf data used by all views. Mostly this is stuff in the navbar.
 struct TrunkContext: Encodable {
 	var title: String
@@ -9,7 +52,6 @@ struct TrunkContext: Encodable {
 
 	// current nav item
 	enum Tab: String, Codable {
-		case twarrts
 		case forums
 		case seamail
 		case events
@@ -53,7 +95,6 @@ struct TrunkContext: Encodable {
 
 	var alertCounts: UserNotificationData
 	var eventStartingSoon: Bool
-	var newTweetAlertwords: Bool
 	var newForumAlertwords: Bool
 
 	/// Theme preference: "auto" | "light" | "dark". Read from the swiftarr_theme cookie.
@@ -125,7 +166,6 @@ struct TrunkContext: Encodable {
 		self.tab = tab
 		self.inTwitarrSubmenu = [.home, .lfg, .games, .karaoke, .moderator, .communitySupport, .admin].contains(tab)
 
-		newTweetAlertwords = alertCounts.alertWords.contains { $0.newTwarrtMentionCount > 0 }
 		newForumAlertwords = alertCounts.alertWords.contains { $0.newForumMentionCount > 0 }
 		theme = Self.resolveTheme(from: req.cookies["swiftarr_theme"]?.string)
 	}
@@ -219,9 +259,6 @@ struct MessagePostContext: Encodable {
 
 	// Used as an parameter to the initializer
 	enum InitType {
-		case tweet
-		case tweetReply(Int)  // replyGroup ID, or TwarrtID
-		case tweetEdit(TwarrtDetailData)
 		case forum(String)  // Category ID
 		case forumEdit(ForumData)
 		case forumPost(String)  // Forum ID
@@ -268,27 +305,6 @@ struct MessagePostContext: Encodable {
 			maxImages = Settings.shared.maxForumPostImages
 		}
 		switch forType {
-		// For creating a new tweet
-		case .tweet:
-			formAction = "/tweets/create"
-			postSuccessURL = "/tweets"
-			showModPostOptions = true
-		// For replying to a tweet
-		case .tweetReply(let replyGroup):
-			formAction = "/tweets/reply/\(replyGroup)"
-			postSuccessURL = "/tweets?replyGroup=\(replyGroup)"
-			showModPostOptions = true
-		// For editing a tweet
-		case .tweetEdit(let tweet):
-			messageText = tweet.text
-			photoFilenames = tweet.images ?? []
-			// Tweets also have a limit of 4 images (hardcoded for now)
-			while photoFilenames.count < 4 {
-				photoFilenames.append("")
-			}
-			formAction = "/tweets/edit/\(tweet.postID)"
-			postSuccessURL = "/tweets"
-			isEdit = true
 		// For creating a new forum in a category
 		case .forum(let catID):
 			formAction = "/forums/\(catID)/createForum"
@@ -464,14 +480,6 @@ struct ReportPageContext: Encodable {
 	var reportTitle: String
 	var reportFormAction: String
 	var reportSuccessURL: String
-
-	// For reporting a twarrt
-	init(_ req: Request, twarrtID: String) throws {
-		trunk = .init(req, title: "Report Twarrt", tab: .twarrts)
-		reportTitle = "Report a Twarrt"
-		reportFormAction = "/tweets/report/\(twarrtID)"
-		reportSuccessURL = req.headers.first(name: "Referer") ?? "/tweets"
-	}
 
 	// For reporting a forum post
 	init(_ req: Request, postID: String) throws {
@@ -753,7 +761,6 @@ protocol SiteControllerUtils {
 extension SiteControllerUtils {
 
 	var categoryIDParam: PathComponent { PathComponent(":category_id") }
-	var twarrtIDParam: PathComponent { PathComponent(":twarrt_id") }
 	var forumIDParam: PathComponent { PathComponent(":forum_id") }
 	var postIDParam: PathComponent { PathComponent(":post_id") }
 	var fezIDParam: PathComponent { PathComponent(":fez_id") }
@@ -829,6 +836,8 @@ extension SiteControllerUtils {
 			headers.add(name: "X-Swiftarr-User", value: req.session.data["userID"] ?? "UNKNOWN")
 		}
 		headers.add(name: "X-Swiftarr-Client", value: "swiftarr")
+		// Pass the client's IP along, so the API rate limits web UI logins by client rather than by this loopback connection.
+		headers.replaceOrAdd(name: .xForwardedFor, value: req.rateLimitClientIP)
 
 		// Step 2: Generate URLComponents, extract a 'clean' path, append the 'clean' path for the endpoint.
 		var urlComponents = Settings.shared.apiUrlComponents

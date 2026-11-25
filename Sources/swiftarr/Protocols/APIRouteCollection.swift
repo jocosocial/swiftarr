@@ -77,7 +77,6 @@ protocol APIRouteCollection: APICollection {
 extension APIRouteCollection {
 
 	var categoryIDParam: PathComponent { PathComponent(":category_id") }
-	var twarrtIDParam: PathComponent { PathComponent(":twarrt_id") }
 	var forumIDParam: PathComponent { PathComponent(":forum_id") }
 	var postIDParam: PathComponent { PathComponent(":post_id") }
 	var fezIDParam: PathComponent { PathComponent(":fez_id") }
@@ -169,9 +168,33 @@ extension APIRouteCollection {
 		}
 	}
 
+	// MARK: - Post-commit Side Effects
+
+	/// Runs work that can't be rolled back (Redis notifications, socket pushes, cache refreshes, appointment bookkeeping) for a change that has
+	/// already been committed. A failure is logged, not thrown: throwing would give the client an error for a request that succeeded, and a retry
+	/// would then duplicate the content.
+	///
+	/// Claude got cute with the fileID and line stuff. Until we see how this pattern goes,
+	/// I'll allow it. It's better than the long form descriptions of everything it was doing.
+	func dispatchEffect(on req: Request, fileID: String = #fileID, line: Int = #line, _ work: () async throws -> Void) async {
+		do {
+			try await work()
+		}
+		catch {
+			req.logger.error("Post-commit work failed: \(error)", metadata: ["source": "\(fileID):\(line)"])
+		}
+	}
+
+	/// Runs several independent effects in order, each with its own failure handling (see `dispatchEffect`): one failing doesn't skip the rest.
+	func dispatchEffects(on req: Request, fileID: String = #fileID, line: Int = #line, _ effects: (() async throws -> Void)...) async {
+		for effect in effects {
+			await dispatchEffect(on: req, fileID: fileID, line: line, effect)
+		}
+	}
+
 	// MARK: - Notification Management
 
-	// When an event happens that could change notification counts for someone (e.g. a user posts a Twarrt with an @mention)
+	// When an event happens that could change notification counts for someone (e.g. a user posts a forum post with an @mention)
 	// call this method to do the notification bookkeeping.
 	//
 	// The users array should be pre-filtered to include only those who can actually see the new content (that is, not
@@ -198,7 +221,11 @@ extension APIRouteCollection {
 	// (mirroring how forum `@moderator`/`@TwitarrTeam` mentions expand to real members before ever calling this
 	// function; see `ForumController.processForumMentions`). For every other notification type, `stateChangeUsers`
 	// is left equal to `users`, so this has no effect outside the privileged-mailbox case.
-	func addNotifications(users: [UUID], type: NotificationType, info: String, creatorID: UUID? = nil, on req: Request)
+	//
+	// `author` is the user who wrote the content that triggered the notification, if there is one. It's sent to
+	// socket clients as `SocketNotificationData.author`; it isn't written to the notification log.
+	func addNotifications(users: [UUID], type: NotificationType, info: String, creatorID: UUID? = nil,
+			author: UserHeader? = nil, on req: Request)
 		async throws
 	{
 		try await withThrowingTaskGroup(of: Void.self) { group -> Void in
@@ -245,12 +272,6 @@ extension APIRouteCollection {
 					}
 				}
 				forwardToSockets = false
-			case .alertwordTwarrt(let alertword, _):
-				for userID in users {
-					group.addTask {
-						try await req.redis.incrementAlertwordTwarrtInUserHash(word: alertword, userID: userID)
-					}
-				}
 			case .alertwordPost(let alertword, let postID, _):
 				for userID in users {
 					group.addTask {
@@ -265,10 +286,6 @@ extension APIRouteCollection {
 						}
 						try await req.redis.incrementAlertwordPostInUserHash(word: alertword, userID: userID)
 					}
-				}
-			case .twarrtMention(_):
-				for userID in users {
-					group.addTask { try await req.redis.incrementIntInUserHash(field: type, userID: userID) }
 				}
 			case .forumMention, .twitarrTeamForumMention, .moderatorForumMention, .communitySupportForumMention:
 				for userID in users {
@@ -311,7 +328,8 @@ extension APIRouteCollection {
 					idList: socketUsers,
 					type: type,
 					info: info,
-					notificationID: notificationID
+					notificationID: notificationID,
+					author: author
 				)
 			}
 
@@ -384,7 +402,7 @@ extension APIRouteCollection {
 		return updateCountsUsers
 	}
 
-	// When an event happens that could reduce notification counts for someone (e.g. a user deletes a Twarrt with an @mention)
+	// When an event happens that could reduce notification counts for someone (e.g. a user deletes a forum post with an @mention)
 	// call this method to do the notification bookkeeping. DON'T call this to mark notifications as "seen".
 	func subtractNotifications(users: [UUID], type: NotificationType, subtractCount: Int = 1, on req: Request)
 		async throws
@@ -417,16 +435,6 @@ extension APIRouteCollection {
 					}
 				}
 
-			case .twarrtMention(_):
-				for userID in users {
-					group.addTask {
-						try await req.redis.incrementIntInUserHash(
-							field: type,
-							userID: userID,
-							incAmount: 0 - subtractCount
-						)
-					}
-				}
 			case .forumMention, .twitarrTeamForumMention, .moderatorForumMention, .communitySupportForumMention:
 				for userID in users {
 					group.addTask {
@@ -436,14 +444,6 @@ extension APIRouteCollection {
 							incAmount: 0 - subtractCount
 						)
 					}
-				}
-			case .alertwordTwarrt(let word, _):
-				for userID in users {
-					try await req.redis.incrementAlertwordTwarrtInUserHash(
-						word: word,
-						userID: userID,
-						incAmount: 0 - subtractCount
-					)
 				}
 			case .alertwordPost(let word, _, _):
 				for userID in users {
@@ -480,7 +480,7 @@ extension APIRouteCollection {
 	func deleteFezNotifications(userIDs: [UUID], fez: FriendlyFez, on req: Request) async throws {
 		for userID in userIDs {
 			try await req.redis.markLFGDeleted(msgID: fez.requireID(), userID: userID)
-			_ = try await storeNextJoinedAppointment(userID: userID, on: req)
+			try await storeNextJoinedAppointment(userID: userID, on: req)
 		}
 	}
 
@@ -499,7 +499,7 @@ extension APIRouteCollection {
 				try await req.redis.markChatRead(type: type, in: mailbox.inbox, userID: user.userID)
 			}
 
-		case .twarrtMention, .forumMention, .alertwordTwarrt, .alertwordPost:
+		case .forumMention, .alertwordPost:
 			try await req.redis.markAllViewedInUserHash(field: type, userID: user.userID)
 		case .moderatorForumMention:
 			if user.accessLevel.hasAccess(.moderator) {
@@ -551,6 +551,7 @@ extension APIRouteCollection {
 	}
 
 	// Calculates the start time of the earliest future joined LFG. Caches the value in Redis for quick access.
+	@discardableResult
 	func storeNextJoinedAppointment(userID: UUID, on req: Request) async throws -> (Date, UUID)? {
 		let nextJoinedLFG = try await getNextAppointment(userID: userID, db: req.db)
 		// This will "clear" the next LFG values of the UserNotificationData if no LFGs match the

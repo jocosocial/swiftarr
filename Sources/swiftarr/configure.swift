@@ -208,6 +208,22 @@ struct SwiftarrConfigurator {
 				)
 		}
 
+		// Sched.com integration. Read-only from the app; only settable via the environment.
+		if let schedBaseUrl = Environment.get("SCHED_BASE_URL"), schedBaseUrl != "" {
+			Settings.shared.schedBaseUrl = schedBaseUrl
+		}
+		else {
+			configLog.warning(
+				"SCHED_BASE_URL is not set. Defaulting to \(Settings.shared.schedBaseUrl)."
+			)
+		}
+		if let schedApiKey = Environment.get("SCHED_API_KEY"), schedApiKey != "" {
+			Settings.shared.schedApiKey = schedApiKey
+		}
+		else {
+			configLog.warning("SCHED_API_KEY is not set. Sched API features will not work.")
+		}
+
 		// Late Day Flip in Site UI
 		if let enableLateDayFlip = Environment.get("SWIFTARR_ENABLE_LATE_DAY_FLIP"), enableLateDayFlip != "" {
 			Settings.shared.enableLateDayFlip = Bool(enableLateDayFlip) ?? false
@@ -467,13 +483,14 @@ struct SwiftarrConfigurator {
 		app.middleware = new
 
 		// Change the default bcrypt cost for user accounts
-		app.passwords.use(.bcrypt(cost: 9))
+		app.passwords.use(.bcrypt(cost: CryptoHelper.bcryptCost))
 	}
 
 	func configureSessions(_ app: Application) throws {
 		app.sessions.configuration.cookieName = "swiftarr_session"
 
-		// Configures cookie value creation.
+		// Configures cookie value creation. Production servers are always HTTPS; development servers and instances may not be.
+		let isSecure = app.environment == .production
 		app.sessions.configuration.cookieFactory = { sessionID in
 			.init(
 				string: sessionID.string,
@@ -481,7 +498,7 @@ struct SwiftarrConfigurator {
 				maxAge: nil,
 				domain: nil,
 				path: "/",
-				isSecure: false,
+				isSecure: isSecure,
 				isHTTPOnly: true,
 				sameSite: .lax
 			)
@@ -512,7 +529,6 @@ struct SwiftarrConfigurator {
 
 		// Custom Leaf tags
 		app.leaf.tags["addJocomoji"] = AddJocomojiTag()
-		app.leaf.tags["formatTwarrtText"] = try FormatPostTextTag(.twarrt)
 		app.leaf.tags["formatPostText"] = try FormatPostTextTag(.forumpost)
 		app.leaf.tags["formatFezText"] = try FormatPostTextTag(.fez)
 		app.leaf.tags["formatSeamailText"] = try FormatPostTextTag(.seamail)
@@ -618,9 +634,6 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreatePostLikesSchema(), to: .psql)
 		app.migrations.add(CreateEventSchema(), to: .psql)
 		app.migrations.add(CreateEventFavoriteSchema(), to: .psql)
-		app.migrations.add(CreateTwarrtSchema(), to: .psql)
-		app.migrations.add(CreateTwarrtEditSchema(), to: .psql)
-		app.migrations.add(CreateTwarrtLikesSchema(), to: .psql)
 		app.migrations.add(CreateFriendlyFezSchema(), to: .psql)
 		app.migrations.add(CreateFezParticipantSchema(), to: .psql)
 		app.migrations.add(CreateFezPostSchema(), to: .psql)
@@ -674,6 +687,7 @@ struct SwiftarrConfigurator {
 		app.migrations.add(AddDebounceConstraint<ForumPost>(), to: .psql)
 		app.migrations.add(CreateCommunitySupportReportSchema(), to: .psql)
 		app.migrations.add(CreateCommunitySupportActionSchema(), to: .psql)
+		app.migrations.add(AddCategoryDefaultSortSchema(), to: .psql)
 
 		// At this point the db *schema* should be set, and the rest of these migrations operate on the db's *data*.
 
@@ -708,6 +722,8 @@ struct SwiftarrConfigurator {
 		app.migrations.add(CreatePerformanceIndexes(), to: .psql)
 		app.migrations.add(CreateSeamailSearchIndexes(), to: .psql)
 		app.migrations.add(RenameWhereAndWhen(), to: .psql)
+		app.migrations.add(SetSplashdotDefaultSort(), to: .psql)
+		app.migrations.add(SetEventCategoryDefaultSort(), to: .psql)
 		app.migrations.add(AddFoodDrinkCategory(), to: .psql)
 		app.migrations.add(CreateMicroKaraokeUser(), to: .psql)
 		app.migrations.add(RemoveCovidCategory(), to: .psql)
