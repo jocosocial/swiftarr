@@ -88,7 +88,9 @@ struct HuntController: APIRouteCollection {
 					.filter(\.$puzzle.$id == puzzleID)
 					.filter(\.$normalizedSubmission == normalizedSubmission)
 					.first() { 
-				return Response(status:.ok, body: Response.Body(data: try JSONEncoder().encode(HuntPuzzleCallInResultData(alreadySubmitted, puzzle))))
+				let response = Response(status: .ok)
+				try response.content.encode(HuntPuzzleCallInResultData(alreadySubmitted, puzzle))
+				return response
 			}
 			if let _ = try await PuzzleCallIn.query(on: transaction)
 					.filter(\.$user.$id == user.userID)
@@ -105,7 +107,9 @@ struct HuntController: APIRouteCollection {
 			}
 			let newCallIn = try PuzzleCallIn(user.userID, puzzle, rawSubmission, callInResult)
 			try await newCallIn.create(on: transaction)
-			return Response(status: .created, body: Response.Body(data: try JSONEncoder().encode(HuntPuzzleCallInResultData(newCallIn, puzzle))))
+			let response = Response(status: .created)
+			try response.content.encode(HuntPuzzleCallInResultData(newCallIn, puzzle))
+			return response
 		}
 	}
 	
