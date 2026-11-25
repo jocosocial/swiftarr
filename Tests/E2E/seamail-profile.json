@@ -1,0 +1,111 @@
+{
+  "name": "swiftarr-seamail-writes",
+  "version": 1,
+  "description": "Use the conversation and post identifiers returned by the synthetic SeaMail workflow.",
+  "mappings": {
+    "namespaces": {
+      "conversation": {
+        "comparison": "exact",
+        "context_key": "conversation",
+        "rules": [
+          {
+            "name": "conversation-id",
+            "extract": {
+              "from": "json_path",
+              "methods": [
+                "POST"
+              ],
+              "url_pattern": "/fez/create$",
+              "path": "$.fezID",
+              "context_template": "conversation",
+              "value_template": "{value}"
+            },
+            "apply": {
+              "to": "request_url",
+              "pattern": "/api/v3/fez/([0-9a-fA-F-]{36})(/.*|$)",
+              "captures": {
+                "id": 1,
+                "suffix": 2
+              },
+              "transform": "/api/v3/fez/{mapped_id}{suffix}",
+              "mappings": [
+                {
+                  "namespace": "conversation",
+                  "context_template": "conversation",
+                  "value_template": "{id}",
+                  "output": "mapped_id"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "post": {
+        "comparison": "exact",
+        "context_key": "post",
+        "rules": [
+          {
+            "name": "post-id",
+            "extract": {
+              "from": "json_path",
+              "methods": [
+                "POST"
+              ],
+              "url_pattern": "/fez/[0-9a-fA-F-]{36}/post$",
+              "path": "$.postID",
+              "context_template": "post",
+              "value_template": "{value}"
+            },
+            "apply": {
+              "to": "request_url",
+              "pattern": "/api/v3/fez/post/([0-9]+)(/.*|$)",
+              "captures": {
+                "id": 1,
+                "suffix": 2
+              },
+              "transform": "/api/v3/fez/post/{mapped_id}{suffix}",
+              "mappings": [
+                {
+                  "namespace": "post",
+                  "context_template": "post",
+                  "value_template": "{id}",
+                  "output": "mapped_id"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "login_token": {
+        "comparison": "exact",
+        "context_key": "login_token",
+        "rules": [
+          {
+            "name": "member-token",
+            "extract": {
+              "from": "json_path",
+              "methods": [
+                "POST"
+              ],
+              "url_pattern": "/auth/login$",
+              "path": "$.token",
+              "context_template": "login_token",
+              "value_template": "{value}"
+            },
+            "apply": {
+              "to": "request_header",
+              "header_name": "authorization",
+              "pattern": "^Bearer (.+)$",
+              "mappings": [
+                {
+                  "namespace": "login_token",
+                  "context_template": "login_token"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}
