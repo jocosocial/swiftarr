@@ -402,3 +402,7 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Nov 22, 2026
 
 - `SocketNotificationData` gains an optional `author: UserHeader`, set for forum mention, alertword, and chat unread message notifications.
+
+## Nov 25, 2026
+
+- `ForumData` gains `readCount`: the number of posts the user had read in the forum before the request, defined the same as `ForumListData.readCount`. `readCount - paginator.start` is the index of the first unread post in `posts`.
