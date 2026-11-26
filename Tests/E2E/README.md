@@ -25,7 +25,9 @@ The full baseline uses the same route requirement as local runs. Add `--require-
 
 Record accepts the same repeatable `--scenario` option as a local run. Each recording uses a new cassette directory. Replay restores the saved Postgres database and any saved Redis sessions into fresh containers and runs the candidate's test migrations before replaying. It checks the responses captured during replay using the same scenario assertions, including member identity, and checks the final SeaMail post count in Postgres. A failed assertion exits nonzero. ReGrade can also report differences in response fields outside those assertions. The replay ID and difference count are in `result.json`.
 
-The JoCo team already has the `swiftarr-seamail-writes` profile. It maps fresh login tokens and generated conversation and message IDs onto later requests. The profile definition is in `seamail-profile.json` for installation in another team. A saved connection supplies the API URL, team ID, key file, and token cache. Alternatively, configure the ReGrade CLI with `REGRADE_API_URL`, `REGRADE_TEAM_ID`, `REGRADE_TOKEN_CACHE`, and its usual key credentials. Use the same team to record and replay.
+Replay uses the JoCo `swiftarr-http` profile defined in `http-profile.json`. It carries the login-token and SeaMail ID mappings and compares feedback events by event ID, room names by value, and directory updates by user ID. The workflow also verifies that feedback events are ordered newest first.
+
+The profile drops changes to the notification response clock and the installation dates of four regenerated fixture files. It labels script-source differences, fixture cache validators, and selected timestamps for review. Status changes, missing fields, and ID changes remain visible. Use `--profile swiftarr-seamail-writes` on a replay to run the mapping-only control defined in `seamail-profile.json`. A saved connection supplies the API URL, team ID, key file, and token cache. Alternatively, configure the ReGrade CLI with `REGRADE_API_URL`, `REGRADE_TEAM_ID`, `REGRADE_TOKEN_CACHE`, and its usual key credentials. Use the same team to record and replay.
 
 ## Route coverage
 

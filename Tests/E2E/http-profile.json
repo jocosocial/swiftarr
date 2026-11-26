@@ -1,0 +1,241 @@
+{
+  "name": "swiftarr-http",
+  "version": 3,
+  "description": "Compare Swiftarr HTTP workflows with the SeaMail mappings, keyed event and directory comparisons, and scoped runtime noise rules.",
+  "mappings": {
+    "namespaces": {
+      "conversation": {
+        "comparison": "exact",
+        "context_key": "conversation",
+        "rules": [
+          {
+            "name": "conversation-id",
+            "extract": {
+              "from": "json_path",
+              "methods": [
+                "POST"
+              ],
+              "url_pattern": "/fez/create$",
+              "path": "$.fezID",
+              "context_template": "conversation",
+              "value_template": "{value}"
+            },
+            "apply": {
+              "to": "request_url",
+              "pattern": "/api/v3/fez/([0-9a-fA-F-]{36})(/.*|$)",
+              "captures": {
+                "id": 1,
+                "suffix": 2
+              },
+              "transform": "/api/v3/fez/{mapped_id}{suffix}",
+              "mappings": [
+                {
+                  "namespace": "conversation",
+                  "context_template": "conversation",
+                  "value_template": "{id}",
+                  "output": "mapped_id"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "post": {
+        "comparison": "exact",
+        "context_key": "post",
+        "rules": [
+          {
+            "name": "post-id",
+            "extract": {
+              "from": "json_path",
+              "methods": [
+                "POST"
+              ],
+              "url_pattern": "/fez/[0-9a-fA-F-]{36}/post$",
+              "path": "$.postID",
+              "context_template": "post",
+              "value_template": "{value}"
+            },
+            "apply": {
+              "to": "request_url",
+              "pattern": "/api/v3/fez/post/([0-9]+)(/.*|$)",
+              "captures": {
+                "id": 1,
+                "suffix": 2
+              },
+              "transform": "/api/v3/fez/post/{mapped_id}{suffix}",
+              "mappings": [
+                {
+                  "namespace": "post",
+                  "context_template": "post",
+                  "value_template": "{id}",
+                  "output": "mapped_id"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "login_token": {
+        "comparison": "exact",
+        "context_key": "login_token",
+        "rules": [
+          {
+            "name": "member-token",
+            "extract": {
+              "from": "json_path",
+              "methods": [
+                "POST"
+              ],
+              "url_pattern": "/auth/login$",
+              "path": "$.token",
+              "context_template": "login_token",
+              "value_template": "{value}"
+            },
+            "apply": {
+              "to": "request_header",
+              "header_name": "authorization",
+              "pattern": "^Bearer (.+)$",
+              "mappings": [
+                {
+                  "namespace": "login_token",
+                  "context_template": "login_token"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "collections": [
+    {
+      "name": "Feedback event identity",
+      "url_pattern": "/api/v3/feedback/eventlist/?(?:\\?.*)?$",
+      "path": "$.events",
+      "primary_key": [
+        "eventID"
+      ]
+    },
+    {
+      "name": "Feedback room names",
+      "url_pattern": "/api/v3/admin/feedback/roomlist/?(?:\\?.*)?$",
+      "path": "$",
+      "primary_key": [
+        "@"
+      ]
+    },
+    {
+      "name": "Directory update identity",
+      "url_pattern": "/api/v3/client/user/updates/since/[^/?]+/?(?:\\?.*)?$",
+      "path": "$",
+      "primary_key": [
+        "userID"
+      ]
+    }
+  ],
+  "delta_filters": {
+    "rules": [
+      {
+        "name": "Notification response clock",
+        "match_conditions": {
+          "location_type": [
+            "body"
+          ],
+          "delta_type": [
+            "response_body_difference"
+          ],
+          "methods": [
+            "GET"
+          ],
+          "url_pattern": "/api/v3/notification/(?:global|user)/?(?:\\?.*)?$",
+          "path_pattern": "^\\$\\.serverTime$"
+        },
+        "action": {
+          "type": "drop"
+        }
+      },
+      {
+        "name": "Installation dates for regenerated fixture files",
+        "match_conditions": {
+          "location_type": [
+            "header"
+          ],
+          "delta_type": [
+            "response_header_difference"
+          ],
+          "methods": [
+            "GET"
+          ],
+          "url_pattern": "/(?:api/v3/image/(?:full|thumb)/B00C0000-0000-4000-8000-000000000001\\.png|api/v3/microkaraoke/video/B00C0000-0000-4000-8000-000000000001\\.mp4|microkaraoke/E2E/1/lyric\\.txt)/?(?:\\?.*)?$",
+          "header_name": "last-modified"
+        },
+        "action": {
+          "type": "drop"
+        }
+      },
+      {
+        "name": "Fixture media cache validator",
+        "match_conditions": {
+          "location_type": [
+            "header"
+          ],
+          "delta_type": [
+            "response_header_difference"
+          ],
+          "methods": [
+            "GET"
+          ],
+          "url_pattern": "/(?:api/v3/image/(?:full|thumb)/B00C0000-0000-4000-8000-000000000001\\.png|api/v3/microkaraoke/video/B00C0000-0000-4000-8000-000000000001\\.mp4|microkaraoke/E2E/1/lyric\\.txt)/?(?:\\?.*)?$",
+          "header_name": "etag"
+        },
+        "action": {
+          "type": "label",
+          "labels": [
+            "fixture-cache-validator"
+          ]
+        }
+      },
+      {
+        "name": "HTML script source changed",
+        "match_conditions": {
+          "delta_type": [
+            "response_body_difference"
+          ],
+          "methods": [
+            "GET",
+            "POST",
+            "DELETE",
+            "PATCH"
+          ],
+          "path_pattern": "^/html/body\\[\\d+\\](?:/div\\[\\d+\\])?/script\\[\\d+\\]/@src$"
+        },
+        "action": {
+          "type": "label",
+          "labels": [
+            "script-source-change"
+          ]
+        }
+      },
+      {
+        "name": "Generated modification and audit times",
+        "match_conditions": {
+          "location_type": [
+            "body"
+          ],
+          "delta_type": [
+            "response_body_difference"
+          ],
+          "url_pattern": "/api/v3/(?:fez|forum|quartermaster|mod|communitysupport|users|user|notification|admin/feedback)(?:/|\\?|$)",
+          "path_pattern": "^\\$(?:\\[\\d+\\]|\\.(?:reports|actions|items|posts|edits|members\\.posts)\\[\\d+\\]|\\.fez)?\\.(?:createdAt|updatedAt|timestamp|lastModificationTime|creationTime|updateTime|reportModDate)$"
+        },
+        "action": {
+          "type": "label",
+          "labels": [
+            "generated-timestamp"
+          ]
+        }
+      }
+    ]
+  }
+}

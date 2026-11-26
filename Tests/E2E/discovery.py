@@ -1,6 +1,7 @@
 """Check public notices, a released hunt, and the files served to clients."""
 
 import shutil
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from workflows import login
@@ -60,7 +61,8 @@ def seed(call):
 def discovery(call):
     for route in ("global", "user"):
         info = call("GET", "/api/v3/notification/" + route, 200, {})
-        assert info["serverTime"] and isinstance(info["activeAnnouncementIDs"], list)
+        assert datetime.fromisoformat(info["serverTime"]).utcoffset() == timedelta(0)
+        assert isinstance(info["activeAnnouncementIDs"], list)
     for route in ("announcements", "dailythemes", "hashtags/music"):
         assert isinstance(call("GET", "/api/v3/notification/" + route, 200, {}), list)
     types = call("GET", "/api/v3/fez/types", 200, {})

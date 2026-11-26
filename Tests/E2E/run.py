@@ -360,6 +360,7 @@ def main():
         action="store_true",
         help="Fail if any registered HTTP route lacks a checked response",
     )
+    parser.add_argument("--profile", help="Replay profile (default: swiftarr-http)")
     parser.add_argument("--scenario", choices=list(SCENARIOS), action="append")
     parser.add_argument(
         "--cassette", type=Path, help="Private baseline directory to create or replay"
@@ -376,6 +377,8 @@ def main():
         "--results", type=Path, help="New directory for this run's receipts and logs"
     )
     args = parser.parse_args()
+    if args.profile and args.mode != "replay":
+        parser.error("--profile applies to replay mode")
     if not __debug__:
         parser.error("Run Python without optimization so assertions execute")
     binary = args.binary.resolve()
@@ -602,7 +605,7 @@ def main():
                 "--rec-id",
                 manifest["recording"],
                 "--profile",
-                "swiftarr-seamail-writes",
+                args.profile or "swiftarr-http",
                 "--record-replay",
             ]
             with (result_dir / "replay.log").open("w") as f:
@@ -632,6 +635,7 @@ def main():
             receipt.update(
                 recording=manifest["recording"],
                 replay=match[1],
+                profile=args.profile or "swiftarr-http",
                 deltas=replay["delta_count"],
             )
         scenario_routes = {

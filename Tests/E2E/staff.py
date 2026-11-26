@@ -2,6 +2,7 @@
 
 import base64
 import json
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote
 
@@ -48,6 +49,10 @@ def feedback_data(event, recap):
 
 def feedback_event(call, headers):
     events = call("GET", FEEDBACK + "/eventlist", 200, headers)["events"]
+    starts = [datetime.fromisoformat(event["startTime"]) for event in events]
+    assert starts == sorted(starts, reverse=True), (
+        "Feedback events must be newest first"
+    )
     return min(events, key=lambda event: event["uid"])
 
 
