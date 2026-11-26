@@ -1125,6 +1125,10 @@ public struct ForumData: Content {
 	var isMuted: Bool
 	/// The paginator contains the total number of posts in the forum, and the start and limit of the requested subset in `posts`.
 	var paginator: Paginator
+	/// The number of posts the user had read in this forum before this request, using the same definition as `ForumListData.readCount`,
+	/// so `readCount - paginator.start` is the index of the first unread post within `posts` (or past the end of `posts` when it is on a later page).
+	/// 0 when the user has never read the forum.
+	var readCount: Int
 	/// Posts in the forum.
 	var posts: [PostData]
 	/// If this forum is for an Event on the schedule, the ID of the event.
@@ -1141,6 +1145,7 @@ extension ForumData {
 		isMuted: Bool,
 		posts: [PostData],
 		pager: Paginator,
+		readCount: Int,
 		event: Event? = nil
 	) throws {
 		guard creator.userID == forum.$creator.id else {
@@ -1155,6 +1160,7 @@ extension ForumData {
 		self.isMuted = isMuted
 		self.posts = posts
 		self.paginator = pager
+		self.readCount = readCount
 		if let event = event, event.id != nil {
 			self.eventID = event.id
 		}
@@ -1184,7 +1190,7 @@ public struct ForumListData: Content {
 	/// The number of posts in the forum.
 	var postCount: Int
 	/// The number of posts the user has read.  Specifically, this will be the number of posts the forum contained the last time the user called a fn that returned a `ForumData`.
-	/// Blocked and muted posts are included in this number, but not returned in the array of posts.
+	/// Posts by blocked and muted users, and deleted posts, are not included in this number.
 	var readCount: Int
 	/// Time forum was created.
 	var createdAt: Date

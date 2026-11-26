@@ -1114,7 +1114,7 @@ struct ForumController: APIRouteCollection {
 		let creatorHeader = effectiveAuthor.makeHeader()
 		let postData = try PostData(post: forumPost, author: creatorHeader, bookmarked: false, userLike: nil, likeCount: 0)
 		let forumData = try ForumData(forum: forum, creator: creatorHeader, isFavorite: false, isMuted: false, posts: [postData],
-				pager: Paginator(total: 1, start: 0, limit: 50))
+				pager: Paginator(total: 1, start: 0, limit: 50), readCount: 0)
 		return forumData
 	}
 
@@ -1757,6 +1757,60 @@ extension ForumController {
 	//		subSelect.query.serialize(to: &s)
 	//		print(s.sql)
 
+	/// The single definition of a forum's "read count", shared by `ForumListData.readCount` and `ForumData.readCount`.
+	///
+	/// For each forum in `lastReadPostIDs`, counts the posts in that forum with `id <= lastReadPostID`, excluding soft-deleted posts and posts
+	/// by users the given user has blocked or muted. The comparison is inclusive, so the last-read post itself is counted: a user who has read
+	/// `k` visible posts in order gets a read count of `k`, and the first unread post is at index `k`.
+	///
+	/// Forums that aren't in `lastReadPostIDs` (the user has no `ForumReaders` pivot, or the pivot's `lastPostReadID` is nil) have no entry in the
+	/// returned dictionary; callers should treat that as 0.
+	///
+	/// - Parameters:
+	///   - lastReadPostIDs: Maps a forum ID to the user's `lastPostReadID` for that forum. Callers that want a value from before they update
+	///     the read marker must capture it before updating.
+	///   - user: The user whose blocks and mutes are excluded.
+	func forumReadCounts(lastReadPostIDs: [UUID: Int], user: UserCacheData, on db: Database) async throws -> [UUID: Int] {
+		if lastReadPostIDs.isEmpty {
+			return [:]
+		}
+		guard let sql = db as? SQLDatabase else {
+			throw Abort(.internalServerError, reason: "Forum read counts require an SQL database.")
+		}
+		let forumColumn = SQLColumn(ForumPost().$forum.$id.key.description, table: ForumPost.schema)
+		let idColumn = SQLColumn(ForumPost().$id.key.description, table: ForumPost.schema)
+		let authorColumn = SQLColumn(ForumPost().$author.$id.key.description, table: ForumPost.schema)
+		let deletedColumn = SQLColumn("deleted_at", table: ForumPost.schema)
+		// One `(forum = X AND id <= lastRead)` term per forum, OR'd together.
+		let forumTerms: [SQLExpression] = lastReadPostIDs.map { forumID, lastReadID in
+			SQLGroupExpression(
+				SQLBinaryExpression(
+					SQLBinaryExpression(forumColumn, .equal, SQLBind(forumID)),
+					.and,
+					SQLBinaryExpression(idColumn, .lessThanOrEqual, SQLBind(lastReadID))
+				)
+			)
+		}
+		let anyForumTerm = forumTerms.dropFirst().reduce(forumTerms[0]) { SQLBinaryExpression($0, .or, $1) }
+		let query = sql.select()
+			.columns(forumColumn, SQLFunction("COUNT", args: SQLLiteral.all))
+			.from(ForumPost.schema)
+			.where(SQLGroupExpression(anyForumTerm))
+			.where(deletedColumn, .is, SQLLiteral.null)
+			.groupBy(forumColumn)
+		let hideAuthors = user.getBlocks().union(user.getMutes())
+		if !hideAuthors.isEmpty {
+			query.where(authorColumn, .notIn, SQLBind.group(Array(hideAuthors)))
+		}
+		let rows = try await query.all()
+		var counts: [UUID: Int] = [:]
+		for row in rows {
+			let forumID = try row.decode(column: ForumPost().$forum.$id.key.description, as: UUID.self)
+			counts[forumID] = try row.decode(column: "count", as: Int.self)
+		}
+		return counts
+	}
+
 	/// Builds an array of `ForumListData` from the given `Forums`.
 	/// `ForumListData` does not return post content, but does return post counts.
 	/// `eventTime` and `timeZone` only get filled in if there's a Event join attached to the Forum, which should only happen for forums in Event categories.
@@ -1784,45 +1838,17 @@ extension ForumController {
 				}
 			}
 		)
-		let readCounts = try await forums.childCountsPerModel(
-			atPath: \.$posts,
-			on: req.db,
-			fluentFilter: { builder in
-				// Deleted_at filter not required as Fluent will automatically filter soft-deleted posts.
-				builder.filter(\.$author.$id !~ user.getBlocks()).filter(\.$author.$id !~ user.getMutes())
-					.join(ForumReaders.self, on: \ForumPost.$forum.$id == \ForumReaders.$forum.$id)
-					.filter(ForumReaders.self, \.$user.$id == user.userID)
-					.filter(\ForumPost.$id < \ForumReaders.$lastPostReadID)
-			},
-			sqlFilter: { builder in
-				builder.join(
-					ForumReaders.schema,
-					on: SQLColumn("forum", table: "forumpost"),
-					.equal,
-					SQLColumn("forum", table: "forum+readers")
-				)
-				builder.where(
-					SQLColumn("user", table: "forum+readers"),
-					.equal,
-					SQLLiteral.string(user.userID.uuidString)
-				)
-				builder.where(SQLColumn("deleted_at", table: "forumpost"), .is, SQLLiteral.null)
-				let hideAuthors = user.getBlocks().union(user.getMutes())
-				if !hideAuthors.isEmpty {
-					builder.where(SQLIdentifier(ForumPost().$author.$id.key.description), .notIn, Array(hideAuthors))
-				}
-				builder.where(
-					SQLColumn("id", table: "forumpost"),
-					.lessThanOrEqual,
-					SQLColumn("last_post_read_id", table: "forum+readers")
-				)
-			}
-		)
 		let readerPivots = try await ForumReaders.query(on: req.db).filter(\.$user.$id == user.userID)
 			.filter(\.$forum.$id ~~ forumIDs).all()
+		let readerPivotsDict = readerPivots.reduce(into: [:]) { $0[$1.$forum.id] = $1 }
+		let lastReadPostIDs: [UUID: Int] = readerPivots.reduce(into: [:]) { dict, pivot in
+			if let lastReadID = pivot.lastPostReadID {
+				dict[pivot.$forum.id] = lastReadID
+			}
+		}
+		let readCounts = try await forumReadCounts(lastReadPostIDs: lastReadPostIDs, user: user, on: req.db)
 		let lastPostsDict = try await forumListGetLastPosts(forums, on: req, user: user)
 
-		let readerPivotsDict = readerPivots.reduce(into: [:]) { $0[$1.$forum.id] = $1 }
 		let returnListData: [ForumListData] = try forums.map { forum in
 			let forumID = try forum.requireID()
 			let creatorHeader = try req.userCache.getHeader(forum.$creator.id)
@@ -1857,6 +1883,8 @@ extension ForumController {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		var readerPivot = try await forum.$readers.$pivots.query(on: req.db).filter(\.$user.$id == cacheUser.userID)
 			.first()
+		// Capture the read marker before this request advances it, so the response reports the user's position from before.
+		let lastReadBefore = readerPivot?.lastPostReadID
 		let requestedPagination = Pagination(on: req, maxPageSize: Settings.shared.maximumForumPosts)
 		let query = forum.$posts.query(on: req.db)
 			.filter(\.$author.$id !~ cacheUser.getBlocks())
@@ -1902,6 +1930,11 @@ extension ForumController {
 		)
 		let creatorHeader = try req.userCache.getHeader(forum.$creator.id)
 		let pager = Paginator(total: postCount, start: pagination.start, limit: pagination.limit)
+		var readCount = 0
+		if let lastReadBefore = lastReadBefore {
+			let forumID = try forum.requireID()
+			readCount = try await forumReadCounts(lastReadPostIDs: [forumID: lastReadBefore], user: cacheUser, on: req.db)[forumID] ?? 0
+		}
 		// For event forums
 		var event: Event? = nil
 		if forum.category.isEventCategory {
@@ -1914,6 +1947,7 @@ extension ForumController {
 			isMuted: readerPivot?.isMuted ?? false,
 			posts: flattenedPosts,
 			pager: pager,
+			readCount: readCount,
 			event: event
 		)
 	}
