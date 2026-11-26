@@ -1,6 +1,8 @@
 """End-to-end workflows shared by live runs and recorded-response verification."""
 
 import base64
+import json
+from pathlib import Path
 
 
 def login(call, name):
@@ -216,7 +218,94 @@ def site(call):
         assert "<title>" + title + "</title>" in call("GET", path, 200, {})
 
 
+def contacts(call):
+    sam_id, headers = login(call, "sam")
+
+    def get(path):
+        return call("GET", "/api/v3/" + path, 200, headers)
+
+    assert get("user/whoami")["userID"] == sam_id
+    assert get("user/profile")["header"]["username"] == "sam"
+    heidi = get("users/find/heidi")
+    assert heidi["username"] == "heidi"
+    assert "@heidi" in get("users/match/username/heidi")
+    target = "/api/v3/users/" + heidi["userID"]
+    note = {"note": "Meet at the board game library."}
+    for method, suffix in [("POST", "/delete"), ("DELETE", "")]:
+        written = call("POST", target + "/note", 201, headers, note)
+        assert written["targetUser"]["userID"] == heidi["userID"]
+        assert call("GET", target + "/note", 200, headers)["note"] == note["note"]
+        assert any(n["note"] == note["note"] for n in get("user/notes"))
+        call(method, target + "/note" + suffix, 204, headers)
+        assert all(
+            n["targetUser"]["userID"] != heidi["userID"] for n in get("user/notes")
+        )
+
+    for action, group, remove_method, remove in [
+        ("favorite", "favorites", "POST", "unfavorite"),
+        ("favorite", "favorites", "DELETE", "favorite"),
+        ("mute", "mutes", "POST", "unmute"),
+        ("block", "blocks", "POST", "unblock"),
+    ]:
+        call("POST", target + "/" + action, 201, headers)
+        assert heidi["userID"] in [u["userID"] for u in get("users/" + group)]
+        call(remove_method, target + "/" + remove, 204, headers)
+        assert heidi["userID"] not in [u["userID"] for u in get("users/" + group)]
+
+
+def browse(call):
+    _, headers = login(call, "sam")
+    listings = {
+        "forum/favorites": "forumThreads",
+        "forum/mutes": "forumThreads",
+        "forum/recent": "forumThreads",
+        "forum/unread": "forumThreads",
+        "fez/open": "fezzes",
+        "fez/former": "fezzes",
+        "performer/official": "performers",
+        "performer/shadow": "performers",
+        "karaoke/latest": "songs",
+        "notification/log": "items",
+    }
+    for path, field in listings.items():
+        result = call("GET", "/api/v3/" + path, 200, headers)
+        assert isinstance(result[field], list), path
+        assert isinstance(result["paginator"]["total"], int), path
+
+
+def assets(call):
+    files = Path(__file__).resolve().parents[2] / "Sources/swiftarr/Resources/Assets"
+    for url, filename in [
+        ("/css/dayplanner.css", "css/dayplanner.css"),
+        ("/js/theme.js", "js/theme.js"),
+        ("/img/emoji/small/arr.png", "img/emoji/small/arr.png"),
+        ("/fonts/Bungee/OFL.txt", "fonts/Bungee/OFL.txt"),
+        ("/public/clientFaq.md", "public/clientFaq.md"),
+        ("/favicon.ico", "img/favicon.ico"),
+    ]:
+        assert call.raw("GET", url, 200, {}) == (files / filename).read_bytes(), url
+
+    for name in ("apple-app-site-association", "assetlinks.json"):
+        body = call.raw("GET", "/.well-known/" + name, 200, {})
+        assert json.loads(body) == json.loads(
+            (files / "well-known" / name).read_bytes()
+        )
+    assert call.raw("GET", "/robots.txt", 200, {}) == b"User-agent: *\nDisallow: /\n"
+    user_id, headers = login(call, "sam")
+    paths = [
+        "/api/v3/image/user/" + size + "/" + user_id
+        for size in ("identicon", "full", "thumb")
+    ]
+    paths.append("/api/v3/image/qrcode?string=Swiftarr")
+    for path in paths:
+        image = call.raw("GET", path, 200, headers)
+        assert image.startswith(bytes.fromhex("89504e470d0a1a0a")) and b"IEND" in image
+
+
 SCENARIOS = {
+    "assets": assets,
+    "contacts": contacts,
+    "browse": browse,
     "seamail": seamail,
     "forum": forum,
     "directory": directory,

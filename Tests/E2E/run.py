@@ -1,6 +1,7 @@
 """Run Swiftarr end-to-end scenarios against an isolated local test instance."""
 
 import argparse
+import base64
 import hashlib
 import json
 import os
@@ -13,11 +14,29 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack, contextmanager
+from http.cookies import SimpleCookie
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.parse import urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 
-from workflows import SCENARIOS, login
+import activities
+import discovery
+import pages
+import staff
+from access import signed_out
+from workflows import SCENARIOS as member_scenarios
+from workflows import login
+
+SCENARIOS = {
+    **member_scenarios,
+    **activities.SCENARIOS,
+    **pages.SCENARIOS,
+    **staff.SCENARIOS,
+    "discovery": discovery.discovery,
+    "media": discovery.media,
+    "signed-out": signed_out,
+}
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -29,9 +48,10 @@ def temporary_port():
 
 
 @contextmanager
-def container(image, port, options):
+def container(image, port, options, command=()):
     identifier = subprocess.check_output(
-        ["docker", "run", "-d", "-p", f"127.0.0.1::{port}", *options, image], text=True
+        ["docker", "run", "-d", "-p", f"127.0.0.1::{port}", *options, image, *command],
+        text=True,
     ).strip()
     try:
         bound = subprocess.check_output(
@@ -75,33 +95,59 @@ def service(command, env, port, log, stop_signal):
                 raise RuntimeError(f"ReGrade could not finalize the recording: {log}")
 
 
+class RouteRedirects(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
 def live(target):
+    opener = build_opener(RouteRedirects())
+
     def send(method, path, headers, data):
         body = None if data is None else json.dumps(data).encode()
         request = Request(target + path, method=method, data=body, headers=headers)
-        with urlopen(request, timeout=30) as r:
+        try:
+            response = opener.open(request, timeout=30)
+        except HTTPError as error:
+            response = error
+        with response as r:
             assert r.geturl() == target + path, f"Unexpected redirect from {path}"
-            return r.status, r.read()
+            return r.status, r.read(), {k.lower(): v for k, v in r.headers.items()}
 
     return send
 
 
 def requests(send, log):
-    def call(method, path, status, headers, data=None):
+    def response(method, path, status, headers, data=None):
         log.append((method, path))
-        actual, raw = send(method, path, headers, data)
-        assert actual == status, (method, path, status, actual)
+        actual, raw, response_headers = send(method, path, headers, data)
+        allowed = status if isinstance(status, tuple) else (status,)
+        assert actual in allowed, (method, path, status, actual)
+        return raw, response_headers
+
+    def body(method, path, status, headers, data=None):
+        return response(method, path, status, headers, data)[0]
+
+    def call(method, path, status, headers, data=None):
+        raw = body(method, path, status, headers, data)
         if not raw:
             return None
         if path.startswith("/api/"):
             return json.loads(raw)
         return raw.decode() if isinstance(raw, bytes) else raw
 
+    call.raw = body
+    call.response = response
     return call
 
 
 def seed(target, scenarios):
-    if "forum" in scenarios:
+    call = requests(live(target), [])
+    if "discovery" in scenarios:
+        discovery.seed(call)
+    staff.seed(call, scenarios)
+    activities.seed(call, scenarios)
+    if "forum" in scenarios or any(name.startswith("pages") for name in scenarios):
         call = requests(live(target), [])
         _, sam = login(call, "sam")
         general = next(
@@ -127,22 +173,82 @@ def seed(target, scenarios):
         assert forum["title"] == "E2E forum"
 
 
-def exercise(send, names):
+def browser_sessions(target, names):
+    fixtures = {}
+    for name in names:
+        request = Request(
+            target + "/login",
+            data=f"username={name}&password=password".encode(),
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        with urlopen(request, timeout=30) as response:
+            cookie = SimpleCookie()
+            for header in response.headers.get_all("Set-Cookie", []):
+                cookie.load(header)
+            body = response.read()
+            assert b"<title>Login</title>" in body, f"Site login failed for {name}"
+        assert cookie, f"No session cookie for {name}"
+        fixtures[name + "_cookie"] = "; ".join(
+            k + "=" + v.coded_value for k, v in cookie.items()
+        )
+    return fixtures
+
+
+def exercise(send, names, fixtures=None, scenario_requests=None):
     log = []
     for scenario in names:
+        start = len(log)
         try:
-            SCENARIOS[scenario](requests(send, log))
+            call = requests(send, log)
+            call.fixtures = fixtures or {}
+            SCENARIOS[scenario](call)
         except Exception as exc:
             raise RuntimeError(
                 f"{scenario} failed at request {len(log)}: {log[-1] if log else 'startup'}"
             ) from exc
+        if scenario_requests is not None:
+            scenario_requests[scenario] = log[start:]
         print(f"  {scenario} passed", flush=True)
     return log
 
 
-def registered_hits(inventory, requests_made):
+def route_patterns(inventory):
     routes = re.findall(r"^\|\s*(\w+)\s*\|\s*(/\S*)\s*\|", inventory, re.MULTILINE)
     assert routes, "No registered routes found"
+    return routes
+
+
+WEBSOCKET_ROUTES = {
+    "GET /api/v3/notification/socket",
+    "GET /api/v3/fez/:fez_id/socket",
+    "GET /api/v3/phone/socket/initiate/:phone_call/to/:user_id",
+    "GET /api/v3/phone/socket/answer/:phone_call",
+    "GET /lfg/:fez_id/socket",
+    "GET /seamail/:fez_id/socket",
+}
+
+
+def route_coverage(inventory, scenario_routes):
+    registered = {f"{method} {path}" for method, path in route_patterns(inventory)}
+    features = {
+        route
+        for name, routes in scenario_routes.items()
+        if name != "signed-out"
+        for route in routes
+    }
+    signed_out = set(scenario_routes.get("signed-out", []))
+    sockets = registered & WEBSOCKET_ROUTES
+    return {
+        "registered": len(registered),
+        "feature_routes": sorted(features),
+        "signed_out_only": sorted(signed_out - features),
+        "websockets": sorted(sockets),
+        "missing_http": sorted(registered - features - signed_out - sockets),
+    }
+
+
+def registered_hits(inventory, requests_made):
+    routes = route_patterns(inventory)
     hits = set()
     for method, url in requests_made:
         matches = []
@@ -199,7 +305,7 @@ class ReGrade:
         with urlopen(req, timeout=30) as r:
             return json.load(r)
 
-    def verify(self, recording, names, count):
+    def verify(self, recording, names, count, fixtures=None, scenario_requests=None):
         meta = self.get("/recordings/" + recording)
         assert meta["team_id"] == self.team and meta["entry_count"] == count
 
@@ -221,13 +327,25 @@ class ReGrade:
                 assert saved["authorization"] == headers["Authorization"], (
                     "Member identity mismatch"
                 )
+            if "Cookie" in headers:
+                assert saved.get("cookie") == headers["Cookie"], "Site session mismatch"
             if data is not None:
                 assert json.loads(row["request"]["body"]) == data, (
                     "Request body mismatch"
                 )
-            return row["status"], row["response"].get("body")
+            response = row["response"]
+            body = response.get("body")
+            if response.get("body_encoding") == "base64":
+                body = base64.b64decode(body, validate=True)
+            elif body is not None:
+                body = body.encode()
+            return (
+                row["status"],
+                body,
+                {k.lower(): v for k, v in response["headers"].items()},
+            )
 
-        result = exercise(receive, names)
+        result = exercise(receive, names, fixtures, scenario_requests)
         assert len(result) == count
         return result
 
@@ -236,6 +354,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "mode", choices=["run", "record", "replay"], nargs="?", default="run"
+    )
+    parser.add_argument(
+        "--require-all-http",
+        action="store_true",
+        help="Fail if any registered HTTP route lacks a checked response",
     )
     parser.add_argument("--scenario", choices=list(SCENARIOS), action="append")
     parser.add_argument(
@@ -270,6 +393,10 @@ def main():
         result_dir.mkdir(parents=True, exist_ok=False)
     print("Results:", result_dir, flush=True)
     names = args.scenario or list(SCENARIOS)
+    if not args.scenario and "catalog-import" in names:
+        names = [name for name in names if name != "catalog-import"] + [
+            "catalog-import"
+        ]
     remote = (
         ReGrade(args.connection.resolve() if args.connection else None)
         if args.mode != "run"
@@ -282,6 +409,15 @@ def main():
         assert manifest["team"] == remote.team and manifest["api"] == remote.api
         names = manifest["scenarios"]
     with ExitStack() as stack:
+        if "media" in names:
+            staging = Path(
+                stack.enter_context(
+                    tempfile.TemporaryDirectory(prefix="swiftarr-e2e-media-")
+                )
+            )
+            binary = discovery.prepare_media(
+                binary, staging, result_dir.resolve() / "images"
+            )
         pg, pg_port = stack.enter_context(
             container(
                 "postgres:15-alpine",
@@ -298,7 +434,23 @@ def main():
                 ],
             )
         )
-        _, redis_port = stack.enter_context(container("redis:7-alpine", 6379, []))
+        redis_options = []
+        redis_command = []
+        fixtures = {}
+        if args.mode == "replay" and manifest.get("site_sessions"):
+            fixtures = json.loads((args.cassette / "sessions.json").read_text())
+            redis_options = [
+                "--mount",
+                f"type=bind,src={args.cassette.resolve()},dst=/fixtures,readonly",
+            ]
+            redis_command = [
+                "sh",
+                "-ec",
+                "cp /fixtures/fixtures.rdb /data/dump.rdb && exec redis-server",
+            ]
+        redis, redis_port = stack.enter_context(
+            container("redis:7-alpine", 6379, redis_options, redis_command)
+        )
         pg_exec = ["docker", "exec", "-i", pg]
         for _ in range(120):
             if (
@@ -361,12 +513,34 @@ def main():
         )
         if args.mode != "replay":
             seed(target, names)
+            if any(name.startswith("pages") for name in names):
+                fixtures = browser_sessions(target, ["sam", "admin"])
+                fixtures.update(pages.seed(requests(live(target), []), names))
+            if "accounts" in names:
+                fixtures.update(browser_sessions(target, ["e2ereset"]))
         with binary.open("rb") as binary_file:
             digest = hashlib.file_digest(binary_file, "sha256").hexdigest()
         receipt = {"scenarios": names, "mode": args.mode, "binary_sha256": digest}
+        scenario_requests = {}
         if args.mode == "run":
-            log = exercise(live(target), names)
+            log = exercise(live(target), names, fixtures, scenario_requests)
         elif args.mode == "record":
+            if fixtures:
+                subprocess.run(
+                    ["docker", "exec", redis, "redis-cli", "SAVE"],
+                    check=True,
+                    stdout=subprocess.DEVNULL,
+                )
+                subprocess.run(
+                    [
+                        "docker",
+                        "cp",
+                        redis + ":/data/dump.rdb",
+                        str(args.cassette / "fixtures.rdb"),
+                    ],
+                    check=True,
+                )
+                (args.cassette / "sessions.json").write_text(json.dumps(fixtures))
             with (args.cassette / "fixtures.dump").open("xb") as f:
                 subprocess.run(
                     [*pg_exec, "pg_dump", "-Fc", "-U", "swiftarr", "swiftarr"],
@@ -392,7 +566,12 @@ def main():
             with service(
                 cmd, remote.env, proxy_port, result_dir / "record.log", signal.SIGINT
             ):
-                log = exercise(live(f"http://127.0.0.1:{proxy_port}"), names)
+                log = exercise(
+                    live(f"http://127.0.0.1:{proxy_port}"),
+                    names,
+                    fixtures,
+                    scenario_requests,
+                )
             rows = remote.get(f"/recordings?sensor_id={sensor}&team_id={remote.team}")[
                 "data"
             ]
@@ -403,16 +582,16 @@ def main():
                 and r["sensor_id"] == sensor
                 and r["team_id"] == remote.team
             ]
-            assert remote.verify(recording, names, len(log)) == log
+            assert remote.verify(recording, names, len(log), fixtures) == log
             manifest = {
                 "recording": recording,
                 "binary_sha256": digest,
                 "scenarios": names,
                 "count": len(log),
+                "site_sessions": bool(fixtures),
                 "team": remote.team,
                 "api": remote.api,
             }
-            (args.cassette / "manifest.json").write_text(json.dumps(manifest, indent=2))
             receipt["recording"] = recording
         else:
             cmd = [
@@ -443,13 +622,29 @@ def main():
                 and replay["recording_id"] == manifest["recording"]
                 and replay["request_count"] == manifest["count"]
             )
-            log = remote.verify(replay["replay_recording_id"], names, manifest["count"])
+            log = remote.verify(
+                replay["replay_recording_id"],
+                names,
+                manifest["count"],
+                fixtures,
+                scenario_requests,
+            )
             receipt.update(
                 recording=manifest["recording"],
                 replay=match[1],
                 deltas=replay["delta_count"],
             )
-        receipt.update(requests=len(log), routes=registered_hits(inventory, log))
+        scenario_routes = {
+            name: registered_hits(inventory, calls)
+            for name, calls in scenario_requests.items()
+        }
+        receipt.update(
+            requests=len(log),
+            routes=sorted(set().union(*scenario_routes.values())),
+            scenario_routes=scenario_routes,
+        )
+        receipt["coverage"] = route_coverage(inventory, scenario_routes)
+        assert sum(map(len, scenario_requests.values())) == len(log)
         if "seamail" in names:
             sql = """select f.post_count,count(p.id),count(p.id) filter(where p.deleted_at is null) from friendlyfez f left join fezposts p on p.friendly_fez=f.id where f.title='E2E member conversation' group by f.id,f.post_count"""
             counts = subprocess.check_output(
@@ -457,6 +652,12 @@ def main():
             ).strip()
             assert counts == "0|2|0", counts
         (result_dir / "result.json").write_text(json.dumps(receipt, indent=2) + "\n")
+        if args.require_all_http and receipt["coverage"]["missing_http"]:
+            raise ValueError(
+                "Missing routes: " + ", ".join(receipt["coverage"]["missing_http"])
+            )
+        if args.mode == "record":
+            (args.cassette / "manifest.json").write_text(json.dumps(manifest, indent=2))
         print(
             f"Passed {len(log)} requests across {len(receipt['routes'])} routes.",
             flush=True,
