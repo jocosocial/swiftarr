@@ -134,6 +134,40 @@ def planner(call):
         ]
 
 
+def owned_personal_events(call):
+    from workflows import login
+
+    _, owner = login(call, "sam")
+    recipient = call("GET", "/api/v3/users/find/heidi", 200, owner)
+    event = call(
+        "POST",
+        "/api/v3/personalevents/create",
+        201,
+        owner,
+        personal_details("Appointment before dinner", []),
+    )
+    conversation = call(
+        "POST",
+        "/api/v3/fez/create",
+        201,
+        owner,
+        {
+            "fezType": "closed",
+            "title": "Dinner plans",
+            "info": "Where should we meet?",
+            "minCapacity": 0,
+            "maxCapacity": 0,
+            "initialUsers": [recipient["userID"]],
+        },
+    )
+    assert not conversation.get("startTime") and not conversation.get("endTime")
+
+    events = call("GET", "/api/v3/personalevents?owned=true", 200, owner)
+    event_ids = {entry["personalEventID"] for entry in events}
+    assert event["personalEventID"] in event_ids
+    assert conversation["fezID"] not in event_ids
+
+
 def market(call):
     from workflows import login
 
@@ -403,6 +437,7 @@ def artists(call):
 
 SCENARIOS = {
     "planner": planner,
+    "owned-personal-events": owned_personal_events,
     "market": market,
     "games": games,
     "schedule": schedule,

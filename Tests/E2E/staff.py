@@ -426,6 +426,21 @@ def accounts(call):
     assert "Change Password Successful." in page
 
 
+def submitted_feedback_by_event_id(call):
+    from workflows import login
+
+    author_id, headers = login(call, "heidi")
+    event = feedback_event(call, headers)
+    draft = feedback_data(event, "The host answered every question.")
+    call("POST", FEEDBACK, 201, headers, draft)
+
+    report = call("GET", FEEDBACK + "/id/" + event["eventID"], 200, headers)
+    assert report["id"]
+    assert report["reportingUser"]["userID"] == author_id
+    assert report["event"]["eventID"] == event["eventID"]
+    assert report["recapString"] == draft["recapString"]
+
+
 def monitoring(call):
     from workflows import login
 
@@ -603,4 +618,5 @@ SCENARIOS = {
     "staff-roles": staff_roles,
     "support": support,
     "feedback": feedback,
+    "submitted-feedback-by-event-id": submitted_feedback_by_event_id,
 }
