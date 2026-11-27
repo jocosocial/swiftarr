@@ -3,14 +3,17 @@ import XCTVapor
 import Testing
 
 struct RobotsTests: SwiftarrBaseTest {
-	@Test("robots.txt disallows all crawlers without auth")
+	@Test("robots.txt lets search engines crawl (to see noindex) but blocks AI crawlers")
 	func testRobotsTxt() async throws {
 		try await withApp { app in
 			try await app.test(.GET, "/robots.txt", afterResponse: { res async throws in
 				#expect(res.status == .ok)
 				#expect(res.headers.contentType == .plainText)
 				let body = res.body.string
-				#expect(body.contains("User-agent: *\nDisallow: /"))
+				#expect(body.contains("User-agent: *\nAllow: /"))
+				#expect(!body.contains("User-agent: *\nDisallow: /"))
+				#expect(body.contains("User-agent: GPTBot\n"))
+				#expect(body.contains("User-agent: ia_archiver\nDisallow: /\n"))
 			})
 		}
 	}
