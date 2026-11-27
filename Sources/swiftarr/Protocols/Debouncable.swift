@@ -12,6 +12,9 @@ protocol Debouncable : Model {
     static var creatorKeyPath: CreatorKeyPath { get }
     typealias IdempotencyKeyKeyPath = KeyPath<Self, OptionalFieldProperty<Self, UUID>>
     static var idempotencyKeyKeyPath: IdempotencyKeyKeyPath { get }
+    // as has the same creator and idempotency. Are all other content fields the same?
+    // i.e. is this request probably a retry of the same insert attempt?
+    func hasSamePostContent(as other: Self) -> Bool
 }
 
 extension Debouncable {
@@ -48,8 +51,11 @@ extension Debouncable {
                 .filter(Self.creatorKeyPath.appending(path: \.$id) == self.creatorProperty.id)
                 .filter(Self.idempotencyKeyKeyPath == self.idempotencyKeyProperty.wrappedValue)
                 .first() else {
-                // Weird that it wouldn't be there, but what else would we do?
+                // Perhaps it was deleted.
                 throw Abort(.conflict, reason: "Debounced \(Self.schema).")
+            }
+            if !self.hasSamePostContent(as: existingRecord) {
+                throw Abort(.conflict, reason: "Different \(Self.schema) with same idempotency key")
             }
             throw AlreadyExistsError(existing: existingRecord)
         }

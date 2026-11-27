@@ -90,6 +90,31 @@ class DebounceTests {
         }
 
         @Test
+        func testOwnSameKeyDifferentText_conflict() async throws {
+            try await withApp { app in
+                let suffix = suffix()
+                let postText = "Post the same thing"
+                let fixture = try await makeFixture(app, suffix: suffix, postText: postText, idempotencyKey: UUID())
+                let body = """
+                    {"text":"something else", "images": [], "idempotencyKey": "\(fixture.post.idempotencyKey!)"}
+                    """
+
+                try await app.test(
+                    .POST,
+                    "/api/v3/forum/\(fixture.forum.requireID())/create",
+                    headers: bearer(fixture.token),
+                    beforeRequest: { req async throws in
+                        req.headers.contentType = .json
+                        req.body = ByteBuffer(string: body)
+                    },
+                    afterResponse: { res async throws in
+                        try #require(res.status == .conflict)
+                    }
+                )
+            }
+        }
+
+        @Test
         func testOwnDifferentKey_posted() async throws {
             try await withApp { app in
                 let suffix = suffix()
@@ -237,6 +262,32 @@ class DebounceTests {
         }
 
         @Test
+        func testOwnSameKeyDifferentText_conflict() async throws {
+            try await withApp { app in
+                let suffix = suffix()
+                let postText = "Post the same thing"
+                let fixture = try await makeFixture(app, suffix: suffix, postText: postText, idempotencyKey: UUID())
+                let body = """
+                    {"text":"something else", "images": [], "idempotencyKey": "\(fixture.post.idempotencyKey!)"}
+                    """
+
+               
+                try await app.test(
+                    .POST,
+                    "/api/v3/fez/\(fixture.fez.requireID())/post",
+                    headers: bearer(fixture.posterToken),
+                    beforeRequest: { req async throws in
+                        req.headers.contentType = .json
+                        req.body = ByteBuffer(string: body)
+                    },
+                    afterResponse: { res async throws in
+                        try #require(res.status == .conflict)
+                    }
+                )
+            }
+        }
+
+        @Test
         func testUnsetKey_posted() async throws {
             try await withApp { app in
                 let suffix = suffix()
@@ -255,7 +306,7 @@ class DebounceTests {
                         req.body = ByteBuffer(string: body)
                     },
                     afterResponse: { res async throws in
-                        try #require(res.status == .ok)
+                        try #require(res.status == .created)
                         let data = try res.content.decode(FezPostData.self)
                         try #require(data.postID != fixture.post.id)
                     }
@@ -284,7 +335,7 @@ class DebounceTests {
                         req.body = ByteBuffer(string: body)
                     },
                     afterResponse: { res async throws in
-                        try #require(res.status == .ok)
+                        try #require(res.status == .created)
                         let data = try res.content.decode(FezPostData.self)
                         try #require(data.postID != fixture.post.id)
                     }
@@ -311,7 +362,7 @@ class DebounceTests {
                         req.body = ByteBuffer(string: body)
                     },
                     afterResponse: { res async throws in
-                        try #require(res.status == .ok)
+                        try #require(res.status == .created)
                         let data = try res.content.decode(FezPostData.self)
                         try #require(data.postID != fixture.post.id)
                     }

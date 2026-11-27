@@ -74,6 +74,11 @@ final class FezPost: Model, Searchable, @unchecked Sendable, Debouncable {
 		self.idempotencyKey = idempotencyKey
 		self.moderationStatus = .normal
 	}
+
+	// Mark: for Debouncable
+	func hasSamePostContent(as other: FezPost) -> Bool {
+		return other.$fez.id == self.$fez.id && other.text == self.text
+	}
 }
 
 // fezposts can be filtered by author and content

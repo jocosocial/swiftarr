@@ -89,6 +89,11 @@ final class ForumPost: Model, Searchable, @unchecked Sendable, Debouncable {
 		self.moderationStatus = .normal
 		self.pinned = false
 	}
+
+	// Mark: for Debouncable
+	func hasSamePostContent(as other: ForumPost) -> Bool {
+		return other.$forum.id == self.$forum.id && other.text == self.text
+	}
 }
 
 // posts can be filtered by author and content

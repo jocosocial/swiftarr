@@ -565,7 +565,7 @@ struct FezController: APIRouteCollection {
 	/// - Throws: 404 error if the fez is not available. A 5xx response should be reported
 	///   as a likely bug, please and thank you.
 	/// - Returns: `FezPostData` containing the user's new post.
-	func postAddHandler(_ req: Request) async throws -> FezPostData {
+	func postAddHandler(_ req: Request) async throws -> Response {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		try cacheUser.guardCanCreateContent()
 		// see PostContentData.validations()
@@ -592,7 +592,7 @@ struct FezController: APIRouteCollection {
 	// rules (image limits, notifications, hidden-post bookkeeping) as posting to an existing Fez. Callers are responsible for
 	// any membership/lock/personalEvent guards. (createChat doesn't call this; it inserts its optional initial post inside the
 	// same transaction that creates the Fez, using the same `guardFezPostContent`, `insertFezPost` and `publishFezPost` pieces.)
-	func addFezPost(to fez: FriendlyFez, data: PostContentData, cacheUser: UserCacheData, on req: Request) async throws -> FezPostData {
+	func addFezPost(to fez: FriendlyFez, data: PostContentData, cacheUser: UserCacheData, on req: Request) async throws -> Response {
 		try guardFezPostContent(data, fezType: fez.fezType)
 		do {
 			// The post, the fez's post count, and all the pivot bookkeeping go in one transaction; nothing outside the database is touched until it commits.
@@ -602,9 +602,13 @@ struct FezController: APIRouteCollection {
 				}
 			}
 			await publishFezPost(inserted, in: fez, cacheUser: cacheUser, on: req)
-			return try FezPostData(post: inserted.post, author: inserted.author.makeHeader())
+			let response = Response(status: .created)
+			try response.content.encode(try FezPostData(post: inserted.post, author: inserted.author.makeHeader()))
+			return response
 		} catch let error as AlreadyExistsError<FezPost> {
-			return try FezPostData(post: error.existing, author: req.userCache.getHeader(error.existing.$author.id))
+			let response = Response(status: .ok)
+			try response.content.encode(try FezPostData(post: error.existing, author: req.userCache.getHeader(error.existing.$author.id)))
+			return response
 		}
 	}
 
