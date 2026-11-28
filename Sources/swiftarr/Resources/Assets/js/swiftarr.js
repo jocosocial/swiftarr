@@ -781,7 +781,10 @@ function scrollToCurrentEvent() {
 		if (listItem.getAttribute('data-cruiseday') == cruiseDay) {
 			let eventStartMinutes = calcCruiseDayTime(new Date(listItem.getAttribute('data-starttime') * 1000))[0];
 			let eventEndMinutes = calcCruiseDayTime(new Date(listItem.getAttribute('data-endtime') * 1000))[0];
-			if (minutesSince3AM <= eventEndMinutes && eventEndMinutes - eventStartMinutes <= 120) {
+			// Skip long (2h+) informational entries like daily themes. Duration comes from the raw timestamps because
+			// minutes-since-3AM wraps, making day-long events look like 0 minutes.
+			let durationMinutes = (listItem.getAttribute('data-endtime') - listItem.getAttribute('data-starttime')) / 60;
+			if (minutesSince3AM <= eventEndMinutes && durationMinutes <= 120) {
 				listItem.scrollIntoView({ block: "center" });
 				return true;
 			}
