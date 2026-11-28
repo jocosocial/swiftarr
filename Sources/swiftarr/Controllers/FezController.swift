@@ -468,27 +468,27 @@ struct FezController: APIRouteCollection {
 	/// - Returns: `FezData` containing the updated fez data.
 	func joinHandler(_ req: Request) async throws -> Response {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
-		switch fez.fezType {
-			case .closed: throw Abort(.badRequest, reason: "Cannot add members to a closed chat")
-			case .open: throw Abort(.badRequest, reason: "Cannot add yourself to a Seamail chat. Ask the chat creator to add you.")
-			case .personalEvent: throw Abort(.badRequest, reason: "Cannot add members to a personal event")
-			case .privateEvent:
-				guard fez.visibility == .unlisted else {
-					throw Abort(.badRequest, reason: "Cannot add yourself to a Private Event. Ask the event creator to add you.")
-				}
-			default: break
-		}
-		guard !fez.participantArray.contains(cacheUser.userID) else {
-			throw Abort(.notFound, reason: "user is already a member of this \(fez.fezType.lfgLabel)")
-		}
-		// respect blocks
-		guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
-			throw Abort(.notFound, reason: "This \(fez.fezType.lfgLabel) is not available")
-		}
-		// add user to both the participantArray and attach a pivot for them.
-		let blocksAndMutes = cacheUser.getBlocks().union(cacheUser.getMutes())
-		let newParticipant = try await req.db.transaction { db -> FezParticipant in
+		let (fez, newParticipant) = try await req.db.transaction { db -> (FriendlyFez, FezParticipant) in 
+			let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req, inTransaction: db)
+			switch fez.fezType {
+				case .closed: throw Abort(.badRequest, reason: "Cannot add members to a closed chat")
+				case .open: throw Abort(.badRequest, reason: "Cannot add yourself to a Seamail chat. Ask the chat creator to add you.")
+				case .personalEvent: throw Abort(.badRequest, reason: "Cannot add members to a personal event")
+				case .privateEvent:
+					guard fez.visibility == .unlisted else {
+						throw Abort(.badRequest, reason: "Cannot add yourself to a Private Event. Ask the event creator to add you.")
+					}
+				default: break
+			}
+			guard !fez.participantArray.contains(cacheUser.userID) else {
+				throw Abort(.notFound, reason: "user is already a member of this \(fez.fezType.lfgLabel)")
+			}
+			// respect blocks
+			guard !cacheUser.getBlocks().contains(fez.$owner.id) else {
+				throw Abort(.notFound, reason: "This \(fez.fezType.lfgLabel) is not available")
+			}
+			// add user to both the participantArray and attach a pivot for them.
+			let blocksAndMutes = cacheUser.getBlocks().union(cacheUser.getMutes())
 			fez.participantArray.append(cacheUser.userID)
 			try await fez.save(on: db)
 			let newParticipant = try await getUserPivotForAdd(lfg: fez, userID: cacheUser.userID, on: db)
@@ -496,7 +496,7 @@ struct FezController: APIRouteCollection {
 			newParticipant.addedTo = false  // Clear addedTo for voluntary joins (user wasn't added by someone else)
 			newParticipant.hiddenCount = try await fez.$fezPosts.query(on: db).filter(\.$author.$id ~~ blocksAndMutes).count()
 			try await newParticipant.save(on: db)
-			return newParticipant
+			return (fez, newParticipant)
 		}
 		await dispatchEffects(
 			on: req,
@@ -522,26 +522,27 @@ struct FezController: APIRouteCollection {
 	/// - Returns: `FezData` containing the updated fez data.
 	func unjoinHandler(_ req: Request) async throws -> FezData {
 		let cacheUser = try req.auth.require(UserCacheData.self)
-		let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req)
-		guard fez.fezType != .closed else {
-			throw Abort(.badRequest, reason: "Cannot remove members to a closed chat")
-		}
-		// Don't allow privileged users looking at a privileged mailbox to attempt to remove
-		// the privileged user from a Chat. Without this check their removal action will silently
-		// be a no-op.
-		if cacheUser.accessLevel.hasAccess(.moderator), !fez.participantArray.contains(cacheUser.userID) {
-			throw Abort(.badRequest, reason: "Privileged users cannot leave a chat they are not part of themselves")
-		}
-		// Save a FezEditRecord containing the participant list before removal
-		let fezEdit = try FriendlyFezEdit(fez: fez, editorID: cacheUser.userID)
-		// remove user from participantArray and also remove the pivot.
-		try await req.db.transaction { db in
+		let fez = try await req.db.transaction { db in
+			let fez = try await FriendlyFez.findFromParameter(fezIDParam, on: req, inTransaction: db)
+			guard fez.fezType != .closed else {
+				throw Abort(.badRequest, reason: "Cannot remove members to a closed chat")
+			}
+			// Don't allow privileged users looking at a privileged mailbox to attempt to remove
+			// the privileged user from a Chat. Without this check their removal action will silently
+			// be a no-op.
+			if cacheUser.accessLevel.hasAccess(.moderator), !fez.participantArray.contains(cacheUser.userID) {
+				throw Abort(.badRequest, reason: "Privileged users cannot leave a chat they are not part of themselves")
+			}
+			// Save a FezEditRecord containing the participant list before removal
+			let fezEdit = try FriendlyFezEdit(fez: fez, editorID: cacheUser.userID)
+			// remove user from participantArray and also remove the pivot.
 			try await fezEdit.save(on: db)
 			if let index = fez.participantArray.firstIndex(of: cacheUser.userID) {
 				fez.participantArray.remove(at: index)
 			}
 			try await fez.save(on: db)
 			try await fez.$participants.$pivots.query(on: db).filter(\.$user.$id == cacheUser.userID).delete()
+			return fez
 		}
 		await dispatchEffects(
 			on: req,
