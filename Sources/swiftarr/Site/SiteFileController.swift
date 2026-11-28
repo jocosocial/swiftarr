@@ -25,12 +25,10 @@ struct SiteFileController: SiteControllerUtils {
 	}
 
 	// `GET /robots.txt`
-	//
-	// Asks all crawlers to stay away from the entire site.
 	func getRobotsTxt(_ req: Request) -> Response {
 		var headers = HTTPHeaders()
 		headers.contentType = .plainText
-		return Response(status: .ok, headers: headers, body: .init(string: "User-agent: *\nDisallow: /\n"))
+		return Response(status: .ok, headers: headers, body: .init(string: Self.robotsTxt))
 	}
 
 	// `GET /css/:catchall`
@@ -126,4 +124,24 @@ struct SiteFileController: SiteControllerUtils {
 		}
 		return response
 	}
+}
+
+// MARK: - robots.txt content
+extension SiteFileController {
+	// AI training/search and archive crawlers. They honor robots.txt but generally ignore `noindex`, so they are
+	// blocked here outright.
+	static let aiCrawlers = [
+		"GPTBot", "ChatGPT-User", "OAI-SearchBot", "ClaudeBot", "Claude-Web", "anthropic-ai", "Google-Extended", "CCBot",
+		"PerplexityBot", "Bytespider", "Applebot-Extended", "Amazonbot", "FacebookBot", "meta-externalagent", "ia_archiver",
+	]
+
+	// The body served at `/robots.txt`. Two groups: AI/archive crawlers are disallowed; everyone else (notably search
+	// engines) may crawl. Search engines must be able to crawl so they can see the `noindex` directive (X-Robots-Tag header
+	// and <meta> tag) and drop the site from results. A crawler blocked by robots.txt never fetches a page to see the
+	// noindex, so already-linked URLs linger in results as "No information is available for this page."
+	static let robotsTxt: String = {
+		let aiGroup = aiCrawlers.map { "User-agent: \($0)\n" }.joined() + "Disallow: /\n"
+		let defaultGroup = "User-agent: *\nAllow: /\n"
+		return aiGroup + "\n" + defaultGroup
+	}()
 }
