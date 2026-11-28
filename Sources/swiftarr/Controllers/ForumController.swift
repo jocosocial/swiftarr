@@ -1343,29 +1343,36 @@ struct ForumController: APIRouteCollection {
 			throw Abort(.forbidden, reason: "user cannot post in forum")
 		}
 		let effectiveAuthor = newPostData.effectiveAuthor(actualAuthor: cacheUser, on: req)
-		let forumPost = try await withProcessedImages(newPostData.images, usage: .forumPost,
-				maxImages: Settings.shared.getMaxForumPostImages(for: cacheUser), on: req) { filenames in
-			try await req.db.transaction { db in
-				let forumPost = try ForumPost(
-					forum: forum,
-					authorID: effectiveAuthor.userID,
-					text: newPostData.text,
-					images: filenames
-				)
-				try await forumPost.save(on: db)
-				forum.lastPostTime = Date()
-				forum.lastPostID = forumPost.id
-				try await forum.save(on: db)
-				try await forumPost.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: db)
-				return forumPost
+		do {
+			let forumPost = try await withProcessedImages(newPostData.images, usage: .forumPost,
+					maxImages: Settings.shared.getMaxForumPostImages(for: cacheUser), on: req) { filenames in
+				try await req.db.transaction { db in
+					let forumPost = try ForumPost(
+						forum: forum,
+						authorID: effectiveAuthor.userID,
+						text: newPostData.text,
+						images: filenames,
+						idempotencyKey: newPostData.idempotencyKey,
+					)
+					try await forumPost.createDebounced(on: db)
+					forum.lastPostTime = Date()
+					forum.lastPostID = forumPost.id
+					try await forum.save(on: db)
+					try await forumPost.logIfModeratorAction(.post, moderatorID: cacheUser.userID, on: db)
+					return forumPost
+				}
 			}
+			// If the post @mentions anyone, update their mention counts
+			await publishForumPost(forumPost, on: req)
+			// return as PostData, with 201 status
+			let response = Response(status: .created)
+			try response.content.encode(PostData(post: forumPost, author: effectiveAuthor.makeHeader()))
+			return response
+		} catch let error as AlreadyExistsError<ForumPost> {
+			let response = Response(status: .ok)
+			try response.content.encode(PostData(post: error.existing, author: effectiveAuthor.makeHeader()))
+			return response
 		}
-		// If the post @mentions anyone, update their mention counts
-		await publishForumPost(forumPost, on: req)
-		// return as PostData, with 201 status
-		let response = Response(status: .created)
-		try response.content.encode(PostData(post: forumPost, author: effectiveAuthor.makeHeader()))
-		return response
 	}
 
 	/// `POST /api/v3/forum/post/ID/delete`

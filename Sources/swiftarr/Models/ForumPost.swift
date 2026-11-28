@@ -12,7 +12,7 @@ import FluentSQL
 /// 	- See Also: [PostDetailData](PostDetailData) the DTO for returning extended data on ForumPosts.
 /// 	- See Also: [PostContentData](PostContentData) the DTO for creating ForumPosts.
 /// 	- See Also: [CreateForumPostSchema](CreateForumPostSchema) the Migration for creating the ForumPost table in the database.
-final class ForumPost: Model, Searchable, @unchecked Sendable {
+final class ForumPost: Model, Searchable, @unchecked Sendable, Debouncable {
 	static let schema = "forumpost"
 
 	// MARK: Properties
@@ -49,6 +49,10 @@ final class ForumPost: Model, Searchable, @unchecked Sendable {
 
 	/// The parent `User`  who authored the post.
 	@Parent(key: "author") var author: User
+	static let creatorKeyPath: CreatorKeyPath = \.$author
+
+	@OptionalField(key: "idempotency_key") var idempotencyKey: UUID?
+	static let idempotencyKeyKeyPath: IdempotencyKeyKeyPath = \.$idempotencyKey
 
 	/// The child `ForumPostEdit` accountability records of the post.
 	@Children(for: \.$post) var edits: [ForumPostEdit]
@@ -72,7 +76,8 @@ final class ForumPost: Model, Searchable, @unchecked Sendable {
 		forum: Forum,
 		authorID: UUID,
 		text: String,
-		images: [String]? = nil
+		images: [String]? = nil,
+		idempotencyKey: UUID? = nil
 	) throws {
 		self.$forum.id = try forum.requireID()
 		self.$forum.value = forum
@@ -80,8 +85,14 @@ final class ForumPost: Model, Searchable, @unchecked Sendable {
 		// We don't do much text manipulation on input, but let's normalize line endings.
 		self.text = text.replacingOccurrences(of: "\r\n", with: "\r")
 		self.images = images
+		self.idempotencyKey = idempotencyKey
 		self.moderationStatus = .normal
 		self.pinned = false
+	}
+
+	// Mark: for Debouncable
+	func hasSamePostContent(as other: ForumPost) -> Bool {
+		return other.$forum.id == self.$forum.id && other.text == self.text
 	}
 }
 

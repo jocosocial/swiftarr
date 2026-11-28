@@ -197,7 +197,7 @@ class CommunitySupportIsolationTests: XCTestCase, SwiftarrBaseTest {
 			let outsider = try await makeUser(app, username: "iout-\(UUID().uuidString.prefix(8))", accessLevel: .verified)
 			try await makeRequest(app).userCache.updateUser(outsider.id)
 			for (token, expected) in [
-				(f.member.token, HTTPResponseStatus.ok), (f.tt.token, .ok), (outsider.token, .forbidden),
+				(f.member.token, HTTPResponseStatus.created), (f.tt.token, .created), (outsider.token, .forbidden),
 			] {
 				try await app.test(
 					.POST,

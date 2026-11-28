@@ -7,7 +7,7 @@ import Vapor
 ///
 /// 	- See Also: [FezPostData](FezPostData) the DTO for returning info on FezPosts. FezPostData is also a member of `FezData`.
 /// 	- See Also: [CreateFezPostSchema](CreateFezPostSchema) the Migration for creating the FezPost table in the database.
-final class FezPost: Model, Searchable, @unchecked Sendable {
+final class FezPost: Model, Searchable, @unchecked Sendable, Debouncable {
 	static let schema = "fezposts"
 
 	// MARK: Properties
@@ -40,6 +40,10 @@ final class FezPost: Model, Searchable, @unchecked Sendable {
 
 	/// The post's author.
 	@Parent(key: "author") var author: User
+	static let creatorKeyPath: CreatorKeyPath = \.$author
+
+	@OptionalField(key: "idempotency_key") var idempotencyKey: UUID?
+	static let idempotencyKeyKeyPath: IdempotencyKeyKeyPath = \.$idempotencyKey
 
 	// MARK: Initialization
 
@@ -57,7 +61,8 @@ final class FezPost: Model, Searchable, @unchecked Sendable {
 		fez: FriendlyFez,
 		authorID: UUID,
 		text: String,
-		image: String?
+		image: String?,
+		idempotencyKey: UUID? = nil
 	) throws {
 		self.$fez.id = try fez.requireID()
 		self.$fez.value = fez
@@ -66,7 +71,13 @@ final class FezPost: Model, Searchable, @unchecked Sendable {
 		// Generally I'm in favor of "validate input, sanitize output" but I hate "\r\n" with the fury of a thousand suns.
 		self.text = text.replacingOccurrences(of: "\r\n", with: "\r")
 		self.image = image
+		self.idempotencyKey = idempotencyKey
 		self.moderationStatus = .normal
+	}
+
+	// Mark: for Debouncable
+	func hasSamePostContent(as other: FezPost) -> Bool {
+		return other.$fez.id == self.$fez.id && other.text == self.text
 	}
 }
 

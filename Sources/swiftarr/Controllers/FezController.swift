@@ -565,7 +565,7 @@ struct FezController: APIRouteCollection {
 	/// - Throws: 404 error if the fez is not available. A 5xx response should be reported
 	///   as a likely bug, please and thank you.
 	/// - Returns: `FezPostData` containing the user's new post.
-	func postAddHandler(_ req: Request) async throws -> FezPostData {
+	func postAddHandler(_ req: Request) async throws -> Response {
 		let cacheUser = try req.auth.require(UserCacheData.self)
 		try cacheUser.guardCanCreateContent()
 		// see PostContentData.validations()
@@ -592,16 +592,24 @@ struct FezController: APIRouteCollection {
 	// rules (image limits, notifications, hidden-post bookkeeping) as posting to an existing Fez. Callers are responsible for
 	// any membership/lock/personalEvent guards. (createChat doesn't call this; it inserts its optional initial post inside the
 	// same transaction that creates the Fez, using the same `guardFezPostContent`, `insertFezPost` and `publishFezPost` pieces.)
-	func addFezPost(to fez: FriendlyFez, data: PostContentData, cacheUser: UserCacheData, on req: Request) async throws -> FezPostData {
+	func addFezPost(to fez: FriendlyFez, data: PostContentData, cacheUser: UserCacheData, on req: Request) async throws -> Response {
 		try guardFezPostContent(data, fezType: fez.fezType)
-		// The post, the fez's post count, and all the pivot bookkeeping go in one transaction; nothing outside the database is touched until it commits.
-		let inserted = try await withProcessedImages(data.images, usage: .fezPost, on: req) { filenames in
-			try await req.db.transaction { db in
-				try await insertFezPost(to: fez, data: data, imageFilename: filenames.first, cacheUser: cacheUser, on: req, db: db)
+		do {
+			// The post, the fez's post count, and all the pivot bookkeeping go in one transaction; nothing outside the database is touched until it commits.
+			let inserted = try await withProcessedImages(data.images, usage: .fezPost, on: req) { filenames in
+				try await req.db.transaction { db in
+					try await insertFezPost(to: fez, data: data, imageFilename: filenames.first, idempotencyKey: data.idempotencyKey, cacheUser: cacheUser, on: req, db: db)
+				}
 			}
+			await publishFezPost(inserted, in: fez, cacheUser: cacheUser, on: req)
+			let response = Response(status: .created)
+			try response.content.encode(try FezPostData(post: inserted.post, author: inserted.author.makeHeader()))
+			return response
+		} catch let error as AlreadyExistsError<FezPost> {
+			let response = Response(status: .ok)
+			try response.content.encode(try FezPostData(post: error.existing, author: req.userCache.getHeader(error.existing.$author.id)))
+			return response
 		}
-		await publishFezPost(inserted, in: fez, cacheUser: cacheUser, on: req)
-		return try FezPostData(post: inserted.post, author: inserted.author.makeHeader())
 	}
 
 	/// Image-count rules for a post's content. Seamail types can't have photos, and nothing can have more than one.
@@ -645,13 +653,13 @@ struct FezController: APIRouteCollection {
 	/// The database half of adding a post to a fez. Creates the post, bumps the fez's cached post count, adjusts the pivots of members who
 	/// block/mute the author (hidden count) and the author (read count), and logs a moderator action. Every write goes through `db`, so call
 	/// this inside a transaction. Nothing here touches Redis or sockets; pass the result to `publishFezPost` after the transaction commits.
-	func insertFezPost(to fez: FriendlyFez, data: PostContentData, imageFilename: String?, cacheUser: UserCacheData, on req: Request,
+	func insertFezPost(to fez: FriendlyFez, data: PostContentData, imageFilename: String?, idempotencyKey: UUID? = nil, cacheUser: UserCacheData, on req: Request,
 			db: Database) async throws -> InsertedFezPost {
 		// create and save the new post, update fezzes' cached post count
 		let effectiveAuthor = data.effectiveAuthor(actualAuthor: cacheUser, on: req)
-		let post = try FezPost(fez: fez, authorID: effectiveAuthor.userID, text: data.text, image: imageFilename)
+		let post = try FezPost(fez: fez, authorID: effectiveAuthor.userID, text: data.text, image: imageFilename, idempotencyKey: idempotencyKey)
+		try await post.createDebounced(on: db)
 		try await adjustPostCount(of: fez, by: 1, on: db)
-		try await post.save(on: db)
 		try await fez.save(on: db)  // Also bumps updatedAt, which the chat lists sort on.
 		// If any participants block or mute this user, increase their hidden post count as they won't see this post.
 		// The nice thing about doing it this way is most of the time there will be no blocks and nothing to do.

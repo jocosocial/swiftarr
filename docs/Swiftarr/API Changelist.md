@@ -402,3 +402,8 @@ additive; the existing count fields are unchanged and are now derived from these
 ## Nov 22, 2026
 
 - `SocketNotificationData` gains an optional `author: UserHeader`, set for forum mention, alertword, and chat unread message notifications.
+
+## Nov 27, 2026
+
+- `POST /api/v3/fez/ID/create` now returns "201 Created" instead of "200 OK" if the post was created.
+- `POST /api/v3/fez/ID/create` and `POST /api/v3/forum/ID/create` now support a UUID `idempotencyKey` parameter. If you would retry creating a post on an error (which might happen because the ship's wifi can get flaky in crowded areas), generate a UUID and use it for all retries of the same post. If it's set, creation will return "200 OK" if the post already existed (but with the same content as the 201 respose would have), or "409 Conflict" if you already used that UUID for a different post, or if the post was deleted between original posting and your retry. If you don't set the parameter, you get the old behavior, which is that each attempt might post the same thing.
